@@ -19,6 +19,19 @@ echo "📦 Installing Ollama (latest)..."
 # Check if Ollama is already installed
 if command -v ollama &> /dev/null; then
     echo "   ✅ Ollama already installed: $(ollama --version)"
+    
+    # UPDATE to latest version!
+    echo "   🔄 Updating Ollama to latest version..."
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        # Linux update
+        curl -fsSL https://ollama.ai/install.sh | sh
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS update
+        curl -fsSL https://ollama.ai/install.sh | sh
+    fi
+    
+    # Verify update
+    echo "   ✅ Ollama updated to: $(ollama --version)"
 else
     # Detect OS and install Ollama
     if [[ "$OSTYPE" == "darwin"* ]]; then
