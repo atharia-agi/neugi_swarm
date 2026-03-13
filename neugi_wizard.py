@@ -17,6 +17,7 @@ import subprocess
 import sys
 import threading
 import time
+from neugi_telegram import TelegramGateway
 
 BRAND = "NEUGI"  # Corporate branding!
 
@@ -154,10 +155,11 @@ class NEUGIWizard:
             print(f"\n❌ Cannot continue without Ollama.")
             return
 
-        # STEP 2-5: Other Steps
+        # STEP 2-6: Other Steps
         self._step_name()
         self._step_use_case()
         self._step_api_key()
+        self._step_telegram()
         self._save()
 
     def _step_ollama(self) -> bool:
@@ -210,6 +212,28 @@ class NEUGIWizard:
             self._setup_with_key()
         else:
             self._setup_ollama()
+
+    def _step_telegram(self):
+        print(f"\n{'-' * 60}")
+        print("📱 Step 5: Telegram Mobile Control (Optional)")
+        print(f"{'-' * 60}")
+
+        print("\nDo you want to control Neugi Swarm from your phone via Telegram?")
+        print("   y - YES, set up Telegram Bot")
+        print("   n - NO, skip this step")
+
+        choice = input("\nAnswer (y/n): ").strip().lower()
+
+        if choice == "y":
+            tg = TelegramGateway()
+            if tg.setup():
+                print("✅ Telegram Gateway configured and ready.")
+            else:
+                print(
+                    "⚠️ Telegram setup incomplete. You can set it up later by running: python neugi_telegram.py setup"
+                )
+        else:
+            print("⏭️ Skipping Telegram setup.")
 
     def _setup_with_key(self):
         print("\n📋 Available providers:")
