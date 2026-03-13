@@ -24,6 +24,7 @@ from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 import socketserver
+from typing import Optional
 
 # ============================================================
 # CONFIG
@@ -37,24 +38,22 @@ NEUGI_DIR = os.path.expanduser("~/neugi")
 # HEALTH MONITOR
 # ============================================================
 
+
 class HealthMonitor:
     """Monitor NEUGI health and auto-recover"""
-    
+
     def __init__(self):
         self.status = "starting"
         self.errors = []
         self.start_time = time.time()
         self.restart_count = 0
-    
-    def set_status(self, status: str, error: str = None):
+
+    def set_status(self, status: str, error: Optional[str] = None):
         """Update status"""
         self.status = status
         if error:
-            self.errors.append({
-                "time": datetime.now().isoformat(),
-                "error": error
-            })
-    
+            self.errors.append({"time": datetime.now().isoformat(), "error": error})
+
     def get_health(self) -> dict:
         """Get health status"""
         return {
@@ -63,8 +62,9 @@ class HealthMonitor:
             "uptime": int(time.time() - self.start_time),
             "errors": len(self.errors),
             "restart_count": self.restart_count,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
+
 
 # Global health monitor
 health = HealthMonitor()
@@ -73,14 +73,15 @@ health = HealthMonitor()
 # ERROR HANDLER
 # ============================================================
 
+
 class ErrorHandler:
     """Handle errors and auto-recover"""
-    
+
     @staticmethod
     def detect_and_fix():
         """Detect issues and try to fix"""
         issues = []
-        
+
         # Check 1: Ollama running?
         try:
             r = requests.get("http://localhost:11434/api/tags", timeout=3)
@@ -88,55 +89,61 @@ class ErrorHandler:
                 issues.append("Ollama not responding")
         except:
             issues.append("Ollama not running - run: ollama serve")
-        
+
         # Check 2: Port available?
         import socket
+
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        result = sock.connect_ex(('localhost', PORT))
+        result = sock.connect_ex(("localhost", PORT))
         sock.close()
         if result == 0:
             issues.append(f"Port {PORT} already in use")
-        
+
         # Check 3: Config exists?
         config_path = os.path.join(NEUGI_DIR, "config.py")
         if not os.path.exists(config_path):
             issues.append("Config not found - run: neugi wizard")
-        
+
         return issues
-    
+
     @staticmethod
     def auto_fix():
         """Try to auto-fix common issues"""
         fixes = []
-        
+
         # Fix 1: Start Ollama if not running
         try:
             r = requests.get("http://localhost:11434/api/tags", timeout=2)
         except:
             # Try to start Ollama
             import subprocess
+
             try:
-                subprocess.Popen(["ollama", "serve"], 
-                              stdout=subprocess.DEVNULL, 
-                              stderr=subprocess.DEVNULL)
+                subprocess.Popen(
+                    ["ollama", "serve"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
                 fixes.append("Started Ollama server")
             except:
                 fixes.append("Could not auto-start Ollama - run manually: ollama serve")
-        
+
         return fixes
+
 
 # ============================================================
 # DASHBOARD HANDLER
 # ============================================================
 
+
 class DashboardHandler(BaseHTTPRequestHandler):
     """Handle dashboard requests"""
-    
+
     def do_GET(self):
         """Handle GET requests"""
         parsed = urlparse(self.path)
         path = parsed.path
-        
+
         if path == "/" or path == "/index.html" or path == "/dashboard":
             self.serve_dashboard()
         elif path == "/health":
@@ -151,16 +158,16 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self.serve_technician()
         else:
             self.send_error(404)
-    
+
     def do_POST(self):
         """Handle POST requests"""
         parsed = urlparse(self.path)
-        
+
         if parsed.path == "/api/chat":
             self.handle_chat()
         else:
             self.send_error(404)
-    
+
     def serve_dashboard(self):
         """Serve dashboard"""
         html = self.get_dashboard_html()
@@ -168,7 +175,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/html")
         self.end_headers()
         self.wfile.write(html.encode())
-    
+
     def serve_health(self):
         """Serve health status"""
         data = health.get_health()
@@ -176,31 +183,31 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "application/json")
         self.end_headers()
         self.wfile.write(json.dumps(data).encode())
-    
+
     def serve_status(self):
         """Serve detailed status"""
         issues = ErrorHandler.detect_and_fix()
         auto_fixes = ErrorHandler.auto_fix()
-        
+
         data = {
             "neugi": health.get_health(),
             "issues": issues,
             "auto_fixes": auto_fixes,
-            "ollama": self.check_ollama()
+            "ollama": self.check_ollama(),
         }
-        
+
         self.send_response(200)
         self.send_header("Content-type", "application/json")
         self.end_headers()
         self.wfile.write(json.dumps(data).encode())
-    
+
     def serve_errors(self):
         """Serve errors list"""
         self.send_response(200)
         self.send_header("Content-type", "application/json")
         self.end_headers()
         self.wfile.write(json.dumps(health.errors).encode())
-    
+
     def serve_fix(self):
         """Try to fix issues"""
         fixes = ErrorHandler.auto_fix()
@@ -208,7 +215,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "application/json")
         self.end_headers()
         self.wfile.write(json.dumps({"fixes": fixes}).encode())
-    
+
     def serve_technician(self):
         """Serve Technician interface"""
         html = self.get_technician_html()
@@ -216,23 +223,28 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/html")
         self.end_headers()
         self.wfile.write(html.encode())
-    
+
     def handle_chat(self):
         """Handle chat request"""
-        length = int(self.headers.get('Content-Length', 0))
+        length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length)
         data = json.loads(body)
-        
+
         message = data.get("message", "")
-        
-        # Simple response for now
-        response = f"NEUGI: Thank you for your message: {message}"
-        
+
+        try:
+            from neugi_assistant import NeugiAssistant
+
+            assistant = NeugiAssistant()
+            response = assistant.chat(message)
+        except Exception as e:
+            response = f"NEUGI: Sorry, I am currently offline. (Error: {str(e)})"
+
         self.send_response(200)
         self.send_header("Content-type", "application/json")
         self.end_headers()
         self.wfile.write(json.dumps({"response": response}).encode())
-    
+
     def check_ollama(self):
         """Check Ollama status"""
         try:
@@ -243,7 +255,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
         except:
             pass
         return {"status": "not_running"}
-    
+
     def get_dashboard_html(self) -> str:
         """Get clean, powerful dashboard HTML"""
         return """<!DOCTYPE html>
@@ -637,7 +649,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
     </script>
 </body>
 </html>"""
-    
+
     def get_technician_html(self) -> str:
         """Get Technician interface HTML"""
         return """<!DOCTYPE html>
@@ -842,14 +854,16 @@ class DashboardHandler(BaseHTTPRequestHandler):
 </body>
 </html>"""
 
+
 # ============================================================
 # MAIN SERVER
 # ============================================================
 
+
 def start_server():
     """Start NEUGI server"""
     health.set_status("running")
-    
+
     print(f"""
 ╔═══════════════════════════════════════════════════╗
 ║         🚀 NEUGI SWARM v{VERSION}                 ║
@@ -862,19 +876,21 @@ def start_server():
 
 Press Ctrl+C to stop
 """)
-    
+
     # Try to start server
     try:
-        server = HTTPServer(('0.0.0.0', PORT), DashboardHandler)
+        server = HTTPServer(("0.0.0.0", PORT), DashboardHandler)
         server.serve_forever()
     except Exception as e:
         health.set_status("error", str(e))
         print(f"❌ Error: {e}")
-        
+
         # Auto-open Technician
         print("\n🔧 Opening Technician...")
         import webbrowser
+
         webbrowser.open(f"http://localhost:{PORT}/technician")
+
 
 # ============================================================
 # MAIN
@@ -884,15 +900,16 @@ if __name__ == "__main__":
     # Check for errors first
     print("🔍 Checking system...")
     issues = ErrorHandler.detect_and_fix()
-    
+
     if issues:
         print("\n⚠️ Issues detected:")
         for issue in issues:
             print(f"   - {issue}")
-        
+
         print("\n🔧 Opening Technician for fixes...")
         import webbrowser
+
         webbrowser.open(f"http://localhost:{PORT}/technician")
-    
+
     # Start server
     start_server()

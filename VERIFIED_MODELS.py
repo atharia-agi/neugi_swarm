@@ -15,7 +15,7 @@ Last Updated: March 13, 2026
 
 OLLAMA_MODELS = {
     # Qwen3.5 - LATEST! (Corrected!)
-    "qwen2.5": {
+    "qwen3.5": {
         "sizes": ["0.5b", "0.8b", "1.5b", "3b", "7b", "14b", "32b", "72b"],
         "release": "March 2025",
         "ctx": 32768,
@@ -133,7 +133,7 @@ OPENROUTER_MODELS = {
     "meta-llama/llama-3.1-8b-instant": {"ctx": 128000, "free": True},
     "google/gemini-1.5-flash": {"ctx": 1000000, "free": True},
     "deepseek/deepseek-chat": {"ctx": 64000, "free": True},
-    "qwen/qwen2.5-7b-instruct": {"ctx": 32768, "free": True},
+    "qwen/qwen3.5-7b-instruct": {"ctx": 32768, "free": True},
 }
 
 # ============================================================
@@ -142,13 +142,13 @@ OPENROUTER_MODELS = {
 
 EDGE_CHOICES = {
     "256mb": {"model": "tinyllama:1.1b", "ram": "~700MB", "use": "Proof of concept"},
-    "512mb": {"model": "qwen2.5:0.5b", "ram": "~350MB", "use": "Super minimal!"},
-    "1gb": {"model": "qwen2.5:0.8b", "ram": "~500MB", "use": "NEW! Tiny but capable!"},
+    "512mb": {"model": "qwen3.5:0.5b", "ram": "~350MB", "use": "Super minimal!"},
+    "1gb": {"model": "qwen3.5:0.8b", "ram": "~500MB", "use": "NEW! Tiny but capable!"},
     "2gb": {"model": "llama3.2:1b", "ram": "~800MB", "use": "Good balance!"},
-    "4gb": {"model": "qwen2.5:7b", "ram": "~4.5GB", "use": "BEST VALUE!"},
+    "4gb": {"model": "qwen3.5:7b", "ram": "~4.5GB", "use": "BEST VALUE!"},
     "8gb": {"model": "llama3.1:8b", "ram": "~5GB", "use": "Excellent performance!"},
     "16gb": {"model": "deepseek-r1:14b", "ram": "~9GB", "use": "Reasoning = GPT-4!"},
-    "32gb": {"model": "qwen2.5:32b", "ram": "~20GB", "use": "Near GPT-4 level!"},
+    "32gb": {"model": "qwen3.5:32b", "ram": "~20GB", "use": "Near GPT-4 level!"},
 }
 
 # ============================================================

@@ -11,7 +11,7 @@ API_KEY = "your-api-key-here"
 # ANTHROPIC_API_KEY = "your-anthropic-key"
 
 # Database path
-DB_PATH = "./data/army.db"
+DB_PATH = "~/neugi/data/army.db"
 
 # Security
 EMERGENCY_STOP_PHRASE = "halt_all_agents"

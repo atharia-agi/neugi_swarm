@@ -2,7 +2,7 @@
 """
 🤖 NEUGI ASSISTANT
 ===================
-Smart assistant using qwen2.5:1.5b (Ollama Cloud)
+Smart assistant using qwen3.5:cloud (Ollama Cloud)
 Helps users with installation, setup, and general questions
 
 Version: 1.0
@@ -17,7 +17,7 @@ import urllib.error
 
 # Config
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
-ASSISTANT_MODEL = "qwen2.5:1.5b"
+ASSISTANT_MODEL = "qwen3.5:cloud"
 
 
 class NeugiAssistant:
@@ -82,7 +82,7 @@ NEUGI is Neural General Intelligence - made easy!
             return self._fallback_chat(message)
 
     def _fallback_chat(self, message: str) -> str:
-        """Try fallback models if qwen2.5:1.5b fails"""
+        """Try fallback models if qwen3.5:cloud fails"""
 
         fallback_models = ["qwen2.5:7b", "llama3.2:3b", "mistral:7b"]
 
@@ -193,14 +193,14 @@ curl http://localhost:11434/api/tags
 
 Download models:
 ```bash
-ollama pull qwen2.5:1.5b
+ollama pull qwen3.5:cloud
 ```"""
 
         elif "api" in message_lower or "key" in message_lower:
             return """🔑 **API Keys**
 
 NEUGI supports:
-- **Free**: Ollama Cloud (qwen2.5:1.5b)
+- **Free**: Ollama Cloud (qwen3.5:cloud)
 - **Groq**: https://console.groq.com (FREE!)
 - **OpenRouter**: https://openrouter.ai (Free tier)
 - **OpenAI**: https://platform.openai.com

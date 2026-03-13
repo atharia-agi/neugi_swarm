@@ -16,7 +16,7 @@ NEUGI is a user-friendly AI assistant that makes AI accessible to everyone:
 
 ## Key Features
 
-- Powered by Ollama (qwen2.5:1.5b and local models)
+- Powered by Ollama (qwen3.5:cloud and local models)
 - Works with free tier!
 - Error recovery with auto Technician
 - For beginners and advanced users alike

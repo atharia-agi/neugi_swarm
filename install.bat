@@ -17,8 +17,8 @@ if %ERRORLEVEL% neq 0 (
 )
 
 :: 2. Pull Model
-echo [INFO] Pulling model qwen2.5:1.5b...
-ollama pull qwen2.5:1.5b
+echo [INFO] Pulling model qwen3.5:cloud...
+ollama pull qwen3.5:cloud
 
 :: 3. Setup Directory
 set "NEUGI_DIR=%USERPROFILE%\neugi"
@@ -40,7 +40,7 @@ curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi.
 echo # NEUGI SWARM CONFIG > config.py
 echo USE_OLLAMA=True >> config.py
 echo OLLAMA_URL="http://localhost:11434" >> config.py
-echo OLLAMA_MODEL="qwen2.5:1.5b" >> config.py
+echo OLLAMA_MODEL="qwen3.5:cloud" >> config.py
 echo MODEL="auto" >> config.py
 echo CONTEXT_WINDOW=2048 >> config.py
 echo MASTER_KEY="neugi123" >> config.py

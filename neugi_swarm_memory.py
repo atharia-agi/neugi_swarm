@@ -71,7 +71,9 @@ class Memory:
 class MemoryManager:
     """Manages all memory types"""
 
-    def __init__(self, db_path: str = "./data/memory.db"):
+    def __init__(self, db_path: Optional[str] = None):
+        if db_path is None:
+            db_path = os.path.expanduser("~/neugi/data/memory.db")
         self.db_path = db_path
         os.makedirs(os.path.dirname(db_path), exist_ok=True)
 

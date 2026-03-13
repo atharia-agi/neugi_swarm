@@ -77,7 +77,7 @@ http://localhost:19888
 | **Auto-Install** | One command installs everything including Ollama |
 | **Smart Wizard** | Auto-setup with Q&A |
 | **Technician** | Can fix system issues automatically |
-| **Free Models** | qwen2.5:1.5b works with Ollama Free tier |
+| **Free Models** | qwen3.5:cloud works with Ollama Free tier |
 | **Multi-Provider** | Support Groq, OpenRouter, OpenAI, Anthropic |
 | **CLI** | Like `openclaw` - neugi start/stop/status |
 

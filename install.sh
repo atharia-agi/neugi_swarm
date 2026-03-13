@@ -96,8 +96,8 @@ main() {
     
     export PATH="$HOME/.local/bin:$PATH"
     
-    log_info "Pulling qwen2.5:1.5b model..."
-    ollama pull qwen2.5:1.5b >> /tmp/neugi_install.log 2>&1 || true
+    log_info "Pulling qwen3.5:cloud model..."
+    ollama pull qwen3.5:cloud >> /tmp/neugi_install.log 2>&1 || true
     log_success "Model ready"
     
     # ============================================================
@@ -124,7 +124,7 @@ main() {
 # 🤖 NEUGI SWARM CONFIG
 USE_OLLAMA=true
 OLLAMA_URL="http://localhost:11434"
-OLLAMA_MODEL="qwen2.5:1.5b"
+OLLAMA_MODEL="qwen3.5:cloud"
 MODEL="auto"
 CONTEXT_WINDOW=2048
 MASTER_KEY="neugi123"
@@ -236,7 +236,7 @@ EOF
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo "• NEUGI Swarm started successfully"
         echo "• Ollama connected: http://localhost:11434"
-        echo "• Model loaded: qwen2.5:1.5b"
+        echo "• Model loaded: qwen3.5:cloud"
         echo "• Dashboard ready: http://localhost:19888"
         echo "• Waiting for commands..."
         echo ""

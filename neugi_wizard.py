@@ -103,7 +103,7 @@ class OllamaManager:
 # ============================================================
 
 OLLAMA_MODELS = [
-    {"model": "qwen2.5:1.5b", "ctx": 32768},
+    {"model": "qwen3.5:cloud", "ctx": 32768},
     {"model": "qwen3.5:7b", "ctx": 8192},
 ]
 
@@ -244,7 +244,7 @@ class NEUGIWizard:
             "user": {"name": self.answers["name"]},
             "use_case": self.answers["use_case"],
             "model": {"provider": provider, "model": model},
-            "assistant": {"model": "qwen2.5:1.5b"},
+            "assistant": {"model": "qwen3.5:cloud"},
             "technician": {"enabled": True},
             "api_key_set": bool(api_key),
         }
@@ -258,7 +258,7 @@ class NEUGIWizard:
             "user": {"name": self.answers["name"]},
             "use_case": self.answers["use_case"],
             "model": {"provider": "ollama_cloud", "model": model["model"]},
-            "assistant": {"model": "qwen2.5:1.5b"},
+            "assistant": {"model": "qwen3.5:cloud"},
             "technician": {"enabled": True},
         }
 
@@ -285,9 +285,10 @@ class NEUGIWizard:
         return False
 
     def _save(self):
-        os.makedirs("./data", exist_ok=True)
+        data_dir = os.path.expanduser("~/neugi/data")
+        os.makedirs(data_dir, exist_ok=True)
 
-        with open("./data/config.json", "w") as f:
+        with open(os.path.join(data_dir, "config.json"), "w") as f:
             json.dump(self.config, f, indent=2)
 
         print(f"\n{'=' * 60}")
