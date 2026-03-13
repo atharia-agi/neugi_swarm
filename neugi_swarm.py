@@ -41,12 +41,13 @@ from urllib.parse import parse_qs
 # CONFIG
 # ============================================================
 
-VERSION = "14.0.0"
+VERSION = "14.0.1"
 NAME = "Neugi Swarm"
 TAGLINE = "Production-Ready Autonomous AI"
 
-# Default config
-CONFIG = {
+# Default ports - using uncommon ports to avoid conflicts
+# Priority: 19888, 17777, 15555, 13333, 10000-60000 range
+DEFAULT_PORT = 19888  # Easy to remember: 19 + 888
     "provider": "auto",  # auto-detect
     "model": "auto",
     "api_key": "",
@@ -387,7 +388,7 @@ class FlexibleLLM:
 class Dashboard:
     """Simple web dashboard"""
     
-    def __init__(self, port: int = 8089):
+    def __init__(self, port: int = 19888):
         self.port = port
         self.neugi = None
     
@@ -729,7 +730,7 @@ def main():
     parser = argparse.ArgumentParser(description=f"{NAME} - {TAGLINE}")
     parser.add_argument("--setup", action="store_true", help="Run setup wizard")
     parser.add_argument("--config", default="config.py", help="Config file path")
-    parser.add_argument("--port", type=int, default=8089, help="Dashboard port")
+    parser.add_argument("--port", type=int, default=19888, help="Dashboard port")
     parser.add_argument("--test", action="store_true", help="Test configuration")
     parser.add_argument("--version", action="store_true", help="Show version")
     

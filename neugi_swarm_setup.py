@@ -393,7 +393,7 @@ def run_setup():
     print("NEXT STEPS:")
     print("----------")
     print(f"1. Start Neugi: {GREEN}python3 neugi_swarm.py{RESET}")
-    print(f"2. Open dashboard: {GREEN}http://localhost:8089{RESET}")
+    print(f"2. Open dashboard: {GREEN}http://localhost:19888{RESET}")
     print()
     print("Commands:")
     print("  python3 neugi_swarm.py        # Start normally")
