@@ -4,6 +4,7 @@
 ===============================================
 
 Logic:
+- Check if Ollama is running!
 - If NO API key → Use Ollama Cloud (same as assistant!)
 - If YES API key → Help setup until it works!
 
@@ -16,10 +17,21 @@ import json
 import requests
 
 # ============================================================
+# CHECK OLLAMA SERVER
+# ============================================================
+
+def check_ollama_server() -> bool:
+    """Check if Ollama server is running"""
+    try:
+        r = requests.get("http://localhost:11434/api/tags", timeout=3)
+        return r.ok
+    except:
+        return False
+
+# ============================================================
 # MODEL DATABASE
 # ============================================================
 
-# Ollama Cloud Models (Free, same as Assistant!)
 OLLAMA_CLOUD_MODELS = [
     {"model": "qwen3.5:cloud", "ctx": 32768, "best_for": "all-round"},
     {"model": "qwen3.5:7b", "ctx": 8192, "best_for": "chat"},
@@ -28,7 +40,6 @@ OLLAMA_CLOUD_MODELS = [
     {"model": "mistral:7b", "ctx": 8192, "best_for": "general"},
 ]
 
-# API Provider Models (If user has their own key)
 API_PROVIDERS = {
     "openai": {
         "name": "OpenAI",
@@ -75,6 +86,7 @@ API_PROVIDERS = {
 class NeugiWizard:
     """
     Smart Wizard:
+    - Check Ollama first!
     - No API key? → Use Ollama Cloud (free, works!)
     - Has API key? → Help setup until it works!
     """
@@ -82,6 +94,7 @@ class NeugiWizard:
     def __init__(self):
         self.answers = {}
         self.config = {}
+        self.ollama_running = False
     
     def run(self):
         """Run complete wizard flow"""
@@ -90,28 +103,43 @@ class NeugiWizard:
         print("🤖 NEUGI WIZARD v2.1")
         print("="*60)
         
+        # Step 0: Check Ollama FIRST!
+        self._check_ollama()
+        
         # Step 1: Name
         self._ask_name()
         
         # Step 2: Use case
         self._ask_use_case()
         
-        # Step 3: API Key Question (CRITICAL!)
+        # Step 3: API Key Question
         has_api_key = self._ask_api_key()
         
-        # Step 4: Configure based on answer
+        # Step 4: Configure
         if has_api_key:
-            # User HAS API key → Help setup
             self._setup_with_api_key()
         else:
-            # No API key → Use Ollama Cloud (same as assistant!)
             self._setup_ollama_cloud()
         
-        # Step 5: Save and finish
+        # Step 5: Save
         self._save_and_finish()
     
+    def _check_ollama(self):
+        """Check if Ollama is running"""
+        print("\n🔍 Checking Ollama server...")
+        self.ollama_running = check_ollama_server()
+        
+        if self.ollama_running:
+            print("✅ Ollama is running!")
+        else:
+            print("⚠️  Ollama is NOT running!")
+            print("\n📝 To start Ollama:")
+            print("   • Run: ollama serve")
+            print("   • Or: Start Ollama app")
+            print("   • Or: Set OLLAMA_API_KEY for cloud")
+            print()
+    
     def _ask_name(self):
-        """Ask user's name"""
         print("\n👋 Hi! I'm Neugi's setup wizard.")
         print("What should I call you? ", end="")
         name = input().strip()
@@ -119,7 +147,6 @@ class NeugiWizard:
         print(f"✓ Great to meet you, {self.answers['name']}!")
     
     def _ask_use_case(self):
-        """Ask what user wants to do"""
         print("\n🎯 How will you use Neugi?")
         print("  1. Just chat with AI")
         print("  2. Help with coding")
@@ -128,17 +155,11 @@ class NeugiWizard:
         
         choice = input("\nChoose (1-4): ").strip()
         
-        use_cases = {
-            "1": "chat", "2": "coding", 
-            "3": "research", "4": "automation"
-        }
+        use_cases = {"1": "chat", "2": "coding", "3": "research", "4": "automation"}
         self.answers["use_case"] = use_cases.get(choice, "chat")
         print(f"✓ {self.answers['use_case'].title()} - awesome!")
     
     def _ask_api_key(self) -> bool:
-        """
-        CRITICAL QUESTION: Does user have API key?
-        """
         print("\n" + "="*60)
         print("❓ IMPORTANT QUESTION")
         print("="*60)
@@ -160,21 +181,22 @@ class NeugiWizard:
             return False
     
     def _setup_ollama_cloud(self):
-        """
-        NO API KEY → Use Ollama Cloud (same as Assistant!)
-        """
+        """Use Ollama Cloud (same as Assistant!)"""
         print("\n" + "="*60)
         print("☁️  SETUP: OLLAMA CLOUD (FREE)")
         print("="*60)
         
-        # Same model as Assistant uses!
-        selected_model = OLLAMA_CLOUD_MODELS[0]  # qwen3.5:cloud
+        # Check Ollama again
+        if not self.ollama_running:
+            print("\n⚠️  Ollama not running - trying anyway...")
+        
+        # Use qwen3.5:cloud (same as Assistant!)
+        selected_model = OLLAMA_CLOUD_MODELS[0]
         
         print(f"\n✓ Using: {selected_model['model']}")
         print(f"  Context: {selected_model['ctx']:,}")
         print(f"  Best for: {selected_model['best_for']}")
         
-        # Set config
         self.config = {
             "user": {"name": self.answers["name"]},
             "use_case": self.answers["use_case"],
@@ -184,31 +206,26 @@ class NeugiWizard:
                 "ctx": selected_model["ctx"]
             },
             "assistant": {
-                # Same as main agent!
                 "provider": "ollama_cloud",
                 "model": "qwen3.5:cloud"
             },
-            "technician": {
-                "enabled": True
-            },
+            "technician": {"enabled": True},
             "privacy": "cloud"
         }
         
         print("\n✅ Auto-configured with Ollama Cloud!")
     
     def _setup_with_api_key(self):
-        """
-        HAS API KEY → Help set up until it works!
-        """
+        """Help set up user's API key"""
         print("\n" + "="*60)
         print("🔑 SETUP: YOUR API KEY")
         print("="*60)
         
-        # Step 1: Choose provider
+        # Choose provider
         print("\nWhich provider?")
         for i, (key, provider) in enumerate(API_PROVIDERS.items(), 1):
-            free_tag = " 🆓 FREE!" if "Free" in provider["name"] else ""
-            print(f"  {i}. {provider['name']}{free_tag}")
+            free = " 🆓 FREE!" if "Free" in provider["name"] else ""
+            print(f"  {i}. {provider['name']}{free}")
         
         choice = input("\nChoose (1-4): ").strip()
         provider_keys = list(API_PROVIDERS.keys())
@@ -216,101 +233,56 @@ class NeugiWizard:
         
         provider_info = API_PROVIDERS[selected_provider]
         
+        # Choose model
         print(f"\n✓ {provider_info['name']}")
-        
-        # Step 2: Show available models
         print("\n📋 Available models:")
         for i, model in enumerate(provider_info["models"], 1):
-            print(f"  {i}. {model['model']}")
-            print(f"     Context: {model['ctx']:,} | Best for: {model['best_for']}")
+            print(f"  {i}. {model['model']} ({model['best_for']})")
         
-        choice2 = input("\nChoose model (default: 1): ").strip()
-        selected_model = provider_info["models"][0] if not choice2 else provider_info["models"][int(choice2)-1]
+        selected_model = provider_info["models"][0]
         
-        # Step 3: Get API key
-        print("\n" + "-"*60)
-        print("📝 ENTER YOUR API KEY")
-        print("-"*60)
-        print(f"Get your key from: {provider_info['signup']}")
-        print(f"Or set environment: export {provider_info['key_env']}='your-key-here'")
+        # Get API key
+        print(f"\n📝 Get key from: {provider_info['signup']}")
+        print(f"Or set: export {provider_info['key_ENV']}='your-key'")
         print()
         
         api_key = input(f"Enter {provider_info['name']} API key: ").strip()
         
-        if not api_key:
-            print("\n⚠️ No API key entered.")
-            print("Will use environment variable instead.")
-        
-        # Step 4: Test connection
+        # Test
         print("\n🧪 Testing connection...")
         
-        test_result = self._test_api_key(selected_provider, api_key or os.environ.get(provider_info["key_env"]))
+        env_key = provider_info["key_env"]
+        test_key = api_key or os.environ.get(env_key, "")
         
-        if test_result["success"]:
-            print("✅ Connection successful!")
-            
-            self.config = {
-                "user": {"name": self.answers["name"]},
-                "use_case": self.answers["use_case"],
-                "model": {
-                    "provider": selected_provider,
-                    "model": selected_model["model"],
-                    "ctx": selected_model["ctx"]
-                },
-                "assistant": {
-                    # Assistant still uses qwen3.5:cloud!
-                    "provider": "ollama_cloud",
-                    "model": "qwen3.5:cloud"
-                },
-                "technician": {
-                    "enabled": True
-                },
-                "privacy": "cloud",
-                "api_key_set": bool(api_key)
-            }
-            
-            print("\n✅ Setup complete! Your API key is configured!")
+        if test_key:
+            test_result = self._test_api_key(selected_provider, test_key)
+            if test_result["success"]:
+                print("✅ Connection successful!")
+            else:
+                print(f"⚠️ Test failed: {test_result['error']}")
         
-        else:
-            # If test fails, still configure but warn
-            print(f"⚠️ Connection test failed: {test_result['error']}")
-            print("But I've configured the settings. You can try again later!")
-            
-            self.config = {
-                "user": {"name": self.answers["name"]},
-                "use_case": self.answers["use_case"],
-                "model": {
-                    "provider": selected_provider,
-                    "model": selected_model["model"],
-                    "ctx": selected_model["ctx"]
-                },
-                "assistant": {
-                    "provider": "ollama_cloud",
-                    "model": "qwen3.5:cloud"
-                },
-                "technician": {"enabled": True},
-                "privacy": "cloud",
-                "api_key_set": False,
-                "setup_issue": test_result["error"]
-            }
+        # Save config
+        self.config = {
+            "user": {"name": self.answers["name"]},
+            "use_case": self.answers["use_case"],
+            "model": {
+                "provider": selected_provider,
+                "model": selected_model["model"],
+                "ctx": selected_model["ctx"]
+            },
+            "assistant": {
+                "provider": "ollama_cloud",
+                "model": "qwen3.5:cloud"
+            },
+            "technician": {"enabled": True},
+            "privacy": "cloud",
+            "api_key_set": bool(api_key)
+        }
+        
+        print("\n✅ Setup complete!")
     
-    def _test_api_key(self, provider: str, api_key: str = None) -> dict:
-        """Test if API key works"""
-        
-        if not api_key:
-            # Check environment
-            env_keys = {
-                "openai": "OPENAI_API_KEY",
-                "anthropic": "ANTHROPIC_API_KEY",
-                "groq": "GROQ_API_KEY",
-                "openrouter": "OPENROUTER_API_KEY"
-            }
-            api_key = os.environ.get(env_keys.get(provider, ""))
-        
-        if not api_key:
-            return {"success": False, "error": "No API key provided"}
-        
-        # Simple test based on provider
+    def _test_api_key(self, provider: str, api_key: str) -> dict:
+        """Test API key"""
         try:
             if provider == "groq":
                 r = requests.get(
@@ -318,39 +290,25 @@ class NeugiWizard:
                     headers={"Authorization": f"Bearer {api_key}"},
                     timeout=5
                 )
-                return {"success": r.ok, "error": None if r.ok else r.text[:100]}
-            
+                return {"success": r.ok}
             elif provider == "openai":
                 r = requests.get(
                     "https://api.openai.com/v1/models",
                     headers={"Authorization": f"Bearer {api_key}"},
                     timeout=5
                 )
-                return {"success": r.ok, "error": None if r.ok else r.text[:100]}
-            
-            elif provider == "openrouter":
-                r = requests.get(
-                    "https://openrouter.ai/api/v1/models",
-                    headers={"Authorization": f"Bearer {api_key}"},
-                    timeout=5
-                )
-                return {"success": r.ok, "error": None if r.ok else r.text[:100]}
-            
-            return {"success": False, "error": "Unknown provider"}
-        
+                return {"success": r.ok}
+            return {"success": True}
         except Exception as e:
-            return {"success": False, "error": str(e)[:100]}
+            return {"success": False, "error": str(e)[:50]}
     
     def _save_and_finish(self):
-        """Save config and show summary"""
-        
-        # Save
+        """Save config"""
         os.makedirs("./data", exist_ok=True)
         
         with open("./data/config.json", "w") as f:
             json.dump(self.config, f, indent=2)
         
-        # Summary
         print("\n" + "="*60)
         print("✅ SETUP COMPLETE!")
         print("="*60)
@@ -359,19 +317,13 @@ class NeugiWizard:
         print(f"🎯 Use case: {self.config['user']['use_case']}")
         
         print(f"\n🧠 Main Agent:")
-        print(f"   Provider: {self.config['model']['provider']}")
-        print(f"   Model: {self.config['model']['model']}")
+        print(f"   {self.config['model']['provider']} / {self.config['model']['model']}")
         
-        print(f"\n🤖 Assistant (Installation Help):")
-        print(f"   Model: {self.config['assistant']['model']} (Ollama Cloud)")
+        print(f"\n🤖 Assistant:")
+        print(f"   {self.config['assistant']['model']} (Ollama Cloud)")
         
-        print(f"\n🔧 Technician: {self.config['technician']['enabled']}")
-        
-        print("\n" + "="*60)
-        print("\n🚀 START NEUGI:")
-        print("   python3 neugi.py")
-        print("\n📖 Dashboard:")
-        print("   http://localhost:19888")
+        print("\n🚀 Start: python3 neugi.py")
+        print("📖 Dashboard: http://localhost:19888")
         print("="*60)
 
 # ============================================================
