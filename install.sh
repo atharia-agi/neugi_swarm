@@ -2,7 +2,7 @@
 # 🤖 NEUGI SWARM ONE-LINE INSTALLER
 # ==================================
 # Supports: Linux, macOS, Windows (WSL)
-# Includes: Ollama latest version!
+# Corporate Brand: NEUGI
 
 set -e
 
@@ -11,10 +11,13 @@ echo "================================"
 echo ""
 
 # ============================================================
-# STEP 1: Install Ollama (Latest Version!)
+# STEP 1: Install/Update Ollama (NO SIGNUP REQUIRED!)
 # ============================================================
 
 echo "📦 Installing Ollama (latest)..."
+echo "   💡 NOTE: Ollama is FREE, no signup required!"
+echo "   💡 Cloud models (qwen3.5:cloud) work with free tier"
+echo "   💡 For heavy usage, can upgrade to Pro ($20/mo) later"
 
 # Check if Ollama is already installed
 if command -v ollama &> /dev/null; then
@@ -22,62 +25,46 @@ if command -v ollama &> /dev/null; then
     
     # UPDATE to latest version!
     echo "   🔄 Updating Ollama to latest version..."
-    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        # Linux update
-        curl -fsSL https://ollama.ai/install.sh | sh
-    elif [[ "$OSTYPE" == "darwin"* ]]; then
-        # macOS update
-        curl -fsSL https://ollama.ai/install.sh | sh
-    fi
+    curl -fsSL https://ollama.ai/install.sh | sh
     
-    # Verify update
-    echo "   ✅ Ollama updated to: $(ollama --version)"
+    echo "   ✅ Ollama updated!"
 else
-    # Detect OS and install Ollama
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        # macOS
-        echo "   📱 Installing Ollama for macOS..."
-        curl -fsSL https://ollama.ai/install.sh | sh
-    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        # Linux
-        echo "   🐧 Installing Ollama for Linux..."
-        curl -fsSL https://ollama.ai/install.sh | sh
-        
-        # Add to PATH for this session
-        export PATH="$HOME/.local/bin:$PATH"
-    else
-        # Other - try generic install
-        echo "   💻 Installing Ollama..."
-        curl -fsSL https://ollama.ai/install.sh | sh
-    fi
+    # Install Ollama based on OS
+    echo "   🐧 Installing Ollama for Linux/macOS..."
+    curl -fsSL https://ollama.ai/install.sh | sh
     
-    # Verify installation
+    # Add to PATH
+    export PATH="$HOME/.local/bin:$PATH"
+    
     if command -v ollama &> /dev/null; then
         echo "   ✅ Ollama installed: $(ollama --version)"
     else
-        echo "   ⚠️ Could not install Ollama automatically."
-        echo "   Please install manually from: https://ollama.ai"
+        echo "   ⚠️ Please restart terminal or run: source ~/.bashrc"
     fi
 fi
 
 echo ""
 
-# Start Ollama in background (for the wizard!)
+# ============================================================
+# STEP 2: Start Ollama Server
+# ============================================================
+
 echo "🚀 Starting Ollama server..."
+
+# Add to path
 export PATH="$HOME/.local/bin:$PATH"
 
-# Try to start ollama serve in background
+# Start in background
 ollama serve &
 OLLAMA_PID=$!
 
-# Wait a moment for Ollama to start
+# Wait for startup
 sleep 3
 
-# Check if Ollama is running
+# Check if running
 if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
     echo "   ✅ Ollama is running!"
 else
-    # Try once more
     sleep 2
     if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
         echo "   ✅ Ollama is running!"
@@ -89,114 +76,94 @@ fi
 echo ""
 
 # ============================================================
-# STEP 2: Check Python
+# STEP 3: Pull Recommended Models (Free!)
+# ============================================================
+
+echo "📥 Pulling recommended models (FREE, local)..."
+
+# Pull qwen3.5:cloud (works with free tier!)
+echo "   • Pulling qwen3.5:cloud (cloud model - free tier)..."
+ollama pull qwen3.5:cloud 2>/dev/null || echo "   • Cloud model will be pulled on first use"
+
+# Pull local backup model
+echo "   • Pulling qwen3.5:7b (local backup)..."
+ollama pull qwen3.5:7b 2>/dev/null || echo "   • Will be downloaded on first use"
+
+echo ""
+
+# ============================================================
+# STEP 4: Check Python
 # ============================================================
 
 if ! command -v python3 &> /dev/null; then
-    echo "❌ Python3 not found. Install from python.org or: sudo apt install python3"
+    echo "❌ Python3 not found. Install: sudo apt install python3"
     exit 1
 fi
 
 echo "✅ Python3 found: $(python3 --version)"
 
 # ============================================================
-# STEP 3: Create NEUGI Directory
+# STEP 5: Create NEUGI Directory
 # ============================================================
 
 NEUGI_DIR="$HOME/neugi"
 mkdir -p "$NEUGI_DIR"
 cd "$NEUGI_DIR"
 
-echo "📁 Created directory: $NEUGI_DIR"
+echo "📁 Created: $NEUGI_DIR"
 
 # ============================================================
-# STEP 4: Download NEUGI Files
+# STEP 6: Download NEUGI Files
 # ============================================================
 
 echo "📥 Downloading NEUGI Swarm..."
 
-# Download main file
 curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_swarm.py" -o neugi_swarm.py
-
-if [ $? -ne 0 ]; then
-    echo "❌ Download failed. Trying alternate..."
-    curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm.py" -o neugi_swarm.py
-fi
-
-# Download wizard
 curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_wizard.py" -o neugi_wizard.py 2>/dev/null || true
 
-# Make executable
 chmod +x neugi_swarm.py
 
 # ============================================================
-# STEP 5: Create Config
+# STEP 7: Create Config
 # ============================================================
 
 cat > config.py << 'EOF'
-# 🤖 NEUGI SWARM CONFIGURATION
-# ============================
-# Corporate: NEUGI (Neural General Intelligence)
+# 🤖 NEUGI SWARM CONFIG
+# =====================
+# Corporate: NEUGI
 
 # ============================================================
-# LLM Provider Selection
+# LLM Provider (Free Options!)
 # ============================================================
 
-# OPTION A: Free Providers (RECOMMENDED!)
-# ----------------------------------------
+# OPTION A: Ollama Cloud (FREE tier works!)
+# -----------------------------------------
+# qwen3.5:cloud - Best for NEUGI!
+# Works with free tier (light usage)
+USE_OLLAMA=true
+OLLAMA_URL="http://localhost:11434"
+OLLAMA_MODEL="qwen3.5:cloud"
 
-# Groq (Fast, free!) - https://console.groq.com
+# OPTION B: Local Models (100% FREE!)
+# -----------------------------------
+# ollama pull llama3.2:3b
+# ollama pull mistral:7b
+# ollama pull codellama:7b
+
+# OPTION C: Free API Providers
+# ----------------------------
+# Groq (Free!) - https://console.groq.com
 # GROQ_API_KEY="gsk_..."
 
-# OpenRouter (Many free models!) - https://openrouter.ai
+# OpenRouter (Free tier) - https://openrouter.ai
 # OPENROUTER_API_KEY="sk..."
 
 # ============================================================
-
-# OPTION B: Cheap Providers
-# --------------------------
-
-# MiniMax - https://platform.minimax.io
-# MINIMAX_API_KEY="..."
-
+# Model Settings
 # ============================================================
 
-# OPTION C: Premium Providers
-# --------------------------
-
-# OpenAI - https://platform.openai.com
-# OPENAI_API_KEY="sk-..."
-
-# Anthropic - https://console.anthropic.com
-# ANTHROPIC_API_KEY="sk-ant-..."
-
-# ============================================================
-
-# OPTION D: Ollama (Local - FREE forever!)
-# ----------------------------------------
-
-# NEUGI will auto-start Ollama if needed
-USE_OLLAMA=true
-OLLAMA_URL="http://localhost:11434"
-OLLAMA_MODEL="qwen3.5:cloud"  # Best for NEUGI!
-
-# ============================================================
-# Model Selection (2K+ Context Works!)
-# ============================================================
-
-MODEL="auto"  # Auto-select best
-CONTEXT_WINDOW=2048  # Minimum that works!
-
-# ============================================================
-# Channels (Optional)
-# ============================================================
-
-# Telegram
-TELEGRAM_BOT_TOKEN=""
-TELEGRAM_CHAT_ID=""
-
-# Discord
-DISCORD_WEBHOOK_URL=""
+MODEL="auto"
+CONTEXT_WINDOW=2048  # Works with small models!
 
 # ============================================================
 # Security
@@ -211,11 +178,6 @@ EOF
 
 echo "✅ Config created: config.py"
 
-# Download additional modules
-echo "📦 Getting additional modules..."
-curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_swarm_skills.py" -o neugi_swarm_skills.py 2>/dev/null || true
-curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_swarm_channels.py" -o neugi_swarm_channels.py 2>/dev/null || true
-
 # Create directories
 mkdir -p data models logs
 
@@ -226,14 +188,18 @@ echo "================================"
 echo ""
 echo "📍 Location: $NEUGI_DIR"
 echo "🔧 Ollama: Installed & Running"
+echo "📦 Models: Downloaded"
 echo ""
 echo "NEXT STEPS:"
 echo "----------"
 echo "1. Run setup wizard:"
 echo "   python3 neugi_wizard.py"
 echo ""
-echo "2. Or start NEUGI directly:"
+echo "2. Or start NEUGI:"
 echo "   python3 neugi_swarm.py"
 echo ""
 echo "📖 Dashboard: http://localhost:19888"
+echo ""
+echo "💡 FREE TIER: qwen3.5:cloud works with Ollama free!"
+echo "💡 UPGRADE: https://ollama.com/pricing for Pro ($20/mo)"
 echo ""
