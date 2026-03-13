@@ -27,7 +27,10 @@ OLLAMA_CLOUD = {
     # Note: Ollama Cloud uses existing Ollama API
     # Users need to sign up at ollama.com/cloud
     
+    "cloud_model": "qwen2.5:cloud",  # The cloud model!
+    
     "free_models": [
+        "qwen2.5:cloud",     # ⭐ RECOMMENDED - Cloud version!
         "qwen2.5:7b",
         "qwen2.5:3b", 
         "llama3.2:3b",
@@ -36,7 +39,7 @@ OLLAMA_CLOUD = {
     ],
     
     # Best for assistant (balance of speed + quality)
-    "recommended": "qwen2.5:7b",
+    "recommended": "qwen2.5:cloud",
 }
 
 # Fallback free providers
