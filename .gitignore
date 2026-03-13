@@ -1,0 +1,41 @@
+# NEUGI .gitignore
+# =================
+
+# Sensitive files
+*.env
+.env.local
+.env.*
+config_secrets.py
+secrets.py
+credentials.py
+*.pem
+*.key
+
+# Logs
+logs/
+*.log
+
+# Data
+data/
+*.db
+*.sqlite
+
+# Models
+models/
+*.gguf
+*.bin
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp
+tmp/
+temp/
+*.tmp
