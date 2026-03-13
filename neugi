@@ -12,13 +12,14 @@ Commands:
     logs        View NEUGI logs
     wizard      Run setup wizard
     dashboard   Open dashboard
+    technician  Open Technician (System Doctor)
+    fix         Auto-fix issues
+    help        Ask NEUGI Assistant
 
 Examples:
     neugi start
-    neugi stop
     neugi status
-    neugi logs
-    neugi wizard
+    neugi technician
 """
 
 import os
@@ -28,6 +29,7 @@ import subprocess
 import time
 import requests
 import argparse
+import urllib.request
 
 # Config
 NEUGI_DIR = os.path.expanduser("~/neugi")
@@ -41,6 +43,7 @@ GREEN = '\033[0;32m'
 RED = '\033[0;31m'
 YELLOW = '\033[1;33m'
 BLUE = '\033[0;34m'
+ORANGE = '\033[0;33m'
 NC = '\033[0m'
 
 def log(msg, color=NC):
@@ -64,10 +67,26 @@ def get_pid():
             pass
     return None
 
+def check_health():
+    """Get detailed health status"""
+    try:
+        r = requests.get(f"http://localhost:{PORT}/api/status", timeout=5)
+        return r.json()
+    except:
+        return None
+
+def open_dashboard(path="/"):
+    """Open dashboard in browser"""
+    import webbrowser
+    url = f"http://localhost:{PORT}{path}"
+    log(f"🌐 Opening: {url}", BLUE)
+    webbrowser.open(url)
+
 def cmd_start():
     """Start NEUGI"""
     if is_running():
         log(f"✅ NEUGI is already running!", GREEN)
+        log(f"   📖 Dashboard: http://localhost:{PORT}")
         return
     
     # Ensure directory exists
@@ -77,10 +96,24 @@ def cmd_start():
     # Check if files exist
     if not os.path.exists(NEUGI_SCRIPT):
         log(f"❌ NEUGI not found at {NEUGI_DIR}", RED)
-        log("   Run: bash <(curl -fsSL https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/install.sh)")
+        log("   Run: neugi install")
         return
     
     log("🚀 Starting NEUGI Swarm...", BLUE)
+    
+    # Check for issues first
+    try:
+        r = requests.get(f"http://localhost:{PORT}/api/status", timeout=3)
+        issues = r.json().get("issues", [])
+        if issues:
+            log(f"⚠️ Issues detected:", YELLOW)
+            for issue in issues:
+                log(f"   - {issue}", YELLOW)
+            log(f"\n🔧 Opening Technician...", ORANGE)
+            open_dashboard("/technician")
+            return
+    except:
+        pass
     
     # Start in background
     with open(NEUGI_LOG, "a") as f:
@@ -104,7 +137,8 @@ def cmd_start():
             log(f"   📖 Dashboard: http://localhost:{PORT}")
             return
     
-    log(f"⚠️ NEUGI starting... check logs with: neugi logs", YELLOW)
+    log(f"⚠️ NEUGI may not have started properly", YELLOW)
+    log(f"   Check logs: neugi logs")
 
 def cmd_stop():
     """Stop NEUGI"""
@@ -145,15 +179,17 @@ def cmd_status():
         log(f"✅ NEUGI is RUNNING", GREEN)
         log(f"   📖 Dashboard: http://localhost:{PORT}")
         
-        # Try to get more info
-        try:
-            r = requests.get(f"http://localhost:{PORT}/api/status", timeout=2)
-            if r.ok:
-                data = r.json()
-                log(f"   🧠 Model: {data.get('model', 'N/A')}")
-                log(f"   💬 Sessions: {data.get('sessions', 0)}")
-        except:
-            pass
+        # Get detailed info
+        data = check_health()
+        if data:
+            log(f"\n   🧠 Model: {data.get('ollama', {}).get('models', 'N/A')} loaded")
+            
+            issues = data.get("issues", [])
+            if issues:
+                log(f"\n   ⚠️ ISSUES DETECTED:", YELLOW)
+                for issue in issues:
+                    log(f"      - {issue}", YELLOW)
+                log(f"\n   🔧 Run: neugi technician", ORANGE)
     else:
         log(f"❌ NEUGI is NOT running", RED)
         log(f"   To start: neugi start")
@@ -164,10 +200,9 @@ def cmd_logs():
         log("❌ No logs found", RED)
         return
     
-    log(f"📋 Showing last 30 lines of logs:", BLUE)
+    log(f"📋 Last 30 lines of logs:", BLUE)
     print("-" * 50)
     
-    # Read last 30 lines
     with open(NEUGI_LOG) as f:
         lines = f.readlines()
         for line in lines[-30:]:
@@ -185,6 +220,47 @@ def cmd_wizard():
     log("🎯 Running setup wizard...", BLUE)
     subprocess.run([sys.executable, wizard_script], cwd=NEUGI_DIR)
 
+def cmd_dashboard():
+    """Open dashboard"""
+    open_dashboard("/")
+
+def cmd_technician():
+    """Open Technician - System Doctor"""
+    if not is_running():
+        # Try to start minimal server first
+        log("⚠️ NEUGI not running. Starting minimal server...", YELLOW)
+        cmd_start()
+        time.sleep(2)
+    
+    open_dashboard("/technician")
+
+def cmd_fix():
+    """Auto-fix issues"""
+    log("🔧 Running auto-fix...", BLUE)
+    
+    if not is_running():
+        log("❌ NEUGI not running. Starting first...", YELLOW)
+        cmd_start()
+        time.sleep(2)
+    
+    try:
+        r = requests.get(f"http://localhost:{PORT}/api/fix", timeout=10)
+        data = r.json()
+        
+        fixes = data.get("fixes", [])
+        if fixes:
+            for fix in fixes:
+                log(f"   ✅ {fix}", GREEN)
+        else:
+            log(f"   ⚠️ No auto-fixes available", YELLOW)
+            
+    except Exception as e:
+        log(f"❌ Error: {e}", RED)
+    
+    # Open technician for manual fix
+    log(f"\n🔧 Opening Technician for more options...", ORANGE)
+    open_dashboard("/technician")
+
 def cmd_help():
     """NEUGI Assistant - help with questions"""
     assistant_script = os.path.join(NEUGI_DIR, "neugi_assistant.py")
@@ -193,10 +269,8 @@ def cmd_help():
         log("❌ Assistant not found. Run install first!", RED)
         return
     
-    # Get question from user
     if len(sys.argv) > 2:
         question = " ".join(sys.argv[2:])
-        # Run assistant with question
         result = subprocess.run(
             [sys.executable, assistant_script, question],
             cwd=NEUGI_DIR,
@@ -212,17 +286,6 @@ def cmd_help():
         print("  neugi help how to start")
         print("  neugi help api key")
         print("  neugi help ollama")
-        print("")
-        print("Or run interactive mode:")
-        print("  python3 ~/neugi/neugi_assistant.py")
-        print("")
-
-def cmd_dashboard():
-    """Open dashboard"""
-    import webbrowser
-    url = f"http://localhost:{PORT}"
-    log(f"🌐 Opening dashboard: {url}", BLUE)
-    webbrowser.open(url)
 
 # ============================================================
 # MAIN
@@ -235,31 +298,16 @@ def main():
     
     subparsers = parser.add_subparsers(dest="command", help="Commands")
     
-    # Start
     subparsers.add_parser("start", help="Start NEUGI")
-    
-    # Stop
     subparsers.add_parser("stop", help="Stop NEUGI")
-    
-    # Restart
     subparsers.add_parser("restart", help="Restart NEUGI")
-    
-    # Status
     subparsers.add_parser("status", help="Check NEUGI status")
-    
-    # Logs
     subparsers.add_parser("logs", help="View NEUGI logs")
-    
-    # Wizard
     subparsers.add_parser("wizard", help="Run setup wizard")
-    
-    # Dashboard
     subparsers.add_parser("dashboard", help="Open dashboard")
-    
-    # Help/Assistant
+    subparsers.add_parser("technician", help="Open Technician (System Doctor)")
+    subparsers.add_parser("fix", help="Auto-fix issues")
     subparsers.add_parser("help", help="Ask NEUGI Assistant")
-    
-    # Install
     subparsers.add_parser("install", help="Install NEUGI")
     
     args = parser.parse_args()
@@ -270,28 +318,29 @@ def main():
         return
     
     # Run command
-    if args.command == "start":
-        cmd_start()
-    elif args.command == "stop":
-        cmd_stop()
-    elif args.command == "restart":
-        cmd_restart()
-    elif args.command == "status":
-        cmd_status()
-    elif args.command == "logs":
-        cmd_logs()
-    elif args.command == "wizard":
-        cmd_wizard()
-    elif args.command == "dashboard":
-        cmd_dashboard()
-    elif args.command == "help":
-        cmd_help()
-    elif args.command == "install":
+    commands = {
+        "start": cmd_start,
+        "stop": cmd_stop,
+        "restart": cmd_restart,
+        "status": cmd_status,
+        "logs": cmd_logs,
+        "wizard": cmd_wizard,
+        "dashboard": cmd_dashboard,
+        "technician": cmd_technician,
+        "fix": cmd_fix,
+        "help": cmd_help,
+    }
+    
+    if args.command == "install":
         log("📥 Running NEUGI installer...", BLUE)
         subprocess.run([
             "bash", "-c",
             "curl -fsSL https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/install.sh | bash"
         ])
+    elif args.command in commands:
+        commands[args.command]()
+    else:
+        log(f"❌ Unknown command: {args.command}", RED)
 
 if __name__ == "__main__":
     main()
