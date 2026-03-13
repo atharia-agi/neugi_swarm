@@ -114,6 +114,8 @@ main() {
     curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_swarm.py" -o neugi_swarm.py
     curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_wizard.py" -o neugi_wizard.py 2>/dev/null || true
     curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_technician.py" -o neugi_technician.py 2>/dev/null || true
+    curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_assistant.py" -o neugi_assistant.py 2>/dev/null || true
+    curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/dashboard.html" -o dashboard.html 2>/dev/null || true
     
     chmod +x neugi_swarm.py
     
