@@ -24,6 +24,7 @@ from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 import socketserver
+from typing import Optional
 
 # ============================================================
 # CONFIG
@@ -37,24 +38,22 @@ NEUGI_DIR = os.path.expanduser("~/neugi")
 # HEALTH MONITOR
 # ============================================================
 
+
 class HealthMonitor:
     """Monitor NEUGI health and auto-recover"""
-    
+
     def __init__(self):
         self.status = "starting"
         self.errors = []
         self.start_time = time.time()
         self.restart_count = 0
-    
-    def set_status(self, status: str, error: str = None):
+
+    def set_status(self, status: str, error: Optional[str] = None):
         """Update status"""
         self.status = status
         if error:
-            self.errors.append({
-                "time": datetime.now().isoformat(),
-                "error": error
-            })
-    
+            self.errors.append({"time": datetime.now().isoformat(), "error": error})
+
     def get_health(self) -> dict:
         """Get health status"""
         return {
@@ -63,8 +62,9 @@ class HealthMonitor:
             "uptime": int(time.time() - self.start_time),
             "errors": len(self.errors),
             "restart_count": self.restart_count,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
+
 
 # Global health monitor
 health = HealthMonitor()
@@ -73,14 +73,15 @@ health = HealthMonitor()
 # ERROR HANDLER
 # ============================================================
 
+
 class ErrorHandler:
     """Handle errors and auto-recover"""
-    
+
     @staticmethod
     def detect_and_fix():
         """Detect issues and try to fix"""
         issues = []
-        
+
         # Check 1: Ollama running?
         try:
             r = requests.get("http://localhost:11434/api/tags", timeout=3)
@@ -88,55 +89,61 @@ class ErrorHandler:
                 issues.append("Ollama not responding")
         except:
             issues.append("Ollama not running - run: ollama serve")
-        
+
         # Check 2: Port available?
         import socket
+
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        result = sock.connect_ex(('localhost', PORT))
+        result = sock.connect_ex(("localhost", PORT))
         sock.close()
         if result == 0:
             issues.append(f"Port {PORT} already in use")
-        
+
         # Check 3: Config exists?
         config_path = os.path.join(NEUGI_DIR, "config.py")
         if not os.path.exists(config_path):
             issues.append("Config not found - run: neugi wizard")
-        
+
         return issues
-    
+
     @staticmethod
     def auto_fix():
         """Try to auto-fix common issues"""
         fixes = []
-        
+
         # Fix 1: Start Ollama if not running
         try:
             r = requests.get("http://localhost:11434/api/tags", timeout=2)
         except:
             # Try to start Ollama
             import subprocess
+
             try:
-                subprocess.Popen(["ollama", "serve"], 
-                              stdout=subprocess.DEVNULL, 
-                              stderr=subprocess.DEVNULL)
+                subprocess.Popen(
+                    ["ollama", "serve"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
                 fixes.append("Started Ollama server")
             except:
                 fixes.append("Could not auto-start Ollama - run manually: ollama serve")
-        
+
         return fixes
+
 
 # ============================================================
 # DASHBOARD HANDLER
 # ============================================================
 
+
 class DashboardHandler(BaseHTTPRequestHandler):
     """Handle dashboard requests"""
-    
+
     def do_GET(self):
         """Handle GET requests"""
         parsed = urlparse(self.path)
         path = parsed.path
-        
+
         if path == "/" or path == "/index.html" or path == "/dashboard":
             self.serve_dashboard()
         elif path == "/health":
@@ -151,16 +158,16 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self.serve_technician()
         else:
             self.send_error(404)
-    
+
     def do_POST(self):
         """Handle POST requests"""
         parsed = urlparse(self.path)
-        
+
         if parsed.path == "/api/chat":
             self.handle_chat()
         else:
             self.send_error(404)
-    
+
     def serve_dashboard(self):
         """Serve dashboard"""
         html = self.get_dashboard_html()
@@ -168,7 +175,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/html")
         self.end_headers()
         self.wfile.write(html.encode())
-    
+
     def serve_health(self):
         """Serve health status"""
         data = health.get_health()
@@ -176,31 +183,58 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "application/json")
         self.end_headers()
         self.wfile.write(json.dumps(data).encode())
-    
+
     def serve_status(self):
         """Serve detailed status"""
         issues = ErrorHandler.detect_and_fix()
         auto_fixes = ErrorHandler.auto_fix()
-        
+
+        # Gather agent and tool data
+        agents_data = []
+        tools_data = []
+        try:
+            from neugi_swarm_agents import AgentManager
+            from neugi_swarm_tools import ToolManager
+
+            am = AgentManager()
+            for a in am.list():
+                agents_data.append(
+                    {
+                        "id": a.id,
+                        "name": a.name,
+                        "role": a.role.value,
+                        "status": a.status.value,
+                        "level": a.level,
+                    }
+                )
+
+            tm = ToolManager()
+            for t in tm.list(enabled_only=True):
+                tools_data.append({"name": t.name, "category": t.category})
+        except Exception as e:
+            issues.append(f"Failed to load swarm state: {e}")
+
         data = {
             "neugi": health.get_health(),
             "issues": issues,
             "auto_fixes": auto_fixes,
-            "ollama": self.check_ollama()
+            "ollama": self.check_ollama(),
+            "agents": agents_data,
+            "tools": tools_data,
         }
-        
+
         self.send_response(200)
         self.send_header("Content-type", "application/json")
         self.end_headers()
         self.wfile.write(json.dumps(data).encode())
-    
+
     def serve_errors(self):
         """Serve errors list"""
         self.send_response(200)
         self.send_header("Content-type", "application/json")
         self.end_headers()
         self.wfile.write(json.dumps(health.errors).encode())
-    
+
     def serve_fix(self):
         """Try to fix issues"""
         fixes = ErrorHandler.auto_fix()
@@ -208,7 +242,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "application/json")
         self.end_headers()
         self.wfile.write(json.dumps({"fixes": fixes}).encode())
-    
+
     def serve_technician(self):
         """Serve Technician interface"""
         html = self.get_technician_html()
@@ -216,23 +250,28 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/html")
         self.end_headers()
         self.wfile.write(html.encode())
-    
+
     def handle_chat(self):
         """Handle chat request"""
-        length = int(self.headers.get('Content-Length', 0))
+        length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length)
         data = json.loads(body)
-        
+
         message = data.get("message", "")
-        
-        # Simple response for now
-        response = f"NEUGI: Thank you for your message: {message}"
-        
+
+        try:
+            from neugi_assistant import NeugiAssistant
+
+            assistant = NeugiAssistant()
+            response = assistant.chat(message)
+        except Exception as e:
+            response = f"NEUGI: Sorry, I am currently offline. (Error: {str(e)})"
+
         self.send_response(200)
         self.send_header("Content-type", "application/json")
         self.end_headers()
         self.wfile.write(json.dumps({"response": response}).encode())
-    
+
     def check_ollama(self):
         """Check Ollama status"""
         try:
@@ -243,7 +282,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
         except:
             pass
         return {"status": "not_running"}
-    
+
     def get_dashboard_html(self) -> str:
         """Get clean, powerful dashboard HTML"""
         return """<!DOCTYPE html>
@@ -251,359 +290,413 @@ class DashboardHandler(BaseHTTPRequestHandler):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEUGI - Neural General Intelligence</title>
+    <title>NEUGI SWARM - Command Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg: #030305;
+            --bg-elevated: #0a0a0f;
+            --bg-card: #12121a;
+            --bg-glass: rgba(18, 18, 26, 0.7);
+            --text: #f0f0f5;
+            --text-muted: #8b8b9e;
+            --border: rgba(255,255,255,0.08);
+            --border-hover: rgba(255,255,255,0.15);
+            --accent: #00e5ff;
+            --primary: #9d4edd;
+            --danger: #ff3366;
+            --warning: #ffb84d;
+            --success: #00e5ff;
+            --gradient: linear-gradient(135deg, var(--accent), var(--primary));
+        }
+        
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0a0f;
-            color: #e0e0e0;
+            font-family: 'Outfit', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
             min-height: 100vh;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .bg-grid {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), 
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 40px 40px;
+            mask-image: radial-gradient(ellipse 80% 50% at 50% 0%, black 40%, transparent 100%);
+            -webkit-mask-image: radial-gradient(ellipse 80% 50% at 50% 0%, black 40%, transparent 100%);
         }
         
         .header {
-            background: linear-gradient(90deg, #1a1a2e, #16213e);
-            padding: 20px 40px;
+            background: var(--bg-glass);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 16px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #2a2a4e;
+            border-bottom: 1px solid var(--border);
+            position: sticky; top: 0; z-index: 100;
         }
         
         .logo {
-            font-size: 32px;
-            font-weight: 800;
-            background: linear-gradient(90deg, #00d4ff, #7b2ff7);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-size: 22px; font-weight: 700; letter-spacing: 1px;
+            display: flex; align-items: center; gap: 12px;
         }
         
-        .status {
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        .logo-mark {
+            width: 32px; height: 32px; border-radius: 8px;
+            background: linear-gradient(var(--bg), var(--bg)) padding-box, var(--gradient) border-box;
+            border: 2px solid transparent;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .status-pill {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 13px; font-weight: 600; color: var(--text-muted);
+            background: var(--bg-elevated); padding: 8px 16px; border-radius: 100px;
+            border: 1px solid var(--border);
+            text-transform: uppercase; letter-spacing: 1px;
         }
         
         .status-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #00ff88;
-            animation: pulse 2s infinite;
+            width: 8px; height: 8px; border-radius: 50%; background: var(--success);
+            box-shadow: 0 0 12px var(--success);
         }
+        .status-dot.error { background: var(--danger); box-shadow: 0 0 12px var(--danger); }
+        .status-dot.warning { background: var(--warning); box-shadow: 0 0 12px var(--warning); }
         
-        .status-dot.error {
-            background: #ff4444;
-            animation: none;
-        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 40px 20px; }
         
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 40px 20px;
-        }
-        
-        .stats-grid {
+        .dashboard-layout {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
+            grid-template-columns: 1fr 350px;
+            gap: 24px;
+        }
+        @media (max-width: 1024px) {
+            .dashboard-layout { grid-template-columns: 1fr; }
+        }
+
+        .grid-4 {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;
         }
         
-        .stat-card {
-            background: #1a1a2e;
-            border-radius: 16px;
-            padding: 24px;
-            border: 1px solid #2a2a4e;
+        .card {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
+            padding: 24px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative; overflow: hidden;
+        }
+        .card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+            background: var(--gradient); opacity: 0; transition: opacity 0.3s;
+        }
+        .card:hover { border-color: var(--border-hover); transform: translateY(-4px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .card:hover::before { opacity: 1; }
+        
+        .card .value { font-size: 32px; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--text); }
+        .card .label { color: var(--text-muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 8px; }
+        .card .icon-bg { position: absolute; right: -10px; bottom: -10px; opacity: 0.05; font-size: 80px; }
+        
+        .panel {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
+            padding: 24px; margin-bottom: 24px;
+            display: flex; flex-direction: column;
         }
         
-        .stat-value {
-            font-size: 36px;
-            font-weight: bold;
-            color: #00d4ff;
-        }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+        .panel-title { font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+        .panel-title svg { stroke: var(--primary); }
         
-        .stat-label {
-            color: #888;
-            margin-top: 8px;
-            font-size: 14px;
+        .btn {
+            background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text);
+            padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+            font-family: 'Outfit', sans-serif; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
         }
+        .btn:hover { background: rgba(255,255,255,0.05); border-color: var(--text-muted); }
+        .btn-primary { background: var(--gradient); color: #000; border: none; }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(157, 78, 221, 0.3); }
+        .btn-danger { background: rgba(255,51,102,0.1); color: var(--danger); border-color: rgba(255,51,102,0.3); }
+        .btn-danger:hover { background: rgba(255,51,102,0.2); }
         
-        .section {
-            background: #1a1a2e;
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 20px;
-            border: 1px solid #2a2a4e;
+        /* Agent Graph Styles */
+        .agents-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px;
         }
+        .agent-node {
+            background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 12px;
+            padding: 16px; text-align: center; position: relative; transition: all 0.3s;
+        }
+        .agent-node:hover { border-color: var(--accent); background: rgba(0, 229, 255, 0.05); }
+        .agent-avatar {
+            width: 48px; height: 48px; margin: 0 auto 12px; background: #000; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; font-size: 24px;
+            border: 1px solid var(--border);
+        }
+        .agent-name { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+        .agent-role { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        .agent-status {
+            position: absolute; top: 12px; right: 12px; width: 8px; height: 8px; border-radius: 50%;
+        }
+        .status-idle { background: var(--text-muted); }
+        .status-working { background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: pulse 1.5s infinite; }
+        .status-thinking { background: var(--primary); box-shadow: 0 0 10px var(--primary); animation: pulse 1s infinite; }
+
+        @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+
+        /* Tools Grid */
+        .tools-list { display: flex; flex-wrap: wrap; gap: 8px; }
+        .tool-tag {
+            background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 6px;
+            padding: 6px 12px; font-size: 12px; font-family: 'JetBrains Mono', monospace; color: var(--text-muted);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .tool-tag::before { content: '⚙'; font-size: 14px; }
+
+        /* Terminal/Chat */
+        .chat-container { display: flex; flex-direction: column; height: 500px; background: #000; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+        .chat-box { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+        .chat-msg { max-width: 85%; padding: 12px 16px; border-radius: 8px; line-height: 1.6; }
+        .chat-msg.user { background: rgba(255,255,255,0.05); align-self: flex-end; color: #fff; border-left: 3px solid var(--text-muted); }
+        .chat-msg.assistant { background: rgba(0, 229, 255, 0.05); align-self: flex-start; color: var(--accent); border-left: 3px solid var(--accent); }
+        .chat-msg.system { align-self: center; text-align: center; color: var(--text-muted); font-size: 12px; background: transparent; padding: 4px; border: none; max-width: 100%; }
         
-        .section h2 {
-            font-size: 20px;
-            margin-bottom: 20px;
-            color: #fff;
+        .chat-input-wrapper { display: flex; background: var(--bg-elevated); padding: 12px; border-top: 1px solid var(--border); }
+        .chat-input-wrapper input {
+            flex: 1; background: transparent; border: none;
+            padding: 8px 12px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 14px;
         }
+        .chat-input-wrapper input:focus { outline: none; }
+        .chat-input-wrapper button {
+            background: transparent; color: var(--primary); border: none; font-weight: 700; cursor: pointer; padding: 0 16px; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .chat-input-wrapper button:hover { color: var(--accent); }
         
-        .action-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-        }
+        .issue-item { display: flex; align-items: flex-start; gap: 12px; padding: 16px; background: rgba(255,51,102,0.05); border: 1px solid rgba(255,51,102,0.2); border-radius: 12px; margin-bottom: 12px; font-size: 14px; color: #ff88aa; }
+        .issue-ok { display: flex; align-items: center; gap: 12px; padding: 16px; background: rgba(0,229,255,0.05); border: 1px solid rgba(0,229,255,0.2); border-radius: 12px; font-size: 14px; color: var(--accent); }
         
-        .action-btn {
-            background: linear-gradient(135deg, #2a2a4e, #3a3a5e);
-            border: 1px solid #4a4a6e;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            color: #e0e0e0;
-            text-decoration: none;
-            display: block;
-        }
-        
-        .action-btn:hover {
-            background: linear-gradient(135deg, #3a3a5e, #4a4a6e);
-            transform: translateY(-3px);
-            border-color: #00d4ff;
-        }
-        
-        .action-icon {
-            font-size: 28px;
-            margin-bottom: 10px;
-        }
-        
-        .action-title {
-            font-weight: 600;
-        }
-        
-        .issue-list {
-            list-style: none;
-        }
-        
-        .issue-item {
-            background: #2a1a1a;
-            border: 1px solid #4a2a2a;
-            border-radius: 8px;
-            padding: 12px 16px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .issue-item.fixed {
-            background: #1a2a1a;
-            border-color: #2a4a2a;
-        }
-        
-        .issue-text {
-            color: #ff6666;
-        }
-        
-        .fix-btn {
-            background: #00aa66;
-            color: #fff;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-        
-        .chat-box {
-            background: #0f0f1a;
-            border-radius: 12px;
-            padding: 20px;
-            height: 300px;
-            overflow-y: auto;
-            margin-bottom: 15px;
-        }
-        
-        .chat-msg {
-            margin-bottom: 12px;
-            padding: 12px 16px;
-            border-radius: 12px;
-            max-width: 80%;
-        }
-        
-        .chat-msg.user {
-            background: linear-gradient(135deg, #1a3a5a, #2a4a6a);
-            margin-left: auto;
-        }
-        
-        .chat-msg.assistant {
-            background: linear-gradient(135deg, #2a1a4a, #3a2a5a);
-        }
-        
-        .chat-input {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .chat-input input {
-            flex: 1;
-            background: #1a1a2e;
-            border: 1px solid #3a3a5e;
-            border-radius: 8px;
-            padding: 12px 16px;
-            color: #e0e0e0;
-            font-size: 14px;
-        }
-        
-        .chat-input button {
-            background: linear-gradient(135deg, #00d4ff, #7b2ff7);
-            border: none;
-            border-radius: 8px;
-            padding: 12px 24px;
-            color: #fff;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        
-        .refresh-btn {
-            background: #2a2a4e;
-            border: 1px solid #4a4a6e;
-            border-radius: 8px;
-            padding: 8px 16px;
-            color: #e0e0e0;
-            cursor: pointer;
-            font-size: 12px;
-        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
     </style>
 </head>
 <body>
+    <div class="bg-grid"></div>
     <div class="header">
-        <div class="logo">🤖 NEUGI</div>
-        <div class="status">
+        <div class="logo">
+            <div class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" style="width:16px;height:16px;"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
+            NEUGI SWARM
+        </div>
+        <div class="status-pill">
             <div class="status-dot" id="statusDot"></div>
-            <span id="statusText">Loading...</span>
+            <span id="statusText">CONNECTING...</span>
         </div>
     </div>
     
     <div class="container">
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-value" id="uptime">--</div>
-                <div class="stat-label">Uptime</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="model">--</div>
-                <div class="stat-label">Model</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="errors">0</div>
-                <div class="stat-label">Errors</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value">19888</div>
-                <div class="stat-label">Port</div>
-            </div>
-        </div>
-        
-        <div class="section">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-                <h2>⚡ Quick Actions</h2>
-                <button class="refresh-btn" onclick="refreshStatus()">🔄 Refresh</button>
-            </div>
-            <div class="action-grid">
-                <a href="/chat" class="action-btn">
-                    <div class="action-icon">💬</div>
-                    <div class="action-title">Chat</div>
-                </a>
-                <a href="/technician" class="action-btn">
-                    <div class="action-icon">🔧</div>
-                    <div class="action-title">Technician</div>
-                </a>
-                <a href="/api/fix" target="_blank" class="action-btn">
-                    <div class="action-icon">🩹</div>
-                    <div class="action-title">Auto Fix</div>
-                </a>
-                <a href="/logs" class="action-btn">
-                    <div class="action-icon">📋</div>
-                    <div class="action-title">Logs</div>
-                </a>
-            </div>
-        </div>
-        
-        <div class="section">
-            <h2>🔍 System Status</h2>
-            <div id="issues">
-                <div style="color:#00ff88;">✅ No issues detected</div>
-            </div>
-        </div>
-        
-        <div class="section">
-            <h2>💬 Quick Chat</h2>
-            <div class="chat-box" id="chatBox">
-                <div class="chat-msg assistant">
-                    👋 Hello! I'm NEUGI. How can I help you today?
+        <div class="dashboard-layout">
+            <div class="main-content">
+                <div class="grid-4">
+                    <div class="card">
+                        <div class="icon-bg">⏱️</div>
+                        <div class="value" id="uptime">00:00:00</div>
+                        <div class="label">System Uptime</div>
+                    </div>
+                    <div class="card">
+                        <div class="icon-bg">🧠</div>
+                        <div class="value" id="model" style="font-size:24px; line-height: 1.3; overflow:hidden; text-overflow:ellipsis;">--</div>
+                        <div class="label">Active Model Core</div>
+                    </div>
+                    <div class="card">
+                        <div class="icon-bg">🌐</div>
+                        <div class="value" id="port">19888</div>
+                        <div class="label">Gateway Port</div>
+                    </div>
+                    <div class="card">
+                        <div class="icon-bg">⚠️</div>
+                        <div class="value" id="errors" style="color: var(--success)">0</div>
+                        <div class="label">Anomalies Detected</div>
+                    </div>
+                </div>
+                
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" width="20" height="20"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                            Swarm Architecture
+                        </h2>
+                        <span style="font-size: 12px; color: var(--text-muted); font-family: 'JetBrains Mono'">[ LIVE SYNC ]</span>
+                    </div>
+                    <div class="agents-grid" id="agentsGrid">
+                        <!-- Dynamic Agents -->
+                        <div class="agent-node" style="opacity:0.5"><div class="agent-avatar">📡</div><div class="agent-name">Loading...</div></div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" width="20" height="20"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+                            Active Integrations & Tools
+                        </h2>
+                    </div>
+                    <div class="tools-list" id="toolsList">
+                        <span class="tool-tag">Loading Modules...</span>
+                    </div>
                 </div>
             </div>
-            <div class="chat-input">
-                <input type="text" id="chatInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter')sendChat()">
-                <button onclick="sendChat()">Send</button>
+
+            <div class="side-content">
+                <div class="panel" style="padding: 0; background: transparent; border: none;">
+                    <div class="chat-container">
+                        <div class="panel-header" style="margin:0; padding: 16px 20px; background: var(--bg-card); border-bottom: 1px solid var(--border); border-radius: 12px 12px 0 0;">
+                            <h2 class="panel-title" style="font-size: 16px;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" width="18" height="18"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                Command Terminal
+                            </h2>
+                        </div>
+                        <div class="chat-box" id="chatBox">
+                            <div class="chat-msg system">SECURE CONNECTION ESTABLISHED</div>
+                            <div class="chat-msg system">NEUGI OS v14.1.0 READY</div>
+                            <div class="chat-msg assistant">
+                                Swarm initialized. Awaiting commander input. Type a command or ask a question.
+                            </div>
+                        </div>
+                        <div class="chat-input-wrapper">
+                            <span style="color: var(--primary); font-weight: bold; margin-right: 8px;">></span>
+                            <input type="text" id="chatInput" placeholder="Execute directive..." autocomplete="off" onkeypress="if(event.key==='Enter')sendChat()">
+                            <button onclick="sendChat()">SEND</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel" style="margin-top: 24px;">
+                    <div class="panel-header">
+                        <h2 class="panel-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" width="20" height="20"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                            System Diagnostics
+                        </h2>
+                    </div>
+                    <div id="issues">
+                        <div class="issue-ok">Scanning framework...</div>
+                    </div>
+                    <div style="display:flex; gap: 10px; margin-top: 20px;">
+                        <a href="/technician" class="btn" style="flex:1; justify-content:center;">Open Technician</a>
+                        <button class="btn btn-danger" onclick="autoFix()" style="flex:1; justify-content:center;">Auto Resolve</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
     
     <script>
-        let startTime = Date.now();
+        let startTimestamp = Date.now();
+        let serverUptimeOffset = 0;
         
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+            const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            return `${h}:${m}:${s}`;
+        }
+
+        const agentEmojis = {
+            'researcher': '🔍', 'coder': '💻', 'creator': '🎨', 'analyst': '📊',
+            'strategist': '♟️', 'security': '🛡️', 'social': '🌐', 'writer': '✍️', 'manager': '👑'
+        };
+
         async function refreshStatus() {
             try {
                 const resp = await fetch('/api/status');
                 const data = await resp.json();
                 
-                // Update uptime
-                const elapsed = Math.floor((Date.now() - startTime) / 1000);
-                const mins = Math.floor(elapsed / 60);
-                const secs = elapsed % 60;
-                document.getElementById('uptime').textContent = mins + 'm ' + secs + 's';
-                
-                // Update model
-                const ollama = data.ollama;
-                if (ollama.status === 'running') {
-                    document.getElementById('model').textContent = ollama.models || 'Ready';
-                } else {
-                    document.getElementById('model').textContent = 'Offline';
+                // Uptime Logic
+                if (serverUptimeOffset === 0 && data.neugi) {
+                    serverUptimeOffset = data.neugi.uptime - Math.floor((Date.now() - startTimestamp) / 1000);
                 }
+                const currentUptime = Math.floor((Date.now() - startTimestamp) / 1000) + serverUptimeOffset;
+                document.getElementById('uptime').textContent = formatTime(currentUptime);
                 
-                // Update errors
-                document.getElementById('errors').textContent = data.issues ? data.issues.length : 0;
+                // Model & Provider
+                let modelName = 'Offline';
+                if (data.ollama && data.ollama.status === 'running') {
+                    modelName = 'Ollama Engine (' + data.ollama.models + ' models)';
+                }
+                document.getElementById('model').textContent = modelName;
                 
-                // Update status
+                // Errors
+                const errCount = data.issues ? data.issues.length : 0;
+                const errEl = document.getElementById('errors');
+                errEl.textContent = errCount;
+                errEl.style.color = errCount > 0 ? 'var(--danger)' : 'var(--success)';
+                
+                // Header Status
                 const dot = document.getElementById('statusDot');
                 const text = document.getElementById('statusText');
                 
-                if (data.issues && data.issues.length > 0) {
+                if (errCount > 0) {
                     dot.className = 'status-dot error';
-                    text.textContent = 'Issues Found';
+                    text.textContent = 'SYSTEM ANOMALY';
                 } else {
                     dot.className = 'status-dot';
-                    text.textContent = 'Running';
+                    text.textContent = 'SYSTEM OPTIMAL';
                 }
                 
-                // Show issues
+                // Diagnostics Render
                 const issuesDiv = document.getElementById('issues');
-                if (data.issues && data.issues.length > 0) {
+                if (errCount > 0) {
                     issuesDiv.innerHTML = data.issues.map(i => 
-                        '<div class="issue-item"><span class="issue-text">⚠️ ' + i + '</span></div>'
+                        `<div class="issue-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="flex-shrink:0; margin-top:2px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                            <div>${i}</div>
+                        </div>`
                     ).join('');
-                    issuesDiv.innerHTML += '<div style="margin-top:10px"><a href="/technician" class="fix-btn" style="background:#ff6600">🔧 Open Technician</a></div>';
                 } else {
-                    issuesDiv.innerHTML = '<div style="color:#00ff88;">✅ No issues detected</div>';
+                    issuesDiv.innerHTML = `
+                        <div class="issue-ok">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            Core integrity at 100%. No anomalies detected.
+                        </div>`;
+                }
+
+                // Render Agents
+                if (data.agents && data.agents.length > 0) {
+                    const grid = document.getElementById('agentsGrid');
+                    grid.innerHTML = data.agents.map(a => {
+                        const statusClass = 'status-' + a.status;
+                        const icon = agentEmojis[a.role] || '🤖';
+                        return `
+                        <div class="agent-node">
+                            <div class="agent-status ${statusClass}" title="${a.status}"></div>
+                            <div class="agent-avatar">${icon}</div>
+                            <div class="agent-name">${a.name}</div>
+                            <div class="agent-role">${a.role} LVL.${a.level}</div>
+                        </div>`;
+                    }).join('');
+                }
+
+                // Render Tools
+                if (data.tools && data.tools.length > 0) {
+                    const tList = document.getElementById('toolsList');
+                    tList.innerHTML = data.tools.map(t => `<span class="tool-tag">${t.name}</span>`).join('');
                 }
                 
             } catch(e) {
-                document.getElementById('statusText').textContent = 'Error';
+                document.getElementById('statusText').textContent = 'CONNECTION LOST';
                 document.getElementById('statusDot').className = 'status-dot error';
+            }
+        }
+
+        async function autoFix() {
+            try {
+                await fetch('/api/fix');
+                refreshStatus();
+            } catch(e) {
+                console.error(e);
             }
         }
         
@@ -613,8 +706,11 @@ class DashboardHandler(BaseHTTPRequestHandler):
             if (!msg) return;
             
             const box = document.getElementById('chatBox');
-            box.innerHTML += '<div class="chat-msg user">' + msg + '</div>';
-            box.innerHTML += '<div class="chat-msg assistant">Thinking...</div>';
+            box.innerHTML += `<div class="chat-msg user">${msg}</div>`;
+            
+            const loadingId = 'loading-' + Date.now();
+            box.innerHTML += `<div class="chat-msg assistant" id="${loadingId}">[Processing directive...]</div>`;
+            
             input.value = '';
             box.scrollTop = box.scrollHeight;
             
@@ -625,19 +721,27 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     body: JSON.stringify({message: msg})
                 });
                 const data = await resp.json();
-                box.innerHTML = '<div class="chat-msg assistant">' + data.response + '</div>';
+                document.getElementById(loadingId).outerHTML = `<div class="chat-msg assistant">${(data.response || '').replace(/
+/g, '<br>')}</div>`;
             } catch(e) {
-                box.innerHTML += '<div class="chat-msg assistant">Error: Make sure NEUGI is running!</div>';
+                document.getElementById(loadingId).outerHTML = `<div class="chat-msg assistant" style="color:var(--danger)">Error: Comm link severed.</div>`;
             }
+            box.scrollTop = box.scrollHeight;
         }
         
-        // Auto refresh every 5 seconds
+        // Auto refresh setup
         refreshStatus();
-        setInterval(refreshStatus, 5000);
+        setInterval(refreshStatus, 3000);
+        
+        // Clock tick
+        setInterval(() => {
+            const currentUptime = Math.floor((Date.now() - startTimestamp) / 1000) + serverUptimeOffset;
+            document.getElementById('uptime').textContent = formatTime(currentUptime);
+        }, 1000);
     </script>
 </body>
 </html>"""
-    
+
     def get_technician_html(self) -> str:
         """Get Technician interface HTML"""
         return """<!DOCTYPE html>
@@ -842,14 +946,16 @@ class DashboardHandler(BaseHTTPRequestHandler):
 </body>
 </html>"""
 
+
 # ============================================================
 # MAIN SERVER
 # ============================================================
 
+
 def start_server():
     """Start NEUGI server"""
     health.set_status("running")
-    
+
     print(f"""
 ╔═══════════════════════════════════════════════════╗
 ║         🚀 NEUGI SWARM v{VERSION}                 ║
@@ -862,19 +968,21 @@ def start_server():
 
 Press Ctrl+C to stop
 """)
-    
+
     # Try to start server
     try:
-        server = HTTPServer(('0.0.0.0', PORT), DashboardHandler)
+        server = HTTPServer(("0.0.0.0", PORT), DashboardHandler)
         server.serve_forever()
     except Exception as e:
         health.set_status("error", str(e))
         print(f"❌ Error: {e}")
-        
+
         # Auto-open Technician
         print("\n🔧 Opening Technician...")
         import webbrowser
+
         webbrowser.open(f"http://localhost:{PORT}/technician")
+
 
 # ============================================================
 # MAIN
@@ -884,15 +992,16 @@ if __name__ == "__main__":
     # Check for errors first
     print("🔍 Checking system...")
     issues = ErrorHandler.detect_and_fix()
-    
+
     if issues:
         print("\n⚠️ Issues detected:")
         for issue in issues:
             print(f"   - {issue}")
-        
+
         print("\n🔧 Opening Technician for fixes...")
         import webbrowser
+
         webbrowser.open(f"http://localhost:{PORT}/technician")
-    
+
     # Start server
     start_server()

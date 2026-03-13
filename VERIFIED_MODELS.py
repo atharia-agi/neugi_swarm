@@ -28,9 +28,8 @@ OLLAMA_MODELS = {
             "14b": "~9GB",
             "32b": "~20GB",
         },
-        "highlights": "Best open source value! 0.8B = super tiny!"
+        "highlights": "Best open source value! 0.8B = super tiny!",
     },
-    
     # Llama 3.2
     "llama3.2": {
         "sizes": ["1b", "3b", "11b", "90b"],
@@ -42,9 +41,8 @@ OLLAMA_MODELS = {
             "11b": "~7GB",
             "90b": "~55GB",
         },
-        "highlights": "Meta's efficient models with vision"
+        "highlights": "Meta's efficient models with vision",
     },
-    
     # Llama 3.1
     "llama3.1": {
         "sizes": ["8b", "70b", "405b"],
@@ -55,9 +53,8 @@ OLLAMA_MODELS = {
             "70b": "~40GB",
             "405b": "~240GB",
         },
-        "highlights": "Meta's flagship open model"
+        "highlights": "Meta's flagship open model",
     },
-    
     # DeepSeek R1 - Reasoning powerhouse!
     "deepseek-r1": {
         "sizes": ["1.5b", "7b", "8b", "14b", "32b", "70b", "671b"],
@@ -70,9 +67,8 @@ OLLAMA_MODELS = {
             "32b": "~20GB",
             "671b": "~400GB",  # MoE
         },
-        "highlights": "Reasoning EQUALS GPT-4! Best open source reasoning!"
+        "highlights": "Reasoning EQUALS GPT-4! Best open source reasoning!",
     },
-    
     # Gemma 3 (Google's latest)
     "gemma3": {
         "sizes": ["270m", "1b", "4b", "12b", "27b"],
@@ -84,34 +80,31 @@ OLLAMA_MODELS = {
             "12b": "~8GB",
             "27b": "~16GB",
         },
-        "highlights": "Google's latest, good reasoning"
+        "highlights": "Google's latest, good reasoning",
     },
-    
     # Phi-4 (Microsoft)
     "phi4": {
         "sizes": ["14b"],
         "release": "Late 2024",
         "ctx": 4096,
         "ram_guide": {"14b": "~9GB"},
-        "highlights": "Microsoft's best small model"
+        "highlights": "Microsoft's best small model",
     },
-    
     # Mistral
     "mistral": {
         "sizes": ["7b"],
         "release": "2023",
         "ctx": 8192,
         "ram_guide": {"7b": "~4GB"},
-        "highlights": "Classic, reliable"
+        "highlights": "Classic, reliable",
     },
-    
     # TinyLlama
     "tinyllama": {
         "sizes": ["1.1b"],
         "release": "2023",
         "ctx": 4096,
         "ram_guide": {"1.1b": "~700MB"},
-        "highlights": "Proof of concept only"
+        "highlights": "Proof of concept only",
     },
 }
 
@@ -132,11 +125,15 @@ GROQ_MODELS = {
 # ============================================================
 
 OPENROUTER_MODELS = {
-    "google/gemini-2.0-flash-exp": {"ctx": 1000000, "free": True, "notes": "1M CONTEXT - FREE!"},
+    "google/gemini-2.0-flash-exp": {
+        "ctx": 1000000,
+        "free": True,
+        "notes": "1M CONTEXT - FREE!",
+    },
     "meta-llama/llama-3.1-8b-instant": {"ctx": 128000, "free": True},
     "google/gemini-1.5-flash": {"ctx": 1000000, "free": True},
     "deepseek/deepseek-chat": {"ctx": 64000, "free": True},
-    "qwen/qwen2.5-7b-instruct": {"ctx": 32768, "free": True},
+    "qwen/qwen3.5-7b-instruct": {"ctx": 32768, "free": True},
 }
 
 # ============================================================
@@ -158,9 +155,10 @@ EDGE_CHOICES = {
 # QUICK REFERENCE
 # ============================================================
 
+
 def get_model(ram_gb: float) -> dict:
     """Get best model for your RAM"""
-    
+
     if ram_gb <= 0.5:
         return EDGE_CHOICES["512mb"]
     elif ram_gb <= 1:
@@ -176,34 +174,35 @@ def get_model(ram_gb: float) -> dict:
     else:
         return EDGE_CHOICES["32gb"]
 
+
 if __name__ == "__main__":
-    print("="*60)
+    print("=" * 60)
     print("🤖 NEUGI - VERIFIED MODELS (March 2026)")
-    print("="*60)
-    
+    print("=" * 60)
+
     print("\n🟢 OLLAMA - Local (FREE)")
-    print("-"*40)
+    print("-" * 40)
     for name, info in OLLAMA_MODELS.items():
         sizes = ", ".join(info["sizes"])
         print(f"\n{name.upper()}: {sizes}")
         print(f"   Context: {info['ctx']}")
         if "0.8b" in str(info.get("sizes", [])):
             print(f"   ⚡ NEW: 0.8B version available!")
-    
+
     print("\n\n🔵 GROQ - Free API")
-    print("-"*40)
+    print("-" * 40)
     for m, info in GROQ_MODELS.items():
         print(f"  {m}: {info['ctx']} ctx [FREE]")
-    
+
     print("\n\n🟣 OPENROUTER - Free Tier")
-    print("-"*40)
+    print("-" * 40)
     for m, info in OPENROUTER_MODELS.items():
         free = " [FREE]" if info.get("free") else ""
         print(f"  {m}: {info['ctx']} ctx{free}")
-    
-    print("\n\n" + "="*60)
+
+    print("\n\n" + "=" * 60)
     print("🎯 BEST CHOICES BY RAM")
-    print("="*60)
+    print("=" * 60)
     for ram, info in EDGE_CHOICES.items():
-        note = f" - {info['use']}" if info['use'] else ""
+        note = f" - {info['use']}" if info["use"] else ""
         print(f"  {ram:>5} → {info['model']}{note}")
