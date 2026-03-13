@@ -1,157 +1,136 @@
-# 🤖 NEUGI SWARM - Neural General Intelligence
-
-> **Not just another chatbot. A true reasoning, learning, evolving AI system.**
-
----
-
-## What is Neugi Swarm?
-
-**Neugi Swarm** is a comprehensive AI agent system that implements TRUE general intelligence:
-
-- 🧠 **Reasoning** - Logical inference and problem solving
-- 📚 **Knowledge Representation** - Graph-based knowledge
-- 📋 **Planning** - Goal decomposition and execution
-- 🧬 **Learning** - Improves from experience
-- 🤖 **Autonomy** - Autonomous agents
-- 🔄 **Self-Evolution** - Gets better over time
+# 🤖 NEUGI SWARM
+## Neural General Intelligence - Made Easy
 
 ---
 
-## Core Components
-
-| Component | File | Description |
-|-----------|------|-------------|
-| **Main** | `neugi_swarm.py` | Entry point |
-| **Skills** | `neugi_swarm_skills.py` | Skill system (GitHub, Weather, etc) |
-| **Channels** | `neugi_swarm_channels.py` | Multi-channel (Telegram, Discord, etc) |
-| **Tools** | `neugi_swarm_tools.py` | Tool system (web, code, AI, files) |
-| **Memory** | `neugi_swarm_memory.py` | Long-term + short-term memory |
-| **Gateway** | `neugi_swarm_gateway.py` | HTTP/WebSocket API server |
-| **Voice** | `neugi_swarm_voice.py` | TTS + STT |
-| **Agents** | `neugi_swarm_agents.py` | 9 autonomous agents |
-| **NGI** | `neugi_swarm_ngi_v1.py` | True Neural General Intelligence |
+<p align="center">
+  <img src="https://img.shields.io/badge/NEUGI-NGI-blue" alt="NEUGI">
+  <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
+  <img src="https://img.shields.io/badge/Python-3.8+-yellow" alt="Python">
+</p>
 
 ---
 
-## Features
+## 🚀 Quick Start
 
-### ✅ Channels (10 platforms)
-```
-Telegram, Discord, WhatsApp, Signal, Slack, Teams, SMS, Email, Web
-```
-
-### ✅ Tools (15+ tools)
-```
-Web: search, fetch, browser
-Code: execute, debug
-AI: llm, embeddings
-Files: read, write, list
-Data: json, csv
-Comm: email, telegram, discord
-```
-
-### ✅ Skills (6 built-in)
-```
-GitHub, Weather, Coding Agent, Health Check, Tmux, ClawHub
-```
-
-### ✅ Agents (9 autonomous)
-```
-Aurora (Researcher), Cipher (Coder), Nova (Creator), 
-Pulse (Analyst), Quark (Strategist), Shield (Security),
-Spark (Social), Ink (Writer), Nexus (Manager)
-```
-
-### ✅ Memory
-- Short-term (cache)
-- Long-term (SQLite)
-- Knowledge graph
-- Conversation history
-
-### ✅ Gateway
-- REST API
-- WebSocket
-- Health checks
-- Status endpoints
-
----
-
-## Quick Start
+### One-Command Installation
 
 ```bash
-# Clone
-git clone https://github.com/atharia-agi/neugi_swarm.git
-cd neugi_swarm
+curl -fsSL https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/install.sh | bash
+```
 
-# Run main
+**Selesai!** NEUGI akan:
+1. Install Ollama (latest)
+2. Start Ollama Server
+3. Download AI Model
+4. Install NEUGI Files
+5. Install NEUGI CLI
+6. **Run Setup Wizard** ← Anda input di sini!
+7. Start NEUGI + Activity Log
+
+---
+
+## 📖 Usage After Install
+
+### CLI Commands (like OpenClaw!)
+
+```bash
+# Start NEUGI
+neugi start
+
+# Check status
+neugi status
+
+# View logs
+neugi logs
+
+# Open dashboard
+neugi dashboard
+
+# Stop NEUGI
+neugi stop
+
+# Restart
+neugi restart
+
+# Run wizard again
+neugi wizard
+```
+
+---
+
+## 🌐 Dashboard
+
+Setelah install, akses:
+
+```
+http://localhost:19888
+```
+
+---
+
+## 🔧 Features
+
+| Feature | Description |
+|---------|-------------|
+| **True NGI** | Neural General Intelligence with Knowledge Graph, Reasoning, Planning |
+| **Auto-Install** | One command installs everything including Ollama |
+| **Smart Wizard** | Auto-setup with Q&A |
+| **Technician** | Can fix system issues automatically |
+| **Free Models** | qwen3.5:cloud works with Ollama Free tier |
+| **Multi-Provider** | Support Groq, OpenRouter, OpenAI, Anthropic |
+| **CLI** | Like `openclaw` - neugi start/stop/status |
+
+---
+
+## 📋 Requirements
+
+- Python 3.8+
+- Internet connection (for install)
+- 2GB RAM (minimum)
+
+---
+
+## 💾 After Restart
+
+```bash
+# Start NEUGI
+neugi start
+
+# Or manually
+cd ~/neugi
 python3 neugi_swarm.py
-
-# Run NGI
-python3 neugi_swarm_ngi_v1.py
-
-# Run specific component
-python3 neugi_swarm_agents.py
-python3 neugi_swarm_tools.py
 ```
 
 ---
 
-## Architecture
+## 📚 Documentation
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    NEUGI SWARM                         │
-├─────────────────────────────────────────────────────────┤
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐            │
-│  │  Skills  │  │ Channels │  │  Tools   │            │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘            │
-│       │             │             │                    │
-│       └─────────────┼─────────────┘                    │
-│                     ▼                                  │
-│              ┌────────────┐                             │
-│              │   Agents   │  (9 autonomous)            │
-│              └─────┬──────┘                            │
-│                    │                                    │
-│       ┌────────────┼────────────┐                      │
-│       ▼            ▼            ▼                      │
-│  ┌────────┐   ┌────────┐   ┌────────┐                │
-│  │Memory │   │Knowledge│   │Gateway │                │
-│  └────────┘   └────────┘   └────────┘                │
-└─────────────────────────────────────────────────────────┘
-```
+- [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md) - Detailed installation
+- [TECHNICAL_SPEC.md](TECHNICAL_SPEC.md) - Technical details
+- [MANIFESTO.md](MANIFESTO.md) - Our vision
 
 ---
 
-## Version History
+## 🌟 Why NEUGI?
 
-| Version | Type | Features |
-|---------|------|----------|
-| v11.0 | Army | Swarm, Marketplace, Analytics |
-| v10.0 | Enterprise | Channels, Voice, Gateway |
-| v9.0 | Full | All platforms, tools |
-| v8.0 | Multi-agent | 15 agents, battle system |
-| v1.0 | NGI | True AGI core |
-
----
-
-## Configuration
-
-Set your API key:
-
-```bash
-export API_KEY="your-api-key"
-```
-
-Supports: MiniMax, OpenAI, Anthropic, Ollama
+| Traditional AI | NEUGI |
+|----------------|-------|
+| Manual install | **Auto-install** |
+| Complex setup | **Smart wizard** |
+| Just chatbot | **True NGI** |
+| No CLI | **neugi CLI** |
 
 ---
 
-## Domain
+## 📞 Support
 
-Ready for **neugi.com**!
+- GitHub: https://github.com/atharia-agi/neugi_swarm
+- Issues: https://github.com/atharia-agi/neugi_swarm/issues
 
 ---
 
-**Neugi = Neural General Intelligence** 🤖
-
-Built by Auroria for the future of AI.
+<p align="center">
+  <strong>NEUGI - Neural General Intelligence</strong><br>
+  Made for everyone 🚀
+</p>
