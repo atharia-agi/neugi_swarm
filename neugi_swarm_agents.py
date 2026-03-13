@@ -318,37 +318,46 @@ class AgentManager:
         return response
 
     def _call_llm(self, agent: Agent, prompt: str) -> str:
-        """Call Ollama LLM"""
+        """Call Ollama LLM with fallback"""
         try:
             import requests
 
-            model = "qwen3.5:cloud"
+            primary_model = "qwen3.5:cloud"
+            fallback_model = "nemotron-3-super:cloud"
             try:
                 config_path = os.path.expanduser("~/neugi/data/config.json")
                 if os.path.exists(config_path):
                     with open(config_path, "r") as f:
                         cfg = json.load(f)
-                        model = cfg.get("model", {}).get("model", model)
-            except:
-                pass
+                        model_cfg = cfg.get("model", {})
+                        if isinstance(model_cfg, dict):
+                            primary_model = model_cfg.get("primary", primary_model)
+                            fallback_model = model_cfg.get("fallback", fallback_model)
+                        elif isinstance(model_cfg, str):
+                            # backward compatibility
+                            primary_model = model_cfg
+            except Exception:
+                pass  # keep defaults
 
-            payload = {
-                "model": model,
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": f"You are {agent.name}, the Neugi Swarm {agent.role.value}. Your capabilities are {', '.join(agent.capabilities)}. Keep responses concise, brilliant, and focused on your role. You are communicating with a 1B parameter optimized framework.",
-                    },
-                    {"role": "user", "content": prompt},
-                ],
-                "stream": False,
-            }
-            r = requests.post(
-                "http://localhost:11434/api/chat", json=payload, timeout=45
-            )
-            if r.ok:
-                return r.json().get("message", {}).get("content", "").strip()
-        except:
+            # Try primary model first
+            for model_name in [primary_model, fallback_model]:
+                payload = {
+                    "model": model_name,
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": f"You are {agent.name}, the Neugi Swarm {agent.role.value}. Your capabilities are {', '.join(agent.capabilities)}. Keep responses concise, brilliant, and focused on your role. You are communicating with a 1B parameter optimized framework.",
+                        },
+                        {"role": "user", "content": prompt},
+                    ],
+                    "stream": False,
+                }
+                r = requests.post(
+                    "http://localhost:11434/api/chat", json=payload, timeout=45
+                )
+                if r.ok:
+                    return r.json().get("message", {}).get("content", "").strip()
+        except Exception as e:
             pass
         return ""
 

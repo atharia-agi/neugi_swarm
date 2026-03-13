@@ -268,8 +268,14 @@ class NEUGIWizard:
             "user": {"name": self.answers["name"]},
             "use_case": self.answers["use_case"],
             "model": {"provider": provider, "model": model},
-            "assistant": {"model": "qwen3.5:cloud"},
-            "technician": {"enabled": True},
+            "assistant": {
+                "primary": "qwen3.5:cloud",
+                "fallback": "nemotron-3-super:cloud",
+            },
+            "technician": {
+                "primary": "qwen3.5:cloud",
+                "fallback": "nemotron-3-super:cloud",
+            },
             "api_key_set": bool(api_key),
         }
 
@@ -282,8 +288,14 @@ class NEUGIWizard:
             "user": {"name": self.answers["name"]},
             "use_case": self.answers["use_case"],
             "model": {"provider": "ollama_cloud", "model": model["model"]},
-            "assistant": {"model": "qwen3.5:cloud"},
-            "technician": {"enabled": True},
+            "assistant": {
+                "primary": "qwen3.5:cloud",
+                "fallback": "nemotron-3-super:cloud",
+            },
+            "technician": {
+                "primary": "qwen3.5:cloud",
+                "fallback": "nemotron-3-super:cloud",
+            },
         }
 
     def _test_key(self, provider: str, key: str) -> bool:

@@ -17,14 +17,13 @@ import urllib.error
 
 # Config
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
-ASSISTANT_MODEL = "qwen3.5:cloud"
+DEFAULT_ASSISTANT_MODEL = "qwen3.5:cloud"
 
 
 class NeugiAssistant:
     """Smart assistant - always ready to help!"""
 
     def __init__(self):
-        self.model = ASSISTANT_MODEL
         self.url = OLLAMA_URL
         self.system_prompt = """You are NEUGI Assistant - a helpful AI assistant for NEUGI Swarm.
 
@@ -40,6 +39,28 @@ If you don't know something, say so and suggest where to find help.
 
 NEUGI is Neural General Intelligence - made easy!
 """
+        # Load model from config with fallback
+        self.primary_model = "qwen3.5:cloud"
+        self.fallback_model = "nemotron-3-super:cloud"
+        try:
+            config_path = os.path.expanduser("~/neugi/data/config.json")
+            if os.path.exists(config_path):
+                with open(config_path, "r") as f:
+                    cfg = json.load(f)
+                    assistant_cfg = cfg.get("assistant", {})
+                    if isinstance(assistant_cfg, dict):
+                        self.primary_model = assistant_cfg.get(
+                            "primary", self.primary_model
+                        )
+                        self.fallback_model = assistant_cfg.get(
+                            "fallback", self.fallback_model
+                        )
+                    elif isinstance(assistant_cfg, str):
+                        # backward compatibility
+                        self.primary_model = assistant_cfg
+        except Exception:
+            pass  # keep defaults
+        self.model = self.primary_model  # current model to try first
 
     def is_ollama_running(self) -> bool:
         """Check if Ollama is running"""
@@ -82,9 +103,15 @@ NEUGI is Neural General Intelligence - made easy!
             return self._fallback_chat(message)
 
     def _fallback_chat(self, message: str) -> str:
-        """Try fallback models if qwen3.5:cloud fails"""
+        """Try fallback models if primary fails"""
 
-        fallback_models = ["qwen2.5:7b", "llama3.2:3b", "mistral:7b"]
+        # Start with the configured fallback, then try others
+        fallback_models = [self.fallback_model]
+        # Add some additional fallbacks in case the configured one also fails
+        additional_fallbacks = ["qwen2.5:7b", "llama3.2:3b", "mistral:7b"]
+        for model in additional_fallbacks:
+            if model not in fallback_models:
+                fallback_models.append(model)
 
         for model in fallback_models:
             try:
