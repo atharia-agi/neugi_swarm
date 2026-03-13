@@ -39,3 +39,15 @@ Thumbs.db
 tmp/
 temp/
 *.tmp
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+.Python
+*.egg-info/
+dist/
+build/
+eggs/
+*.egg
