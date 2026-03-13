@@ -143,6 +143,15 @@ EOF
     curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi" -o "$NEUGI_DIR/neugi"
     chmod +x "$NEUGI_DIR/neugi"
     
+    # Download Assistant
+    curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_assistant.py" -o "$NEUGI_DIR/neugi_assistant.py" 2>/dev/null || true
+    
+    # Download Dashboard
+    curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/dashboard.html" -o "$NEUGI_DIR/dashboard.html" 2>/dev/null || true
+    
+    # Download Systemd Service (for auto-start)
+    curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi.service" -o "$NEUGI_DIR/neugi.service" 2>/dev/null || true
+    
     # Add to PATH in .bashrc
     if ! grep -q "neugi" ~/.bashrc 2>/dev/null; then
         echo "" >> ~/.bashrc
@@ -204,11 +213,17 @@ EOF
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     echo "💡 QUICK COMMANDS (after restart):"
-    echo "   neugi start      - Start NEUGI"
-    echo "   neugi stop       - Stop NEUGI"  
-    echo "   neugi status     - Check status"
-    echo "   neugi logs       - View logs"
-    echo "   neugi dashboard  - Open dashboard"
+    echo "   neugi start       - Start NEUGI"
+    echo "   neugi stop        - Stop NEUGI"  
+    echo "   neugi status      - Check status"
+    echo "   neugi logs        - View logs"
+    echo "   neugi dashboard   - Open dashboard"
+    echo "   neugi help        - Ask NEUGI Assistant"
+    echo ""
+    echo "💡 AUTO-START AFTER REBOOT (optional):"
+    echo "   cp ~/neugi/neugi.service ~/.config/systemd/user/"
+    echo "   systemctl --user enable neugi"
+    echo "   systemctl --user start neugi"
     echo ""
     
     # Show live logs

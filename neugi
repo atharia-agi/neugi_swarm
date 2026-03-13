@@ -185,6 +185,38 @@ def cmd_wizard():
     log("🎯 Running setup wizard...", BLUE)
     subprocess.run([sys.executable, wizard_script], cwd=NEUGI_DIR)
 
+def cmd_help():
+    """NEUGI Assistant - help with questions"""
+    assistant_script = os.path.join(NEUGI_DIR, "neugi_assistant.py")
+    
+    if not os.path.exists(assistant_script):
+        log("❌ Assistant not found. Run install first!", RED)
+        return
+    
+    # Get question from user
+    if len(sys.argv) > 2:
+        question = " ".join(sys.argv[2:])
+        # Run assistant with question
+        result = subprocess.run(
+            [sys.executable, assistant_script, question],
+            cwd=NEUGI_DIR,
+            capture_output=True,
+            text=True
+        )
+        print(result.stdout)
+    else:
+        log("🎯 NEUGI Assistant", BLUE)
+        print("\nAsk me anything!")
+        print("Examples:")
+        print("  neugi help how to install")
+        print("  neugi help how to start")
+        print("  neugi help api key")
+        print("  neugi help ollama")
+        print("")
+        print("Or run interactive mode:")
+        print("  python3 ~/neugi/neugi_assistant.py")
+        print("")
+
 def cmd_dashboard():
     """Open dashboard"""
     import webbrowser
@@ -224,6 +256,9 @@ def main():
     # Dashboard
     subparsers.add_parser("dashboard", help="Open dashboard")
     
+    # Help/Assistant
+    subparsers.add_parser("help", help="Ask NEUGI Assistant")
+    
     # Install
     subparsers.add_parser("install", help="Install NEUGI")
     
@@ -249,6 +284,8 @@ def main():
         cmd_wizard()
     elif args.command == "dashboard":
         cmd_dashboard()
+    elif args.command == "help":
+        cmd_help()
     elif args.command == "install":
         log("📥 Running NEUGI installer...", BLUE)
         subprocess.run([
