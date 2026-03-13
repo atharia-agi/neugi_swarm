@@ -3,61 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEUGI - Neural General Intelligence</title>
-    <meta name="description" content="NEUGI - Your AI Assistant powered by Neural General Intelligence. Simple, powerful, accessible to everyone.">
+    <title>NEUGI SWARM | Neural General Intelligence</title>
+    <meta name="description" content="NEUGI SWARM - Next-gen AI with multiple autonomous agents. Knowledge Graph, Reasoning, Planning, Learning.">
     
-    <!-- Favicon -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     
     <style>
+        :root {
+            --bg-dark: #050507;
+            --bg-card: #0d0d12;
+            --bg-card-hover: #13131a;
+            --primary: #00d4ff;
+            --primary-glow: rgba(0, 212, 255, 0.4);
+            --secondary: #7c3aed;
+            --secondary-glow: rgba(124, 58, 237, 0.4);
+            --accent: #f472b6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --text: #ffffff;
+            --text-muted: #71717a;
+            --text-dim: #3f3f46;
+            --border: rgba(255,255,255,0.08);
+            --border-hover: rgba(255,255,255,0.15);
+            --gradient-1: linear-gradient(135deg, #00d4ff 0%, #7c3aed 100%);
+            --gradient-2: linear-gradient(135deg, #7c3aed 0%, #f472b6 100%);
+        }
+        
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
         
-        :root {
-            --primary: #00d4ff;
-            --secondary: #7b2ff7;
-            --bg: #0a0a0f;
-            --bg-secondary: #1a1a2e;
-            --text: #ffffff;
-            --text-muted: #888888;
+        html {
+            scroll-behavior: smooth;
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-dark);
             color: var(--text);
             line-height: 1.6;
             overflow-x: hidden;
         }
         
-        /* Animated Background */
-        .bg-animation {
+        /* Animated Grid Background */
+        .bg-grid {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             z-index: -1;
-            background: 
-                radial-gradient(ellipse at 20% 20%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 80%, rgba(123, 47, 247, 0.1) 0%, transparent 50%),
-                var(--bg);
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+            mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%);
         }
         
-        .bg-animation::before {
-            content: '';
-            position: absolute;
+        .bg-glow {
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: 
-                radial-gradient(circle at 25% 25%, rgba(255,255,255,0.02) 1px, transparent 1px),
-                radial-gradient(circle at 75% 75%, rgba(255,255,255,0.02) 1px, transparent 1px);
-            background-size: 50px 50px;
+            z-index: -2;
+        }
+        
+        .bg-glow::before {
+            content: '';
+            position: absolute;
+            top: -20%;
+            left: 20%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
+            filter: blur(100px);
+            animation: float 15s ease-in-out infinite;
+        }
+        
+        .bg-glow::after {
+            content: '';
+            position: absolute;
+            bottom: -20%;
+            right: 10%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, var(--secondary-glow) 0%, transparent 70%);
+            filter: blur(100px);
+            animation: float 12s ease-in-out infinite reverse;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(30px, -30px); }
         }
         
         /* Header */
@@ -66,20 +110,45 @@
             top: 0;
             left: 0;
             right: 0;
-            padding: 20px 40px;
+            padding: 16px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(10, 10, 15, 0.8);
-            backdrop-filter: blur(10px);
-            z-index: 100;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            background: rgba(5, 5, 7, 0.7);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        header.scrolled {
+            padding: 12px 40px;
+            background: rgba(5, 5, 7, 0.9);
         }
         
         .logo {
-            font-size: 28px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 24px;
             font-weight: 800;
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            letter-spacing: -0.5px;
+        }
+        
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--gradient-1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 4px 20px var(--primary-glow);
+        }
+        
+        .logo span {
+            background: var(--gradient-1);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -87,33 +156,78 @@
         
         nav {
             display: flex;
-            gap: 30px;
+            align-items: center;
+            gap: 40px;
         }
         
         nav a {
             color: var(--text-muted);
             text-decoration: none;
             font-weight: 500;
+            font-size: 15px;
             transition: color 0.3s;
+            position: relative;
+        }
+        
+        nav a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary);
+            transition: width 0.3s;
         }
         
         nav a:hover {
-            color: var(--primary);
+            color: var(--text);
         }
         
-        .cta-btn {
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
-            color: white;
+        nav a:hover::after {
+            width: 100%;
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .btn {
             padding: 10px 24px;
-            border-radius: 30px;
-            text-decoration: none;
+            border-radius: 10px;
+            font-size: 14px;
             font-weight: 600;
-            transition: transform 0.3s, box-shadow 0.3s;
+            text-decoration: none;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
         
-        .cta-btn:hover {
+        .btn-primary {
+            background: var(--gradient-1);
+            color: white;
+            box-shadow: 0 4px 20px var(--primary-glow);
+        }
+        
+        .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+            box-shadow: 0 8px 30px var(--primary-glow);
+        }
+        
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+        }
+        
+        .btn-ghost:hover {
+            border-color: var(--primary);
+            color: var(--text);
         }
         
         /* Hero Section */
@@ -124,92 +238,163 @@
             justify-content: center;
             align-items: center;
             text-align: center;
-            padding: 120px 20px;
+            padding: 120px 20px 80px;
+            position: relative;
         }
         
         .hero-badge {
-            background: rgba(0, 212, 255, 0.1);
-            border: 1px solid rgba(0, 212, 255, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(124, 58, 237, 0.1);
+            border: 1px solid rgba(124, 58, 237, 0.3);
             padding: 8px 20px;
-            border-radius: 30px;
+            border-radius: 100px;
             font-size: 14px;
-            color: var(--primary);
-            margin-bottom: 30px;
+            color: #a78bfa;
+            margin-bottom: 32px;
+            animation: fadeInUp 0.8s ease-out;
+        }
+        
+        .hero-badge::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--secondary);
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
         }
         
         .hero h1 {
-            font-size: 80px;
-            font-weight: 900;
-            line-height: 1.1;
-            margin-bottom: 20px;
+            font-size: clamp(48px, 8vw, 96px);
+            font-weight: 800;
+            line-height: 1.05;
+            margin-bottom: 24px;
+            letter-spacing: -2px;
+            animation: fadeInUp 0.8s ease-out 0.1s both;
         }
         
-        .hero h1 span {
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        .hero h1 .gradient {
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .hero h1 .swarm {
+            background: var(--gradient-2);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
         
         .hero p {
-            font-size: 22px;
+            font-size: 20px;
             color: var(--text-muted);
             max-width: 600px;
             margin-bottom: 40px;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
         }
         
         .hero-buttons {
             display: flex;
-            gap: 20px;
+            gap: 16px;
             flex-wrap: wrap;
             justify-content: center;
+            margin-bottom: 60px;
+            animation: fadeInUp 0.8s ease-out 0.3s both;
         }
         
-        .btn {
-            padding: 16px 40px;
-            border-radius: 30px;
-            font-size: 18px;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.3s;
-            cursor: pointer;
-            border: none;
+        .btn-large {
+            padding: 16px 36px;
+            font-size: 16px;
+            border-radius: 12px;
         }
         
-        .btn-primary {
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(0, 212, 255, 0.4);
-        }
-        
-        .btn-secondary {
-            background: rgba(255,255,255,0.1);
-            color: white;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-        
-        .btn-secondary:hover {
-            background: rgba(255,255,255,0.2);
-        }
-        
-        /* Terminal Preview */
-        .terminal {
-            margin-top: 60px;
-            background: #1a1a2e;
-            border-radius: 16px;
-            border: 1px solid rgba(255,255,255,0.1);
-            overflow: hidden;
+        /* Agent Cards Preview */
+        .agent-preview {
+            display: flex;
+            gap: 8px;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+            flex-wrap: wrap;
+            justify-content: center;
             max-width: 700px;
+        }
+        
+        .agent-mini {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 12px 20px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .agent-mini:hover {
+            border-color: var(--primary);
+            transform: translateY(-4px);
+        }
+        
+        .agent-mini .avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+        
+        .agent-mini.aurora .avatar { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+        .agent-mini.cipher .avatar { background: linear-gradient(135deg, #10b981, #059669); }
+        .agent-mini.nova .avatar { background: linear-gradient(135deg, #f472b6, #db2777); }
+        .agent-mini.pulse .avatar { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .agent-mini.shield .avatar { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .agent-mini.ink .avatar { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Terminal */
+        .terminal {
+            margin-top: 20px;
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            max-width: 650px;
             width: 100%;
+            animation: fadeInUp 0.8s ease-out 0.5s both;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
         }
         
         .terminal-header {
-            background: #2a2a4e;
-            padding: 12px 20px;
+            background: rgba(255,255,255,0.03);
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .terminal-dots {
             display: flex;
             gap: 8px;
         }
@@ -224,167 +409,343 @@
         .terminal-dot.yellow { background: #ffbd2e; }
         .terminal-dot.green { background: #27ca40; }
         
+        .terminal-title {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-left: 8px;
+        }
+        
         .terminal-body {
             padding: 20px;
-            font-family: 'Monaco', 'Menlo', monospace;
-            font-size: 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
             text-align: left;
         }
         
         .terminal-line {
             margin-bottom: 8px;
+            display: flex;
+            gap: 8px;
         }
         
         .terminal-prompt {
             color: var(--primary);
+            font-weight: 500;
+        }
+        
+        .terminal-command {
+            color: var(--text);
         }
         
         .terminal-output {
             color: var(--text-muted);
+            padding-left: 20px;
         }
         
+        .terminal-output.success { color: var(--success); }
+        .terminal-output.info { color: var(--primary); }
+        
         /* Features Section */
-        .features {
-            padding: 100px 20px;
+        .section {
+            padding: 120px 20px;
             max-width: 1200px;
             margin: 0 auto;
         }
         
-        .section-title {
+        .section-header {
             text-align: center;
             margin-bottom: 60px;
         }
         
-        .section-title h2 {
-            font-size: 48px;
-            margin-bottom: 15px;
+        .section-label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--primary);
+            margin-bottom: 16px;
         }
         
-        .section-title p {
-            color: var(--text-muted);
+        .section-title {
+            font-size: clamp(36px, 5vw, 56px);
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -1px;
+        }
+        
+        .section-desc {
             font-size: 18px;
+            color: var(--text-muted);
+            max-width: 500px;
+            margin: 0 auto;
         }
         
-        .features-grid {
+        /* NGI Features */
+        .ngi-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
         }
         
-        .feature-card {
-            background: var(--bg-secondary);
+        .ngi-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
             border-radius: 20px;
-            padding: 40px;
-            border: 1px solid rgba(255,255,255,0.1);
-            transition: all 0.3s;
+            padding: 32px;
+            transition: all 0.4s;
+            position: relative;
+            overflow: hidden;
         }
         
-        .feature-card:hover {
-            transform: translateY(-10px);
-            border-color: var(--primary);
+        .ngi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-1);
+            transform: scaleX(0);
+            transition: transform 0.4s;
         }
         
-        .feature-icon {
-            font-size: 48px;
+        .ngi-card:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        
+        .ngi-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .ngi-icon {
+            width: 56px;
+            height: 56px;
+            background: rgba(0, 212, 255, 0.1);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
             margin-bottom: 20px;
         }
         
-        .feature-card h3 {
-            font-size: 24px;
-            margin-bottom: 15px;
+        .ngi-card h3 {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 12px;
         }
         
-        .feature-card p {
+        .ngi-card p {
+            color: var(--text-muted);
+            font-size: 15px;
+            line-height: 1.7;
+        }
+        
+        /* Agents Section */
+        .agents-section {
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            padding: 120px 20px;
+        }
+        
+        .agents-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .agent-card {
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .agent-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-4px);
+        }
+        
+        .agent-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+        
+        .agent-card h4 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .agent-card .role {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+        
+        .agent-card .caps {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: center;
+        }
+        
+        .agent-cap {
+            font-size: 11px;
+            padding: 4px 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
             color: var(--text-muted);
         }
         
-        /* How It Works */
-        .how-it-works {
-            padding: 100px 20px;
-            background: var(--bg-secondary);
+        .agent-card.aurora .agent-avatar { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+        .agent-card.cipher .agent-avatar { background: linear-gradient(135deg, #10b981, #059669); }
+        .agent-card.nova .agent-avatar { background: linear-gradient(135deg, #f472b6, #db2777); }
+        .agent-card.pulse .agent-avatar { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .agent-card.quark .agent-avatar { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+        .agent-card.shield .agent-avatar { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .agent-card.spark .agent-avatar { background: linear-gradient(135deg, #ec4899, #be185d); }
+        .agent-card.ink .agent-avatar { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+        
+        /* Stats */
+        .stats-section {
+            padding: 80px 20px;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
         }
         
-        .steps {
-            max-width: 900px;
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 40px;
+            max-width: 1000px;
             margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 30px;
+            text-align: center;
+        }
+        
+        .stat-item .value {
+            font-size: 48px;
+            font-weight: 700;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .stat-item .label {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+        
+        /* How It Works */
+        .steps-container {
+            max-width: 800px;
+            margin: 0 auto;
         }
         
         .step {
             display: flex;
-            gap: 30px;
-            align-items: flex-start;
+            gap: 24px;
+            margin-bottom: 40px;
+            position: relative;
+        }
+        
+        .step:not(:last-child)::before {
+            content: '';
+            position: absolute;
+            left: 28px;
+            top: 60px;
+            width: 2px;
+            height: calc(100% + 20px);
+            background: var(--border);
         }
         
         .step-number {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            width: 56px;
+            height: 56px;
+            background: var(--bg-card);
+            border: 2px solid var(--primary);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
-            font-weight: bold;
+            font-size: 20px;
+            font-weight: 700;
             flex-shrink: 0;
+            color: var(--primary);
         }
         
         .step-content h3 {
-            font-size: 24px;
-            margin-bottom: 10px;
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 8px;
         }
         
         .step-content p {
             color: var(--text-muted);
+            font-size: 16px;
         }
         
         /* Footer */
         footer {
             padding: 60px 20px;
             text-align: center;
-            border-top: 1px solid rgba(255,255,255,0.1);
+            border-top: 1px solid var(--border);
         }
         
-        footer p {
+        .footer-logo {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            margin-bottom: 32px;
+        }
+        
+        .footer-links a {
             color: var(--text-muted);
-            margin-bottom: 20px;
-        }
-        
-        footer a {
-            color: var(--primary);
             text-decoration: none;
+            font-size: 15px;
+            transition: color 0.3s;
         }
         
-        .social-links {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 30px;
+        .footer-links a:hover {
+            color: var(--primary);
         }
         
-        .social-links a {
-            width: 50px;
-            height: 50px;
-            background: var(--bg-secondary);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            transition: all 0.3s;
-        }
-        
-        .social-links a:hover {
-            background: var(--primary);
-            transform: translateY(-5px);
+        .footer-copy {
+            color: var(--text-dim);
+            font-size: 14px;
         }
         
         /* Mobile */
         @media (max-width: 768px) {
             header {
-                padding: 15px 20px;
+                padding: 12px 20px;
             }
             
             nav {
@@ -392,150 +753,325 @@
             }
             
             .hero h1 {
-                font-size: 48px;
+                letter-spacing: -1px;
             }
             
             .hero p {
-                font-size: 18px;
+                font-size: 17px;
             }
             
-            .btn {
-                padding: 14px 30px;
-                font-size: 16px;
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 32px;
+            }
+            
+            .terminal {
+                margin: 20px 16px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="bg-animation"></div>
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
     
     <!-- Header -->
     <header>
-        <div class="logo">🤖 NEUGI</div>
+        <div class="logo">
+            <div class="logo-icon">🧠</div>
+            <span>NEUGI</span>
+        </div>
         <nav>
             <a href="#features">Features</a>
+            <a href="#agents">Agents</a>
             <a href="#how-it-works">How It Works</a>
-            <a href="https://github.com/atharia-agi/neugi_swarm" target="_blank">GitHub</a>
+            <a href="#pricing">Pricing</a>
         </nav>
-        <a href="https://github.com/atharia-agi/neugi_swarm" class="cta-btn" target="_blank">
-            Get Started →
-        </a>
+        <div class="header-actions">
+            <a href="https://github.com/atharia-agi/neugi_swarm" class="btn btn-ghost" target="_blank">
+                <span>🐙</span> GitHub
+            </a>
+            <a href="https://github.com/atharia-agi/neugi_swarm" class="btn btn-primary" target="_blank">
+                Get Started →
+            </a>
+        </div>
     </header>
     
     <!-- Hero -->
     <section class="hero">
-        <div class="hero-badge">✨ Neural General Intelligence</div>
+        <div class="hero-badge">
+            Neural General Intelligence
+        </div>
         
         <h1>
-            AI Made<br>
-            <span>Simple</span>
+            <span class="gradient">AI Swarm</span><br>
+            for <span class="swarm">Everyone</span>
         </h1>
         
         <p>
-            NEUGI is your personal AI assistant powered by true Neural General Intelligence. 
-            One command to install. Works out of the box.
+            Meet your new AI workforce. 15+ autonomous agents powered by true NGI - 
+            Knowledge Graph, Reasoning, Planning & Learning. One command to install.
         </p>
         
         <div class="hero-buttons">
-            <a href="https://github.com/atharia-agi/neugi_swarm" class="btn btn-primary" target="_blank">
-                Install Now
+            <a href="https://github.com/atharia-agi/neugi_swarm" class="btn btn-primary btn-large" target="_blank">
+                🚀 Install Now
             </a>
-            <a href="#how-it-works" class="btn btn-secondary">
+            <a href="#how-it-works" class="btn btn-ghost btn-large">
                 Learn More
             </a>
         </div>
         
-        <!-- Terminal Preview -->
+        <div class="agent-preview">
+            <div class="agent-mini aurora">
+                <div class="avatar">🔍</div>
+                Aurora
+            </div>
+            <div class="agent-mini cipher">
+                <div class="avatar">💻</div>
+                Cipher
+            </div>
+            <div class="agent-mini nova">
+                <div class="avatar">🎨</div>
+                Nova
+            </div>
+            <div class="agent-mini pulse">
+                <div class="avatar">📊</div>
+                Pulse
+            </div>
+            <div class="agent-mini shield">
+                <div class="avatar">🛡️</div>
+                Shield
+            </div>
+            <div class="agent-mini ink">
+                <div class="avatar">✍️</div>
+                Ink
+            </div>
+        </div>
+        
+        <!-- Terminal -->
         <div class="terminal">
             <div class="terminal-header">
-                <div class="terminal-dot red"></div>
-                <div class="terminal-dot yellow"></div>
-                <div class="terminal-dot green"></div>
+                <div class="terminal-dots">
+                    <div class="terminal-dot red"></div>
+                    <div class="terminal-dot yellow"></div>
+                    <div class="terminal-dot green"></div>
+                </div>
+                <span class="terminal-title">neugi@localhost</span>
             </div>
             <div class="terminal-body">
                 <div class="terminal-line">
-                    <span class="terminal-prompt">$</span> 
-                    <span class="terminal-output">curl -fsSL https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/install.sh | bash</span>
+                    <span class="terminal-prompt">$</span>
+                    <span class="terminal-command">curl -fsSL neugi.sh/install | bash</span>
                 </div>
                 <div class="terminal-line">
-                    <span class="terminal-output">🤖 Installing NEUGI...</span>
+                    <span class="terminal-output info">🤖 Installing NEUGI SWARM v15...</span>
                 </div>
                 <div class="terminal-line">
                     <span class="terminal-output">✓ Ollama installed</span>
                 </div>
                 <div class="terminal-line">
-                    <span class="terminal-output">✓ NEUGI running!</span>
+                    <span class="terminal-output">✓ 15 agents initialized</span>
                 </div>
                 <div class="terminal-line">
-                    <span class="terminal-prompt">$</span> 
-                    <span class="terminal-output">neugi status</span>
+                    <span class="terminal-output">✓ Knowledge Graph ready</span>
                 </div>
                 <div class="terminal-line">
-                    <span class="terminal-output">✅ NEUGI is running | Dashboard: http://localhost:19888</span>
+                    <span class="terminal-output success">✅ NEUGI SWARM running on http://localhost:19888</span>
+                </div>
+                <div class="terminal-line">
+                    <span class="terminal-prompt">$</span>
+                    <span class="terminal-command">neugi status</span>
+                </div>
+                <div class="terminal-line">
+                    <span class="terminal-output">🧠 15 agents active | 💾 2.4MB memory | ⚡ 0.02s response</span>
                 </div>
             </div>
         </div>
     </section>
     
-    <!-- Features -->
-    <section class="features" id="features">
-        <div class="section-title">
-            <h2>Why NEUGI?</h2>
-            <p>Built for everyone. Powerful for experts.</p>
+    <!-- Stats -->
+    <section class="stats-section">
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="value">15+</div>
+                <div class="label">Autonomous Agents</div>
+            </div>
+            <div class="stat-item">
+                <div class="value">50+</div>
+                <div class="label">Built-in Tools</div>
+            </div>
+            <div class="stat-item">
+                <div class="value">NGI</div>
+                <div class="label">True Intelligence</div>
+            </div>
+            <div class="stat-item">
+                <div class="value">Free</div>
+                <div class="label">To Use Forever</div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- NGI Features -->
+    <section class="section" id="features">
+        <div class="section-header">
+            <div class="section-label">Core Technology</div>
+            <h2 class="section-title">What is NGI?</h2>
+            <p class="section-desc">Not just a chatbot. True Neural General Intelligence with reasoning capabilities.</p>
         </div>
         
-        <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-icon">⚡</div>
-                <h3>One-Command Install</h3>
-                <p>Just paste one command and NEUGI installs everything - Ollama, models, and itself. No technical knowledge needed.</p>
+        <div class="ngi-grid">
+            <div class="ngi-card">
+                <div class="ngi-icon">🧠</div>
+                <h3>Knowledge Graph</h3>
+                <p>Structured memory that connects entities, concepts, and facts. Learns from every interaction and builds understanding over time.</p>
             </div>
             
-            <div class="feature-card">
-                <div class="feature-icon">🤖</div>
-                <h3>True NGI</h3>
-                <p>Not just a chatbot. NEUGI has Knowledge Graph, Reasoning Engine, Planning System, and Learning capabilities.</p>
+            <div class="ngi-card">
+                <div class="ngi-icon">🧩</div>
+                <h3>Reasoning Engine</h3>
+                <p>Multi-step logical reasoning. Can explain "why", compare options, and draw conclusions from available information.</p>
             </div>
             
-            <div class="feature-card">
-                <div class="feature-icon">🛠️</div>
-                <h3>Auto Technician</h3>
-                <p>System Doctor is always on. If anything goes wrong, NEUGI automatically detects and fixes issues.</p>
+            <div class="ngi-card">
+                <div class="ngi-icon">🎯</div>
+                <h3>Planning System</h3>
+                <p>Decomposes complex goals into actionable steps. Handles dependencies, prioritizes tasks, and adapts to changes.</p>
             </div>
             
-            <div class="feature-card">
-                <div class="feature-icon">☁️</div>
-                <h3>Free to Start</h3>
-                <p>Works with Ollama Cloud free tier. No credit card needed. Local models available for 100% offline use.</p>
+            <div class="ngi-card">
+                <div class="ngi-icon">📈</div>
+                <h3>Learning</h3>
+                <p>Extracts patterns from experience. Improves performance over time based on feedback and outcomes.</p>
             </div>
             
-            <div class="feature-card">
-                <div class="feature-icon">🎨</div>
-                <h3>Beautiful Dashboard</h3>
-                <p>Clean, powerful web interface. Chat, monitor, configure - all from your browser.</p>
+            <div class="ngi-card">
+                <div class="ngi-icon">🔄</div>
+                <h3>Auto-Recovery</h3>
+                <p>Technician agent detects and fixes issues automatically. Self-healing system that keeps running smoothly.</p>
             </div>
             
-            <div class="feature-card">
-                <div class="feature-icon">🔒</div>
-                <h3>Your Data Stays Yours</h3>
-                <p>Run locally or use cloud. Your choice. NEUGI respects your privacy.</p>
+            <div class="ngi-card">
+                <div class="ngi-icon">🔐</div>
+                <h3>Security First</h3>
+                <p>Role-based authorization, command logging, and emergency stop. Your data stays yours - local or cloud.</p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Agents Section -->
+    <section class="agents-section" id="agents">
+        <div class="section-header">
+            <div class="section-label">Meet the Swarm</div>
+            <h2 class="section-title">Your AI Workforce</h2>
+            <p class="section-desc">15+ specialized agents, each expert in their domain. They work together seamlessly.</p>
+        </div>
+        
+        <div class="agents-grid">
+            <div class="agent-card aurora">
+                <div class="agent-avatar">🔍</div>
+                <h4>Aurora</h4>
+                <div class="role">Researcher</div>
+                <div class="caps">
+                    <span class="agent-cap">search</span>
+                    <span class="agent-cap">analyze</span>
+                    <span class="agent-cap">discover</span>
+                </div>
+            </div>
+            
+            <div class="agent-card cipher">
+                <div class="agent-avatar">💻</div>
+                <h4>Cipher</h4>
+                <div class="role">Coder</div>
+                <div class="caps">
+                    <span class="agent-cap">code</span>
+                    <span class="agent-cap">debug</span>
+                    <span class="agent-cap">deploy</span>
+                </div>
+            </div>
+            
+            <div class="agent-card nova">
+                <div class="agent-avatar">🎨</div>
+                <h4>Nova</h4>
+                <div class="role">Creator</div>
+                <div class="caps">
+                    <span class="agent-cap">design</span>
+                    <span class="agent-cap">generate</span>
+                    <span class="agent-cap">create</span>
+                </div>
+            </div>
+            
+            <div class="agent-card pulse">
+                <div class="agent-avatar">📊</div>
+                <h4>Pulse</h4>
+                <div class="role">Analyst</div>
+                <div class="caps">
+                    <span class="agent-cap">analyze</span>
+                    <span class="agent-cap">visualize</span>
+                    <span class="agent-cap">report</span>
+                </div>
+            </div>
+            
+            <div class="agent-card quark">
+                <div class="agent-avatar">📈</div>
+                <h4>Quark</h4>
+                <div class="role">Strategist</div>
+                <div class="caps">
+                    <span class="agent-cap">trade</span>
+                    <span class="agent-cap">market</span>
+                    <span class="agent-cap">invest</span>
+                </div>
+            </div>
+            
+            <div class="agent-card shield">
+                <div class="agent-avatar">🛡️</div>
+                <h4>Shield</h4>
+                <div class="role">Security</div>
+                <div class="caps">
+                    <span class="agent-cap">scan</span>
+                    <span class="agent-cap">audit</span>
+                    <span class="agent-cap">protect</span>
+                </div>
+            </div>
+            
+            <div class="agent-card spark">
+                <div class="agent-avatar">⚡</div>
+                <h4>Spark</h4>
+                <div class="role">Social</div>
+                <div class="caps">
+                    <span class="agent-cap">post</span>
+                    <span class="agent-cap">engage</span>
+                    <span class="agent-cap">schedule</span>
+                </div>
+            </div>
+            
+            <div class="agent-card ink">
+                <div class="agent-avatar">✍️</div>
+                <h4>Ink</h4>
+                <div class="role">Writer</div>
+                <div class="caps">
+                    <span class="agent-cap">write</span>
+                    <span class="agent-cap">edit</span>
+                    <span class="agent-cap">proofread</span>
+                </div>
             </div>
         </div>
     </section>
     
     <!-- How It Works -->
-    <section class="how-it-works" id="how-it-works">
-        <div class="section-title">
-            <h2>How It Works</h2>
-            <p>From zero to AI assistant in minutes</p>
+    <section class="section" id="how-it-works">
+        <div class="section-header">
+            <div class="section-label">Getting Started</div>
+            <h2 class="section-title">From Zero to AI in Minutes</h2>
+            <p class="section-desc">Three simple steps to your personal AI workforce.</p>
         </div>
         
-        <div class="steps">
+        <div class="steps-container">
             <div class="step">
                 <div class="step-number">1</div>
                 <div class="step-content">
                     <h3>Run One Command</h3>
-                    <p>Copy and paste the installation command. That's it.</p>
+                    <p>Copy and paste the installation command. Everything - Ollama, models, NEUGI - installs automatically.</p>
                 </div>
             </div>
             
@@ -543,7 +1079,7 @@
                 <div class="step-number">2</div>
                 <div class="step-content">
                     <h3>Answer Simple Questions</h3>
-                    <p>Tell NEUGI your name and what you want to use it for. The wizard handles everything.</p>
+                    <p>Tell NEUGI your name and what you need. The smart wizard configures everything for your use case.</p>
                 </div>
             </div>
             
@@ -551,15 +1087,7 @@
                 <div class="step-number">3</div>
                 <div class="step-content">
                     <h3>Start Using</h3>
-                    <p>NEUGI is ready! Use the dashboard or CLI to interact with your AI assistant.</p>
-                </div>
-            </div>
-            
-            <div class="step">
-                <div class="step-number">4</div>
-                <div class="step-content">
-                    <h3>Automatic Recovery</h3>
-                    <p>Problems? NEUGI's Technician mode automatically detects and fixes issues.</p>
+                    <p>Your AI swarm is ready! Use the dashboard, CLI, or API. 15 agents working 24/7 for you.</p>
                 </div>
             </div>
         </div>
@@ -567,44 +1095,39 @@
     
     <!-- Footer -->
     <footer>
-        <div class="logo" style="margin-bottom: 20px;">🤖 NEUGI</div>
-        <p>Neural General Intelligence - Made Easy</p>
-        <p>
-            <a href="https://github.com/atharia-agi/neugi_swarm" target="_blank">GitHub</a> • 
-            <a href="#" target="_blank">Documentation</a> • 
+        <div class="footer-logo">🧠 NEUGI</div>
+        <div class="footer-links">
+            <a href="https://github.com/atharia-agi/neugi_swarm" target="_blank">GitHub</a>
+            <a href="#" target="_blank">Documentation</a>
             <a href="#" target="_blank">Discord</a>
-        </p>
-        
-        <div class="social-links">
-            <a href="https://github.com/atharia-agi/neugi_swarm" target="_blank" title="GitHub">🐙</a>
-            <a href="#" title="Twitter">🐦</a>
-            <a href="#" title="Discord">💬</a>
+            <a href="#" target="_blank">Twitter</a>
         </div>
-        
-        <p style="margin-top: 40px; font-size: 14px;">
-            © 2026 NEUGI. Built with 🤍 using Ollama.
+        <p class="footer-copy">
+            © 2026 NEUGI SWARM. Built with 💜 using Ollama.<br>
+            Open Source • Free Forever • Your Data, Your Control
         </p>
     </footer>
     
     <script>
-        // Smooth scroll
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                document.querySelector(this.getAttribute('href')).scrollIntoView({
-                    behavior: 'smooth'
-                });
-            });
-        });
-        
         // Header scroll effect
         window.addEventListener('scroll', () => {
             const header = document.querySelector('header');
             if (window.scrollY > 50) {
-                header.style.background = 'rgba(10, 10, 15, 0.95)';
+                header.classList.add('scrolled');
             } else {
-                header.style.background = 'rgba(10, 10, 15, 0.8)';
+                header.classList.remove('scrolled');
             }
+        });
+        
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
         });
     </script>
 </body>
