@@ -2,14 +2,83 @@
 # 🤖 NEUGI SWARM ONE-LINE INSTALLER
 # ==================================
 # Supports: Linux, macOS, Windows (WSL)
-# Works with: Any Python 3.8+
+# Includes: Ollama latest version!
 
 set -e
 
-echo "🤖 Installing Neugi Swarm..."
+echo "🤖 Installing NEUGI Swarm..."
 echo "================================"
+echo ""
 
-# Check Python
+# ============================================================
+# STEP 1: Install Ollama (Latest Version!)
+# ============================================================
+
+echo "📦 Installing Ollama (latest)..."
+
+# Check if Ollama is already installed
+if command -v ollama &> /dev/null; then
+    echo "   ✅ Ollama already installed: $(ollama --version)"
+else
+    # Detect OS and install Ollama
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS
+        echo "   📱 Installing Ollama for macOS..."
+        curl -fsSL https://ollama.ai/install.sh | sh
+    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        # Linux
+        echo "   🐧 Installing Ollama for Linux..."
+        curl -fsSL https://ollama.ai/install.sh | sh
+        
+        # Add to PATH for this session
+        export PATH="$HOME/.local/bin:$PATH"
+    else
+        # Other - try generic install
+        echo "   💻 Installing Ollama..."
+        curl -fsSL https://ollama.ai/install.sh | sh
+    fi
+    
+    # Verify installation
+    if command -v ollama &> /dev/null; then
+        echo "   ✅ Ollama installed: $(ollama --version)"
+    else
+        echo "   ⚠️ Could not install Ollama automatically."
+        echo "   Please install manually from: https://ollama.ai"
+    fi
+fi
+
+echo ""
+
+# Start Ollama in background (for the wizard!)
+echo "🚀 Starting Ollama server..."
+export PATH="$HOME/.local/bin:$PATH"
+
+# Try to start ollama serve in background
+ollama serve &
+OLLAMA_PID=$!
+
+# Wait a moment for Ollama to start
+sleep 3
+
+# Check if Ollama is running
+if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
+    echo "   ✅ Ollama is running!"
+else
+    # Try once more
+    sleep 2
+    if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
+        echo "   ✅ Ollama is running!"
+    else
+        echo "   ⚠️ Ollama started in background"
+    fi
+fi
+
+echo ""
+
+# ============================================================
+# STEP 2: Check Python
+# ============================================================
+
 if ! command -v python3 &> /dev/null; then
     echo "❌ Python3 not found. Install from python.org or: sudo apt install python3"
     exit 1
@@ -17,15 +86,23 @@ fi
 
 echo "✅ Python3 found: $(python3 --version)"
 
-# Create neugi directory
+# ============================================================
+# STEP 3: Create NEUGI Directory
+# ============================================================
+
 NEUGI_DIR="$HOME/neugi"
 mkdir -p "$NEUGI_DIR"
 cd "$NEUGI_DIR"
 
 echo "📁 Created directory: $NEUGI_DIR"
 
+# ============================================================
+# STEP 4: Download NEUGI Files
+# ============================================================
+
+echo "📥 Downloading NEUGI Swarm..."
+
 # Download main file
-echo "📥 Downloading Neugi Swarm..."
 curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_swarm.py" -o neugi_swarm.py
 
 if [ $? -ne 0 ]; then
@@ -33,22 +110,29 @@ if [ $? -ne 0 ]; then
     curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm.py" -o neugi_swarm.py
 fi
 
+# Download wizard
+curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_wizard.py" -o neugi_wizard.py 2>/dev/null || true
+
 # Make executable
 chmod +x neugi_swarm.py
 
-# Create config
+# ============================================================
+# STEP 5: Create Config
+# ============================================================
+
 cat > config.py << 'EOF'
 # 🤖 NEUGI SWARM CONFIGURATION
 # ============================
+# Corporate: NEUGI (Neural General Intelligence)
 
 # ============================================================
-# STEP 1: Choose Your LLM Provider
+# LLM Provider Selection
 # ============================================================
 
-# OPTION A: Free Providers (RECOMMENDED FOR START!)
-# -----------------------------------------------
+# OPTION A: Free Providers (RECOMMENDED!)
+# ----------------------------------------
 
-# Groq (Free, fast!) - https://console.groq.com
+# Groq (Fast, free!) - https://console.groq.com
 # GROQ_API_KEY="gsk_..."
 
 # OpenRouter (Many free models!) - https://openrouter.ai
@@ -59,13 +143,13 @@ cat > config.py << 'EOF'
 # OPTION B: Cheap Providers
 # --------------------------
 
-# MiniMax (Cheap, good quality) - https://platform.minimax.io
+# MiniMax - https://platform.minimax.io
 # MINIMAX_API_KEY="..."
 
 # ============================================================
 
 # OPTION C: Premium Providers
-# ---------------------------
+# --------------------------
 
 # OpenAI - https://platform.openai.com
 # OPENAI_API_KEY="sk-..."
@@ -75,40 +159,23 @@ cat > config.py << 'EOF'
 
 # ============================================================
 
-# OPTION D: Local (Free forever!)
-# -------------------------------
+# OPTION D: Ollama (Local - FREE forever!)
+# ----------------------------------------
 
-# Ollama (Local models) - https://ollama.ai
-# Set USE_OLLAMA=true and make sure Ollama is running
-USE_OLLAMA=false
+# NEUGI will auto-start Ollama if needed
+USE_OLLAMA=true
 OLLAMA_URL="http://localhost:11434"
-OLLAMA_MODEL="llama2"  # or mistral, codellama, etc
-
-# llama.cpp (Very lightweight!)
-# Set USE_LLAMACPP=true
-USE_LLAMACPP=false
-LLAMACPP_PATH="./models/"
+OLLAMA_MODEL="qwen3.5:cloud"  # Best for NEUGI!
 
 # ============================================================
-# STEP 2: Model Selection (Flexible Context!)
+# Model Selection (2K+ Context Works!)
 # ============================================================
 
-# Minimum context: 2K tokens (works with small models!)
-# Recommended: 8K+ for better performance
-
-# For free tier / weak API:
-MODEL="auto"  # Auto-select best available
-
-# Specific models (check your provider's model list):
-# - groq: llama-3.1-8b-instant, mixtral-8x7b-32768
-# - openrouter: google/gemini-flash, meta-llama
-# - ollama: llama2, mistral, codellama
-
-# Context window (minimum that works):
-CONTEXT_WINDOW=2048  # Works with small models!
+MODEL="auto"  # Auto-select best
+CONTEXT_WINDOW=2048  # Minimum that works!
 
 # ============================================================
-# STEP 3: Channels (Optional)
+# Channels (Optional)
 # ============================================================
 
 # Telegram
@@ -118,35 +185,25 @@ TELEGRAM_CHAT_ID=""
 # Discord
 DISCORD_WEBHOOK_URL=""
 
-# WhatsApp (Twilio)
-TWILIO_ACCOUNT_SID=""
-TWILIO_AUTH_TOKEN=""
-TWILIO_PHONE_NUMBER=""
-
 # ============================================================
-# STEP 4: Security
+# Security
 # ============================================================
 
-# Your master key (controls everything)
-MASTER_KEY="change_me_in_setup"
-
-# Rate limiting
-RATE_LIMIT_MINUTE=60
-RATE_LIMIT_HOUR=1000
+MASTER_KEY="change_me"
 
 # ============================================================
-# END OF CONFIG
+# END
 # ============================================================
 EOF
 
 echo "✅ Config created: config.py"
 
-# Try to download additional files
+# Download additional modules
 echo "📦 Getting additional modules..."
 curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_swarm_skills.py" -o neugi_swarm_skills.py 2>/dev/null || true
 curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_swarm_channels.py" -o neugi_swarm_channels.py 2>/dev/null || true
 
-# Create data directory
+# Create directories
 mkdir -p data models logs
 
 echo ""
@@ -155,17 +212,15 @@ echo "✅ INSTALLATION COMPLETE!"
 echo "================================"
 echo ""
 echo "📍 Location: $NEUGI_DIR"
+echo "🔧 Ollama: Installed & Running"
 echo ""
 echo "NEXT STEPS:"
 echo "----------"
-echo "1. Edit config.py and add your API key:"
-echo "   nano config.py"
+echo "1. Run setup wizard:"
+echo "   python3 neugi_wizard.py"
 echo ""
-echo "2. Run setup wizard:"
-echo "   python3 neugi_swarm.py --setup"
-echo ""
-echo "3. Start Neugi:"
+echo "2. Or start NEUGI directly:"
 echo "   python3 neugi_swarm.py"
 echo ""
-echo "Or use --help for more options!"
+echo "📖 Dashboard: http://localhost:19888"
 echo ""
