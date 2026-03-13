@@ -263,304 +263,224 @@ class DashboardHandler(BaseHTTPRequestHandler):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEUGI - Neural General Intelligence</title>
+    <title>NEUGI SWARM - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg: #06060a;
+            --bg-elevated: #0c0c11;
+            --bg-card: #101016;
+            --text: #e4e4e7;
+            --text-muted: #71717a;
+            --text-dim: #3f3f46;
+            --border: rgba(255,255,255,0.06);
+            --border-hover: rgba(255,255,255,0.12);
+            --accent: #22d3ee;
+            --primary: #a78bfa;
+            --gradient: linear-gradient(135deg, var(--accent), var(--primary));
+        }
+        
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0a0f;
-            color: #e0e0e0;
+            font-family: 'Outfit', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
             min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background-image: linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+            background-size: 32px 32px;
+            mask-image: radial-gradient(ellipse 70% 50% at 50% 30%, black 30%, transparent 100%);
         }
         
         .header {
-            background: linear-gradient(90deg, #1a1a2e, #16213e);
-            padding: 20px 40px;
+            background: rgba(6, 6, 10, 0.85);
+            backdrop-filter: blur(12px);
+            padding: 16px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #2a2a4e;
+            border-bottom: 1px solid var(--border);
+            position: sticky; top: 0; z-index: 100;
         }
         
         .logo {
-            font-size: 32px;
-            font-weight: 800;
-            background: linear-gradient(90deg, #00d4ff, #7b2ff7);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-size: 20px; font-weight: 600;
+            display: flex; align-items: center; gap: 10px;
         }
         
+        .logo-mark {
+            width: 28px; height: 28px; border-radius: 6px;
+            background: linear-gradient(var(--bg), var(--bg)) padding-box, var(--gradient) border-box;
+            border: 2px solid transparent;
+            display: flex; align-items: center; justify-content: center;
+        }
+
         .status {
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            display: flex; align-items: center; gap: 8px;
+            font-size: 13px; font-weight: 500; color: var(--text-muted);
+            background: var(--bg-card); padding: 6px 14px; border-radius: 100px;
+            border: 1px solid var(--border);
         }
         
         .status-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #00ff88;
-            animation: pulse 2s infinite;
+            width: 8px; height: 8px; border-radius: 50%; background: #22d3ee;
+            box-shadow: 0 0 10px #22d3ee;
+        }
+        .status-dot.error { background: #ff4444; box-shadow: 0 0 10px #ff4444; }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+        
+        .grid-4 {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 32px;
         }
         
-        .status-dot.error {
-            background: #ff4444;
-            animation: none;
+        .card {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+            padding: 24px; transition: all 0.2s;
         }
+        .card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
         
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 40px 20px;
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-        
-        .stat-card {
-            background: #1a1a2e;
-            border-radius: 16px;
-            padding: 24px;
-            border: 1px solid #2a2a4e;
-        }
-        
-        .stat-value {
-            font-size: 36px;
-            font-weight: bold;
-            color: #00d4ff;
-        }
-        
-        .stat-label {
-            color: #888;
-            margin-top: 8px;
-            font-size: 14px;
-        }
+        .card .value { font-size: 32px; font-weight: 600; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .card .label { color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
         
         .section {
-            background: #1a1a2e;
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 20px;
-            border: 1px solid #2a2a4e;
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+            padding: 24px; margin-bottom: 24px;
         }
         
-        .section h2 {
-            font-size: 20px;
-            margin-bottom: 20px;
-            color: #fff;
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .section-title { font-size: 16px; font-weight: 600; }
+        
+        .btn {
+            background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text);
+            padding: 8px 16px; border-radius: 8px; font-size: 13px; cursor: pointer; transition: all 0.2s;
+            font-family: 'Outfit', sans-serif; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+        }
+        .btn:hover { background: var(--border); border-color: var(--text-muted); }
+        .btn-primary { background: var(--gradient); color: #000; border: none; font-weight: 600; }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(34,211,238,0.2); }
+        
+        .action-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+        
+        .action-card {
+            background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px;
+            padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; text-decoration: none; color: var(--text);
+        }
+        .action-card:hover { border-color: var(--accent); background: rgba(34,211,238,0.05); }
+        .action-icon { font-size: 24px; margin-bottom: 8px; }
+        .action-name { font-size: 14px; font-weight: 500; }
+        
+        .terminal {
+            background: #000; border: 1px solid var(--border); border-radius: 8px; padding: 16px;
+            font-family: 'JetBrains Mono', monospace; font-size: 13px; max-height: 400px; overflow-y: auto;
         }
         
-        .action-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-        }
+        .chat-container { display: flex; flex-direction: column; height: 500px; }
+        .chat-box { flex: 1; overflow-y: auto; padding-right: 10px; display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px; }
+        .chat-msg { max-width: 80%; padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.5; }
+        .chat-msg.user { background: var(--bg-elevated); border: 1px solid var(--border); align-self: flex-end; border-bottom-right-radius: 4px; }
+        .chat-msg.assistant { background: rgba(34,211,238,0.1); border: 1px solid rgba(34,211,238,0.2); align-self: flex-start; border-bottom-left-radius: 4px; }
         
-        .action-btn {
-            background: linear-gradient(135deg, #2a2a4e, #3a3a5e);
-            border: 1px solid #4a4a6e;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            color: #e0e0e0;
-            text-decoration: none;
-            display: block;
+        .chat-input-wrapper { display: flex; gap: 12px; }
+        .chat-input-wrapper input {
+            flex: 1; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px;
+            padding: 12px 16px; color: var(--text); font-family: 'Outfit', sans-serif; font-size: 14px;
         }
+        .chat-input-wrapper input:focus { outline: none; border-color: var(--accent); }
         
-        .action-btn:hover {
-            background: linear-gradient(135deg, #3a3a5e, #4a4a6e);
-            transform: translateY(-3px);
-            border-color: #00d4ff;
-        }
-        
-        .action-icon {
-            font-size: 28px;
-            margin-bottom: 10px;
-        }
-        
-        .action-title {
-            font-weight: 600;
-        }
-        
-        .issue-list {
-            list-style: none;
-        }
-        
-        .issue-item {
-            background: #2a1a1a;
-            border: 1px solid #4a2a2a;
-            border-radius: 8px;
-            padding: 12px 16px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .issue-item.fixed {
-            background: #1a2a1a;
-            border-color: #2a4a2a;
-        }
-        
-        .issue-text {
-            color: #ff6666;
-        }
-        
-        .fix-btn {
-            background: #00aa66;
-            color: #fff;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-        
-        .chat-box {
-            background: #0f0f1a;
-            border-radius: 12px;
-            padding: 20px;
-            height: 300px;
-            overflow-y: auto;
-            margin-bottom: 15px;
-        }
-        
-        .chat-msg {
-            margin-bottom: 12px;
-            padding: 12px 16px;
-            border-radius: 12px;
-            max-width: 80%;
-        }
-        
-        .chat-msg.user {
-            background: linear-gradient(135deg, #1a3a5a, #2a4a6a);
-            margin-left: auto;
-        }
-        
-        .chat-msg.assistant {
-            background: linear-gradient(135deg, #2a1a4a, #3a2a5a);
-        }
-        
-        .chat-input {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .chat-input input {
-            flex: 1;
-            background: #1a1a2e;
-            border: 1px solid #3a3a5e;
-            border-radius: 8px;
-            padding: 12px 16px;
-            color: #e0e0e0;
-            font-size: 14px;
-        }
-        
-        .chat-input button {
-            background: linear-gradient(135deg, #00d4ff, #7b2ff7);
-            border: none;
-            border-radius: 8px;
-            padding: 12px 24px;
-            color: #fff;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        
-        .refresh-btn {
-            background: #2a2a4e;
-            border: 1px solid #4a4a6e;
-            border-radius: 8px;
-            padding: 8px 16px;
-            color: #e0e0e0;
-            cursor: pointer;
-            font-size: 12px;
-        }
+        .issue-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(255,68,68,0.1); border: 1px solid rgba(255,68,68,0.2); border-radius: 8px; margin-bottom: 8px; font-size: 13px; color: #ff8888; }
+        .issue-ok { display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(34,211,238,0.1); border: 1px solid rgba(34,211,238,0.2); border-radius: 8px; font-size: 13px; color: var(--accent); }
     </style>
 </head>
 <body>
+    <div class="bg"></div>
     <div class="header">
-        <div class="logo">🤖 NEUGI</div>
+        <div class="logo">
+            <div class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" style="width:14px;height:14px;"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
+            NEUGI SWARM
+        </div>
         <div class="status">
             <div class="status-dot" id="statusDot"></div>
-            <span id="statusText">Loading...</span>
+            <span id="statusText">Connecting...</span>
         </div>
     </div>
     
     <div class="container">
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-value" id="uptime">--</div>
-                <div class="stat-label">Uptime</div>
+        <div class="grid-4">
+            <div class="card">
+                <div class="value" id="uptime">--</div>
+                <div class="label">Uptime</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-value" id="model">--</div>
-                <div class="stat-label">Model</div>
+            <div class="card">
+                <div class="value" id="model" style="font-size:24px;">--</div>
+                <div class="label">Model Core</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-value" id="errors">0</div>
-                <div class="stat-label">Errors</div>
+            <div class="card">
+                <div class="value" id="errors">0</div>
+                <div class="label">Anomalies</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-value">19888</div>
-                <div class="stat-label">Port</div>
+            <div class="card">
+                <div class="value" style="font-family: 'JetBrains Mono'">19888</div>
+                <div class="label">Gateway Port</div>
             </div>
         </div>
         
         <div class="section">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-                <h2>⚡ Quick Actions</h2>
-                <button class="refresh-btn" onclick="refreshStatus()">🔄 Refresh</button>
+            <div class="section-header">
+                <h2 class="section-title">Control Panel</h2>
+                <button class="btn" onclick="refreshStatus()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+                    Refresh Sync
+                </button>
             </div>
             <div class="action-grid">
-                <a href="/chat" class="action-btn">
+                <a href="/chat" class="action-card">
                     <div class="action-icon">💬</div>
-                    <div class="action-title">Chat</div>
+                    <div class="action-name">Swarm Chat</div>
                 </a>
-                <a href="/technician" class="action-btn">
+                <a href="/technician" class="action-card">
                     <div class="action-icon">🔧</div>
-                    <div class="action-title">Technician</div>
+                    <div class="action-name">Technician</div>
                 </a>
-                <a href="/api/fix" target="_blank" class="action-btn">
-                    <div class="action-icon">🩹</div>
-                    <div class="action-title">Auto Fix</div>
+                <a href="/api/fix" target="_blank" class="action-card">
+                    <div class="action-icon">✨</div>
+                    <div class="action-name">Auto Resolve</div>
                 </a>
-                <a href="/logs" class="action-btn">
-                    <div class="action-icon">📋</div>
-                    <div class="action-title">Logs</div>
+                <a href="/logs" class="action-card">
+                    <div class="action-icon">📝</div>
+                    <div class="action-name">System Logs</div>
                 </a>
             </div>
         </div>
         
         <div class="section">
-            <h2>🔍 System Status</h2>
+            <h2 class="section-title">Diagnostics</h2>
             <div id="issues">
-                <div style="color:#00ff88;">✅ No issues detected</div>
-            </div>
-        </div>
-        
-        <div class="section">
-            <h2>💬 Quick Chat</h2>
-            <div class="chat-box" id="chatBox">
-                <div class="chat-msg assistant">
-                    👋 Hello! I'm NEUGI. How can I help you today?
+                <div class="issue-ok">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    System optimal. No anomalies detected.
                 </div>
             </div>
-            <div class="chat-input">
-                <input type="text" id="chatInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter')sendChat()">
-                <button onclick="sendChat()">Send</button>
+        </div>
+        
+        <div class="section">
+            <h2 class="section-title">Direct Interface</h2>
+            <div class="chat-container">
+                <div class="chat-box" id="chatBox">
+                    <div class="chat-msg assistant">
+                        <strong>NEUGI OS v14.1.0</strong><br>
+                        Connection established. Swarm agents are standing by. How may we assist you?
+                    </div>
+                </div>
+                <div class="chat-input-wrapper">
+                    <input type="text" id="chatInput" placeholder="Command the swarm..." onkeypress="if(event.key==='Enter')sendChat()">
+                    <button class="btn btn-primary" onclick="sendChat()">Execute</button>
+                </div>
             </div>
         </div>
     </div>
@@ -574,15 +494,15 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 const data = await resp.json();
                 
                 // Update uptime
-                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const elapsed = Math.floor((Date.now() - startTime) / 1000) + (data.neugi?.uptime || 0);
                 const mins = Math.floor(elapsed / 60);
                 const secs = elapsed % 60;
                 document.getElementById('uptime').textContent = mins + 'm ' + secs + 's';
                 
                 // Update model
                 const ollama = data.ollama;
-                if (ollama.status === 'running') {
-                    document.getElementById('model').textContent = ollama.models || 'Ready';
+                if (ollama && ollama.status === 'running') {
+                    document.getElementById('model').textContent = 'Online';
                 } else {
                     document.getElementById('model').textContent = 'Offline';
                 }
@@ -596,25 +516,31 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 
                 if (data.issues && data.issues.length > 0) {
                     dot.className = 'status-dot error';
-                    text.textContent = 'Issues Found';
+                    text.textContent = 'Anomalies Detected';
                 } else {
                     dot.className = 'status-dot';
-                    text.textContent = 'Running';
+                    text.textContent = 'System Optimal';
                 }
                 
                 // Show issues
                 const issuesDiv = document.getElementById('issues');
                 if (data.issues && data.issues.length > 0) {
                     issuesDiv.innerHTML = data.issues.map(i => 
-                        '<div class="issue-item"><span class="issue-text">⚠️ ' + i + '</span></div>'
+                        `<div class="issue-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                            ${i}
+                        </div>`
                     ).join('');
-                    issuesDiv.innerHTML += '<div style="margin-top:10px"><a href="/technician" class="fix-btn" style="background:#ff6600">🔧 Open Technician</a></div>';
                 } else {
-                    issuesDiv.innerHTML = '<div style="color:#00ff88;">✅ No issues detected</div>';
+                    issuesDiv.innerHTML = `
+                        <div class="issue-ok">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            System optimal. No anomalies detected.
+                        </div>`;
                 }
                 
             } catch(e) {
-                document.getElementById('statusText').textContent = 'Error';
+                document.getElementById('statusText').textContent = 'Connection Lost';
                 document.getElementById('statusDot').className = 'status-dot error';
             }
         }
@@ -626,7 +552,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
             
             const box = document.getElementById('chatBox');
             box.innerHTML += '<div class="chat-msg user">' + msg + '</div>';
-            box.innerHTML += '<div class="chat-msg assistant">Thinking...</div>';
+            
+            const loadingId = 'loading-' + Date.now();
+            box.innerHTML += `<div class="chat-msg assistant" id="${loadingId}">...</div>`;
+            
             input.value = '';
             box.scrollTop = box.scrollHeight;
             
@@ -637,13 +566,15 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     body: JSON.stringify({message: msg})
                 });
                 const data = await resp.json();
-                box.innerHTML = '<div class="chat-msg assistant">' + data.response + '</div>';
+                document.getElementById(loadingId).outerHTML = '<div class="chat-msg assistant">' + (data.response || '').replace(/
+/g, '<br>') + '</div>';
             } catch(e) {
-                box.innerHTML += '<div class="chat-msg assistant">Error: Make sure NEUGI is running!</div>';
+                document.getElementById(loadingId).outerHTML = '<div class="chat-msg assistant" style="color:#ff8888">Error: Connection failed. Swarm unreachable.</div>';
             }
+            box.scrollTop = box.scrollHeight;
         }
         
-        // Auto refresh every 5 seconds
+        // Auto refresh
         refreshStatus();
         setInterval(refreshStatus, 5000);
     </script>

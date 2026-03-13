@@ -1,190 +1,321 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>Neugi Swarm Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEUGI SWARM - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg: #06060a;
+            --bg-elevated: #0c0c11;
+            --bg-card: #101016;
+            --text: #e4e4e7;
+            --text-muted: #71717a;
+            --text-dim: #3f3f46;
+            --border: rgba(255,255,255,0.06);
+            --border-hover: rgba(255,255,255,0.12);
+            --accent: #22d3ee;
+            --primary: #a78bfa;
+            --gradient: linear-gradient(135deg, var(--accent), var(--primary));
+        }
+        
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #fff;
+        
+        body {
+            font-family: 'Outfit', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
             min-height: 100vh;
-            padding: 40px;
+            line-height: 1.6;
         }
-        .container { max-width: 1200px; margin: 0 auto; }
-        h1 { 
-            font-size: 3em; 
-            margin-bottom: 10px;
-            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+
+        .bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background-image: linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+            background-size: 32px 32px;
+            mask-image: radial-gradient(ellipse 70% 50% at 50% 30%, black 30%, transparent 100%);
         }
-        .tagline { color: #888; margin-bottom: 30px; font-size: 1.2em; }
-        .grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+        
+        .header {
+            background: rgba(6, 6, 10, 0.85);
+            backdrop-filter: blur(12px);
+            padding: 16px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            position: sticky; top: 0; z-index: 100;
         }
-        .card {
-            background: rgba(255,255,255,0.05);
-            border-radius: 15px;
-            padding: 25px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .card h2 { color: #00d4ff; margin-bottom: 15px; font-size: 1.2em; }
-        .stat { margin: 15px 0; }
-        .stat-label { color: #888; font-size: 0.9em; }
-        .stat-value { 
-            font-size: 1.5em; 
-            font-weight: bold;
-            color: #00ff88;
-        }
-        .badge {
-            display: inline-block;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.8em;
-            margin-right: 5px;
-        }
-        .badge-free { background: #00ff88; color: #000; }
-        .chat-box {
-            background: rgba(255,255,255,0.05);
-            border-radius: 15px;
-            padding: 20px;
-            margin-top: 20px;
-        }
-        .chat-input {
-            width: 100%;
-            padding: 15px;
-            border-radius: 10px;
-            border: 1px solid rgba(255,255,255,0.2);
-            background: rgba(0,0,0,0.3);
-            color: #fff;
-            font-size: 1em;
-            margin-top: 10px;
-        }
-        .chat-input:focus { outline: none; border-color: #00d4ff; }
-        #response {
-            margin-top: 20px;
-            padding: 15px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 10px;
-            min-height: 100px;
-            white-space: pre-wrap;
-        }
-        .footer { 
-            text-align: center; 
-            margin-top: 40px; 
-            color: #666;
-            font-size: 0.9em;
-        }
+        
         .logo {
-            font-size: 4em;
-            text-align: center;
-            margin-bottom: 20px;
+            font-size: 20px; font-weight: 600;
+            display: flex; align-items: center; gap: 10px;
         }
+        
+        .logo-mark {
+            width: 28px; height: 28px; border-radius: 6px;
+            background: linear-gradient(var(--bg), var(--bg)) padding-box, var(--gradient) border-box;
+            border: 2px solid transparent;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .status {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 13px; font-weight: 500; color: var(--text-muted);
+            background: var(--bg-card); padding: 6px 14px; border-radius: 100px;
+            border: 1px solid var(--border);
+        }
+        
+        .status-dot {
+            width: 8px; height: 8px; border-radius: 50%; background: #22d3ee;
+            box-shadow: 0 0 10px #22d3ee;
+        }
+        .status-dot.error { background: #ff4444; box-shadow: 0 0 10px #ff4444; }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+        
+        .grid-4 {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 32px;
+        }
+        
+        .card {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+            padding: 24px; transition: all 0.2s;
+        }
+        .card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+        
+        .card .value { font-size: 32px; font-weight: 600; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .card .label { color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+        
+        .section {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+            padding: 24px; margin-bottom: 24px;
+        }
+        
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .section-title { font-size: 16px; font-weight: 600; }
+        
+        .btn {
+            background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text);
+            padding: 8px 16px; border-radius: 8px; font-size: 13px; cursor: pointer; transition: all 0.2s;
+            font-family: 'Outfit', sans-serif; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+        }
+        .btn:hover { background: var(--border); border-color: var(--text-muted); }
+        .btn-primary { background: var(--gradient); color: #000; border: none; font-weight: 600; }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(34,211,238,0.2); }
+        
+        .action-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+        
+        .action-card {
+            background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px;
+            padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; text-decoration: none; color: var(--text);
+        }
+        .action-card:hover { border-color: var(--accent); background: rgba(34,211,238,0.05); }
+        .action-icon { font-size: 24px; margin-bottom: 8px; }
+        .action-name { font-size: 14px; font-weight: 500; }
+        
+        .terminal {
+            background: #000; border: 1px solid var(--border); border-radius: 8px; padding: 16px;
+            font-family: 'JetBrains Mono', monospace; font-size: 13px; max-height: 400px; overflow-y: auto;
+        }
+        
+        .chat-container { display: flex; flex-direction: column; height: 500px; }
+        .chat-box { flex: 1; overflow-y: auto; padding-right: 10px; display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px; }
+        .chat-msg { max-width: 80%; padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.5; }
+        .chat-msg.user { background: var(--bg-elevated); border: 1px solid var(--border); align-self: flex-end; border-bottom-right-radius: 4px; }
+        .chat-msg.assistant { background: rgba(34,211,238,0.1); border: 1px solid rgba(34,211,238,0.2); align-self: flex-start; border-bottom-left-radius: 4px; }
+        
+        .chat-input-wrapper { display: flex; gap: 12px; }
+        .chat-input-wrapper input {
+            flex: 1; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px;
+            padding: 12px 16px; color: var(--text); font-family: 'Outfit', sans-serif; font-size: 14px;
+        }
+        .chat-input-wrapper input:focus { outline: none; border-color: var(--accent); }
+        
+        .issue-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(255,68,68,0.1); border: 1px solid rgba(255,68,68,0.2); border-radius: 8px; margin-bottom: 8px; font-size: 13px; color: #ff8888; }
+        .issue-ok { display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(34,211,238,0.1); border: 1px solid rgba(34,211,238,0.2); border-radius: 8px; font-size: 13px; color: var(--accent); }
     </style>
 </head>
 <body>
+    <div class="bg"></div>
+    <div class="header">
+        <div class="logo">
+            <div class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" style="width:14px;height:14px;"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
+            NEUGI SWARM
+        </div>
+        <div class="status">
+            <div class="status-dot" id="statusDot"></div>
+            <span id="statusText">Connecting...</span>
+        </div>
+    </div>
+    
     <div class="container">
-        <div class="logo">🤖</div>
-        <h1>Neugi Swarm</h1>
-        <p class="tagline">Production-Ready Autonomous AI | v14.1</p>
-        
-        <div class="grid">
+        <div class="grid-4">
             <div class="card">
-                <h2>🧠 LLM Status</h2>
-                <div class="stat">
-                    <div class="stat-label">Provider</div>
-                    <div class="stat-value">Groq</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-label">Model</div>
-                    <div class="stat-value">llama-3.1-8b-instant</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-label">Context Window</div>
-                    <div class="stat-value">8,000 tokens</div>
-                </div>
-                <span class="badge badge-free">FREE</span>
+                <div class="value" id="uptime">--</div>
+                <div class="label">Uptime</div>
             </div>
-            
             <div class="card">
-                <h2>📊 System</h2>
-                <div class="stat">
-                    <div class="stat-label">Version</div>
-                    <div class="stat-value">14.1</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-label">Status</div>
-                    <div class="stat-value" style="color: #00ff88;">● Active</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-label">Uptime</div>
-                    <div class="stat-value" id="uptime">0h 0m 0s</div>
-                </div>
+                <div class="value" id="model" style="font-size:24px;">--</div>
+                <div class="label">Model Core</div>
             </div>
-            
             <div class="card">
-                <h2>🛠️ Quick Actions</h2>
-                <p style="margin: 10px 0;">
-                    <a href="/api/test" style="color: #00d4ff;">Test LLM</a> |
-                    <a href="/api/status" style="color: #00d4ff;">Status</a> |
-                    <a href="/api/health" style="color: #00d4ff;">Health</a>
-                </p>
-                <p style="margin: 10px 0; color: #888; font-size: 0.9em;">
-                    API Endpoint: POST /api/chat
-                </p>
+                <div class="value" id="errors">0</div>
+                <div class="label">Anomalies</div>
+            </div>
+            <div class="card">
+                <div class="value" style="font-family: 'JetBrains Mono'">19888</div>
+                <div class="label">Gateway Port</div>
             </div>
         </div>
         
-        <div class="chat-box">
-            <h2>💬 Quick Chat</h2>
-            <input type="text" id="prompt" class="chat-input" placeholder="Type your message here..." onkeypress="if(event.key==='Enter')sendMessage()">
-            <div id="response">Response will appear here...</div>
+        <div class="section">
+            <div class="section-header">
+                <h2 class="section-title">Control Panel</h2>
+                <button class="btn" onclick="refreshStatus()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+                    Refresh Sync
+                </button>
+            </div>
+            <div class="action-grid">
+                <a href="/chat" class="action-card">
+                    <div class="action-icon">💬</div>
+                    <div class="action-name">Swarm Chat</div>
+                </a>
+                <a href="/technician" class="action-card">
+                    <div class="action-icon">🔧</div>
+                    <div class="action-name">Technician</div>
+                </a>
+                <a href="/api/fix" target="_blank" class="action-card">
+                    <div class="action-icon">✨</div>
+                    <div class="action-name">Auto Resolve</div>
+                </a>
+                <a href="/logs" class="action-card">
+                    <div class="action-icon">📝</div>
+                    <div class="action-name">System Logs</div>
+                </a>
+            </div>
         </div>
         
-        <div class="footer">
-            <p>Neugi Swarm - Minimum context: 2K tokens supported! | 
-            Works with: Groq, OpenRouter, Ollama, llama.cpp, MiniMax, OpenAI, Anthropic</p>
+        <div class="section">
+            <h2 class="section-title">Diagnostics</h2>
+            <div id="issues">
+                <div class="issue-ok">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    System optimal. No anomalies detected.
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2 class="section-title">Direct Interface</h2>
+            <div class="chat-container">
+                <div class="chat-box" id="chatBox">
+                    <div class="chat-msg assistant">
+                        <strong>NEUGI OS v14.1.0</strong><br>
+                        Connection established. Swarm agents are standing by. How may we assist you?
+                    </div>
+                </div>
+                <div class="chat-input-wrapper">
+                    <input type="text" id="chatInput" placeholder="Command the swarm..." onkeypress="if(event.key==='Enter')sendChat()">
+                    <button class="btn btn-primary" onclick="sendChat()">Execute</button>
+                </div>
+            </div>
         </div>
     </div>
     
     <script>
         let startTime = Date.now();
         
-        function updateUptime() {
-            let elapsed = Math.floor((Date.now() - startTime) / 1000);
-            let hours = Math.floor(elapsed / 3600);
-            let minutes = Math.floor((elapsed % 3600) / 60);
-            let seconds = elapsed % 60;
-            document.getElementById('uptime').textContent = 
-                hours + 'h ' + minutes + 'm ' + seconds + 's';
-        }
-        
-        setInterval(updateUptime, 1000);
-        
-        async function sendMessage() {
-            const prompt = document.getElementById('prompt').value;
-            if (!prompt) return;
-            
-            document.getElementById('response').textContent = 'Thinking...';
-            
+        async function refreshStatus() {
             try {
-                const res = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({message: prompt})
-                });
+                const resp = await fetch('/api/status');
+                const data = await resp.json();
                 
-                const data = await res.json();
-                document.getElementById('response').textContent = data.response || data.error || 'No response';
+                // Update uptime
+                const elapsed = Math.floor((Date.now() - startTime) / 1000) + (data.neugi?.uptime || 0);
+                const mins = Math.floor(elapsed / 60);
+                const secs = elapsed % 60;
+                document.getElementById('uptime').textContent = mins + 'm ' + secs + 's';
+                
+                // Update model
+                const ollama = data.ollama;
+                if (ollama && ollama.status === 'running') {
+                    document.getElementById('model').textContent = 'Online';
+                } else {
+                    document.getElementById('model').textContent = 'Offline';
+                }
+                
+                // Update errors
+                document.getElementById('errors').textContent = data.issues ? data.issues.length : 0;
+                
+                // Update status
+                const dot = document.getElementById('statusDot');
+                const text = document.getElementById('statusText');
+                
+                if (data.issues && data.issues.length > 0) {
+                    dot.className = 'status-dot error';
+                    text.textContent = 'Anomalies Detected';
+                } else {
+                    dot.className = 'status-dot';
+                    text.textContent = 'System Optimal';
+                }
+                
+                // Show issues
+                const issuesDiv = document.getElementById('issues');
+                if (data.issues && data.issues.length > 0) {
+                    issuesDiv.innerHTML = data.issues.map(i => 
+                        `<div class="issue-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                            ${i}
+                        </div>`
+                    ).join('');
+                } else {
+                    issuesDiv.innerHTML = `
+                        <div class="issue-ok">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            System optimal. No anomalies detected.
+                        </div>`;
+                }
+                
             } catch(e) {
-                document.getElementById('response').textContent = 'Error: ' + e.message;
+                document.getElementById('statusText').textContent = 'Connection Lost';
+                document.getElementById('statusDot').className = 'status-dot error';
             }
         }
+        
+        async function sendChat() {
+            const input = document.getElementById('chatInput');
+            const msg = input.value.trim();
+            if (!msg) return;
+            
+            const box = document.getElementById('chatBox');
+            box.innerHTML += '<div class="chat-msg user">' + msg + '</div>';
+            
+            const loadingId = 'loading-' + Date.now();
+            box.innerHTML += `<div class="chat-msg assistant" id="${loadingId}">...</div>`;
+            
+            input.value = '';
+            box.scrollTop = box.scrollHeight;
+            
+            try {
+                const resp = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message: msg})
+                });
+                const data = await resp.json();
+                document.getElementById(loadingId).outerHTML = '<div class="chat-msg assistant">' + (data.response || '').replace(/\\n/g, '<br>') + '</div>';
+            } catch(e) {
+                document.getElementById(loadingId).outerHTML = '<div class="chat-msg assistant" style="color:#ff8888">Error: Connection failed. Swarm unreachable.</div>';
+            }
+            box.scrollTop = box.scrollHeight;
+        }
+        
+        // Auto refresh
+        refreshStatus();
+        setInterval(refreshStatus, 5000);
     </script>
 </body>
 </html>
