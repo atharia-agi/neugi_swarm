@@ -10,27 +10,22 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --bg-dark: #050507;
-            --bg-card: #0d0d12;
-            --bg-card-hover: #13131a;
-            --primary: #00d4ff;
-            --primary-glow: rgba(0, 212, 255, 0.4);
-            --secondary: #7c3aed;
-            --secondary-glow: rgba(124, 58, 237, 0.4);
-            --accent: #f472b6;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --text: #ffffff;
+            --bg-dark: #06060a;
+            --bg-card: #0c0c11;
+            --bg-card-hover: #101018;
+            --primary: #22d3ee;
+            --primary-dim: rgba(34, 211, 238, 0.15);
+            --secondary: #a78bfa;
+            --secondary-dim: rgba(167, 139, 250, 0.15);
+            --text: #e4e4e7;
             --text-muted: #71717a;
             --text-dim: #3f3f46;
-            --border: rgba(255,255,255,0.08);
-            --border-hover: rgba(255,255,255,0.15);
-            --gradient-1: linear-gradient(135deg, #00d4ff 0%, #7c3aed 100%);
-            --gradient-2: linear-gradient(135deg, #7c3aed 0%, #f472b6 100%);
+            --border: rgba(255,255,255,0.06);
+            --border-hover: rgba(255,255,255,0.12);
         }
         
         * {
@@ -44,14 +39,13 @@
         }
         
         body {
-            font-family: 'Outfit', sans-serif;
+            font-family: 'Outfit', -apple-system, sans-serif;
             background: var(--bg-dark);
             color: var(--text);
             line-height: 1.6;
-            overflow-x: hidden;
+            font-size: 15px;
         }
         
-        /* Animated Grid Background */
         .bg-grid {
             position: fixed;
             top: 0;
@@ -59,49 +53,21 @@
             width: 100%;
             height: 100%;
             z-index: -1;
-            background-image: 
-                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-            background-size: 60px 60px;
-            mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%);
+            background-image: linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+            background-size: 40px 40px;
+            mask-image: radial-gradient(ellipse 70% 50% at 50% 30%, black 30%, transparent 100%);
         }
         
         .bg-glow {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: -30%;
+            left: 30%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(34, 211, 238, 0.08) 0%, transparent 70%);
+            filter: blur(80px);
             z-index: -2;
-        }
-        
-        .bg-glow::before {
-            content: '';
-            position: absolute;
-            top: -20%;
-            left: 20%;
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
-            filter: blur(100px);
-            animation: float 15s ease-in-out infinite;
-        }
-        
-        .bg-glow::after {
-            content: '';
-            position: absolute;
-            bottom: -20%;
-            right: 10%;
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, var(--secondary-glow) 0%, transparent 70%);
-            filter: blur(100px);
-            animation: float 12s ease-in-out infinite reverse;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translate(0, 0); }
-            50% { transform: translate(30px, -30px); }
         }
         
         /* Header */
@@ -110,113 +76,72 @@
             top: 0;
             left: 0;
             right: 0;
-            padding: 16px 40px;
+            padding: 14px 32px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(5, 5, 7, 0.7);
-            backdrop-filter: blur(20px);
+            background: rgba(6, 6, 10, 0.8);
+            backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--border);
-            z-index: 1000;
-            transition: all 0.3s ease;
-        }
-        
-        header.scrolled {
-            padding: 12px 40px;
-            background: rgba(5, 5, 7, 0.9);
+            z-index: 100;
         }
         
         .logo {
             display: flex;
             align-items: center;
-            gap: 12px;
-            font-size: 24px;
-            font-weight: 800;
-            letter-spacing: -0.5px;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
         }
         
         .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: var(--gradient-1);
-            border-radius: 10px;
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
-            box-shadow: 0 4px 20px var(--primary-glow);
-        }
-        
-        .logo span {
-            background: var(--gradient-1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-size: 16px;
         }
         
         nav {
             display: flex;
-            align-items: center;
-            gap: 40px;
+            gap: 28px;
         }
         
         nav a {
             color: var(--text-muted);
             text-decoration: none;
+            font-size: 13px;
             font-weight: 500;
-            font-size: 15px;
-            transition: color 0.3s;
-            position: relative;
-        }
-        
-        nav a::after {
-            content: '';
-            position: absolute;
-            bottom: -4px;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background: var(--primary);
-            transition: width 0.3s;
+            transition: color 0.2s;
         }
         
         nav a:hover {
             color: var(--text);
         }
         
-        nav a:hover::after {
-            width: 100%;
-        }
-        
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-        
         .btn {
-            padding: 10px 24px;
-            border-radius: 10px;
-            font-size: 14px;
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-size: 13px;
             font-weight: 600;
             text-decoration: none;
-            transition: all 0.3s;
+            transition: all 0.2s;
             cursor: pointer;
             border: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
         }
         
         .btn-primary {
-            background: var(--gradient-1);
-            color: white;
-            box-shadow: 0 4px 20px var(--primary-glow);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: #000;
         }
         
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px var(--primary-glow);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(34, 211, 238, 0.25);
         }
         
         .btn-ghost {
@@ -226,182 +151,147 @@
         }
         
         .btn-ghost:hover {
-            border-color: var(--primary);
+            border-color: var(--text-muted);
             color: var(--text);
         }
         
-        /* Hero Section */
+        /* Hero */
         .hero {
-            min-height: 100vh;
+            min-height: 90vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             text-align: center;
-            padding: 120px 20px 80px;
-            position: relative;
+            padding: 100px 20px 60px;
         }
         
         .hero-badge {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            background: rgba(124, 58, 237, 0.1);
-            border: 1px solid rgba(124, 58, 237, 0.3);
-            padding: 8px 20px;
+            gap: 6px;
+            background: var(--primary-dim);
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            padding: 6px 14px;
             border-radius: 100px;
-            font-size: 14px;
-            color: #a78bfa;
-            margin-bottom: 32px;
-            animation: fadeInUp 0.8s ease-out;
+            font-size: 12px;
+            color: var(--primary);
+            margin-bottom: 24px;
         }
         
         .hero-badge::before {
             content: '';
-            width: 8px;
-            height: 8px;
-            background: var(--secondary);
+            width: 6px;
+            height: 6px;
+            background: var(--primary);
             border-radius: 50%;
-            animation: pulse 2s ease-in-out infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
         }
         
         .hero h1 {
-            font-size: clamp(48px, 8vw, 96px);
-            font-weight: 800;
-            line-height: 1.05;
-            margin-bottom: 24px;
-            letter-spacing: -2px;
-            animation: fadeInUp 0.8s ease-out 0.1s both;
+            font-size: clamp(32px, 5vw, 48px);
+            font-weight: 700;
+            line-height: 1.15;
+            margin-bottom: 16px;
+            letter-spacing: -1px;
         }
         
         .hero h1 .gradient {
-            background: var(--gradient-1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .hero h1 .swarm {
-            background: var(--gradient-2);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
         
         .hero p {
-            font-size: 20px;
+            font-size: 15px;
             color: var(--text-muted);
-            max-width: 600px;
-            margin-bottom: 40px;
-            animation: fadeInUp 0.8s ease-out 0.2s both;
+            max-width: 480px;
+            margin-bottom: 28px;
         }
         
         .hero-buttons {
             display: flex;
-            gap: 16px;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin-bottom: 60px;
-            animation: fadeInUp 0.8s ease-out 0.3s both;
+            gap: 12px;
+            margin-bottom: 40px;
         }
         
         .btn-large {
-            padding: 16px 36px;
-            font-size: 16px;
-            border-radius: 12px;
+            padding: 12px 24px;
+            font-size: 14px;
         }
         
-        /* Agent Cards Preview */
+        /* Agents Preview */
         .agent-preview {
             display: flex;
             gap: 8px;
-            animation: fadeInUp 0.8s ease-out 0.4s both;
             flex-wrap: wrap;
             justify-content: center;
-            max-width: 700px;
+            max-width: 520px;
         }
         
         .agent-mini {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            padding: 12px 20px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.3s;
-        }
-        
-        .agent-mini:hover {
-            border-color: var(--primary);
-            transform: translateY(-4px);
-        }
-        
-        .agent-mini .avatar {
-            width: 28px;
-            height: 28px;
+            padding: 8px 14px;
             border-radius: 8px;
             display: flex;
             align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .agent-mini:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-2px);
+        }
+        
+        .agent-mini .avatar {
+            width: 22px;
+            height: 22px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
             justify-content: center;
-            font-size: 14px;
+            font-size: 11px;
         }
         
         .agent-mini.aurora .avatar { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
         .agent-mini.cipher .avatar { background: linear-gradient(135deg, #10b981, #059669); }
-        .agent-mini.nova .avatar { background: linear-gradient(135deg, #f472b6, #db2777); }
+        .agent-mini.nova .avatar { background: linear-gradient(135deg, #ec4899, #be185d); }
         .agent-mini.pulse .avatar { background: linear-gradient(135deg, #f59e0b, #d97706); }
         .agent-mini.shield .avatar { background: linear-gradient(135deg, #ef4444, #dc2626); }
-        .agent-mini.ink .avatar { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
-        
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
         
         /* Terminal */
         .terminal {
-            margin-top: 20px;
+            margin-top: 16px;
             background: var(--bg-card);
-            border-radius: 16px;
+            border-radius: 12px;
             border: 1px solid var(--border);
             overflow: hidden;
-            max-width: 650px;
+            max-width: 520px;
             width: 100%;
-            animation: fadeInUp 0.8s ease-out 0.5s both;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
         }
         
         .terminal-header {
-            background: rgba(255,255,255,0.03);
-            padding: 14px 20px;
+            background: rgba(255,255,255,0.02);
+            padding: 10px 16px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             border-bottom: 1px solid var(--border);
         }
         
         .terminal-dots {
             display: flex;
-            gap: 8px;
+            gap: 6px;
         }
         
         .terminal-dot {
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
         }
         
@@ -410,20 +300,21 @@
         .terminal-dot.green { background: #27ca40; }
         
         .terminal-title {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-muted);
             margin-left: 8px;
+            font-family: 'JetBrains Mono', monospace;
         }
         
         .terminal-body {
-            padding: 20px;
+            padding: 14px 16px;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 13px;
+            font-size: 11px;
             text-align: left;
         }
         
         .terminal-line {
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             display: flex;
             gap: 8px;
         }
@@ -439,182 +330,144 @@
         
         .terminal-output {
             color: var(--text-muted);
-            padding-left: 20px;
+            padding-left: 16px;
         }
         
-        .terminal-output.success { color: var(--success); }
+        .terminal-output.success { color: #10b981; }
         .terminal-output.info { color: var(--primary); }
         
-        /* Features Section */
+        /* Section */
         .section {
-            padding: 120px 20px;
-            max-width: 1200px;
+            padding: 60px 20px;
+            max-width: 900px;
             margin: 0 auto;
         }
         
         .section-header {
             text-align: center;
-            margin-bottom: 60px;
+            margin-bottom: 40px;
         }
         
         .section-label {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            color: var(--primary);
-            margin-bottom: 16px;
+            letter-spacing: 1.5px;
+            color: var(--secondary);
+            margin-bottom: 10px;
         }
         
         .section-title {
-            font-size: clamp(36px, 5vw, 56px);
-            font-weight: 700;
-            margin-bottom: 16px;
-            letter-spacing: -1px;
+            font-size: 26px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            letter-spacing: -0.5px;
         }
         
         .section-desc {
-            font-size: 18px;
+            font-size: 14px;
             color: var(--text-muted);
-            max-width: 500px;
-            margin: 0 auto;
         }
         
-        /* NGI Features */
+        /* NGI Cards */
         .ngi-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 24px;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
         }
         
         .ngi-card {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 32px;
-            transition: all 0.4s;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .ngi-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: var(--gradient-1);
-            transform: scaleX(0);
-            transition: transform 0.4s;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.25s;
         }
         
         .ngi-card:hover {
             border-color: var(--border-hover);
-            transform: translateY(-8px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-        }
-        
-        .ngi-card:hover::before {
-            transform: scaleX(1);
+            transform: translateY(-3px);
         }
         
         .ngi-icon {
-            width: 56px;
-            height: 56px;
-            background: rgba(0, 212, 255, 0.1);
-            border-radius: 14px;
+            width: 36px;
+            height: 36px;
+            background: var(--primary-dim);
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 28px;
-            margin-bottom: 20px;
+            font-size: 18px;
+            margin-bottom: 14px;
         }
         
         .ngi-card h3 {
-            font-size: 22px;
+            font-size: 15px;
             font-weight: 600;
-            margin-bottom: 12px;
+            margin-bottom: 6px;
         }
         
         .ngi-card p {
+            font-size: 13px;
             color: var(--text-muted);
-            font-size: 15px;
-            line-height: 1.7;
+            line-height: 1.6;
         }
         
-        /* Agents Section */
+        /* Agents Grid */
         .agents-section {
             background: var(--bg-card);
             border-top: 1px solid var(--border);
             border-bottom: 1px solid var(--border);
-            padding: 120px 20px;
+            padding: 60px 20px;
         }
         
         .agents-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            max-width: 1200px;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            max-width: 900px;
             margin: 0 auto;
         }
         
         .agent-card {
             background: var(--bg-dark);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 24px;
+            border-radius: 10px;
+            padding: 16px;
             text-align: center;
-            transition: all 0.3s;
+            transition: all 0.2s;
         }
         
         .agent-card:hover {
-            border-color: var(--primary);
-            transform: translateY(-4px);
+            border-color: var(--border-hover);
+            transform: translateY(-2px);
         }
         
         .agent-avatar {
-            width: 64px;
-            height: 64px;
-            border-radius: 16px;
-            margin: 0 auto 16px;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            margin: 0 auto 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 32px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            font-size: 18px;
         }
         
         .agent-card h4 {
-            font-size: 18px;
+            font-size: 13px;
             font-weight: 600;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
         
         .agent-card .role {
-            font-size: 13px;
-            color: var(--text-muted);
-            margin-bottom: 12px;
-        }
-        
-        .agent-card .caps {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            justify-content: center;
-        }
-        
-        .agent-cap {
             font-size: 11px;
-            padding: 4px 10px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 6px;
             color: var(--text-muted);
         }
         
         .agent-card.aurora .agent-avatar { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
         .agent-card.cipher .agent-avatar { background: linear-gradient(135deg, #10b981, #059669); }
-        .agent-card.nova .agent-avatar { background: linear-gradient(135deg, #f472b6, #db2777); }
+        .agent-card.nova .agent-avatar { background: linear-gradient(135deg, #ec4899, #be185d); }
         .agent-card.pulse .agent-avatar { background: linear-gradient(135deg, #f59e0b, #d97706); }
         .agent-card.quark .agent-avatar { background: linear-gradient(135deg, #06b6d4, #0891b2); }
         .agent-card.shield .agent-avatar { background: linear-gradient(135deg, #ef4444, #dc2626); }
@@ -623,7 +476,7 @@
         
         /* Stats */
         .stats-section {
-            padding: 80px 20px;
+            padding: 40px 20px;
             background: var(--bg-card);
             border-top: 1px solid var(--border);
             border-bottom: 1px solid var(--border);
@@ -632,88 +485,74 @@
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 40px;
-            max-width: 1000px;
+            gap: 24px;
+            max-width: 700px;
             margin: 0 auto;
             text-align: center;
         }
         
         .stat-item .value {
-            font-size: 48px;
+            font-size: 28px;
             font-weight: 700;
-            background: var(--gradient-1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--primary);
         }
         
         .stat-item .label {
-            font-size: 14px;
+            font-size: 12px;
             color: var(--text-muted);
-            margin-top: 8px;
+            margin-top: 4px;
         }
         
-        /* How It Works */
+        /* Steps */
         .steps-container {
-            max-width: 800px;
+            max-width: 500px;
             margin: 0 auto;
         }
         
         .step {
             display: flex;
-            gap: 24px;
-            margin-bottom: 40px;
-            position: relative;
-        }
-        
-        .step:not(:last-child)::before {
-            content: '';
-            position: absolute;
-            left: 28px;
-            top: 60px;
-            width: 2px;
-            height: calc(100% + 20px);
-            background: var(--border);
+            gap: 16px;
+            margin-bottom: 24px;
         }
         
         .step-number {
-            width: 56px;
-            height: 56px;
+            width: 32px;
+            height: 32px;
             background: var(--bg-card);
-            border: 2px solid var(--primary);
+            border: 1px solid var(--border);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
-            font-weight: 700;
+            font-size: 13px;
+            font-weight: 600;
             flex-shrink: 0;
             color: var(--primary);
         }
         
         .step-content h3 {
-            font-size: 22px;
+            font-size: 15px;
             font-weight: 600;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
         }
         
         .step-content p {
+            font-size: 13px;
             color: var(--text-muted);
-            font-size: 16px;
         }
         
         /* Footer */
         footer {
-            padding: 60px 20px;
+            padding: 40px 20px;
             text-align: center;
             border-top: 1px solid var(--border);
         }
         
         .footer-logo {
-            font-size: 28px;
-            font-weight: 800;
-            margin-bottom: 16px;
-            background: var(--gradient-1);
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -722,30 +561,30 @@
         .footer-links {
             display: flex;
             justify-content: center;
-            gap: 32px;
-            margin-bottom: 32px;
+            gap: 24px;
+            margin-bottom: 20px;
         }
         
         .footer-links a {
             color: var(--text-muted);
             text-decoration: none;
-            font-size: 15px;
-            transition: color 0.3s;
+            font-size: 13px;
+            transition: color 0.2s;
         }
         
         .footer-links a:hover {
-            color: var(--primary);
+            color: var(--text);
         }
         
         .footer-copy {
             color: var(--text-dim);
-            font-size: 14px;
+            font-size: 12px;
         }
         
         /* Mobile */
-        @media (max-width: 768px) {
+        @media (max-width: 640px) {
             header {
-                padding: 12px 20px;
+                padding: 10px 16px;
             }
             
             nav {
@@ -753,20 +592,20 @@
             }
             
             .hero h1 {
-                letter-spacing: -1px;
-            }
-            
-            .hero p {
-                font-size: 17px;
+                font-size: 28px;
             }
             
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
-                gap: 32px;
             }
             
-            .terminal {
-                margin: 20px 16px;
+            .agent-preview {
+                gap: 6px;
+            }
+            
+            .agent-mini {
+                padding: 6px 10px;
+                font-size: 11px;
             }
         }
     </style>
@@ -779,21 +618,16 @@
     <header>
         <div class="logo">
             <div class="logo-icon">🧠</div>
-            <span>NEUGI</span>
+            NEUGI
         </div>
         <nav>
             <a href="#features">Features</a>
             <a href="#agents">Agents</a>
             <a href="#how-it-works">How It Works</a>
-            <a href="#pricing">Pricing</a>
         </nav>
         <div class="header-actions">
-            <a href="https://github.com/atharia-agi/neugi_swarm" class="btn btn-ghost" target="_blank">
-                <span>🐙</span> GitHub
-            </a>
-            <a href="https://github.com/atharia-agi/neugi_swarm" class="btn btn-primary" target="_blank">
-                Get Started →
-            </a>
+            <a href="https://github.com/atharia-agi/neugi_swarm" class="btn btn-ghost" target="_blank">GitHub</a>
+            <a href="https://github.com/atharia-agi/neugi_swarm" class="btn btn-primary" target="_blank">Get Started</a>
         </div>
     </header>
     
@@ -804,18 +638,16 @@
         </div>
         
         <h1>
-            <span class="gradient">AI Swarm</span><br>
-            for <span class="swarm">Everyone</span>
+            AI Swarm for <span class="gradient">Everyone</span>
         </h1>
         
         <p>
-            Meet your new AI workforce. 15+ autonomous agents powered by true NGI - 
-            Knowledge Graph, Reasoning, Planning & Learning. One command to install.
+            15+ autonomous agents powered by true NGI - Knowledge Graph, Reasoning, Planning & Learning. One command to install.
         </p>
         
         <div class="hero-buttons">
             <a href="https://github.com/atharia-agi/neugi_swarm" class="btn btn-primary btn-large" target="_blank">
-                🚀 Install Now
+                Install Now
             </a>
             <a href="#how-it-works" class="btn btn-ghost btn-large">
                 Learn More
@@ -843,10 +675,6 @@
                 <div class="avatar">🛡️</div>
                 Shield
             </div>
-            <div class="agent-mini ink">
-                <div class="avatar">✍️</div>
-                Ink
-            </div>
         </div>
         
         <!-- Terminal -->
@@ -865,7 +693,7 @@
                     <span class="terminal-command">curl -fsSL neugi.sh/install | bash</span>
                 </div>
                 <div class="terminal-line">
-                    <span class="terminal-output info">🤖 Installing NEUGI SWARM v15...</span>
+                    <span class="terminal-output info">🤖 Installing NEUGI SWARM...</span>
                 </div>
                 <div class="terminal-line">
                     <span class="terminal-output">✓ Ollama installed</span>
@@ -874,17 +702,7 @@
                     <span class="terminal-output">✓ 15 agents initialized</span>
                 </div>
                 <div class="terminal-line">
-                    <span class="terminal-output">✓ Knowledge Graph ready</span>
-                </div>
-                <div class="terminal-line">
-                    <span class="terminal-output success">✅ NEUGI SWARM running on http://localhost:19888</span>
-                </div>
-                <div class="terminal-line">
-                    <span class="terminal-prompt">$</span>
-                    <span class="terminal-command">neugi status</span>
-                </div>
-                <div class="terminal-line">
-                    <span class="terminal-output">🧠 15 agents active | 💾 2.4MB memory | ⚡ 0.02s response</span>
+                    <span class="terminal-output success">✅ Running on http://localhost:19888</span>
                 </div>
             </div>
         </div>
@@ -895,19 +713,19 @@
         <div class="stats-grid">
             <div class="stat-item">
                 <div class="value">15+</div>
-                <div class="label">Autonomous Agents</div>
+                <div class="label">Agents</div>
             </div>
             <div class="stat-item">
                 <div class="value">50+</div>
-                <div class="label">Built-in Tools</div>
+                <div class="label">Tools</div>
             </div>
             <div class="stat-item">
                 <div class="value">NGI</div>
-                <div class="label">True Intelligence</div>
+                <div class="label">Intelligence</div>
             </div>
             <div class="stat-item">
                 <div class="value">Free</div>
-                <div class="label">To Use Forever</div>
+                <div class="label">Forever</div>
             </div>
         </div>
     </section>
@@ -917,44 +735,44 @@
         <div class="section-header">
             <div class="section-label">Core Technology</div>
             <h2 class="section-title">What is NGI?</h2>
-            <p class="section-desc">Not just a chatbot. True Neural General Intelligence with reasoning capabilities.</p>
+            <p class="section-desc">Not just a chatbot. True Neural General Intelligence.</p>
         </div>
         
         <div class="ngi-grid">
             <div class="ngi-card">
                 <div class="ngi-icon">🧠</div>
                 <h3>Knowledge Graph</h3>
-                <p>Structured memory that connects entities, concepts, and facts. Learns from every interaction and builds understanding over time.</p>
+                <p>Structured memory connecting entities, concepts, and facts. Learns from every interaction.</p>
             </div>
             
             <div class="ngi-card">
                 <div class="ngi-icon">🧩</div>
                 <h3>Reasoning Engine</h3>
-                <p>Multi-step logical reasoning. Can explain "why", compare options, and draw conclusions from available information.</p>
+                <p>Multi-step logical reasoning. Can explain "why" and draw conclusions.</p>
             </div>
             
             <div class="ngi-card">
                 <div class="ngi-icon">🎯</div>
                 <h3>Planning System</h3>
-                <p>Decomposes complex goals into actionable steps. Handles dependencies, prioritizes tasks, and adapts to changes.</p>
+                <p>Decomposes complex goals into actionable steps with dependency handling.</p>
             </div>
             
             <div class="ngi-card">
                 <div class="ngi-icon">📈</div>
                 <h3>Learning</h3>
-                <p>Extracts patterns from experience. Improves performance over time based on feedback and outcomes.</p>
+                <p>Extracts patterns from experience. Improves performance over time.</p>
             </div>
             
             <div class="ngi-card">
                 <div class="ngi-icon">🔄</div>
                 <h3>Auto-Recovery</h3>
-                <p>Technician agent detects and fixes issues automatically. Self-healing system that keeps running smoothly.</p>
+                <p>Technician agent detects and fixes issues automatically.</p>
             </div>
             
             <div class="ngi-card">
                 <div class="ngi-icon">🔐</div>
-                <h3>Security First</h3>
-                <p>Role-based authorization, command logging, and emergency stop. Your data stays yours - local or cloud.</p>
+                <h3>Security</h3>
+                <p>Role-based authorization, command logging, emergency stop.</p>
             </div>
         </div>
     </section>
@@ -964,7 +782,7 @@
         <div class="section-header">
             <div class="section-label">Meet the Swarm</div>
             <h2 class="section-title">Your AI Workforce</h2>
-            <p class="section-desc">15+ specialized agents, each expert in their domain. They work together seamlessly.</p>
+            <p class="section-desc">Specialized agents that work together seamlessly.</p>
         </div>
         
         <div class="agents-grid">
@@ -972,88 +790,48 @@
                 <div class="agent-avatar">🔍</div>
                 <h4>Aurora</h4>
                 <div class="role">Researcher</div>
-                <div class="caps">
-                    <span class="agent-cap">search</span>
-                    <span class="agent-cap">analyze</span>
-                    <span class="agent-cap">discover</span>
-                </div>
             </div>
             
             <div class="agent-card cipher">
                 <div class="agent-avatar">💻</div>
                 <h4>Cipher</h4>
                 <div class="role">Coder</div>
-                <div class="caps">
-                    <span class="agent-cap">code</span>
-                    <span class="agent-cap">debug</span>
-                    <span class="agent-cap">deploy</span>
-                </div>
             </div>
             
             <div class="agent-card nova">
                 <div class="agent-avatar">🎨</div>
                 <h4>Nova</h4>
                 <div class="role">Creator</div>
-                <div class="caps">
-                    <span class="agent-cap">design</span>
-                    <span class="agent-cap">generate</span>
-                    <span class="agent-cap">create</span>
-                </div>
             </div>
             
             <div class="agent-card pulse">
                 <div class="agent-avatar">📊</div>
                 <h4>Pulse</h4>
                 <div class="role">Analyst</div>
-                <div class="caps">
-                    <span class="agent-cap">analyze</span>
-                    <span class="agent-cap">visualize</span>
-                    <span class="agent-cap">report</span>
-                </div>
             </div>
             
             <div class="agent-card quark">
                 <div class="agent-avatar">📈</div>
                 <h4>Quark</h4>
                 <div class="role">Strategist</div>
-                <div class="caps">
-                    <span class="agent-cap">trade</span>
-                    <span class="agent-cap">market</span>
-                    <span class="agent-cap">invest</span>
-                </div>
             </div>
             
             <div class="agent-card shield">
                 <div class="agent-avatar">🛡️</div>
                 <h4>Shield</h4>
                 <div class="role">Security</div>
-                <div class="caps">
-                    <span class="agent-cap">scan</span>
-                    <span class="agent-cap">audit</span>
-                    <span class="agent-cap">protect</span>
-                </div>
             </div>
             
             <div class="agent-card spark">
                 <div class="agent-avatar">⚡</div>
                 <h4>Spark</h4>
                 <div class="role">Social</div>
-                <div class="caps">
-                    <span class="agent-cap">post</span>
-                    <span class="agent-cap">engage</span>
-                    <span class="agent-cap">schedule</span>
-                </div>
             </div>
             
             <div class="agent-card ink">
                 <div class="agent-avatar">✍️</div>
                 <h4>Ink</h4>
                 <div class="role">Writer</div>
-                <div class="caps">
-                    <span class="agent-cap">write</span>
-                    <span class="agent-cap">edit</span>
-                    <span class="agent-cap">proofread</span>
-                </div>
             </div>
         </div>
     </section>
@@ -1063,7 +841,6 @@
         <div class="section-header">
             <div class="section-label">Getting Started</div>
             <h2 class="section-title">From Zero to AI in Minutes</h2>
-            <p class="section-desc">Three simple steps to your personal AI workforce.</p>
         </div>
         
         <div class="steps-container">
@@ -1071,15 +848,15 @@
                 <div class="step-number">1</div>
                 <div class="step-content">
                     <h3>Run One Command</h3>
-                    <p>Copy and paste the installation command. Everything - Ollama, models, NEUGI - installs automatically.</p>
+                    <p>Copy and paste the installation command. Everything installs automatically.</p>
                 </div>
             </div>
             
             <div class="step">
                 <div class="step-number">2</div>
                 <div class="step-content">
-                    <h3>Answer Simple Questions</h3>
-                    <p>Tell NEUGI your name and what you need. The smart wizard configures everything for your use case.</p>
+                    <h3>Answer Questions</h3>
+                    <p>Tell NEUGI your name and needs. The wizard configures everything.</p>
                 </div>
             </div>
             
@@ -1087,7 +864,7 @@
                 <div class="step-number">3</div>
                 <div class="step-content">
                     <h3>Start Using</h3>
-                    <p>Your AI swarm is ready! Use the dashboard, CLI, or API. 15 agents working 24/7 for you.</p>
+                    <p>Your AI swarm is ready! Use dashboard, CLI, or API.</p>
                 </div>
             </div>
         </div>
@@ -1098,30 +875,26 @@
         <div class="footer-logo">🧠 NEUGI</div>
         <div class="footer-links">
             <a href="https://github.com/atharia-agi/neugi_swarm" target="_blank">GitHub</a>
-            <a href="#" target="_blank">Documentation</a>
-            <a href="#" target="_blank">Discord</a>
-            <a href="#" target="_blank">Twitter</a>
+            <a href="#">Documentation</a>
+            <a href="#">Discord</a>
         </div>
         <p class="footer-copy">
-            © 2026 NEUGI SWARM. Built with 💜 using Ollama.<br>
-            Open Source • Free Forever • Your Data, Your Control
+            © 2026 NEUGI SWARM. Open Source • Free Forever
         </p>
     </footer>
     
     <script>
-        // Header scroll effect
         window.addEventListener('scroll', () => {
             const header = document.querySelector('header');
-            if (window.scrollY > 50) {
-                header.classList.add('scrolled');
+            if (window.scrollY > 30) {
+                header.style.background = 'rgba(6, 6, 10, 0.95)';
             } else {
-                header.classList.remove('scrolled');
+                header.style.background = 'rgba(6, 6, 10, 0.8)';
             }
         });
         
-        // Smooth scroll
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
+            anchor.addEventListener('click', function(e) {
                 e.preventDefault();
                 const target = document.querySelector(this.getAttribute('href'));
                 if (target) {
