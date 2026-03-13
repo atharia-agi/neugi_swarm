@@ -109,7 +109,7 @@ diingat saat menghasilkan response.
 # ============================================================
 
 # These are hypothetical 2026 models (for reference/future planning)
-2026_MODELS = {
+MODELS_2026 = {
     "groq": {
         "models": [
             "llama-4-scout-8b",  # 2026 - ultra fast
@@ -120,7 +120,7 @@ diingat saat menghasilkan response.
             "llama-4-scout-8b": 32768,
             "llama-4-force-32b": 131072,
             "mixtral-3-large-8x22b": 65536,
-        }
+        },
     },
     "openrouter": {
         "models": [
@@ -138,7 +138,7 @@ diingat saat menghasilkan response.
             "meta/llama-4-400b": 200000,
             "deepseek/r2": 1000000,
             "xai/grok-5": 2000000,
-        }
+        },
     },
     "ollama": {
         "models": [
@@ -152,93 +152,95 @@ diingat saat menghasilkan response.
             "mistral-large-3": 128000,
             "qwen3-100b": 131072,
             "phi-4-mini": 65536,
-        }
+        },
     },
     "local": {
         "llama_cpp": {
             "models": [
                 "llama-3.1-8b-q4",  # ~5GB RAM
-                "mistral-7b-q4",  # ~4GB RAM  
+                "mistral-7b-q4",  # ~4GB RAM
                 "phi-3-mini-q4",  # ~2GB RAM - MINIMUM!
                 "qwen-2.5-3b-q4",  # ~2GB RAM - MINIMUM!
             ],
             "min_context": 2048,  # Works with 2K!
             "recommended_context": 4096,
         }
-    }
+    },
 }
 
 # ============================================================
 # QUICK REFERENCE
 # ============================================================
 
+
 def get_model_for_context(context_needed: int) -> dict:
     """
     Get best model for required context
     """
-    
+
     if context_needed <= 4096:
         return {
             "recommended": "phi-3-mini-q4",
             "provider": "llama.cpp / Ollama",
             "ram_needed": "~2GB",
-            "type": "Local (FREE)"
+            "type": "Local (FREE)",
         }
     elif context_needed <= 8192:
         return {
             "recommended": "llama-3.1-8b-instant",
             "provider": "Groq",
             "type": "API (FREE tier)",
-            "speed": "Very Fast"
+            "speed": "Very Fast",
         }
     elif context_needed <= 32768:
         return {
             "recommended": "mixtral-8x7b-32768",
             "provider": "Groq",
             "type": "API (FREE tier)",
-            "speed": "Fast"
+            "speed": "Fast",
         }
     elif context_needed <= 128000:
         return {
             "recommended": "google/gemini-2.0-flash-exp",
             "provider": "OpenRouter",
             "type": "API (FREE tier)",
-            "context": "1M!"
+            "context": "1M!",
         }
     else:
         return {
             "recommended": "google/gemini-ultra-3.0",
             "provider": "OpenRouter",
             "type": "API (Premium)",
-            "context": "2M!"
+            "context": "2M!",
         }
+
 
 # ============================================================
 # RUN
 # ============================================================
 
 if __name__ == "__main__":
-    print("="*60)
+    print("=" * 60)
     print("🤖 NEUGI SWARM - CONTEXT GUIDE")
-    print("="*60)
+    print("=" * 60)
     print()
-    
+
     print(CONTEXT_GUIDE)
-    
-    print("\n" + "="*60)
+
+    print("\n" + "=" * 60)
     print("🎯 QUICK MODEL RECOMMENDATIONS")
-    print("="*60)
-    
+    print("=" * 60)
+
     contexts = [2048, 4096, 8192, 32768, 128000, 1000000]
-    
+
     for ctx in contexts:
         rec = get_model_for_context(ctx)
         print(f"\n📊 Context: {ctx:,} tokens")
         print(f"   Model: {rec['recommended']}")
         print(f"   Provider: {rec['provider']}")
         print(f"   Type: {rec.get('type', 'N/A')}")
-    
-    print("\n" + "="*60)
+
+    print("\n" + "=" * 60)
     print("✅ Neugi supports ALL context levels!")
     print("   Minimum: 2K tokens (works with small models!)")
-    print("="*60)
+    print("=" * 60)
