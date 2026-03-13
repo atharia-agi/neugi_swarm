@@ -132,7 +132,31 @@ EOF
     log_success "NEUGI installed to: $NEUGI_DIR"
     
     # ============================================================
-    # STEP 5: RUN WIZARD AUTOMATICALLY
+    # STEP 5: Install NEUGI CLI (like openclaw!)
+    # ============================================================
+    
+    log_step "INSTALLING NEUGI CLI"
+    
+    # Download CLI
+    curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi" -o "$NEUGI_DIR/neugi"
+    chmod +x "$NEUGI_DIR/neugi"
+    
+    # Add to PATH in .bashrc
+    if ! grep -q "neugi" ~/.bashrc 2>/dev/null; then
+        echo "" >> ~/.bashrc
+        echo "# NEUGI CLI" >> ~/.bashrc
+        echo "export PATH=\"\$HOME/neugi:\$PATH\"" >> ~/.bashrc
+    fi
+    
+    # Create symlink for global access
+    sudo ln -sf "$NEUGI_DIR/neugi" /usr/local/bin/neugi 2>/dev/null || \
+        ln -sf "$NEUGI_DIR/neugi" "$HOME/.local/bin/neugi" 2>/dev/null || true
+    
+    log_success "NEUGI CLI ready!"
+    log_info "   Usage: neugi [command]"
+    
+    # ============================================================
+    # STEP 6: RUN WIZARD AUTOMATICALLY
     # ============================================================
     
     log_step "RUNNING SETUP WIZARD"
@@ -145,7 +169,7 @@ EOF
     python3 neugi_wizard.py
     
     # ============================================================
-    # STEP 6: START NEUGI + ACTIVITY LOG MODE
+    # STEP 7: START NEUGI + ACTIVITY LOG MODE
     # ============================================================
     
     log_step "STARTING NEUGI"
@@ -176,6 +200,13 @@ EOF
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "         📊 ACTIVITY LOG MODE"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "💡 QUICK COMMANDS (after restart):"
+    echo "   neugi start      - Start NEUGI"
+    echo "   neugi stop       - Stop NEUGI"  
+    echo "   neugi status     - Check status"
+    echo "   neugi logs       - View logs"
+    echo "   neugi dashboard  - Open dashboard"
     echo ""
     
     # Show live logs
