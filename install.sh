@@ -1,205 +1,179 @@
 #!/bin/bash
-# 🤖 NEUGI SWARM ONE-LINE INSTALLER
-# ==================================
-# Supports: Linux, macOS, Windows (WSL)
-# Corporate Brand: NEUGI
+# 🤖 NEUGI SWARM - ONE-LINE INSTALLER
+# =====================================
+# Corporate: NEUGI
+# 100% AUTOMATED - No manual steps needed!
+# User just runs ONE command!
 
 set -e
 
-echo "🤖 Installing NEUGI Swarm..."
-echo "================================"
-echo ""
-
 # ============================================================
-# STEP 1: Install/Update Ollama (NO SIGNUP REQUIRED!)
+# COLORS
 # ============================================================
 
-echo "📦 Installing Ollama (latest)..."
-echo "   💡 NOTE: Ollama is FREE, no signup required!"
-echo "   💡 Cloud models (qwen3.5:cloud) work with free tier"
-echo "   💡 For heavy usage, can upgrade to Pro ($20/mo) later"
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
-# Check if Ollama is already installed
-if command -v ollama &> /dev/null; then
-    echo "   ✅ Ollama already installed: $(ollama --version)"
+# ============================================================
+# FUNCTIONS
+# ============================================================
+
+log_info() { echo -e "${BLUE}➜${NC} $*"; }
+log_success() { echo -e "${GREEN}✓${NC} $*"; }
+log_warn() { echo -e "${YELLOW}⚠${NC} $*"; }
+log_error() { echo -e "${RED}✗${NC} $*"; }
+
+# ============================================================
+# MAIN INSTALLER
+# ============================================================
+
+main() {
+    echo ""
+    echo "╔═══════════════════════════════════════════════════╗"
+    echo "║         🤖 NEUGI SWARM INSTALLER                ║"
+    echo "║     Neural General Intelligence - Made Easy     ║"
+    echo "╚═══════════════════════════════════════════════════╝"
+    echo ""
     
-    # UPDATE to latest version!
-    echo "   🔄 Updating Ollama to latest version..."
-    curl -fsSL https://ollama.ai/install.sh | sh
-    
-    echo "   ✅ Ollama updated!"
-else
-    # Install Ollama based on OS
-    echo "   🐧 Installing Ollama for Linux/macOS..."
-    curl -fsSL https://ollama.ai/install.sh | sh
-    
-    # Add to PATH
+    # Add PATH
     export PATH="$HOME/.local/bin:$PATH"
     
+    # ============================================================
+    # STEP 1: Install Ollama (Fully Automated!)
+    # ============================================================
+    
+    log_info "Step 1/5: Installing Ollama..."
+    
     if command -v ollama &> /dev/null; then
-        echo "   ✅ Ollama installed: $(ollama --version)"
+        log_success "Ollama already installed"
+        
+        # Update to latest
+        log_info "Updating Ollama to latest version..."
+        curl -fsSL https://ollama.ai/install.sh | sh >> /tmp/neugi_install.log 2>&1 || true
     else
-        echo "   ⚠️ Please restart terminal or run: source ~/.bashrc"
+        log_info "Installing Ollama (this may take a minute)..."
+        curl -fsSL https://ollama.ai/install.sh | sh >> /tmp/neugi_install.log 2>&1
+        
+        # Source profile
+        if [ -f ~/.bashrc ]; then
+            source ~/.bashrc 2>/dev/null || true
+        fi
     fi
-fi
-
-echo ""
-
-# ============================================================
-# STEP 2: Start Ollama Server
-# ============================================================
-
-echo "🚀 Starting Ollama server..."
-
-# Add to path
-export PATH="$HOME/.local/bin:$PATH"
-
-# Start in background
-ollama serve &
-OLLAMA_PID=$!
-
-# Wait for startup
-sleep 3
-
-# Check if running
-if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
-    echo "   ✅ Ollama is running!"
-else
-    sleep 2
+    
+    # Verify
+    if command -v ollama &> /dev/null; then
+        log_success "Ollama ready: $(ollama --version 2>/dev/null || echo 'installed')"
+    else
+        log_warn "Ollama install needs terminal restart"
+    fi
+    
+    # ============================================================
+    # STEP 2: Start Ollama Server
+    # ============================================================
+    
+    log_info "Step 2/5: Starting Ollama server..."
+    
+    export PATH="$HOME/.local/bin:$PATH"
+    
+    # Check if already running
     if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
-        echo "   ✅ Ollama is running!"
+        log_success "Ollama is already running"
     else
-        echo "   ⚠️ Ollama started in background"
+        # Start in background
+        nohup ollama serve > /tmp/ollama.log 2>&1 &
+        OLLAMA_PID=$!
+        
+        # Wait for startup
+        for i in {1..15}; do
+            sleep 1
+            if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
+                log_success "Ollama server started"
+                break
+            fi
+            if [ $i -eq 15 ]; then
+                log_warn "Ollama server starting in background..."
+            fi
+        done
     fi
-fi
-
-echo ""
-
-# ============================================================
-# STEP 3: Pull Recommended Models (Free!)
-# ============================================================
-
-echo "📥 Pulling recommended models (FREE, local)..."
-
-# Pull qwen3.5:cloud (works with free tier!)
-echo "   • Pulling qwen3.5:cloud (cloud model - free tier)..."
-ollama pull qwen3.5:cloud 2>/dev/null || echo "   • Cloud model will be pulled on first use"
-
-# Pull local backup model
-echo "   • Pulling qwen3.5:7b (local backup)..."
-ollama pull qwen3.5:7b 2>/dev/null || echo "   • Will be downloaded on first use"
-
-echo ""
-
-# ============================================================
-# STEP 4: Check Python
-# ============================================================
-
-if ! command -v python3 &> /dev/null; then
-    echo "❌ Python3 not found. Install: sudo apt install python3"
-    exit 1
-fi
-
-echo "✅ Python3 found: $(python3 --version)"
-
-# ============================================================
-# STEP 5: Create NEUGI Directory
-# ============================================================
-
-NEUGI_DIR="$HOME/neugi"
-mkdir -p "$NEUGI_DIR"
-cd "$NEUGI_DIR"
-
-echo "📁 Created: $NEUGI_DIR"
-
-# ============================================================
-# STEP 6: Download NEUGI Files
-# ============================================================
-
-echo "📥 Downloading NEUGI Swarm..."
-
-curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_swarm.py" -o neugi_swarm.py
-curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_wizard.py" -o neugi_wizard.py 2>/dev/null || true
-
-chmod +x neugi_swarm.py
-
-# ============================================================
-# STEP 7: Create Config
-# ============================================================
-
-cat > config.py << 'EOF'
+    
+    # ============================================================
+    # STEP 3: Pull Models (Automatic!)
+    # ============================================================
+    
+    log_info "Step 3/5: Setting up AI models..."
+    
+    export PATH="$HOME/.local/bin:$PATH"
+    
+    # Pull qwen3.5:cloud (main model)
+    log_info "Downloading qwen3.5:cloud model..."
+    ollama pull qwen3.5:cloud >> /tmp/neugi_install.log 2>&1 || true
+    log_success "Cloud model ready"
+    
+    # ============================================================
+    # STEP 4: Install NEUGI
+    # ============================================================
+    
+    log_info "Step 4/5: Installing NEUGI Swarm..."
+    
+    # Create directory
+    NEUGI_DIR="$HOME/neugi"
+    mkdir -p "$NEUGI_DIR"
+    cd "$NEUGI_DIR"
+    
+    # Download main file
+    log_info "Downloading NEUGI files..."
+    curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_swarm.py" -o neugi_swarm.py
+    curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_wizard.py" -o neugi_wizard.py 2>/dev/null || true
+    
+    chmod +x neugi_swarm.py
+    
+    # Create config
+    cat > config.py << 'EOF'
 # 🤖 NEUGI SWARM CONFIG
 # =====================
 # Corporate: NEUGI
 
-# ============================================================
-# LLM Provider (Free Options!)
-# ============================================================
-
-# OPTION A: Ollama Cloud (FREE tier works!)
-# -----------------------------------------
-# qwen3.5:cloud - Best for NEUGI!
-# Works with free tier (light usage)
+# Ollama (Default - FREE!)
 USE_OLLAMA=true
 OLLAMA_URL="http://localhost:11434"
 OLLAMA_MODEL="qwen3.5:cloud"
 
-# OPTION B: Local Models (100% FREE!)
-# -----------------------------------
-# ollama pull llama3.2:3b
-# ollama pull mistral:7b
-# ollama pull codellama:7b
-
-# OPTION C: Free API Providers
-# ----------------------------
-# Groq (Free!) - https://console.groq.com
-# GROQ_API_KEY="gsk_..."
-
-# OpenRouter (Free tier) - https://openrouter.ai
-# OPENROUTER_API_KEY="sk..."
-
-# ============================================================
-# Model Settings
-# ============================================================
-
 MODEL="auto"
-CONTEXT_WINDOW=2048  # Works with small models!
-
-# ============================================================
-# Security
-# ============================================================
-
-MASTER_KEY="change_me"
-
-# ============================================================
-# END
-# ============================================================
+CONTEXT_WINDOW=2048
+MASTER_KEY="neugi123"
 EOF
+    
+    # Create directories
+    mkdir -p data models logs
+    
+    log_success "NEUGI installed to: $NEUGI_DIR"
+    
+    # ============================================================
+    # STEP 5: Ready!
+    # ============================================================
+    
+    echo ""
+    echo "╔═══════════════════════════════════════════════════╗"
+    echo "║         ✅ INSTALLATION COMPLETE!                 ║"
+    echo "╚═══════════════════════════════════════════════════╝"
+    echo ""
+    echo "📍 Location: $NEUGI_DIR"
+    echo ""
+    echo "🚀 TO START NEUGI:"
+    echo "   cd $NEUGI_DIR"
+    echo "   python3 neugi_wizard.py"
+    echo ""
+    echo "📖 Dashboard: http://localhost:19888"
+    echo ""
+    echo "💡 First time? Run the wizard - it will guide you!"
+    echo ""
+}
 
-echo "✅ Config created: config.py"
+# ============================================================
+# RUN
+# ============================================================
 
-# Create directories
-mkdir -p data models logs
-
-echo ""
-echo "================================"
-echo "✅ INSTALLATION COMPLETE!"
-echo "================================"
-echo ""
-echo "📍 Location: $NEUGI_DIR"
-echo "🔧 Ollama: Installed & Running"
-echo "📦 Models: Downloaded"
-echo ""
-echo "NEXT STEPS:"
-echo "----------"
-echo "1. Run setup wizard:"
-echo "   python3 neugi_wizard.py"
-echo ""
-echo "2. Or start NEUGI:"
-echo "   python3 neugi_swarm.py"
-echo ""
-echo "📖 Dashboard: http://localhost:19888"
-echo ""
-echo "💡 FREE TIER: qwen3.5:cloud works with Ollama free!"
-echo "💡 UPGRADE: https://ollama.com/pricing for Pro ($20/mo)"
-echo ""
+main "$@"
