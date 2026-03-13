@@ -1,427 +1,297 @@
 #!/usr/bin/env python3
 """
-🤖 NEUGI SWARM - LLM POWERED WIZARD
-======================================
+🤖 NEUGI WIZARD v2.2 - Streamlined Setup
+==============================================
 
-Zero-setup installation wizard:
-1. One command install
-2. Chat with wizard (LLM-powered)
-3. Auto-configure everything
-4. Start chatting immediately!
+Flow:
+1. Check Ollama
+2. Ask name & use case  
+3. Ask: "Do you have API key?"
+   - NO → Use Ollama Cloud (auto)
+   - YES → Ask for API key + desired model → Help setup until works!
 
-Version: 1.0
+Version: 2.2
 Date: March 13, 2026
 """
 
 import os
-import sys
 import json
 import requests
 
 # ============================================================
-# BUNDLED FREE CONFIG
+# CHECK OLLAMA
 # ============================================================
 
-# Ollama Cloud Free API (bundled for instant use!)
-# Users can replace this later
-BUNDLED_API_KEY = os.environ.get("OLLAMA_API_KEY", "")
-BUNDLED_PROVIDER = "ollama"
-BUNDLED_MODEL = "qwen2.5:7b"  # Stable, won't deprecate soon!
-
-# Fallback to Groq if no key
-FALLBACK_PROVIDER = "groq"
-FALLBACK_MODEL = "llama-3.1-8b-instant"
+def check_ollama() -> bool:
+    """Check if Ollama is running"""
+    try:
+        r = requests.get("http://localhost:11434/api/tags", timeout=3)
+        return r.ok
+    except:
+        return False
 
 # ============================================================
-# WIZARD QUESTIONS
+# MODEL LISTS
 # ============================================================
 
-WIZARD_STEPS = [
-    {
-        "id": "greeting",
-        "prompt": "Hi! I'm Neugi 🤖 I'll help you set up in 30 seconds.\n\nWhat should I call you?",
-        "key": "name",
-        "type": "text"
-    },
-    {
-        "id": "use_case",
-        "prompt": None,  # Dynamic based on name
-        "key": "use_case",
-        "type": "choice",
-        "options": [
-            ("1", "Just chat with AI"),
-            ("2", "Help with coding"),
-            ("3", "Automate tasks"),
-            ("4", "Research assistant"),
-        ]
-    },
-    {
-        "id": "api_key",
-        "prompt": None,  # Dynamic
-        "key": "has_api_key",
-        "type": "yesno"
-    },
-    {
-        "id": "privacy",
-        "prompt": "Privacy preference:\n1. Local only (slower, private)\n2. Cloud (faster, uses internet)",
-        "key": "privacy",
-        "type": "choice",
-        "options": [
-            ("1", "Local (private)"),
-            ("2", "Cloud (fast)"),
-        ]
-    },
+OLLAMA_CLOUD = [
+    {"model": "qwen3.5:cloud", "ctx": 32768, "best_for": "all-round"},
+    {"model": "qwen3.5:7b", "ctx": 8192, "best_for": "chat"},
 ]
 
-# ============================================================
-# LLM FOR WIZARD
-# ============================================================
-
-class WizardLLM:
-    """Lightweight LLM for wizard conversations"""
-    
-    def __init__(self, api_key: str = None):
-        self.api_key = api_key or BUNDLED_API_KEY
-    
-    def chat(self, messages: list) -> str:
-        """Simple chat for wizard"""
-        
-        # Build prompt
-        system = """You are Neugi Setup Wizard. Your job is to:
-- Be friendly and simple
-- Keep responses under 2 sentences
-- Guide user through setup step by step
-- Be encouraging and supportive
-
-No technical jargon. Speak like a helpful friend."""
-        
-        # Try Ollama first (local)
-        try:
-            return self._ollama_chat(system, messages)
-        except:
-            pass
-        
-        # Fallback to simple responses
-        return "Great! Let's continue setup..."
-    
-    def _ollama_chat(self, system: str, messages: list) -> str:
-        """Chat via Ollama"""
-        url = "http://localhost:11434/api/chat"
-        
-        data = {
-            "model": "llama2",
-            "messages": [{"role": "system", "content": system}] + messages,
-            "stream": False
-        }
-        
-        r = requests.post(url, json=data, timeout=10)
-        
-        if r.ok:
-            return r.json()["message"]["content"]
-        
-        raise Exception("Ollama not available")
+PROVIDERS = {
+    "openai": {"name": "OpenAI", "env": "OPENAI_API_KEY", "models": ["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo"]},
+    "anthropic": {"name": "Anthropic Claude", "env": "ANTHROPIC_API_KEY", "models": ["claude-sonnet-4", "claude-3.5-sonnet", "claude-3-haiku"]},
+    "groq": {"name": "Groq", "env": "GROQ_API_KEY", "models": ["llama-3.3-70b-versatile", "mixtral-8x7b-32768", "llama-3.1-8b-instant"]},
+    "openrouter": {"name": "OpenRouter", "env": "OPENROUTER_API_KEY", "models": ["google/gemini-2.0-flash-exp", "meta-llama/llama-3.1-8b-instant", "google/gemini-1.5-flash"]},
+    "minimax": {"name": "MiniMax", "env": "MINIMAX_API_KEY", "models": ["MiniMax-M2.5", "MiniMax-Text-01"]},
+}
 
 # ============================================================
-# HARDWARE DETECTION
-# ============================================================
-
-def detect_hardware() -> dict:
-    """Auto-detect user hardware"""
-    
-    import psutil
-    
-    try:
-        ram_gb = psutil.virtual_memory().total / (1024**3)
-    except:
-        ram_gb = 2  # Default assumption
-    
-    # Detect OS
-    import platform
-    os_name = platform.system().lower()
-    
-    # Detect Python
-    python_ver = sys.version_info
-    
-    return {
-        "ram_gb": round(ram_gb, 1),
-        "os": os_name,
-        "python": f"{python_ver.major}.{python_ver.minor}",
-        "recommended_model": _recommend_model(ram_gb),
-    }
-
-def _recommend_model(ram_gb: float) -> str:
-    """Recommend model based on RAM"""
-    
-    if ram_gb < 1:
-        return "qwen2.5:0.5b"  # Tiny
-    elif ram_gb < 2:
-        return "qwen2.5:1.5b"  # Small
-    elif ram_gb < 4:
-        return "qwen2.5:3b"  # Medium
-    elif ram_gb < 8:
-        return "qwen2.5:7b"  # Default
-    elif ram_gb < 16:
-        return "qwen2.5:14b"  # Large
-    else:
-        return "qwen2.5:32b"  # XL
-
-# ============================================================
-# AUTO CONFIGURATION
-# ============================================================
-
-def auto_configure(answers: dict, hardware: dict) -> dict:
-    """Auto-generate configuration based on answers"""
-    
-    config = {
-        "user": {
-            "name": answers.get("name", "User"),
-            "use_case": answers.get("use_case", "chat"),
-        },
-        "model": {
-            "provider": BUNDLED_PROVIDER,
-            "model": BUNDLED_MODEL,
-            "fallback": FALLBACK_PROVIDER,
-        },
-        "privacy": answers.get("privacy", "cloud"),
-        "channels": [],
-        "features": _detect_features(answers),
-    }
-    
-    # Use hardware recommendation if local
-    if answers.get("privacy") == "local":
-        config["model"]["provider"] = "ollama"
-        config["model"]["model"] = hardware["recommended_model"]
-    
-    return config
-
-def _detect_features(answers: dict) -> dict:
-    """Detect which features to enable"""
-    
-    use_case = answers.get("use_case", "chat")
-    
-    features = {
-        "chat": True,
-        "code": False,
-        "automation": False,
-        "research": False,
-    }
-    
-    if use_case in ["2", "coding"]:
-        features["code"] = True
-    elif use_case in ["3", "automation"]:
-        features["automation"] = True
-    elif use_case in ["4", "research"]:
-        features["research"] = True
-    
-    return features
-
-# ============================================================
-# WIZARD ENGINE
+# WIZARD
 # ============================================================
 
 class NeugiWizard:
-    """LLM-powered setup wizard"""
-    
     def __init__(self):
-        self.step = 0
         self.answers = {}
-        self.hardware = detect_hardware()
-        self.llm = WizardLLM()
-        
-        # Welcome message
-        print("\n" + "="*50)
-        print("🤖 NEUGI SWARM - ZERO-SETUP WIZARD")
-        print("="*50)
-        print()
-        print("Hi! I'm Neugi 🤖")
-        print("I'll help you set up in just a few questions.")
-        print()
+        self.config = {}
+        self.ollama_ok = False
     
     def run(self):
-        """Run the wizard"""
+        print("\n" + "="*60)
+        print("🤖 NEUGI WIZARD v2.2")
+        print("="*60)
         
-        # Step 1: Name
+        # 0. Check Ollama
+        self._check_ollama()
+        
+        # 1. Name
         self._ask_name()
         
-        # Step 2: Use case
+        # 2. Use case
         self._ask_use_case()
         
-        # Step 3: API key
-        self._ask_api_key()
+        # 3. API Key Question
+        has_key = self._ask_api_key_question()
         
-        # Step 4: Privacy
-        self._ask_privacy()
+        # 4. Configure
+        if has_key:
+            self._setup_with_key()
+        else:
+            self._setup_ollama_cloud()
         
-        # Finish!
-        return self._finish()
+        # 5. Save
+        self._save()
+    
+    def _check_ollama(self):
+        print("\n🔍 Checking Ollama server...")
+        self.ollama_ok = check_ollama()
+        
+        if self.ollama_ok:
+            print("✅ Ollama is running!\n")
+        else:
+            print("⚠️ Ollama not running\n")
+            print("   To start: ollama serve")
+            print("   Or use: OLLAMA_API_KEY env\n")
     
     def _ask_name(self):
-        """Ask user's name"""
-        print("What should I call you? ", end="")
-        name = input().strip()
-        
-        if not name:
-            name = "User"
-        
-        self.answers["name"] = name
-        print(f"Hi {name}! 🎉")
-        print()
+        print("👋 Hi! I'm Neugi's setup wizard.")
+        name = input("What should I call you? ").strip()
+        self.answers["name"] = name or "User"
+        print(f"✓ Nice to meet you, {self.answers['name']}!\n")
     
     def _ask_use_case(self):
-        """Ask what user wants to do"""
+        print("🎯 How will you use Neugi?")
+        print("   1. Just chat")
+        print("   2. Help with coding")
+        print("   3. Research / analysis")
+        print("   4. Automation / tasks")
         
-        print("How will you use me?")
-        print("  1. Just chat with AI")
-        print("  2. Help with coding")
-        print("  3. Automate tasks")
-        print("  4. Research assistant")
-        print()
-        print("Choose (1-4): ", end="")
-        
-        choice = input().strip()
-        
-        use_cases = {
-            "1": "chat",
-            "2": "coding",
-            "3": "automation",
-            "4": "research"
-        }
-        
-        self.answers["use_case"] = use_cases.get(choice, "chat")
-        print()
+        choice = input("\nChoose (1-4): ").strip()
+        cases = {"1": "chat", "2": "coding", "3": "research", "4": "automation"}
+        self.answers["use_case"] = cases.get(choice, "chat")
+        print(f"✓ {self.answers['use_case'].title()}!\n")
     
-    def _ask_api_key(self):
-        """Ask if user has API key"""
-        
-        print("Do you have your own AI API key?")
-        print("(This gives you better performance)")
+    def _ask_api_key_question(self) -> bool:
+        print("="*60)
+        print("❓ DO YOU HAVE AN API KEY?")
+        print("="*60)
+        print("\n   y - YES, I have an API key (I'll help set it up!)")
+        print("   n - NO, use free Ollama Cloud models")
         print()
-        print("  y - Yes, I have an API key")
-        print("  n - No, use free model")
-        print()
-        print("Choice (y/n): ", end="")
         
-        choice = input().strip().lower()
+        choice = input("Your answer (y/n): ").strip().lower()
         
         if choice == "y":
-            print()
-            print("Great! After setup, say 'add api key' and I'll help you add it.")
-            print()
-        
-        self.answers["has_api_key"] = (choice == "y")
-    
-    def _ask_privacy(self):
-        """Ask privacy preference"""
-        
-        print("Privacy preference:")
-        print(f"  1. Cloud (faster, uses internet)")
-        print(f"  2. Local (slower, more private)")
-        print()
-        
-        # Show hardware detection
-        print(f"📊 We detected: {self.hardware['ram_gb']}GB RAM")
-        
-        if self.hardware['ram_gb'] < 4:
-            print("⚠️  Not enough RAM for local models. Using cloud.")
-            self.answers["privacy"] = "cloud"
-            return
-        
-        print()
-        print("Choice (1-2): ", end="")
-        
-        choice = input().strip()
-        
-        if choice == "2":
-            self.answers["privacy"] = "local"
+            self.answers["has_api_key"] = True
+            print("\n✅ Great! Let's set up your API key!\n")
+            return True
         else:
-            self.answers["privacy"] = "cloud"
-        
-        print()
+            self.answers["has_api_key"] = False
+            print("\n✅ No problem! I'll use free Ollama Cloud!\n")
+            return False
     
-    def _finish(self) -> dict:
-        """Finish setup and generate config"""
+    def _setup_with_key(self):
+        """User HAS API key - help set up!"""
+        print("="*60)
+        print("🔑 SET UP YOUR API KEY")
+        print("="*60)
         
-        print("🎉 Setting up Neugi for you...")
-        print()
+        # List providers
+        print("\n📋 Available providers:")
+        for i, (key, p) in enumerate(PROVIDERS.items(), 1):
+            free = " 🆓 FREE" if "Groq" in p["name"] or "OpenRouter" in p["name"] else ""
+            print(f"   {i}. {p['name']}{free}")
         
-        # Generate config
-        config = auto_configure(self.answers, self.hardware)
+        # Choose provider
+        choice = input("\nChoose provider (1-5): ").strip()
+        provider_keys = list(PROVIDERS.keys())
+        provider = provider_keys[int(choice)-1] if choice.isdigit() and 1 <= int(choice) <= 5 else "groq"
+        
+        p = PROVIDERS[provider]
+        print(f"\n✓ {p['name']}")
+        
+        # Show models
+        print(f"\n📋 Available models for {p['name']}:")
+        for i, model in enumerate(p["models"], 1):
+            print(f"   {i}. {model}")
+        
+        # Choose model
+        choice2 = input(f"\nChoose model (default: 1): ").strip()
+        model = p["models"][0] if not choice2 else p["models"][int(choice2)-1]
+        
+        # Get API key
+        print(f"\n📝 ENTER YOUR {p['name'].upper()} API KEY")
+        print(f"   Get it from: ", end="")
+        if provider == "openai": print("https://platform.openai.com")
+        elif provider == "anthropic": print("https://console.anthropic.com")
+        elif provider == "groq": print("https://console.groq.com")
+        elif provider == "openrouter": print("https://openrouter.ai")
+        else: print("https://platform.minimax.io")
+        
+        api_key = input(f"\n{p['name']} API Key: ").strip()
+        
+        if not api_key:
+            # Try env variable
+            api_key = os.environ.get(p["env"], "")
+        
+        # Test connection
+        print("\n🧪 Testing connection...")
+        
+        success = self._test_key(provider, api_key)
+        
+        if success:
+            print("✅ Connection successful!\n")
+        else:
+            print("⚠️ Could not verify, but will try anyway!\n")
         
         # Save config
+        self.config = {
+            "user": {"name": self.answers["name"]},
+            "use_case": self.answers["use_case"],
+            "model": {
+                "provider": provider,
+                "model": model,
+            },
+            "assistant": {
+                "provider": "ollama_cloud",
+                "model": "qwen3.5:cloud"
+            },
+            "technician": {"enabled": True},
+            "privacy": "cloud",
+            "api_key_set": bool(api_key)
+        }
+        
+        print("✅ API key configuration saved!")
+    
+    def _setup_ollama_cloud(self):
+        """No API key - use Ollama Cloud"""
+        print("="*60)
+        print("☁️  SETUP: OLLAMA CLOUD (FREE)")
+        print("="*60)
+        
+        # Use qwen3.5:cloud (same as assistant!)
+        model = OLLAMA_CLOUD[0]
+        
+        print(f"\n✓ Using: {model['model']}")
+        print(f"   Context: {model['ctx']:,} tokens")
+        print(f"   Best for: {model['best_for']}\n")
+        
+        self.config = {
+            "user": {"name": self.answers["name"]},
+            "use_case": self.answers["use_case"],
+            "model": {
+                "provider": "ollama_cloud",
+                "model": model["model"],
+                "ctx": model["ctx"]
+            },
+            "assistant": {
+                "provider": "ollama_cloud",
+                "model": "qwen3.5:cloud"
+            },
+            "technician": {"enabled": True},
+            "privacy": "cloud"
+        }
+        
+        print("✅ Auto-configured with Ollama Cloud!")
+    
+    def _test_key(self, provider: str, key: str) -> bool:
+        """Test API key"""
+        if not key:
+            return False
+        
+        try:
+            if provider == "groq":
+                r = requests.get(
+                    "https://api.groq.com/openai/v1/models",
+                    headers={"Authorization": f"Bearer {key}"},
+                    timeout=10
+                )
+                return r.ok
+            elif provider == "openai":
+                r = requests.get(
+                    "https://api.openai.com/v1/models",
+                    headers={"Authorization": f"Bearer {key}"},
+                    timeout=10
+                )
+                return r.ok
+            elif provider == "openrouter":
+                r = requests.get(
+                    "https://openrouter.ai/api/v1/models",
+                    headers={"Authorization": f"Bearer {key}"},
+                    timeout=10
+                )
+                return r.ok
+        except:
+            pass
+        
+        return False
+    
+    def _save(self):
+        """Save config"""
         os.makedirs("./data", exist_ok=True)
+        
         with open("./data/config.json", "w") as f:
-            json.dump(config, f, indent=2)
+            json.dump(self.config, f, indent=2)
         
-        # Show summary
-        print("✅ Setup Complete!")
-        print("="*50)
-        print()
-        print(f"👤 Name: {config['user']['name']}")
-        print(f"🎯 Use case: {config['user']['use_case']}")
-        print(f"🧠 Model: {config['model']['provider']}/{config['model']['model']}")
-        print(f"🔒 Privacy: {config['privacy']}")
-        print()
-        print("="*50)
-        print()
-        print("🚀 Start chatting: python3 neugi.py")
+        print("\n" + "="*60)
+        print("✅ SETUP COMPLETE!")
+        print("="*60)
+        
+        print(f"\n👤 Name: {self.config['user']['name']}")
+        print(f"🎯 Use: {self.config['user']['use_case']}")
+        
+        print(f"\n🧠 Main Agent: {self.config['model']['provider']} / {self.config['model']['model']}")
+        print(f"🤖 Assistant: {self.config['assistant']['model']} (Ollama Cloud)")
+        
+        print("\n🚀 Start: python3 neugi.py")
         print("📖 Dashboard: http://localhost:19888")
-        print()
-        print("Tips:")
-        print('  - Say "help" for commands')
-        print('  - Say "add api key" to upgrade later')
-        print('  - Say "status" to check system')
-        print()
-        
-        return config
-
-# ============================================================
-# QUICK START SCRIPT
-# ============================================================
-
-def quick_start():
-    """One-command quick start"""
-    
-    print("""
-╔══════════════════════════════════════════════════════╗
-║                                                      ║
-║   🤖 NEUGI SWARM - INSTALL IN 30 SECONDS          ║
-║                                                      ║
-║   Just run: curl -sSL neugi.ai/install | bash      ║
-║                                                      ║
-╚══════════════════════════════════════════════════════╝
-""")
-    
-    # Check if already installed
-    if os.path.exists("./data/config.json"):
-        print("Neugi is already installed!")
-        print("Run: python3 neugi.py")
-        return
-    
-    # Run wizard
-    wizard = NeugiWizard()
-    wizard.run()
+        print("="*60 + "\n")
 
 # ============================================================
 # MAIN
 # ============================================================
 
 if __name__ == "__main__":
-    import argparse
-    
-    parser = argparse.ArgumentParser(description="Neugi Swarm Wizard")
-    parser.add_argument("--wizard", action="store_true", help="Run setup wizard")
-    parser.add_argument("--quick", action="store_true", help="Quick start")
-    
-    args = parser.parse_args()
-    
-    if args.wizard or args.quick:
-        quick_start()
-    else:
-        # Just show help
-        print("Neugi Swarm - Zero-setup AI Assistant")
-        print()
-        print("Quick start:")
-        print("  python3 neugi_wizard.py --quick")
-        print()
-        print("Or run wizard:")
-        print("  python3 neugi_wizard.py --wizard")
+    wizard = NeugiWizard()
+    wizard.run()
