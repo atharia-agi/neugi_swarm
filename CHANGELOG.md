@@ -60,6 +60,13 @@
 - **Workspace**: New isolated workspace for swarm agents
   - `~/neugi/workspace/` - Central hub for all agents
   - Each agent works in the shared workspace environment
+- **Enhanced Skills System**: Multi-format compatible
+  - NEUGI native (.neugi.py), OpenClaw, Claude Code, MCP
+  - 10 built-in skills (GitHub, Weather, Coding, etc.)
+- **Enhanced Plugin System**:
+  - Native Python + MCP plugins
+  - Install from GitHub/GitLab URL
+  - Marketplace support
 
 ### v15.1 (March 14, 2026)
 
