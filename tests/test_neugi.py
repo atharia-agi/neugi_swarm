@@ -1,7 +1,6 @@
 """NEUGI SWARM - Test Suite"""
 
 import os
-import re
 
 
 class TestLandingPage:
@@ -205,9 +204,6 @@ class TestCodeQuality:
         """Test no debug print statements left behind"""
         base = os.path.dirname(__file__)
         files_to_check = ["neugi_swarm.py", "neugi_wizard.py", "neugi_assistant.py"]
-        debug_pattern = re.compile(
-            r'^\s*print\s*\(\s*["\'](?!.*%.*|.*format|.*\{)'
-        )  # Allow formatted prints
 
         for f in files_to_check:
             path = os.path.join(base, "..", f)
