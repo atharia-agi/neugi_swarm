@@ -20,13 +20,13 @@
 curl -fsSL https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/install.sh | bash
 ```
 
-**Selesai!** NEUGI akan:
+**Done!** NEUGI will:
 1. Install Ollama (latest)
 2. Start Ollama Server
 3. Download AI Model
 4. Install NEUGI Files
 5. Install NEUGI CLI
-6. **Run Setup Wizard** ← Anda input di sini!
+6. **Run Setup Wizard** ← Your input here!
 7. Start NEUGI + Activity Log
 
 ---
