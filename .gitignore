@@ -51,3 +51,12 @@ dist/
 build/
 eggs/
 *.egg
+
+# Node
+node_modules/
+
+# Cache
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
