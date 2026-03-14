@@ -362,7 +362,7 @@ class AgentManager:
             except Exception:
                 continue
 
-        return ""
+        return f"[{agent.name}] Error: LLM context failed. Please run 'python neugi_wizard.py' to diagnose model connectivity."
 
     def _think(self, agent: Agent, task: str) -> str:
         """Agent thinks about the task and selects the best tool"""
@@ -390,7 +390,7 @@ class AgentManager:
             tools = None
 
         if not tools:
-            return f"[{agent.name}] Tool framework unavailable"
+            return f"[{agent.name}] Tool framework unavailable. Run 'python neugi_wizard.py' to repair dependencies."
 
         if action == "none":
             return f"[{agent.name}] Completed task without explicit tools."

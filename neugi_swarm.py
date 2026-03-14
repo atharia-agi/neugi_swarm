@@ -91,55 +91,34 @@ class ErrorHandler:
 
     @staticmethod
     def detect_and_fix():
-        """Detect issues and try to fix"""
+        """Detect issues using NEUGIWizard logic"""
+        from neugi_wizard import SystemChecker
+        diagnosis = SystemChecker.full_diagnosis()
+        
         issues = []
-
-        # Check 1: Ollama running?
-        try:
-            r = requests.get("http://localhost:11434/api/tags", timeout=3)
-            if not r.ok:
-                issues.append("Ollama not responding")
-        except Exception:
-            issues.append("Ollama not running - run: ollama serve")
-
-        # Check 2: Port available?
-        import socket
-
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        result = sock.connect_ex(("localhost", PORT))
-        sock.close()
-        if result == 0:
-            issues.append(f"Port {PORT} already in use")
-
-        # Check 3: Config exists?
-        config_path = os.path.join(NEUGI_DIR, "config.py")
-        if not os.path.exists(config_path):
-            issues.append("Config not found - run: neugi wizard")
-
+        if not diagnosis["ollama"]["running"]:
+            issues.append("Ollama not running")
+        if not diagnosis["neugi"]["installed"]:
+            issues.append("NEUGI configuration missing")
+        if diagnosis["port_19888"]["in_use"]:
+            issues.append("Port 19888 collision")
+            
+        # Add granular issues from Wizard
+        issues.extend(diagnosis.get("granular_issues", []))
+        
         return issues
 
     @staticmethod
     def auto_fix():
-        """Try to auto-fix common issues"""
+        """Trigger auto-repair via NEUGIWizard logic"""
+        from neugi_wizard import Repair
         fixes = []
-
-        # Fix 1: Start Ollama if not running
-        try:
-            requests.get("http://localhost:11434/api/tags", timeout=2)
-        except Exception:
-            # Try to start Ollama
-            import subprocess
-
-            try:
-                subprocess.Popen(
-                    ["ollama", "serve"],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                )
-                fixes.append("Started Ollama server")
-            except Exception:
-                fixes.append("Could not auto-start Ollama - run manually: ollama serve")
-
+        
+        # Quick fix: Ollama
+        ollama = Repair.start_ollama()
+        if ollama["success"]:
+            fixes.append("Ollama started by Wizard")
+            
         return fixes
 
 

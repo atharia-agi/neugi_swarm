@@ -261,12 +261,46 @@ class SystemChecker:
 
     @staticmethod
     def full_diagnosis() -> Dict:
-        """Run full system diagnosis"""
-        return {
+        """Run full system diagnosis with granular checks"""
+        diag = {
             "ollama": SystemChecker.check_ollama(),
             "neugi": SystemChecker.check_neugi(),
             "port_19888": SystemChecker.check_port(19888),
+            "granular_issues": []
         }
+
+        # Migrated Granular Checks from legacy Technician
+        # 1. Check Channel Tokens
+        config = diag["neugi"].get("config")
+        if config:
+            channels = config.get("channels", {})
+            for name, chan_config in channels.items():
+                platform = chan_config.get("platform")
+                if platform == "telegram" and not chan_config.get("bot_token"):
+                    diag["granular_issues"].append(f"Telegram channel '{name}' missing bot_token")
+                elif platform == "discord" and not chan_config.get("webhook_url"):
+                    diag["granular_issues"].append(f"Discord channel '{name}' missing webhook_url")
+
+        # 2. Check Database Corruption
+        for db_name in ["memory.db", "sessions.db", "agents.db"]:
+            db_path = os.path.join(NEUGI_DIR, "data", db_name)
+            if os.path.exists(db_path):
+                try:
+                    import sqlite3
+                    conn = sqlite3.connect(db_path)
+                    conn.execute("SELECT 1")
+                    conn.close()
+                except Exception:
+                    diag["granular_issues"].append(f"Database corrupted: {db_name}")
+
+        # 3. Check Session DB Size
+        sessions_db = os.path.join(NEUGI_DIR, "data", "sessions.db")
+        if os.path.exists(sessions_db):
+            size = os.path.getsize(sessions_db)
+            if size > 100 * 1024 * 1024:  # 100MB
+                diag["granular_issues"].append(f"Session database is large ({size / 1024 / 1024:.1f}MB)")
+
+        return diag
 
 
 # ============================================================
@@ -876,7 +910,6 @@ System status:
             "neugi_swarm_agents.py",
             "neugi_swarm_tools.py",
             "neugi_telegram.py",
-            "neugi_technician.py",
             "dashboard.html",
         ]
 

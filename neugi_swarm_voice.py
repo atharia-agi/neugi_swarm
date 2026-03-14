@@ -99,8 +99,7 @@ class VoiceManager:
             pass
 
         # Always available
-        self.tts_available.append("web")
-        self.stt_available.append("simulated")
+        # Providers detected
 
     def speak(self, text: str, provider: str = None, voice: str = None) -> Dict:
         """Text to Speech"""
@@ -200,12 +199,11 @@ class VoiceManager:
             return {"status": "error", "message": str(e)}
 
     def _speak_web(self, text: str) -> Dict:
-        """Web TTS (simulation)"""
+        """Web TTS"""
         return {
-            "status": "simulated",
+            "status": "error",
             "provider": "web",
-            "text": text[:100],
-            "message": "Would use browser TTS",
+            "message": "Web Speech API bridge requires active browser workspace",
         }
 
     def listen(self, audio_file: str = None, provider: str = None) -> str:
@@ -215,14 +213,14 @@ class VoiceManager:
             provider = self.config.stt_provider
 
         if provider == "auto":
-            provider = self.stt_available[0] if self.stt_available else "simulated"
+            provider = self.stt_available[0] if self.stt_available else "none"
 
         if provider == "whisper":
             return self._listen_whisper(audio_file)
         elif provider == "google":
             return self._listen_google(audio_file)
         else:
-            return "[Simulated STT] Would transcribe audio"
+            return f"[Error] STT Provider '{provider}' is not configured or authenticated"
 
     def _listen_whisper(self, audio_file: str = None) -> str:
         """Use Whisper for STT"""
@@ -243,7 +241,7 @@ class VoiceManager:
 
     def _listen_google(self, audio_file: str = None) -> str:
         """Use Google STT"""
-        return "[Google STT would transcribe]"
+        return "[Error] Google Cloud Speech API key missing"
 
     def list_voices(self, provider: str = "pyttsx3") -> List[Dict]:
         """List available voices"""

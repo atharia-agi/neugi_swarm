@@ -29,7 +29,6 @@ cd /d "%NEUGI_DIR%"
 echo [INFO] Downloading NEUGI files...
 curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_swarm.py" -o neugi_swarm.py
 curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_wizard.py" -o neugi_wizard.py
-curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_technician.py" -o neugi_technician.py
 curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_assistant.py" -o neugi_assistant.py
 curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/dashboard.html" -o dashboard.html
 

@@ -336,15 +336,15 @@ class ToolManager:
     # Tool implementations
 
     def _web_search(self, query: str, **kwargs) -> Dict:
-        """Search the web"""
-        # Would use search API
+        """Search the web using Native Browser"""
+        if not hasattr(self, "_browser"):
+            self._browser = NativeWebBrowser()
+        results = self._browser.search(query)
         return {
             "query": query,
-            "results": [
-                {"title": "Result 1", "url": "https://example.com/1"},
-                {"title": "Result 2", "url": "https://example.com/2"},
-            ],
-            "engine": "brave",
+            "results": results,
+            "engine": "multi",
+            "count": len(results)
         }
 
     def _web_fetch(self, url: str, **kwargs) -> Dict:
@@ -588,36 +588,54 @@ class ToolManager:
         return {"rows": len(lines), "columns": len(lines[0].split(",")) if lines else 0}
 
     def _send_email(self, to: str, subject: str, body: str, **kwargs) -> Dict:
-        """Send email"""
-        return {"to": to, "subject": subject, "status": "would_send"}
+        """Send email via ChannelManager"""
+        from neugi_swarm_channels import ChannelManager
+        import asyncio
+        cm = ChannelManager()
+        # Find first email channel or add one
+        email_channels = cm.list("email")
+        if not email_channels:
+            return {"status": "error", "message": "No email channel configured"}
+        return asyncio.run(cm.send(email_channels[0].id, body))
 
     def _send_telegram(self, message: str, chat_id: Optional[str] = None, **kwargs) -> Dict:
-        """Send Telegram"""
-        return {"chat_id": chat_id, "message": message, "status": "would_send"}
+        """Send Telegram via ChannelManager"""
+        from neugi_swarm_channels import ChannelManager
+        import asyncio
+        cm = ChannelManager()
+        tg_channels = cm.list("telegram")
+        if not tg_channels:
+            return {"status": "error", "message": "No Telegram channel configured"}
+        return asyncio.run(cm.send(tg_channels[0].id, message))
 
     def _send_discord(self, message: str, webhook_url: Optional[str] = None, **kwargs) -> Dict:
-        """Send Discord"""
-        return {"message": message, "status": "would_send"}
+        """Send Discord via ChannelManager"""
+        from neugi_swarm_channels import ChannelManager
+        import asyncio
+        cm = ChannelManager()
+        ds_channels = cm.list("discord")
+        if not ds_channels:
+            return {"status": "error", "message": "No Discord channel configured"}
+        return asyncio.run(cm.send(ds_channels[0].id, message))
 
     def _system_exec(self, command: str, **kwargs) -> Dict:
         """Execute system command"""
-        return {"command": command, "status": "would_execute"}
+        return self._code_execute(command, language="bash")
 
     def _process_list(self, **kwargs) -> Dict:
         """List processes"""
-        return {"processes": "would_list"}
+        cmd = "ps aux" if os.name != "nt" else "tasklist"
+        return self._code_execute(cmd, language="bash")
 
     def _request_diagnostic(self, **kwargs) -> Dict:
-        """Run system-wide health checks and auto-fix"""
-        from neugi_swarm import ErrorHandler
-        issues = ErrorHandler.detect_and_fix()
-        fixes = ErrorHandler.auto_fix()
+        """Run system-wide health checks via NEUGIWizard"""
+        from neugi_wizard import SystemChecker
+        diagnosis = SystemChecker.full_diagnosis()
         
         return {
             "status": "diagnostic_complete",
-            "issues_found": issues,
-            "actions_taken": fixes,
-            "summary": f"Detected {len(issues)} issues, applied {len(fixes)} fixes."
+            "findings": diagnosis,
+            "summary": f"Detected {len(diagnosis.get('granular_issues', []))} granular issues."
         }
 
     def _self_heal(self, error_message: str, **kwargs) -> Dict:
@@ -837,22 +855,6 @@ class NativeWebBrowser:
         return result
 
     # --- SWARM EXTENSION TOOLS ---
-    def _file_read(self, path: str, **kwargs) -> Dict:
-        try:
-            with open(path, 'r', encoding='utf-8') as f:
-                return {"path": path, "content": f.read()[:5000], "success": True}
-        except Exception as e: return {"error": str(e)}
-
-    def _file_write(self, path: str, content: str, **kwargs) -> Dict:
-        try:
-            with open(path, 'w', encoding='utf-8') as f: f.write(content)
-            return {"path": path, "success": True}
-        except Exception as e: return {"error": str(e)}
-
-    def _file_list(self, path: str = ".", **kwargs) -> Dict:
-        try: return {"path": path, "items": os.listdir(path), "success": True}
-        except Exception as e: return {"error": str(e)}
-
     def _delegate_task(self, target_agent: str, task: str, **kwargs) -> Dict:
         return {"action": "delegate", "target": target_agent, "task": task, "status": "delegated"}
 
@@ -868,20 +870,6 @@ class NativeWebBrowser:
             result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=15)
             return {"command": command, "output": result.stdout or result.stderr, "success": result.returncode == 0}
         except Exception as e: return {"error": str(e)}
-
-    def _llm_think(self, prompt: str, **kwargs) -> Dict: return {"thought": "Processing...", "success": True}
-    def _embeddings(self, text: str, **kwargs) -> Dict: return {"vector": [], "success": True}
-    def _json_parse(self, data: str, **kwargs) -> Dict:
-        try: return {"parsed": json.loads(data), "success": True}
-        except Exception as e: return {"error": str(e)}
-    def _csv_analyze(self, path: str, **kwargs) -> Dict: return {"success": True}
-    def _send_email(self, to: str, **kwargs) -> Dict: return {"success": True}
-    def _send_telegram(self, msg: str, **kwargs) -> Dict: return {"success": True}
-    def _send_discord(self, msg: str, **kwargs) -> Dict: return {"success": True}
-    def _system_exec(self, cmd: str, **kwargs) -> Dict:
-        return self._code_execute(cmd, language="bash")
-    def _process_list(self, **kwargs) -> Dict:
-        return self._code_execute("ps aux" if os.name != 'nt' else "tasklist", language="bash")
 
 class CodebaseRAG:
     """Ultra-lightweight Python RAG system for local codebases."""

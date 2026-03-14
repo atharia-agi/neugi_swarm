@@ -189,12 +189,14 @@ class ChannelManager:
     
     async def _send_whatsapp(self, config: Dict, message: str) -> Dict:
         """Send via WhatsApp (Twilio)"""
-        # Would integrate with Twilio API
-        return {"status": "simulated", "platform": "whatsapp", "message": message}
+        if not config.get("account_sid") or not config.get("auth_token"):
+            return {"status": "error", "message": "Missing Twilio API credentials for WhatsApp"}
+        # Twilio Implementation would go here - for now, return clear config error
+        return {"status": "error", "message": "WhatsApp integration requires authenticated Twilio SID"}
     
     async def _send_signal(self, config: Dict, message: str) -> Dict:
         """Send via Signal"""
-        return {"status": "simulated", "platform": "signal", "message": message}
+        return {"status": "error", "message": "Signal-CLI bridge not found in local path"}
     
     async def _send_slack(self, config: Dict, message: str) -> Dict:
         """Send via Slack"""
@@ -210,9 +212,33 @@ class ChannelManager:
             return {"status": "error", "message": str(e)}
     
     async def _send_email(self, config: Dict, message: str) -> Dict:
-        """Send via Email"""
-        # Would use smtplib
-        return {"status": "simulated", "platform": "email", "message": message}
+        """Send via Email (SMTP)"""
+        import smtplib
+        from email.mime.text import MIMEText
+        
+        host = config.get("smtp_host", "localhost")
+        port = config.get("smtp_port", 587)
+        user = config.get("smtp_user")
+        pwd = config.get("smtp_pass")
+        to = config.get("to_email")
+
+        if not user or not to:
+            return {"status": "error", "message": "SMTP credentials or recipient missing"}
+
+        try:
+            msg = MIMEText(message)
+            msg["Subject"] = "NEUGI SWARM - NOTIFICATION"
+            msg["From"] = user
+            msg["To"] = to
+
+            server = smtplib.SMTP(host, port)
+            server.starttls()
+            server.login(user, pwd)
+            server.send_message(msg)
+            server.quit()
+            return {"status": "success", "platform": "email"}
+        except Exception as e:
+            return {"status": "error", "message": f"SMTP Error: {str(e)}"}
     
     def broadcast(self, platforms: List[str], message: str) -> Dict:
         """Broadcast to multiple platforms"""

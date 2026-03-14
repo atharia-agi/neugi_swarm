@@ -250,7 +250,6 @@ Based on research from openclaw-free-web-search, Firecrawl, and ScrapeGraphAI:
 | `neugi_swarm.py` | Main server with HTTP dashboard, health monitoring, error recovery |
 | `neugi_wizard.py` | All-in-one AI wizard: setup + repair + diagnose + chat |
 | `neugi_assistant.py` | Smart chat assistant with fallback model support |
-| `neugi_technician.py` | System doctor - diagnoses AND fixes issues |
 | `neugi_telegram.py` | Telegram bot gateway for mobile control |
 | `neugi_swarm_browser.py` | Native web browser - FREE search & content extraction |
 
@@ -312,7 +311,6 @@ Based on research from openclaw-free-web-search, Firecrawl, and ScrapeGraphAI:
 
 | File | Purpose | Command |
 |------|---------|---------|
-| `neugi_technician.py` | System doctor/fixer | `python neugi_technician.py` |
 | `neugi_telegram.py` | Telegram bot | `python neugi_telegram.py` |
 
 ### Extension Modules (future expansion)
@@ -339,6 +337,7 @@ Based on research from openclaw-free-web-search, Firecrawl, and ScrapeGraphAI:
 | File | Reason |
 |------|--------|
 | `neugi_swarm_setup.py` | Duplicate of `neugi_wizard.py` |
+| `neugi_technician.py` | Retired - functionality consolidated into `neugi_wizard.py` |
 
 ### Web
 

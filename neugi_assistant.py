@@ -574,17 +574,18 @@ Add your API key in config.py or use the wizard!"""
         else:
             return f"""👋 Hi! I'm NEUGI Assistant.
 
-I'm here to help! Try asking about:
+I'm here to help! If I'm offline or you need technical assistance:
 
-- **Installation**: How to install NEUGI
-- **Starting**: How to start NEUGI
-- **Status**: Check if NEUGI is running
-- **Ollama**: Problems with Ollama
-- **API Keys**: Adding your own API key
+👉 **Run the NEUGI Wizard**: `python neugi_wizard.py`
+The Wizard handles all installation, setup, diagnostics, and auto-repairs.
 
-Your question: "{message}"
+Try asking about:
+- **Installation**: How to setup NEUGI
+- **Starting**: How to start the swarm
+- **Ollama**: Issues with the AI backend
 
-Make sure Ollama is running: `ollama serve`"""
+Your current question: "{message}"
+"""
 
     def _parse_tool_call(self, text: str) -> Optional[Dict]:
         """Detect and parse JSON tool call in text"""

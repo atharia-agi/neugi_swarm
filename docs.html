@@ -222,8 +222,8 @@
             <div class="sidebar-section">
                 <div class="sidebar-title">API & CLI</div>
                 <ul class="sidebar-list">
-                    <li class="sidebar-item"><a href="#">CLI Reference</a></li>
-                    <li class="sidebar-item"><a href="#">REST API endpoints</a></li>
+                    <li class="sidebar-item"><a href="#cli">CLI Reference</a></li>
+                    <li class="sidebar-item"><a href="#api">REST API endpoints</a></li>
                 </ul>
             </div>
         </aside>
@@ -264,7 +264,7 @@
                     <pre><code>python3 neugi_wizard.py</code></pre>
                 </div>
 
-                <h2 id="godmode">God Mode Root Integrity</h2>
+                <h2 id="security">God Mode & Security</h2>
                 <p>By default, Neugi incorporates strict safety evaluations via the <code>Shield</code> node. Operations mutating kernel state, deleting significant directory trees, or exposing subnets are immediately blocked.</p>
                 <p>You can bypass these bounds entirely for total autonomy by triggering <strong>God Mode</strong>:</p>
                 <div class="code-wrapper">
@@ -299,6 +299,27 @@ python3 neugi_assistant.py</code></pre>
                 <h2 id="tools">Expanding the Toolset</h2>
                 <p>Phase 6 incorporates powerful filesystem access and safe execution defaults. Native tools include: <code>web_crawl</code>, <code>read_local_file</code>, <code>list_directory</code>, and <code>git_execute</code>. Adding a tool natively takes less than 5 lines of Python, bypassing YAML configuration overhead completely.</p>
 
+                <h2 id="cli">CLI Reference</h2>
+                <p>Neugi provides a robust CLI similar to <code>openclaw</code> for full swarm management.</p>
+                <div class="code-wrapper">
+                    <button class="copy-code" onclick="copyCode(this)">Copy</button>
+                    <pre><code>neugi start      # Start the swarm server
+neugi stop       # Shutdown all agents
+neugi status     # Check neural health
+neugi wizard     # Run interactive repair/setup
+neugi logs -f    # Tail the agent activity streams</code></pre>
+                </div>
+
+                <h2 id="api">REST API Reference</h2>
+                <p>The Neugi gateway exposes a deterministic JSON-RPC inspired REST API on port 19888.</p>
+                <div class="code-wrapper">
+                    <button class="copy-code" onclick="copyCode(this)">Copy</button>
+                    <pre><code>POST /api/chat      # Stream agent responses
+GET  /api/status    # Retrieve 3D Swarm state
+POST /api/skill     # Execute a dynamic skill payload
+GET  /api/memory    # Audit the RAG context graph</code></pre>
+                </div>
+
                 <h2 id="partnership">Ecosystem & Partnership</h2>
                 <p>Neugi is designed as a <strong>Neural Bridge</strong>, a unifying layer that connects the reliability of local core engines with the raw reasoning power of frontier SOTA models.</p>
                 
@@ -327,11 +348,11 @@ python3 neugi_assistant.py</code></pre>
                 <ul class="toc-list">
                     <li><a href="#introduction">Introduction</a></li>
                     <li><a href="#quickstart">Quickstart</a></li>
-                    <li><a href="#godmode">God Mode</a></li>
+                    <li><a href="#security">Security</a></li>
                     <li><a href="#rag">Context Memory</a></li>
                     <li><a href="#agents">Agentic Network</a></li>
-                    <li><a href="#anti-claw">Anti-Monolith Mechanics</a></li>
-                    <li><a href="#tools">Tool Expansion</a></li>
+                    <li><a href="#cli">CLI Reference</a></li>
+                    <li><a href="#api">API Reference</a></li>
                     <li><a href="#partnership">Ecosystem & Partners</a></li>
                 </ul>
             </div>

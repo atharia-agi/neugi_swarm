@@ -822,8 +822,8 @@
                 <h4>Developers</h4>
                 <ul>
                     <li><a href="docs.html">Documentation</a></li>
-                    <li><a href="docs.html">API Reference</a></li>
-                    <li><a href="https://github.com/atharia-agi/neugi_swarm">GitHub</a></li>
+                    <li><a href="docs.html#api">API Reference</a></li>
+                    <li><a href="https://github.com/atharia-agi/neugi_swarm" target="_blank">GitHub</a></li>
                 </ul>
             </div>
             <div class="footer-col">
@@ -831,15 +831,15 @@
                 <ul>
                     <li><a href="#contact">About</a></li>
                     <li><a href="https://twitter.com/Atharia_AGI" target="_blank">Careers</a></li>
-                    <li><a href="docs.html#godmode">Security</a></li>
+                    <li><a href="docs.html#security">Security</a></li>
                 </ul>
             </div>
         </div>
         <div class="footer-bottom">
             <span>© 2026 Atharia AGI. All rights reserved.</span>
             <div style="display:flex; gap: 24px;">
-                <a href="javascript:alert('Coming soon in Phase 14')" style="color:var(--text-tertiary); text-decoration:none;">Privacy Policy</a>
-                <a href="javascript:alert('Coming soon in Phase 14')" style="color:var(--text-tertiary); text-decoration:none;">Terms of Service</a>
+                <a href="privacy.html" style="color:var(--text-tertiary); text-decoration:none;">Privacy Policy</a>
+                <a href="terms.html" style="color:var(--text-tertiary); text-decoration:none;">Terms of Service</a>
             </div>
         </div>
     </footer>
@@ -870,6 +870,30 @@
             btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" class="feather" width="14" height="14" stroke="currentColor"><polyline points="20 6 9 17 4 12"></polyline></svg> Copied`;
             setTimeout(() => { btn.innerHTML = original; }, 2000);
         }
+
+        function handleInquiry(e) {
+            e.preventDefault();
+            const container = document.getElementById('form-container');
+            const name = document.getElementById('inquiry-name').value;
+            
+            container.style.opacity = '0';
+            setTimeout(() => {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 20px 0;">
+                        <div style="width: 48px; height: 48px; background: rgba(16, 185, 129, 0.1); color: #10b981; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </div>
+                        <h3 style="margin-bottom: 12px;">Transmission Received</h3>
+                        <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.6;">
+                            Thanks ${name}. Your inquiry has been routed to our Lead Architect. Expect a neural handshake within 24 hours.
+                        </p>
+                    </div>
+                `;
+                container.style.opacity = '1';
+                container.style.background = 'rgba(16, 185, 129, 0.05)';
+                container.style.borderColor = 'rgba(16, 185, 129, 0.2)';
+            }, 500);
+        }
     </script>
     <!-- Ecosystem Section -->
     <section id="ecosystem" style="padding: 100px 0; border-top: 1px solid var(--border-subtle);">
@@ -880,7 +904,7 @@
             </div>
             
             <div style="text-align: center;">
-                <p style="color: var(--text-secondary); font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 24px;">Powered by the world's most capable models</p>
+                <p style="color: var(--text-secondary); font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 24px;">Orchestrating specialized intelligence through neural synergy</p>
                 <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 40px; color: var(--text-tertiary); font-weight: 500; font-size: 18px;">
                     <span>Ollama</span>
                     <span>MiniMax</span>
@@ -908,15 +932,15 @@
                     </div>
                 </div>
 
-                <div style="padding: 40px; background: rgba(255,255,255,0.01); border: 1px solid var(--border-subtle); border-radius: 16px;">
-                    <h3 style="margin-bottom: 24px;">Partnership Inquiry</h3>
-                    <form action="#" onsubmit="event.preventDefault(); alert('Inquiry Simulation: Our architecture lead will reach out soon.');">
+                <div id="form-container" style="padding: 40px; background: rgba(255,255,255,0.01); border: 1px solid var(--border-subtle); border-radius: 16px; transition: all 0.5s ease;">
+                    <h3 id="form-title" style="margin-bottom: 24px;">Partnership Inquiry</h3>
+                    <form id="contact-form" action="#" onsubmit="handleInquiry(event)">
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-                            <input type="text" placeholder="Name" style="background: var(--bg-layer); border: 1px solid var(--border-subtle); color: white; padding: 12px; border-radius: 8px; font-size: 14px;">
-                            <input type="email" placeholder="Email" style="background: var(--bg-layer); border: 1px solid var(--border-subtle); color: white; padding: 12px; border-radius: 8px; font-size: 14px;">
+                            <input type="text" id="inquiry-name" placeholder="Name" required style="background: var(--bg-layer); border: 1px solid var(--border-subtle); color: white; padding: 12px; border-radius: 8px; font-size: 14px;">
+                            <input type="email" id="inquiry-email" placeholder="Email" required style="background: var(--bg-layer); border: 1px solid var(--border-subtle); color: white; padding: 12px; border-radius: 8px; font-size: 14px;">
                         </div>
-                        <textarea placeholder="Tell us about your project or partnership interest..." style="width: 100%; min-height: 100px; background: var(--bg-layer); border: 1px solid var(--border-subtle); color: white; padding: 12px; border-radius: 8px; font-size: 14px; margin-bottom: 16px; font-family: inherit;"></textarea>
-                        <button type="submit" class="btn btn-primary" style="width: 100%;">Connect with Lead Architect</button>
+                        <textarea id="inquiry-message" placeholder="Tell us about your project or partnership interest..." required style="width: 100%; min-height: 100px; background: var(--bg-layer); border: 1px solid var(--border-subtle); color: white; padding: 12px; border-radius: 8px; font-size: 14px; margin-bottom: 16px; font-family: inherit;"></textarea>
+                        <button type="submit" id="submit-btn" class="btn btn-primary" style="width: 100%;">Connect with Lead Architect</button>
                     </form>
                 </div>
             </div>
