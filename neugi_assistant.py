@@ -71,7 +71,7 @@ NEUGI is Neural General Intelligence - made easy!
             return False
 
     def chat(self, message: str) -> str:
-        """Send message and get response"""
+        """Send message and get response (non-streaming)"""
 
         # Check if Ollama is running
         if not self.is_ollama_running():
@@ -101,6 +101,70 @@ NEUGI is Neural General Intelligence - made easy!
         except Exception as e:
             # Try fallback model
             return self._fallback_chat(message)
+
+    def chat_stream(self, message: str, callback=None):
+        """
+        Send message and get streaming response.
+
+        Args:
+            message: User message
+            callback: Optional callback function to handle each chunk
+
+        Yields:
+            Text chunks as they arrive
+        """
+        # Check if Ollama is running
+        if not self.is_ollama_running():
+            response = self._offline_response(message)
+            if callback:
+                callback(response)
+            yield response
+            return
+
+        try:
+            payload = {
+                "model": self.model,
+                "messages": [
+                    {"role": "system", "content": self.system_prompt},
+                    {"role": "user", "content": message},
+                ],
+                "stream": True,
+            }
+
+            req = urllib.request.Request(
+                f"{self.url}/api/chat",
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+            )
+
+            full_response = ""
+
+            with urllib.request.urlopen(req, timeout=60) as response:
+                for line in response:
+                    if line:
+                        try:
+                            data = json.loads(line.decode())
+                            if "message" in data and "content" in data["message"]:
+                                chunk = data["message"]["content"]
+                                full_response += chunk
+                                if callback:
+                                    callback(chunk)
+                                yield chunk
+                        except:
+                            continue
+
+        except Exception as e:
+            # Fallback to non-streaming
+            try:
+                response = self._fallback_chat(message)
+                if callback:
+                    callback(response)
+                yield response
+            except Exception as e2:
+                error_msg = f"Error: {e2}"
+                if callback:
+                    callback(error_msg)
+                yield error_msg
 
     def _fallback_chat(self, message: str) -> str:
         """Try fallback models if primary fails"""

@@ -73,7 +73,7 @@ You help users with:
 Be helpful, clear, and concise. When asked to fix something, actually perform the action."""
 
     def chat(self, message: str) -> str:
-        """Send message to AI and get response"""
+        """Send message to AI and get response (non-streaming)"""
         try:
             response = requests.post(
                 f"{self.url}/api/generate",
@@ -89,6 +89,38 @@ Be helpful, clear, and concise. When asked to fix something, actually perform th
         except Exception as e:
             return f"Error: {e}"
         return "Cannot connect to Ollama. Is it running?"
+
+    def chat_stream(self, message: str):
+        """
+        Send message to AI and get streaming response.
+
+        Yields:
+            Text chunks as they arrive
+        """
+        try:
+            response = requests.post(
+                f"{self.url}/api/generate",
+                json={
+                    "model": self.model,
+                    "prompt": f"{self.system_prompt}\n\nUser: {message}\n\n{BRAND}:",
+                    "stream": True,
+                },
+                stream=True,
+                timeout=60,
+            )
+
+            if response.ok:
+                for line in response.iter_lines():
+                    if line:
+                        try:
+                            data = json.loads(line.decode())
+                            if "response" in data:
+                                yield data["response"]
+                        except:
+                            continue
+
+        except Exception as e:
+            yield f"Error: {e}"
 
     def ask(self, question: str, context: str = "") -> str:
         """Ask AI with context"""
@@ -650,10 +682,11 @@ System status:
     # ============================================================
 
     def run_chat(self):
-        """Chat with AI"""
-        self.ui.header("💬 CHAT WITH AI")
+        """Chat with AI - with streaming!"""
+        self.ui.header("💬 CHAT WITH AI (Streaming)")
 
-        print(f"{C.CYAN}Type 'exit' to go back.{C.END}\n")
+        print(f"{C.CYAN}Type 'exit' to go back.{C.END}")
+        print(f"{C.YELLOW}Responses stream in real-time!{C.END}\n")
 
         while True:
             message = input(f"{C.GREEN}> {C.END}").strip()
@@ -664,8 +697,13 @@ System status:
             if not message:
                 continue
 
-            response = self.ai.chat(message)
-            print(f"\n{C.CYAN}{response}{C.END}\n")
+            print(f"\n{C.CYAN}", end="", flush=True)
+
+            # Stream response
+            for chunk in self.ai.chat_stream(message):
+                print(chunk, end="", flush=True)
+
+            print(f"{C.END}\n")
 
     # ============================================================
     # HELPERS

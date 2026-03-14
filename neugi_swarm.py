@@ -258,6 +258,12 @@ class DashboardHandler(BaseHTTPRequestHandler):
         data = json.loads(body)
 
         message = data.get("message", "")
+        stream = data.get("stream", False)
+
+        # Check if streaming requested
+        if stream:
+            self.handle_chat_stream(message)
+            return
 
         try:
             from neugi_assistant import NeugiAssistant
@@ -271,6 +277,30 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "application/json")
         self.end_headers()
         self.wfile.write(json.dumps({"response": response}).encode())
+
+    def handle_chat_stream(self, message: str):
+        """Handle streaming chat request"""
+        self.send_response(200)
+        self.send_header("Content-type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "keep-alive")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+
+        try:
+            from neugi_assistant import NeugiAssistant
+
+            assistant = NeugiAssistant()
+
+            # Stream response
+            for chunk in assistant.chat_stream(message):
+                self.wfile.write(f"data: {json.dumps({'chunk': chunk})}\n\n".encode())
+                self.wfile.flush()
+
+            self.wfile.write(b"data: [DONE]\n\n")
+
+        except Exception as e:
+            self.wfile.write(f"data: {json.dumps({'error': str(e)})}\n\n".encode())
 
     def check_ollama(self):
         """Check Ollama status"""
@@ -715,16 +745,46 @@ class DashboardHandler(BaseHTTPRequestHandler):
             box.scrollTop = box.scrollHeight;
             
             try {
+                // Use streaming!
                 const resp = await fetch('/api/chat', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({message: msg})
+                    body: JSON.stringify({message: msg, stream: true})
                 });
-                const data = await resp.json();
-                document.getElementById(loadingId).outerHTML = `<div class="chat-msg assistant">${(data.response || '').replace(/
-/g, '<br>')}</div>`;
+                
+                const reader = resp.body.getReader();
+                const decoder = new TextDecoder();
+                let assistantMessage = '';
+                
+                // Replace loading with streaming message
+                const loadingEl = document.getElementById(loadingId);
+                loadingEl.outerHTML = '<div class="chat-msg assistant" id="streaming-msg"></div>';
+                const msgEl = document.getElementById('streaming-msg');
+                
+                while (true) {
+                    const {done, value} = await reader.read();
+                    if (done) break;
+                    
+                    const text = decoder.decode(value);
+                    const lines = text.split('\\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            if (data === '[DONE]') continue;
+                            try {
+                                const parsed = JSON.parse(data);
+                                if (parsed.chunk) {
+                                    assistantMessage += parsed.chunk;
+                                    msgEl.innerHTML = assistantMessage.replace(/\\n/g, '<br>');
+                                    box.scrollTop = box.scrollHeight;
+                                }
+                            } catch(e) {}
+                        }
+                    }
+                }
             } catch(e) {
-                document.getElementById(loadingId).outerHTML = `<div class="chat-msg assistant" style="color:var(--danger)">Error: Comm link severed.</div>`;
+                document.getElementById(loadingId).outerHTML = '<div class="chat-msg assistant" style="color:var(--danger)">Error: Comm link severed.</div>';
             }
             box.scrollTop = box.scrollHeight;
         }
