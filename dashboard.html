@@ -632,34 +632,45 @@
             'strategist': '♟️', 'security': '🛡️', 'social': '🌐', 'writer': '✍️', 'manager': '👑'
         };
 
+        // --- SWARM SIMULATOR (SHOWCASE MODE) ---
+        let isShowcaseMode = false;
+
+        const simulator = {
+            agents: [
+                { id: 'aurora', name: 'Aurora', role: 'Data Extraction', group: 2 },
+                { id: 'cipher', name: 'Cipher', role: 'Syntax & Logic', group: 2 },
+                { id: 'nova', name: 'Nova', role: 'UI Topology', group: 2 },
+                { id: 'pulse', name: 'Pulse', role: 'Data Analysis', group: 2 }
+            ],
+            remoteNodes: [
+                { id: 'tokyo-node-1', group: 3 },
+                { id: 'sf-node-alpha', group: 3 }
+            ],
+            generateTelemetry: () => ({
+                cpu: Math.floor(20 + Math.random() * 30),
+                ram: Math.floor(40 + Math.random() * 15),
+                ram_used: 12.4,
+                ram_total: 32.0
+            })
+        };
+
+        function startShowcaseMode() {
+            if (isShowcaseMode) return;
+            isShowcaseMode = true;
+            console.log("🚀 Neugi Swarm: Starting Showcase Mode (API Unreachable)");
+            
+            // Add a badge to the UI
+            const badge = document.createElement('div');
+            badge.innerHTML = 'LIVE SHOWCASE MODE';
+            badge.style = "position:fixed; top:20px; right:20px; background:var(--status-blue); color:white; padding:5px 15px; border-radius:20px; font-size:12px; font-weight:bold; z-index:1000; box-shadow:0 0 15px var(--status-blue);";
+            document.body.appendChild(badge);
+            
+            document.getElementById('statusDot').style.background = 'var(--status-blue)';
+            document.getElementById('statusText').textContent = 'Live Showcase';
+        }
+
         async function refreshStatus() {
             try {
-                const resp = await fetch('/api/status');
-                const data = await resp.json();
-                
-                if (serverUptimeOffset === 0 && data.neugi) {
-                    serverUptimeOffset = data.neugi.uptime - Math.floor((Date.now() - startTimestamp) / 1000);
-                }
-                const currentUptime = Math.floor((Date.now() - startTimestamp) / 1000) + serverUptimeOffset;
-                document.getElementById('uptime').textContent = formatTime(currentUptime);
-                
-                if (data.neugi && data.neugi.telemetry) {
-                    const tel = data.neugi.telemetry;
-                    document.getElementById('cpuUsage').textContent = tel.cpu + '%';
-                    document.getElementById('ramUsage').textContent = tel.ram + '%';
-                    document.getElementById('cpuUsage').style.color = tel.cpu > 80 ? 'var(--status-red)' : 'var(--text-primary)';
-                    document.getElementById('ramUsage').style.color = tel.ram > 80 ? 'var(--status-red)' : 'var(--text-primary)';
-                }
-                
-                let modelName = 'Offline';
-                if (data.ollama && data.ollama.status === 'running') {
-                    modelName = 'Ollama Engine (' + data.ollama.models + ')';
-                }
-                document.getElementById('model').textContent = modelName;
-                
-                const errCount = data.issues ? data.issues.length : 0;
-                const errEl = document.getElementById('errors');
-                errEl.textContent = errCount;
                 errEl.style.color = errCount > 0 ? 'var(--status-red)' : 'var(--text-primary)';
                 
                 const dot = document.getElementById('statusDot');
@@ -780,6 +791,10 @@
 
         async function updateGraph() {
             try {
+                if (isShowcaseMode) {
+                    renderShowcaseGraph();
+                    return;
+                }
                 const [statusResp, nodesResp] = await Promise.all([
                     fetch('/api/status'),
                     fetch('/api/swarm/nodes')
@@ -809,7 +824,32 @@
                 Graph.graphData(gData);
             } catch(e) {
                 console.error("Swarm graph sync failed:", e);
+                if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                    startShowcaseMode();
+                }
             }
+        }
+
+        function renderShowcaseGraph() {
+            const gData = { nodes: [], links: [] };
+            gData.nodes.push({ id: 'nexus', name: 'Nexus (Public Showcase)', group: 1, val: 5 });
+            
+            simulator.agents.forEach(a => {
+                gData.nodes.push({ id: a.id, name: `${a.name} (${a.role})`, group: 2, val: 3 });
+                gData.links.push({ source: 'nexus', target: a.id });
+            });
+            
+            simulator.remoteNodes.forEach(rn => {
+                gData.nodes.push({ id: rn.id, name: `Remote Node: ${rn.id}`, group: 3, val: 4 });
+                gData.links.push({ source: 'nexus', target: rn.id });
+                // Simulate some inter-node activity
+                if (Math.random() > 0.7) {
+                    const randomAgent = simulator.agents[Math.floor(Math.random() * simulator.agents.length)].id;
+                    gData.links.push({ source: rn.id, target: randomAgent });
+                }
+            });
+            
+            Graph.graphData(gData);
         }
         
         setInterval(updateGraph, 5000);
