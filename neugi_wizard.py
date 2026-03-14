@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 """
-🤖 NEUGI WIZARD v2.4 - Auto Start Ollama
+🤖 NEUGI WIZARD - All-in-One AI Assistant
 ==========================================
 
-Auto-start Ollama if not running!
-Corporate Brand: NEUGI (capital GI!)
+Single entry point for:
+1. Onboarding - Guide new users
+2. Diagnosis - Find problems
+3. Repair - Fix issues automatically
+4. Configuration - Optimize settings
 
-Version: 2.4
-Date: March 13, 2026
+Powered by Ollama AI!
+
+Version: 3.0
+Date: March 14, 2026
 """
 
 import os
@@ -15,336 +20,715 @@ import json
 import requests
 import subprocess
 import sys
-import threading
-import time
-from neugi_telegram import TelegramGateway
-
-BRAND = "NEUGI"  # Corporate branding!
+import shutil
+import re
+from typing import Optional, Dict, List
+from datetime import datetime
 
 # ============================================================
-# OLLAMA MANAGER
+# CONFIG
+# ============================================================
+
+BRAND = "NEUGI"
+NEUGI_DIR = os.path.expanduser("~/neugi")
+OLLAMA_URL = "http://localhost:11434"
+MODEL = "qwen3.5:cloud"
+
+# ============================================================
+# COLORS
 # ============================================================
 
 
-class OllamaManager:
-    """Auto-manage Ollama server"""
+class C:
+    PURPLE = "\033[95m"
+    CYAN = "\033[96m"
+    BLUE = "\033[94m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    RED = "\033[91m"
+    BOLD = "\033[1m"
+    END = "\033[0m"
+
+
+# ============================================================
+# AI CORE
+# ============================================================
+
+
+class AIAgent:
+    """AI agent powered by Ollama"""
+
+    def __init__(self):
+        self.url = OLLAMA_URL
+        self.model = MODEL
+        self.system_prompt = f"""You are {BRAND} Wizard - an expert AI assistant.
+
+You help users with:
+- Setting up {BRAND} Swarm
+- Diagnosing problems
+- Fixing issues automatically
+- Optimizing performance
+- Answering questions about AI and technology
+
+Be helpful, clear, and concise. When asked to fix something, actually perform the action."""
+
+    def chat(self, message: str) -> str:
+        """Send message to AI and get response"""
+        try:
+            response = requests.post(
+                f"{self.url}/api/generate",
+                json={
+                    "model": self.model,
+                    "prompt": f"{self.system_prompt}\n\nUser: {message}\n\n{BRAND}:",
+                    "stream": False,
+                },
+                timeout=60,
+            )
+            if response.ok:
+                return response.json().get("response", "").strip()
+        except Exception as e:
+            return f"Error: {e}"
+        return "Cannot connect to Ollama. Is it running?"
+
+    def ask(self, question: str, context: str = "") -> str:
+        """Ask AI with context"""
+        prompt = (
+            f"{context}\n\nQuestion: {question}\n\nAnswer:" if context else question
+        )
+        return self.chat(prompt)
+
+    def diagnose(self, issue_description: str) -> str:
+        """AI diagnoses the problem"""
+        prompt = f"""Diagnose this issue with {BRAND} Swarm:
+
+Issue: {issue_description}
+
+Think step by step:
+1. What could cause this?
+2. How to verify?
+3. What's the fix?
+
+Provide diagnosis and fix in this format:
+DIAGNOSIS: [your diagnosis]
+FIX: [command or action to fix]"
+"""
+        return self.chat(prompt)
+
+    def execute_fix(self, fix_command: str) -> Dict:
+        """Execute a fix command"""
+        result = {"command": fix_command, "success": False, "output": ""}
+
+        # Only allow safe commands
+        safe_commands = {
+            "ollama serve": "Starting Ollama server",
+            "pip install": "Installing package",
+            "curl": "Downloading file",
+            "mkdir": "Creating directory",
+            "rm -rf ~/neugi": "Resetting NEUGI directory",
+        }
+
+        for safe_cmd, description in safe_commands.items():
+            if safe_cmd in fix_command.lower():
+                result["description"] = description
+                try:
+                    # For dangerous commands, don't actually execute
+                    if "rm -rf" in fix_command.lower():
+                        result["output"] = "Would execute: " + fix_command
+                        result["safe"] = False
+                        return result
+
+                    # Execute other commands
+                    proc = subprocess.run(
+                        fix_command,
+                        shell=True,
+                        capture_output=True,
+                        text=True,
+                        timeout=30,
+                    )
+                    result["success"] = proc.returncode == 0
+                    result["output"] = proc.stdout or proc.stderr
+                except Exception as e:
+                    result["output"] = str(e)
+                return result
+
+        result["output"] = f"Command not in safe list: {fix_command}"
+        return result
+
+
+# ============================================================
+# SYSTEM CHECKS
+# ============================================================
+
+
+class SystemChecker:
+    """Check system status"""
 
     @staticmethod
-    def is_running() -> bool:
-        """Check if Ollama is running"""
+    def check_ollama() -> Dict:
+        """Check Ollama status"""
+        result = {"running": False, "models": [], "error": ""}
         try:
-            r = requests.get("http://localhost:11434/api/tags", timeout=3)
-            return r.ok
+            r = requests.get(f"{OLLAMA_URL}/api/tags", timeout=5)
+            if r.ok:
+                result["running"] = True
+                result["models"] = [m["name"] for m in r.json().get("models", [])]
+        except Exception as e:
+            result["error"] = str(e)
+        return result
+
+    @staticmethod
+    def check_neugi() -> Dict:
+        """Check NEUGI status"""
+        result = {"installed": False, "running": False, "config": None}
+        config_path = os.path.join(NEUGI_DIR, "data", "config.json")
+
+        if os.path.exists(config_path):
+            result["installed"] = True
+            try:
+                with open(config_path) as f:
+                    result["config"] = json.load(f)
+            except:
+                pass
+
+        try:
+            r = requests.get(f"http://localhost:19888/health", timeout=2)
+            result["running"] = r.ok
         except:
-            return False
+            pass
+
+        return result
 
     @staticmethod
-    def start_background() -> bool:
-        """Start Ollama in background automatically"""
-        print("   ⚡ Starting Ollama automatically...")
+    def check_port(port: int) -> Dict:
+        """Check if port is in use"""
+        import socket
 
-        # Try different methods to start in background
+        result = {"in_use": False, "process": ""}
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        if sock.connect_ex(("localhost", port)) == 0:
+            result["in_use"] = True
+        sock.close()
+        return result
+
+    @staticmethod
+    def full_diagnosis() -> Dict:
+        """Run full system diagnosis"""
+        return {
+            "ollama": SystemChecker.check_ollama(),
+            "neugi": SystemChecker.check_neugi(),
+            "port_19888": SystemChecker.check_port(19888),
+        }
+
+
+# ============================================================
+# REPAIR ACTIONS
+# ============================================================
+
+
+class Repair:
+    """Auto-repair common issues"""
+
+    @staticmethod
+    def start_ollama() -> Dict:
+        """Start Ollama"""
         try:
-            # Method 1: ollama serve (background)
             subprocess.Popen(
                 ["ollama", "serve"],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 start_new_session=True,
             )
+            # Wait
+            for _ in range(10):
+                import time
 
-            # Wait and check
-            for i in range(10):
                 time.sleep(1)
-                if OllamaManager.is_running():
-                    print("   ✅ Ollama started automatically!")
-                    return True
-
-        except:
-            pass
-
-        # Method 2: Try just "ollama"
-        try:
-            subprocess.Popen(
-                ["ollama"],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                start_new_session=True,
-            )
-
-            for i in range(10):
-                time.sleep(1)
-                if OllamaManager.is_running():
-                    print("   ✅ Ollama started!")
-                    return True
-        except:
-            pass
-
-        return False
+                if SystemChecker.check_ollama()["running"]:
+                    return {"success": True, "message": "Ollama started!"}
+            return {"success": False, "message": "Ollama didn't start in time"}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
 
     @staticmethod
-    def ensure_running() -> bool:
-        """Ensure Ollama is running, start if needed"""
+    def reset_config() -> Dict:
+        """Reset NEUGI config"""
+        try:
+            config_path = os.path.join(NEUGI_DIR, "data", "config.json")
+            if os.path.exists(config_path):
+                os.remove(config_path)
+            return {"success": True, "message": "Config reset! Run wizard again."}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
 
-        if OllamaManager.is_running():
-            return True
+    @staticmethod
+    def install_dependencies() -> Dict:
+        """Install required packages"""
+        try:
+            subprocess.run(
+                [sys.executable, "-m", "pip", "install", "requests"],
+                capture_output=True,
+                timeout=60,
+            )
+            return {"success": True, "message": "Dependencies installed!"}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
 
-        # Try to start automatically
-        if OllamaManager.start_background():
-            return True
 
-        # If still not running, tell user
-        print("\n📌 Ollama couldn't start automatically.")
-        print("Please start Ollama manually, then run wizard again.")
-        return False
+# ============================================================
+# WIZARD UI
+# ============================================================
+
+
+class WizardUI:
+    """Beautiful CLI UI"""
+
+    @staticmethod
+    def header(title: str):
+        print(f"\n{C.CYAN}{'═' * 60}")
+        print(f"  🤖 {title}")
+        print(f"{'═' * 60}{C.END}\n")
+
+    @staticmethod
+    def menu(options: List[tuple], title: str = "Choose an option:") -> str:
+        """Show menu and get choice"""
+        print(f"{C.BOLD}{title}{C.END}\n")
+        for i, (key, desc) in enumerate(options, 1):
+            print(f"  {C.GREEN}{i}{C.END}. {desc}")
+        print()
+        choice = input(f"{C.CYAN}> {C.END}").strip()
+        return choice
+
+    @staticmethod
+    def success(msg: str):
+        print(f"{C.GREEN}  ✅ {msg}{C.END}")
+
+    @staticmethod
+    def warning(msg: str):
+        print(f"{C.YELLOW}  ⚠️  {msg}{C.END}")
+
+    @staticmethod
+    def error(msg: str):
+        print(f"{C.RED}  ❌ {msg}{C.END}")
+
+    @staticmethod
+    def info(msg: str):
+        print(f"{C.CYAN}  ℹ️  {msg}{C.END}")
+
+    @staticmethod
+    def ai_response(response: str):
+        """Display AI response beautifully"""
+        print(f"\n{C.PURPLE}🧠 AI Response:{C.END}")
+        print(f"{C.CYAN}{'─' * 50}{C.END}")
+        # Word wrap
+        words = response.split()
+        line = ""
+        for word in words:
+            if len(line) + len(word) > 48:
+                print(f"  {line}")
+                line = word
+            else:
+                line += " " + word if line else word
+        if line:
+            print(f"  {line}")
+        print(f"{C.CYAN}{'─' * 50}{C.END}\n")
 
 
 # ============================================================
-# MODELS
-# ============================================================
-
-OLLAMA_MODELS = [
-    {"model": "qwen3.5:cloud", "ctx": 32768},
-    {"model": "qwen3.5:7b", "ctx": 8192},
-]
-
-PROVIDERS = {
-    "openai": {
-        "name": "OpenAI",
-        "env": "OPENAI_API_KEY",
-        "url": "https://platform.openai.com",
-        "models": ["gpt-4o", "gpt-4o-mini"],
-    },
-    "anthropic": {
-        "name": "Anthropic Claude",
-        "env": "ANTHROPIC_API_KEY",
-        "url": "https://console.anthropic.com",
-        "models": ["claude-sonnet-4", "claude-3.5-sonnet"],
-    },
-    "groq": {
-        "name": "Groq",
-        "env": "GROQ_API_KEY",
-        "url": "https://console.groq.com",
-        "models": ["llama-3.3-70b-versatile", "mixtral-8x7b-32768"],
-    },
-    "openrouter": {
-        "name": "OpenRouter",
-        "env": "OPENROUTER_API_KEY",
-        "url": "https://openrouter.ai",
-        "models": ["google/gemini-2.0-flash-exp"],
-    },
-}
-
-# ============================================================
-# WIZARD
+# MAIN WIZARD
 # ============================================================
 
 
 class NEUGIWizard:
+    """All-in-one NEUGI Wizard"""
+
     def __init__(self):
-        self.answers = {}
-        self.config = {}
+        self.ai = AIAgent()
+        self.ui = WizardUI()
 
     def run(self):
-        print(f"\n{'=' * 60}")
-        print(f"🤖 {BRAND} WIZARD v2.4")
-        print(f"{'=' * 60}")
+        """Main entry point"""
+        self.ui.header(f"{BRAND} WIZARD v3.0 - AI-Powered!")
 
-        # STEP 1: Ensure Ollama Running (Auto!)
-        if not self._step_ollama():
-            print(f"\n❌ Cannot continue without Ollama.")
+        print(f"""
+{C.BOLD}Welcome to {BRAND}!{C.END}
+
+I'm your AI assistant. I can help you with:
+
+  🎯  SETUP      - Install and configure {BRAND}
+  🔧  REPAIR    - Fix problems automatically  
+  🧠  DIAGNOSE  - Find out what's wrong
+  💬  CHAT      - Ask me anything
+
+""")
+
+        while True:
+            choice = self.ui.menu(
+                [
+                    ("setup", "🎯 Setup / First Time Install"),
+                    ("repair", "🔧 Repair / Fix Problems"),
+                    ("diagnose", "🧠 Diagnose System"),
+                    ("chat", "💬 Chat with AI"),
+                    ("quit", "👋 Exit"),
+                ],
+                "What would you like to do?",
+            )
+
+            if choice == "1":
+                self.run_setup()
+            elif choice == "2":
+                self.run_repair()
+            elif choice == "3":
+                self.run_diagnose()
+            elif choice == "4":
+                self.run_chat()
+            elif choice == "5" or choice.lower() in ["quit", "exit", "q"]:
+                print(f"\n{C.CYAN}Happy to help! See you next time! 👋{C.END}\n")
+                break
+            else:
+                self.ui.warning("Invalid choice. Try again.")
+
+    # ============================================================
+    # SETUP FLOW
+    # ============================================================
+
+    def run_setup(self):
+        """Setup wizard flow"""
+        self.ui.header("🎯 SETUP WIZARD")
+
+        # Check Ollama
+        self.ui.info("Checking Ollama...")
+        ollama = SystemChecker.check_ollama()
+
+        if not ollama["running"]:
+            self.ui.warning("Ollama is not running!")
+            print(f"\n  {C.YELLOW}Shall I start it? (y/n): {C.END}", end="")
+            if input().strip().lower() == "y":
+                result = Repair.start_ollama()
+                if result["success"]:
+                    self.ui.success(result["message"])
+                else:
+                    self.ui.error(result["message"])
+                    return
+            else:
+                self.ui.info("Okay, but NEUGI needs Ollama to work.")
+                return
+        else:
+            self.ui.success(f"Ollama is running! ({len(ollama['models'])} models)")
+
+        # Check if already installed
+        neugi = SystemChecker.check_neugi()
+        if neugi["installed"]:
+            self.ui.warning(f"{BRAND} is already installed!")
+            print(
+                f"\n  {C.YELLOW}Re-run setup? This will reset config. (y/n): {C.END}",
+                end="",
+            )
+            if input().strip().lower() != "y":
+                return
+            Repair.reset_config()
+
+        # Get user info
+        print(f"\n{C.BOLD}Let's get to know you!{C.END}\n")
+
+        name = input(f"  {C.CYAN}What's your name? {C.END}").strip() or "User"
+
+        # AI-powered use case detection
+        print(f"\n  {C.PURPLE}🧠 Let AI help determine best setup...{C.END}\n")
+
+        question = f"Hi {name}! What do you want to use AI for? (coding, chatting, research, automation)"
+        print(f"  {C.CYAN}💭 {question}{C.END}")
+        use_case = input(f"  {C.GREEN}> {C.END}").strip().lower()
+
+        # Save config
+        config = {
+            "user": {"name": name},
+            "use_case": use_case,
+            "model": {"provider": "ollama_cloud", "model": MODEL},
+            "assistant": {
+                "primary": MODEL,
+                "fallback": "nemotron-3-super:cloud",
+            },
+            "setup_date": datetime.now().isoformat(),
+        }
+
+        os.makedirs(os.path.join(NEUGI_DIR, "data"), exist_ok=True)
+        config_path = os.path.join(NEUGI_DIR, "data", "config.json")
+
+        with open(config_path, "w") as f:
+            json.dump(config, f, indent=2)
+
+        self.ui.success(f"Setup complete! Config saved.")
+
+        # Ask to start
+        print(f"\n  {C.YELLOW}Start {BRAND} now? (y/n): {C.END}", end="")
+        if input().strip().lower() == "y":
+            self.start_neugi()
+
+        # Show examples
+        self.show_examples(use_case)
+
+    def show_examples(self, use_case: str):
+        """Show example questions"""
+        examples = {
+            "coding": [
+                "Write a Python function for Fibonacci",
+                "Explain what is recursion",
+                "Help me debug this error",
+            ],
+            "chat": [
+                "What's your opinion on AI?",
+                "Tell me a joke",
+                "What can you help me with?",
+            ],
+            "research": [
+                "Summarize latest AI news",
+                "Compare Ollama vs OpenAI",
+                "What is NGI?",
+            ],
+            "automation": [
+                "Create a backup script",
+                "How to schedule tasks?",
+                "Automate file organization",
+            ],
+        }
+
+        sample = examples.get(use_case, examples["chat"])
+
+        print(f"\n{C.BOLD}💬 Try these examples:{C.END}")
+        for q in sample:
+            print(f'  {C.PURPLE}•{C.END} "{q}"')
+        print()
+
+    # ============================================================
+    # REPAIR FLOW
+    # ============================================================
+
+    def run_repair(self):
+        """Auto-repair flow"""
+        self.ui.header("🔧 AUTO-REPAIR")
+
+        self.ui.info("Running system diagnosis...")
+
+        # Quick check
+        diagnosis = SystemChecker.full_diagnosis()
+
+        issues = []
+
+        # Check Ollama
+        if not diagnosis["ollama"]["running"]:
+            issues.append("Ollama not running")
+
+        # Check NEUGI
+        if not diagnosis["neugi"]["installed"]:
+            issues.append("NEUGI not installed")
+        elif not diagnosis["neugi"]["running"]:
+            issues.append("NEUGI not running")
+
+        # Check port
+        if diagnosis["port_19888"]["in_use"]:
+            issues.append("Port 19888 in use")
+
+        if not issues:
+            self.ui.success("No issues found! System looks good.")
             return
 
-        # STEP 2-6: Other Steps
-        self._step_name()
-        self._step_use_case()
-        self._step_api_key()
-        self._step_telegram()
-        self._save()
+        self.ui.warning(f"Found {len(issues)} issue(s):")
+        for issue in issues:
+            print(f"  {C.RED}•{C.END} {issue}")
 
-    def _step_ollama(self) -> bool:
-        """Step 1: Ensure Ollama is running (auto-start!)"""
-        print(f"\n🔍 Step 1: Checking Ollama...")
+        print()
 
-        if OllamaManager.is_running():
-            print(f"   ✅ Ollama is running!")
-            return True
+        # Auto-fix what we can
+        choice = self.ui.menu(
+            [
+                ("auto", "🤖 Let AI fix automatically"),
+                ("manual", "💬 Describe your problem to AI"),
+                ("back", "← Go back"),
+            ],
+            "How would you like to proceed?",
+        )
 
-        print(f"   ⚠️ Ollama not running...")
-        print(f"   🤖 {BRAND} will start it automatically...")
+        if choice == "1":
+            self.auto_repair(issues)
+        elif choice == "2":
+            self.manual_repair()
+        # choice 3 = back
 
-        return OllamaManager.ensure_running()
+    def auto_repair(self, issues: List[str]):
+        """AI automatically fixes issues"""
+        self.ui.info("🧠 Analyzing issues with AI...")
 
-    def _step_name(self):
-        print(f"\n{'-' * 60}")
-        print("👋 Step 2: Your Name")
-        print(f"{'-' * 60}")
-        name = input("What should I call you? ").strip()
-        self.answers["name"] = name or "User"
-        print(f"✓ Nice to meet you, {self.answers['name']}!")
+        issue_text = ", ".join(issues)
 
-    def _step_use_case(self):
-        print(f"\n{'-' * 60}")
-        print("🎯 Step 3: How will you use NEUGI?")
-        print(f"{'-' * 60}")
-        print("   1. Just chat")
-        print("   2. Help with coding")
-        print("   3. Research / analysis")
-        print("   4. Automation")
+        # Get AI diagnosis and fix
+        diagnosis = self.ai.diagnose(issue_text)
+        self.ui.ai_response(diagnosis)
 
-        choice = input("\nChoose (1-4): ").strip()
-        cases = {"1": "chat", "2": "coding", "3": "research", "4": "automation"}
-        self.answers["use_case"] = cases.get(choice, "chat")
-        print(f"✓ {self.answers['use_case'].title()}!")
-
-    def _step_api_key(self):
-        print(f"\n{'-' * 60}")
-        print("🔑 Step 4: API Key")
-        print(f"{'-' * 60}")
-
-        print("\nDo you have your own AI API key?")
-        print("   y - YES, I have an API key")
-        print("   n - NO, use free Ollama Cloud")
-
-        choice = input("\nAnswer (y/n): ").strip().lower()
-
-        if choice == "y":
-            self._setup_with_key()
+        # Extract and execute fix
+        fix_match = re.search(r"FIX:\s*(.+)", diagnosis, re.IGNORECASE)
+        if fix_match:
+            fix_cmd = fix_match.group(1).strip()
+            print(f"\n  {C.YELLOW}Execute this fix? (y/n): {C.END}", end="")
+            if input().strip().lower() == "y":
+                result = self.ai.execute_fix(fix_cmd)
+                if result.get("success"):
+                    self.ui.success("Fix applied!")
+                else:
+                    self.ui.warning(f"Fix output: {result.get('output', 'Unknown')}")
         else:
-            self._setup_ollama()
+            self.ui.warning("AI couldn't determine specific fix.")
 
-    def _step_telegram(self):
-        print(f"\n{'-' * 60}")
-        print("📱 Step 5: Telegram Mobile Control (Optional)")
-        print(f"{'-' * 60}")
+    def manual_repair(self):
+        """User describes problem, AI helps"""
+        print(f"\n{C.BOLD}Describe your problem:{C.END}")
+        print(f"  {C.CYAN}(e.g., 'neugi won't start', 'error message here'){C.END}\n")
 
-        print("\nDo you want to control Neugi Swarm from your phone via Telegram?")
-        print("   y - YES, set up Telegram Bot")
-        print("   n - NO, skip this step")
+        problem = input(f"  {C.GREEN}> {C.END}").strip()
 
-        choice = input("\nAnswer (y/n): ").strip().lower()
+        if not problem:
+            return
 
-        if choice == "y":
-            tg = TelegramGateway()
-            if tg.setup():
-                print("✅ Telegram Gateway configured and ready.")
+        self.ui.info("🧠 Analyzing...")
+
+        # Get system info
+        diagnosis = SystemChecker.full_diagnosis()
+        context = f"""
+System status:
+- Ollama: {diagnosis["ollama"]["running"]}
+- NEUGI installed: {diagnosis["neugi"]["installed"]}
+- NEUGI running: {diagnosis["neugi"]["running"]}
+- Port 19888: {diagnosis["port_19888"]["in_use"]}
+"""
+
+        response = self.ai.ask(problem, context)
+        self.ui.ai_response(response)
+
+    # ============================================================
+    # DIAGNOSE FLOW
+    # ============================================================
+
+    def run_diagnose(self):
+        """System diagnosis"""
+        self.ui.header("🧠 SYSTEM DIAGNOSIS")
+
+        self.ui.info("Analyzing system...")
+
+        diagnosis = SystemChecker.full_diagnosis()
+
+        # Ollama
+        print(f"\n{C.BOLD}📡 Ollama:{C.END}")
+        if diagnosis["ollama"]["running"]:
+            self.ui.success(f"Running! Models: {len(diagnosis['ollama']['models'])}")
+            for m in diagnosis["ollama"]["models"][:5]:
+                print(f"  • {m}")
+        else:
+            self.ui.error(f"Not running: {diagnosis['ollama']['error']}")
+
+        # NEUGI
+        print(f"\n{C.BOLD}🤖 {BRAND}:{C.END}")
+        if diagnosis["neugi"]["installed"]:
+            self.ui.success("Installed")
+            if diagnosis["neugi"]["running"]:
+                self.ui.success("Running on port 19888")
             else:
-                print(
-                    "⚠️ Telegram setup incomplete. You can set it up later by running: python neugi_telegram.py setup"
-                )
+                self.ui.warning("Not running (start with: python3 neugi_swarm.py)")
         else:
-            print("⏭️ Skipping Telegram setup.")
+            self.ui.warning("Not installed (run setup)")
 
-    def _setup_with_key(self):
-        print("\n📋 Available providers:")
-        for i, (k, p) in enumerate(PROVIDERS.items(), 1):
-            free = " 🆓" if k in ["groq", "openrouter"] else ""
-            print(f"   {i}. {p['name']}{free}")
+        # Ask AI for recommendations
+        print(f"\n{C.YELLOW}Ask AI for recommendations? (y/n): {C.END}", end="")
+        if input().strip().lower() == "y":
+            self.ui.info("🧠 Getting AI recommendations...")
+            response = self.ai.ask(
+                "Based on this system status, what should I do to optimize?",
+                f"System: {json.dumps(diagnosis)}",
+            )
+            self.ui.ai_response(response)
 
-        choice = input("\nChoose (1-4): ").strip()
-        provider_keys = list(PROVIDERS.keys())
-        provider = (
-            provider_keys[int(choice) - 1]
-            if choice.isdigit() and 1 <= int(choice) <= 4
-            else "groq"
-        )
+    # ============================================================
+    # CHAT FLOW
+    # ============================================================
 
-        p = PROVIDERS[provider]
+    def run_chat(self):
+        """Chat with AI"""
+        self.ui.header("💬 CHAT WITH AI")
 
-        print(f"\n📋 {p['name']} models:")
-        for i, m in enumerate(p["models"], 1):
-            print(f"   {i}. {m}")
+        print(f"{C.CYAN}Type 'exit' to go back.{C.END}\n")
 
-        model = p["models"][0]
+        while True:
+            message = input(f"{C.GREEN}> {C.END}").strip()
 
-        print(f"\n📝 Get key from: {p['url']}")
-        api_key = input("API Key: ").strip() or os.environ.get(p["env"], "")
+            if message.lower() in ["exit", "quit", "back"]:
+                break
 
-        print("\n🧪 Testing...")
-        if self._test_key(provider, api_key):
-            print("✅ Connected!")
+            if not message:
+                continue
 
-        self.config = {
-            "user": {"name": self.answers["name"]},
-            "use_case": self.answers["use_case"],
-            "model": {"provider": provider, "model": model},
-            "assistant": {
-                "primary": "qwen3.5:cloud",
-                "fallback": "nemotron-3-super:cloud",
-            },
-            "technician": {
-                "primary": "qwen3.5:cloud",
-                "fallback": "nemotron-3-super:cloud",
-            },
-            "api_key_set": bool(api_key),
-        }
+            response = self.ai.chat(message)
+            print(f"\n{C.CYAN}{response}{C.END}\n")
 
-    def _setup_ollama(self):
-        print("\n✓ Using Ollama Cloud (FREE!)")
+    # ============================================================
+    # HELPERS
+    # ============================================================
 
-        model = OLLAMA_MODELS[0]
+    def start_neugi(self):
+        """Start NEUGI"""
+        self.ui.info("Starting NEUGI...")
 
-        self.config = {
-            "user": {"name": self.answers["name"]},
-            "use_case": self.answers["use_case"],
-            "model": {"provider": "ollama_cloud", "model": model["model"]},
-            "assistant": {
-                "primary": "qwen3.5:cloud",
-                "fallback": "nemotron-3-super:cloud",
-            },
-            "technician": {
-                "primary": "qwen3.5:cloud",
-                "fallback": "nemotron-3-super:cloud",
-            },
-        }
+        script_path = os.path.join(NEUGI_DIR, "neugi_swarm.py")
 
-    def _test_key(self, provider: str, key: str) -> bool:
-        if not key:
-            return False
+        if not os.path.exists(script_path):
+            self.ui.warning(f"neugi_swarm.py not found in {NEUGI_DIR}")
+            print(f"\n  {C.YELLOW}Download from GitHub? (y/n): {C.END}", end="")
+            if input().strip().lower() == "y":
+                self.download_files()
+
+        # Start
         try:
-            if provider == "groq":
-                r = requests.get(
-                    "https://api.groq.com/openai/v1/models",
-                    headers={"Authorization": f"Bearer {key}"},
-                    timeout=10,
-                )
-                return r.ok
-            elif provider == "openai":
-                r = requests.get(
-                    "https://api.openai.com/v1/models",
-                    headers={"Authorization": f"Bearer {key}"},
-                    timeout=10,
-                )
-                return r.ok
-        except:
-            pass
-        return False
+            subprocess.Popen(
+                [sys.executable, script_path],
+                cwd=NEUGI_DIR,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True,
+            )
+            self.ui.success(f"{BRAND} started!")
+            self.ui.info("Open: http://localhost:19888")
+        except Exception as e:
+            self.ui.error(f"Failed to start: {e}")
 
-    def _save(self):
-        data_dir = os.path.expanduser("~/neugi/data")
-        os.makedirs(data_dir, exist_ok=True)
+    def download_files(self):
+        """Download NEUGI files"""
+        self.ui.info("Downloading...")
 
-        with open(os.path.join(data_dir, "config.json"), "w") as f:
-            json.dump(self.config, f, indent=2)
+        files = [
+            "neugi_swarm.py",
+            "neugi_assistant.py",
+            "neugi_swarm_agents.py",
+            "neugi_swarm_tools.py",
+            "neugi_telegram.py",
+            "neugi_technician.py",
+            "dashboard.html",
+        ]
 
-        print(f"\n{'=' * 60}")
-        print("✅ SETUP COMPLETE!")
-        print(f"{'=' * 60}")
+        os.makedirs(NEUGI_DIR, exist_ok=True)
 
-        print(f"\n👤 Name: {self.config['user']['name']}")
-        print(f"🎯 Use: {self.config['user']['use_case']}")
-        print(
-            f"\n🧠 Main: {self.config['model']['provider']} / {self.config['model']['model']}"
-        )
-        print(f"🤖 Assistant: {self.config['assistant']['model']}")
+        base_url = "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master"
 
-        print(f"\n🚀 Start: python3 neugi.py")
-        print(f"📖 Dashboard: http://localhost:19888")
-        print(f"{'=' * 60}\n")
+        for f in files:
+            try:
+                url = f"{base_url}/{f}"
+                r = requests.get(url, timeout=10)
+                if r.ok:
+                    with open(os.path.join(NEUGI_DIR, f), "w") as fp:
+                        fp.write(r.text)
+                    self.ui.success(f"Downloaded: {f}")
+            except:
+                self.ui.error(f"Failed: {f}")
 
 
 # ============================================================
-# MAIN
+# ENTRY POINT
 # ============================================================
 
 if __name__ == "__main__":
