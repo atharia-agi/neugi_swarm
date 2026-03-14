@@ -94,11 +94,15 @@
             flex-shrink: 0;
         }
         
-        .sidebar::-webkit-scrollbar { width: 4px; }
-        .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+        .sidebar::-webkit-scrollbar { width: 6px; }
+        .sidebar::-webkit-scrollbar-track { background: transparent; }
+        .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        .sidebar::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
         
         .sidebar-section {
             margin-bottom: 24px;
+            display: flex;
+            flex-direction: column;
         }
         
         .sidebar-title {
