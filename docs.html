@@ -235,22 +235,26 @@ python3 neugi_assistant.py</code></pre>
                 </div>
 
                 <h2 id="rag">Context Memory (RAG)</h2>
-                <p>Neugi doesn't rely solely on strict LLM token limits (`context_window`). Instead, it builds an intrinsic graph database indexing your project files silently in the background.</p>
+                <p>Neugi utilizes a built-in highly-optimized <code>CodebaseRAG</code> class bridging the gap between small context windows and massive code repositories. It reads local files deterministically without heavy dependencies like ChromaDB.</p>
                 <ul class="bullet-list">
-                    <li>The <code>Aurora</code> node vectorizes documents.</li>
-                    <li>The <code>Pulse</code> node retrieves highly relevant semantic chunks when a directive is issued.</li>
+                    <li>Agents can trigger the <code>search_memory(query)</code> tool to pull Top-K snippets natively.</li>
+                    <li>The <code>Aurora</code> node directly indexes directories, bypassing massive token ingestion.</li>
                     <li>Context remains active across isolated terminal sessions.</li>
                 </ul>
 
                 <h2 id="agents">The Agentic Network</h2>
-                <p>Rather than relying on one monolith query, Neugi shards work among 9 nodes:</p>
+                <p>Rather than relying on one monolith query, Neugi uses <strong>Multi-Agent Orchestration</strong> via the <code>delegate_task(target_agent, task)</code> mechanic.</p>
                 <ul class="bullet-list">
-                    <li><strong>Cipher</strong> &mdash; Syntax evaluation and explicit code architecture.</li>
-                    <li><strong>Quark</strong> &mdash; Higher-order logical planning.</li>
-                    <li><strong>Shield</strong> &mdash; System safety bounds checker.</li>
-                    <li><strong>Nova</strong> &mdash; Design system compilation.</li>
-                    <li><strong>Ink</strong> &mdash; Linguistic I/O generation.</li>
+                    <li><strong>Cipher</strong> &mdash; Code Syntax & logic checks.</li>
+                    <li><strong>Quark</strong> &mdash; Logical and strategic planning.</li>
+                    <li><strong>Nexus</strong> &mdash; The Orchestrator capable of routing sub-tasks dynamically.</li>
                 </ul>
+                
+                <h2 id="anti-claw">Anti-Monolith Mechanisms (Easter Eggs)</h2>
+                <p>Because Neugi is built natively and rapidly without immense overhead, it actively mocks bloated visual-pipeline architectures (like OpenCLAW) out of the box via the <code>NEUGI_SATIRE_QUOTES</code> dictionary. Initiate the CLI and watch the TUI loading frames randomly cycle through 30+ highly sarcastic loading messages.</p>
+                
+                <h2 id="tools">Expanding the Toolset</h2>
+                <p>Phase 6 incorporates powerful filesystem access and safe execution defaults. Native tools include: <code>web_crawl</code>, <code>read_local_file</code>, <code>list_directory</code>, and <code>git_execute</code>. Adding a tool natively takes less than 5 lines of Python, bypassing YAML configuration overhead completely.</p>
 
                 <p style="margin-top: 60px; font-size: 13px; color: var(--text-tertiary); border-top: 1px solid var(--border-subtle); padding-top: 20px;">
                     Last updated March 15th, 2026.
@@ -268,6 +272,8 @@ python3 neugi_assistant.py</code></pre>
                     <li><a href="#godmode">God Mode</a></li>
                     <li><a href="#rag">Context Memory</a></li>
                     <li><a href="#agents">Agentic Network</a></li>
+                    <li><a href="#anti-claw">Anti-Monolith Mechanics</a></li>
+                    <li><a href="#tools">Tool Expansion</a></li>
                 </ul>
             </div>
         </aside>

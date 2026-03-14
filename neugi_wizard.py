@@ -457,8 +457,19 @@ I'm your AI assistant. I can help you with:
         """Setup wizard flow"""
         self.ui.header("🎯 SETUP WIZARD")
 
+        import random
+        NEUGI_SATIRE_QUOTES = [
+            "We don't have any claw, but we have some real brain...",
+            "Loading agents... faster than a bloated JSON yaml pipeline.",
+            "Initializing neural net. No blockchains were harmed.",
+            "Bypassing hardcoded YAML configs... because we actually think.",
+            "Executing gracefully... take notes, OpenCLAW.",
+        ]
+        satire_quote = random.choice(NEUGI_SATIRE_QUOTES)
+
         # Check Ollama
-        self.ui.info("Checking Ollama...")
+        self.ui.info(f"Booting up real intelligence... ({satire_quote})")
+        self.ui.info("Checking Ollama backend...")
         ollama = SystemChecker.check_ollama()
 
         if not ollama["running"]:

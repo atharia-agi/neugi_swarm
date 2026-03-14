@@ -544,6 +544,23 @@ Make sure Ollama is running: `ollama serve`"""
 def main():
     import sys
     import os
+    import random
+    
+    NEUGI_SATIRE_QUOTES = [
+        "We don't have any claw, but we have some real brain...",
+        "Loading agents... faster than a bloated JSON yaml pipeline.",
+        "Initializing neural net. No blockchains were harmed.",
+        "Bypassing hardcoded YAML configs... because we actually think.",
+        "Evaluating context... without needing a 10-page instruction manual.",
+        "Spawning sub-agents... no 'claw' required.",
+        "Applying logic. Unlike some monolithic agent architectures.",
+        "Thinking... natively. Not parsing dicts.",
+        "Executing gracefully... take notes, OpenCLAW.",
+        "Swarm intelligence active. Static limits deactivated.",
+        "We process thoughts, not just static JSON graphs.",
+        "Real cognitive loops taking over..."
+    ]
+
     try:
         from rich.console import Console
         from rich.panel import Panel
@@ -562,7 +579,8 @@ def main():
         question = " ".join(sys.argv[1:])
         if has_rich:
             console = Console()
-            with console.status("[bold cyan]NEUGI is thinking...", spinner="dots"):
+            satire = random.choice(NEUGI_SATIRE_QUOTES)
+            with console.status(f"[bold cyan]NEUGI is thinking... ({satire})[/]", spinner="dots"):
                 response = assistant.help_user(question)
             console.print(Markdown(response))
         else:
@@ -622,7 +640,8 @@ def main():
             console.print("[bold magenta]NEUGI ❯[/bold magenta] ", end="")
             
             full_response = ""
-            with Live(Markdown("*(Thinking...)*"), refresh_per_second=15, console=console) as live:
+            satire = random.choice(NEUGI_SATIRE_QUOTES)
+            with Live(Markdown(f"*(Thinking... {satire})*"), refresh_per_second=15, console=console) as live:
                 for chunk in assistant.chat_stream(user_input):
                     full_response += chunk
                     live.update(Markdown(full_response + " █"))

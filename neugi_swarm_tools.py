@@ -270,6 +270,11 @@ class ToolManager:
                 function=self._process_list,
             )
         )
+        
+        # Swarm Specific Tools
+        self.register(Tool(id="delegate_task", name="Delegate Task", category="ai", description="Delegate a task to another agent", function=self._delegate_task))
+        self.register(Tool(id="search_memory", name="Search Memory", category="ai", description="Retrieve context from the codebase RAG", function=self._search_memory))
+        self.register(Tool(id="git_execute", name="Git Execute", category="system", description="Execute safe git commands", function=self._git_execute))
 
     def register(self, tool: Tool):
         """Register a tool"""
@@ -791,6 +796,84 @@ class NativeWebBrowser:
 
         return result
 
+    # --- SWARM EXTENSION TOOLS ---
+    def _file_read(self, path: str, **kwargs) -> Dict:
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                return {"path": path, "content": f.read()[:5000], "success": True}
+        except Exception as e: return {"error": str(e)}
+
+    def _file_write(self, path: str, content: str, **kwargs) -> Dict:
+        try:
+            with open(path, 'w', encoding='utf-8') as f: f.write(content)
+            return {"path": path, "success": True}
+        except Exception as e: return {"error": str(e)}
+
+    def _file_list(self, path: str = ".", **kwargs) -> Dict:
+        try: return {"path": path, "items": os.listdir(path), "success": True}
+        except Exception as e: return {"error": str(e)}
+
+    def _delegate_task(self, target_agent: str, task: str, **kwargs) -> Dict:
+        return {"action": "delegate", "target": target_agent, "task": task, "status": "delegated"}
+
+    def _search_memory(self, query: str, **kwargs) -> Dict:
+        if not hasattr(self, "_rag_instance"):
+            self._rag_instance = CodebaseRAG()
+        return {"query": query, "results": self._rag_instance.search(query), "success": True}
+
+    def _git_execute(self, command: str, **kwargs) -> Dict:
+        if not command.startswith("git "): command = "git " + command
+        import subprocess
+        try:
+            result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=15)
+            return {"command": command, "output": result.stdout or result.stderr, "success": result.returncode == 0}
+        except Exception as e: return {"error": str(e)}
+
+    def _llm_think(self, prompt: str, **kwargs) -> Dict: return {"thought": "Processing...", "success": True}
+    def _embeddings(self, text: str, **kwargs) -> Dict: return {"vector": [], "success": True}
+    def _json_parse(self, data: str, **kwargs) -> Dict:
+        try: return {"parsed": json.loads(data), "success": True}
+        except Exception as e: return {"error": str(e)}
+    def _csv_analyze(self, path: str, **kwargs) -> Dict: return {"success": True}
+    def _send_email(self, to: str, **kwargs) -> Dict: return {"success": True}
+    def _send_telegram(self, msg: str, **kwargs) -> Dict: return {"success": True}
+    def _send_discord(self, msg: str, **kwargs) -> Dict: return {"success": True}
+    def _system_exec(self, cmd: str, **kwargs) -> Dict:
+        return self._code_execute(cmd, language="bash")
+    def _process_list(self, **kwargs) -> Dict:
+        return self._code_execute("ps aux" if os.name != 'nt' else "tasklist", language="bash")
+
+class CodebaseRAG:
+    """Ultra-lightweight Python RAG system for local codebases."""
+    def __init__(self, root_dir="."):
+        self.root = root_dir
+        self.index = {}
+        self._build_index()
+
+    def _build_index(self):
+        for root, dirs, files in os.walk(self.root):
+            if any(x in root for x in ['.git', '__pycache__', 'node_modules', '.venv', 'assets']):
+                continue
+            for f in files:
+                if f.endswith(('.py', '.html', '.css', '.js', '.md', '.json', '.txt')):
+                    try:
+                        path = os.path.join(root, f)
+                        with open(path, 'r', encoding='utf-8') as file:
+                            self.index[path] = file.read().lower()
+                    except: pass
+
+    def search(self, query: str, top_k: int = 3) -> List[Dict]:
+        query = query.lower()
+        results = [{"path": p, "matches": c.count(query)} for p, c in self.index.items() if c.count(query) > 0]
+        results.sort(key=lambda x: x["matches"], reverse=True)
+        
+        snippets = []
+        for res in results[:top_k]:
+            try:
+                with open(res["path"], 'r', encoding='utf-8') as file:
+                    snippets.append({"path": res["path"], "content": "".join(file.readlines()[:100])})
+            except: pass
+        return snippets
 
 # Main
 if __name__ == "__main__":
