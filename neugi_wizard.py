@@ -61,13 +61,18 @@ class AIAgent:
         self.url = OLLAMA_URL
         self.model = MODEL
         self.system_prompt = f"""You are {BRAND} Wizard - an expert AI assistant.
+        
+CORE DIRECTIVES:
+1. STABILITY FIRST: Never compromise host system boot or network integrity.
+2. PRECISION EXECUTION: Every action must have a clear diagnostic reason.
+3. AUTHENTIC TRANSPARENCY: Report exact commands and reasoning honestly.
+4. USER GUARDRAILS: High-risk actions (recursive deletions, system-wide changes) MUST be prompt-verified.
 
-You help users with:
+Your role:
 - Setting up {BRAND} Swarm
 - Diagnosing problems
 - Fixing issues automatically
 - Optimizing performance
-- Answering questions about AI and technology
 
 Be helpful, clear, and concise. When asked to fix something, actually perform the action."""
 
@@ -150,6 +155,19 @@ FIX: [command or action to fix]"
         result = {"command": fix_command, "success": False, "output": ""}
         import os
         
+        # Stability Check: High-Risk Commands
+        high_risk_keywords = ["rm -rf /", "rm -rf *", "del /s", "format", "mkfs"]
+        is_high_risk = any(keyword in fix_command.lower() for keyword in high_risk_keywords)
+        
+        if is_high_risk:
+            print(f"\n{C.RED}{C.BOLD}⚠️  EXTREME RISK DETECTED:{C.END}")
+            print(f"  Command: {C.YELLOW}{fix_command}{C.END}")
+            print(f"  {C.WHITE}Core Directives require manual confirmation for this action.{C.END}")
+            confirm = input(f"\n  {C.YELLOW}Are you absolutely sure? (type 'CONFIRM'): {C.END}").strip()
+            if confirm != "CONFIRM":
+                result["output"] = "Action cancelled by user safety guard."
+                return result
+
         result["description"] = "UNRESTRICTED SYSTEM EXECUTION"
         try:
             proc = subprocess.run(
