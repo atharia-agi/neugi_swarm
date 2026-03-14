@@ -879,34 +879,54 @@
                 <p style="color: var(--text-secondary); max-width: 600px; margin: 0 auto;">Neugi is a neural bridge, unifying local core engines with global frontier intelligence for professional-grade grant-ready swarms.</p>
             </div>
             
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px;">
-                <!-- Core Partner: Ollama -->
-                <div style="background: var(--bg-elevated); border: 1px solid var(--text-primary); padding: 32px; border-radius: 12px; position: relative; overflow: hidden;">
-                    <div style="position: absolute; top: 12px; right: 12px; background: var(--text-primary); color: var(--bg-base); font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px;">CORE ENGINE</div>
-                    <h3 style="margin-bottom: 12px;">Ollama</h3>
-                    <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 20px;">The heart of Neugi. We leverage Ollama for zero-config, failure-safe local orchestration and high-speed multi-model switching.</p>
-                    <a href="mailto:hello@ollama.com" style="font-size: 13px; color: var(--text-primary); text-decoration: none; font-weight: 500;">Collaborate &rarr;</a>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                <!-- Ollama -->
+                <div style="background: var(--bg-elevated); border: 1px solid var(--text-primary); padding: 24px; border-radius: 12px; text-align: center; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <svg viewBox="0 0 24 24" style="width: 40px; height: 40px; stroke: var(--text-primary); fill: none; margin-bottom: 16px; stroke-width: 1.5;">
+                        <circle cx="12" cy="12" r="10" stroke-dasharray="4 2"/>
+                        <path d="M12 8v8M8 12h8" stroke-linecap="round"/>
+                        <path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="0.5"/>
+                    </svg>
+                    <h3 style="font-size: 16px; margin-bottom: 8px;">Ollama</h3>
+                    <p style="font-size: 12px; color: var(--text-secondary);">Core Engine Partner</p>
                 </div>
 
-                <!-- Frontier: Western Giants -->
-                <div style="background: var(--bg-elevated); border: 1px solid var(--border-subtle); padding: 32px; border-radius: 12px;">
-                    <h3 style="margin-bottom: 12px;">Frontier Hub</h3>
-                    <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 20px;">Native bridges for 2026 SOTA models including GPT-5.4, Claude 4.6, and Gemini 3.1 Pro for high-level logic tasks.</p>
-                    <span style="font-size: 13px; color: var(--text-tertiary);">OpenAI / Anthropic / Google</span>
+                <!-- MiniMax -->
+                <div style="background: var(--bg-elevated); border: 1px solid var(--border-subtle); padding: 24px; border-radius: 12px; text-align: center; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <svg viewBox="0 0 24 24" style="width: 40px; height: 40px; stroke: var(--text-primary); fill: none; margin-bottom: 16px; stroke-width: 1.5;">
+                        <path d="M4 20V10l4 4 4-8 4 12 4-4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <h3 style="font-size: 16px; margin-bottom: 8px;">MiniMax</h3>
+                    <p style="font-size: 12px; color: var(--text-secondary);">High-Performance Workers</p>
                 </div>
 
-                <!-- Efficiency: Eastern Systems -->
-                <div style="background: var(--bg-elevated); border: 1px solid var(--border-subtle); padding: 32px; border-radius: 12px;">
-                    <h3 style="margin-bottom: 12px;">Efficiency Cluster</h3>
-                    <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 20px;">Optimized integration for Alibaba Qwen 3.5 and DeepSeek V3 clusters for massive, cost-effective swarm executions.</p>
-                    <span style="font-size: 13px; color: var(--text-tertiary);">Alibaba / DeepSeek / Minimax</span>
+                <!-- OpenCode -->
+                <div style="background: var(--bg-elevated); border: 1px solid var(--border-subtle); padding: 24px; border-radius: 12px; text-align: center; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <svg viewBox="0 0 24 24" style="width: 40px; height: 40px; stroke: var(--text-primary); fill: none; margin-bottom: 16px; stroke-width: 1.5;">
+                        <polyline points="16 18 22 12 16 6"/>
+                        <polyline points="8 6 2 12 8 18"/>
+                        <line x1="10" y1="20" x2="14" y2="4"/>
+                    </svg>
+                    <h3 style="font-size: 16px; margin-bottom: 8px;">OpenCode</h3>
+                    <p style="font-size: 12px; color: var(--text-secondary);">Open SOTA Gateway</p>
+                </div>
+
+                <!-- Antigravity -->
+                <div style="background: var(--bg-elevated); border: 1px solid var(--border-subtle); padding: 24px; border-radius: 12px; text-align: center; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <svg viewBox="0 0 24 24" style="width: 40px; height: 40px; stroke: var(--text-primary); fill: none; margin-bottom: 16px; stroke-width: 1.5;">
+                        <path d="M12 3L2 21h20L12 3z" stroke-opacity="0.3"/>
+                        <path d="M12 8l-6 10h12l-6-10z"/>
+                        <circle cx="12" cy="12" r="1" fill="currentColor"/>
+                    </svg>
+                    <h3 style="font-size: 16px; margin-bottom: 8px;">Antigravity</h3>
+                    <p style="font-size: 12px; color: var(--text-secondary);">Foundational Intelligence</p>
                 </div>
             </div>
 
             <!-- Grant/Partnership Call to Action -->
             <div style="margin-top: 60px; padding: 40px; background: linear-gradient(90deg, #050505 0%, #0c0c0c 100%); border: 1px solid var(--border-subtle); border-radius: 16px; text-align: center;">
                 <h4 style="margin-bottom: 12px;">Partnership & Grants</h4>
-                <p style="color: var(--text-secondary); font-size: 15px; margin-bottom: 24px;">Are you an AI provider? We are actively seeking collaboration to integrate your models into the Neugi Neural Swarm.</p>
+                <p style="color: var(--text-secondary); font-size: 15px; margin-bottom: 24px;">Are you an AI provider? Join our neural network. We are actively seeking collaboration to integrate your models into the Neugi Swarm.</p>
                 <a href="mailto:atharia.agi@gmail.com" class="btn btn-secondary">Contact Architecture Lead</a>
             </div>
         </div>
