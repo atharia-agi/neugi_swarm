@@ -46,6 +46,25 @@
 
 ## Version History
 
+### v15.0 (March 14, 2026)
+
+**Native Web Browser Agent - NO API KEYS NEEDED!**
+
+Based on research from openclaw-free-web-search, Firecrawl, and ScrapeGraphAI:
+
+- **Multi-engine Search**: DuckDuckGo, SearXNG, Brave (all FREE!)
+- **Content Extraction**: Jina AI Reader + BeautifulSoup fallback
+- **Claim Verification**: Cross-validation with confidence scoring
+- **No Brave/SerpAPI needed**: Solves OpenClaw's biggest weakness!
+- **Model-agnostic**: Works with any LLM
+
+**NEUGI Wizard v3.0 - All-in-One AI Assistant**
+- Setup wizard with AI-powered recommendations
+- Auto-repair with AI diagnosis
+- System diagnostic with AI advice
+- Chat with AI about anything
+- Single entry point: `python3 neugi_wizard.py`
+
 ### v14.1.0 (March 13, 2026)
 
 **Main Server with Error Recovery**
@@ -111,10 +130,11 @@
 | File | Purpose |
 |------|---------|
 | `neugi_swarm.py` | Main server with HTTP dashboard, health monitoring, error recovery |
-| `neugi_wizard.py` | Interactive setup wizard, auto-starts Ollama, Telegram setup |
+| `neugi_wizard.py` | All-in-one AI wizard: setup + repair + diagnose + chat |
 | `neugi_assistant.py` | Smart chat assistant with fallback model support |
 | `neugi_technician.py` | System doctor - diagnoses AND fixes issues |
 | `neugi_telegram.py` | Telegram bot gateway for mobile control |
+| `neugi_swarm_browser.py` | Native web browser - FREE search & content extraction |
 
 ### Agent System
 
