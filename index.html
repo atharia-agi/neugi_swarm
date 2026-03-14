@@ -151,13 +151,21 @@
         .agent[data-agent="shield"] { top: 45%; right: 15%; }
         .agent[data-agent="spark"] { top: 70%; left: 35%; }
         .agent[data-agent="ink"] { top: 65%; right: 30%; }
-        .agent[data-agent="nexus"] { top: 80%; left: 50%; transform: translateX(-50%); }
         
-        @keyframes swarm-float {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            25% { transform: translateY(-12px) rotate(2deg); }
-            50% { transform: translateY(-8px) rotate(-1deg); }
-            75% { transform: translateY(-15px) rotate(1deg); }
+        .agent-name {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--agent-color, #fff);
+            margin-top: 4px;
+            letter-spacing: 1px;
+            opacity: 0.9;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .agent-role {
+            font-size: 8px;
+            color: var(--text-muted, #9ca3af);
+            margin-top: 2px;
         }
         
         /* Make each agent float differently */
@@ -169,7 +177,6 @@
         .agent[data-agent="shield"] { animation-duration: 5.5s; }
         .agent[data-agent="spark"] { animation-duration: 3s; }
         .agent[data-agent="ink"] { animation-duration: 6.5s; }
-        .agent[data-agent="nexus"] { animation-duration: 7.5s; }
         
         /* Swarm connection lines */
         .swarm-lines {
@@ -206,7 +213,6 @@
             .agent[data-agent="shield"] { top: 35%; right: 10%; }
             .agent[data-agent="spark"] { top: 60%; left: 25%; }
             .agent[data-agent="ink"] { top: 55%; right: 20%; }
-            .agent[data-agent="nexus"] { top: 75%; left: 40%; }
         }
 
         /* Header */
@@ -817,165 +823,106 @@
             <a href="#how" class="btn btn-ghost btn-large">Learn More</a>
         </div>
         
-        <!-- AGENT SWARM ANIMATION -->
+        <!-- AGENT SWARM ANIMATION - Matching Your AI Workforce Style -->
         <div class="agent-swarm" id="agentSwarm">
             <div class="swarm-container">
-                <!-- AURORA - The Explorer (Cyan/Blue) -->
-                <div class="agent" data-agent="aurora" style="--agent-color: #00e5ff; --agent-delay: 0s;">
-                    <svg viewBox="0 0 60 60" class="agent-svg">
-                        <defs><linearGradient id="aurora-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#00e5ff"/><stop offset="100%" style="stop-color:#0066ff"/></linearGradient></defs>
-                        <circle cx="30" cy="30" r="25" fill="url(#aurora-grad)" opacity="0.9"/>
-                        <circle cx="22" cy="25" r="6" fill="#0a0a15"/>
-                        <circle cx="38" cy="25" r="6" fill="#0a0a15"/>
-                        <circle cx="22" cy="25" r="2" fill="#00ffff"/>
-                        <circle cx="38" cy="25" r="2" fill="#00ffff"/>
-                        <path d="M 20 40 Q 30 48 40 40" stroke="#0a0a15" stroke-width="3" fill="none"/>
-                        <circle cx="30" cy="15" r="4" fill="#00ffff" opacity="0.6"/>
+                <!-- AURORA - Research - Blue -->
+                <div class="agent" data-agent="aurora" style="--agent-color: #3b82f6; --agent-delay: 0s;">
+                    <svg viewBox="0 0 8 8" class="agent-svg">
+                        <rect x="2" y="1" width="4" height="6" rx="1" fill="#3b82f6"/>
+                        <rect x="3" y="2" width="2" height="2" fill="#bfdbfe"/>
+                        <rect x="1" y="3" width="1" height="3" fill="#2563eb"/>
+                        <rect x="6" y="3" width="1" height="3" fill="#2563eb"/>
                     </svg>
                     <span class="agent-name">AURORA</span>
+                    <span class="agent-role">Research</span>
                 </div>
                 
-                <!-- CIPHER - The Guardian (Purple/Pink) -->
-                <div class="agent" data-agent="cipher" style="--agent-color: #a855f7; --agent-delay: 1s;">
-                    <svg viewBox="0 0 60 60" class="agent-svg">
-                        <defs><linearGradient id="cipher-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#a855f7"/><stop offset="100%" style="stop-color:#ec4899"/></linearGradient></defs>
-                        <rect x="10" y="10" width="40" height="40" rx="8" fill="url(#cipher-grad)"/>
-                        <rect x="15" y="18" width="12" height="12" rx="2" fill="#0a0a15"/>
-                        <rect x="33" y="18" width="12" height="12" rx="2" fill="#0a0a15"/>
-                        <circle cx="21" cy="24" r="3" fill="#a855f7"/>
-                        <circle cx="39" cy="24" r="3" fill="#ec4899"/>
-                        <rect x="18" y="38" width="24" height="4" rx="2" fill="#0a0a15"/>
-                        <path d="M 12 10 L 30 5 L 48 10" stroke="#a855f7" stroke-width="2" fill="none" opacity="0.5"/>
+                <!-- CIPHER - Coder - Green -->
+                <div class="agent" data-agent="cipher" style="--agent-color: #10b981; --agent-delay: 1s;">
+                    <svg viewBox="0 0 8 8" class="agent-svg">
+                        <rect x="1" y="2" width="6" height="4" rx="1" fill="#10b981"/>
+                        <rect x="2" y="3" width="1" height="1" fill="#111827"/>
+                        <rect x="5" y="3" width="1" height="1" fill="#111827"/>
+                        <rect x="3" y="5" width="2" height="1" fill="#047857"/>
                     </svg>
                     <span class="agent-name">CIPHER</span>
+                    <span class="agent-role">Coder</span>
                 </div>
                 
-                <!-- NOVA - The Analyzer (Orange/Yellow) -->
-                <div class="agent" data-agent="nova" style="--agent-color: #f59e0b; --agent-delay: 2s;">
-                    <svg viewBox="0 0 60 60" class="agent-svg">
-                        <defs><linearGradient id="nova-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#f59e0b"/><stop offset="100%" style="stop-color:#ef4444"/></linearGradient></defs>
-                        <polygon points="30,5 55,50 5,50" fill="url(#nova-grad)"/>
-                        <circle cx="30" cy="28" r="8" fill="#0a0a15"/>
-                        <circle cx="30" cy="28" r="4" fill="#f59e0b"/>
-                        <circle cx="26" cy="26" r="2" fill="#fff"/>
-                        <path d="M 20 42 L 30 48 L 40 42" stroke="#0a0a15" stroke-width="2" fill="none"/>
+                <!-- NOVA - Creator - Pink -->
+                <div class="agent" data-agent="nova" style="--agent-color: #ec4899; --agent-delay: 2s;">
+                    <svg viewBox="0 0 8 8" class="agent-svg">
+                        <rect x="3" y="1" width="2" height="6" fill="#ec4899"/>
+                        <rect x="1" y="3" width="6" height="2" fill="#db2777"/>
+                        <rect x="3" y="3" width="2" height="2" fill="#fbcfe8"/>
                     </svg>
                     <span class="agent-name">NOVA</span>
+                    <span class="agent-role">Creator</span>
                 </div>
                 
-                <!-- PULSE - The Monitor (Green) -->
-                <div class="agent" data-agent="pulse" style="--agent-color: #22c55e; --agent-delay: 0.5s;">
-                    <svg viewBox="0 0 60 60" class="agent-svg">
-                        <defs><linearGradient id="pulse-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#22c55e"/><stop offset="100%" style="stop-color:#14b8a6"/></linearGradient></defs>
-                        <ellipse cx="30" cy="30" rx="22" ry="18" fill="url(#pulse-grad)"/>
-                        <circle cx="22" cy="26" r="7" fill="#0a0a15"/>
-                        <circle cx="38" cy="26" r="7" fill="#0a0a15"/>
-                        <circle cx="22" cy="26" r="3" fill="#22c55e">
-                            <animate attributeName="opacity" values="1;0.5;1" dur="1s" repeatCount="indefinite"/>
-                        </circle>
-                        <circle cx="38" cy="26" r="3" fill="#14b8a6">
-                            <animate attributeName="opacity" values="0.5;1;0.5" dur="1s" repeatCount="indefinite"/>
-                        </circle>
-                        <path d="M 15 42 Q 30 50 45 42" stroke="#0a0a15" stroke-width="3" fill="none"/>
+                <!-- PULSE - Analyst - Yellow -->
+                <div class="agent" data-agent="pulse" style="--agent-color: #f59e0b; --agent-delay: 0.5s;">
+                    <svg viewBox="0 0 8 8" class="agent-svg">
+                        <rect x="2" y="1" width="4" height="5" rx="1" fill="#f59e0b"/>
+                        <rect x="3" y="2" width="2" height="1" fill="#fef3c7"/>
+                        <rect x="2" y="6" width="4" height="1" fill="#b45309"/>
                     </svg>
                     <span class="agent-name">PULSE</span>
+                    <span class="agent-role">Analyst</span>
                 </div>
                 
-                <!-- QUARK - The Builder (Red) -->
-                <div class="agent" data-agent="quark" style="--agent-color: #ef4444; --agent-delay: 1.5s;">
-                    <svg viewBox="0 0 60 60" class="agent-svg">
-                        <defs><linearGradient id="quark-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#ef4444"/><stop offset="100%" style="stop-color:#dc2626"/></linearGradient></defs>
-                        <rect x="12" y="8" width="36" height="44" rx="4" fill="url(#quark-grad)"/>
-                        <rect x="18" y="16" width="24" height="8" rx="2" fill="#0a0a15"/>
-                        <rect x="18" y="28" width="24" height="8" rx="2" fill="#0a0a15"/>
-                        <circle cx="30" cy="20" r="2" fill="#ef4444">
-                            <animate attributeName="opacity" values="1;0.3;1" dur="0.5s" repeatCount="indefinite"/>
-                        </circle>
-                        <circle cx="30" cy="32" r="2" fill="#ef4444">
-                            <animate attributeName="opacity" values="0.3;1;0.3" dur="0.5s" repeatCount="indefinite"/>
-                        </circle>
-                        <rect x="22" y="44" width="16" height="4" rx="2" fill="#0a0a15"/>
+                <!-- QUARK - Strategy - Purple -->
+                <div class="agent" data-agent="quark" style="--agent-color: #8b5cf6; --agent-delay: 1.5s;">
+                    <svg viewBox="0 0 8 8" class="agent-svg">
+                        <polygon points="4,1 7,7 1,7" fill="#8b5cf6"/>
+                        <rect x="3" y="4" width="2" height="2" fill="#ede9fe"/>
                     </svg>
                     <span class="agent-name">QUARK</span>
+                    <span class="agent-role">Strategy</span>
                 </div>
                 
-                <!-- SHIELD - The Protector (Blue/Indigo) -->
-                <div class="agent" data-agent="shield" style="--agent-color: #3b82f6; --agent-delay: 2.5s;">
-                    <svg viewBox="0 0 60 60" class="agent-svg">
-                        <defs><linearGradient id="shield-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#3b82f6"/><stop offset="100%" style="stop-color:#6366f1"/></linearGradient></defs>
-                        <path d="M 30 5 L 55 15 L 50 45 Q 30 55 10 45 L 5 15 Z" fill="url(#shield-grad)"/>
-                        <circle cx="30" cy="25" r="10" fill="#0a0a15"/>
-                        <circle cx="30" cy="25" r="5" fill="#3b82f6"/>
-                        <rect x="22" y="38" width="16" height="6" rx="1" fill="#0a0a15" opacity="0.5"/>
+                <!-- SHIELD - Security - Red -->
+                <div class="agent" data-agent="shield" style="--agent-color: #ef4444; --agent-delay: 2.5s;">
+                    <svg viewBox="0 0 8 8" class="agent-svg">
+                        <rect x="1" y="1" width="6" height="6" rx="1" fill="#ef4444"/>
+                        <rect x="3" y="3" width="2" height="2" fill="#fee2e2"/>
+                        <rect x="3" y="1" width="2" height="1" fill="#b91c1c"/>
                     </svg>
                     <span class="agent-name">SHIELD</span>
+                    <span class="agent-role">Security</span>
                 </div>
                 
-                <!-- SPARK - The Creator (Yellow) -->
+                <!-- SPARK - Social - Yellow -->
                 <div class="agent" data-agent="spark" style="--agent-color: #eab308; --agent-delay: 3s;">
-                    <svg viewBox="0 0 60 60" class="agent-svg">
-                        <defs><linearGradient id="spark-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#eab308"/><stop offset="100%" style="stop-color:#f97316"/></linearGradient></defs>
-                        <circle cx="30" cy="30" r="22" fill="url(#spark-grad)"/>
-                        <path d="M 30 12 L 33 22 L 30 20 L 27 22 Z" fill="#0a0a15"/>
-                        <circle cx="30" cy="30" r="8" fill="#0a0a15"/>
-                        <circle cx="30" cy="30" r="4" fill="#eab308">
-                            <animate attributeName="r" values="4;6;4" dur="1s" repeatCount="indefinite"/>
-                        </circle>
-                        <circle cx="30" cy="30" r="2" fill="#fff"/>
-                        <!-- Spark rays -->
-                        <g stroke="#eab308" stroke-width="2" opacity="0.6">
-                            <line x1="30" y1="2" x2="30" y2="8"><animate attributeName="opacity" values="0.2;1;0.2" dur="1.5s" repeatCount="indefinite"/></line>
-                            <line x1="30" y1="52" x2="30" y2="58"><animate attributeName="opacity" values="0.2;1;0.2" dur="1.5s" repeatCount="indefinite"/></line>
-                            <line x1="2" y1="30" x2="8" y2="30"><animate attributeName="opacity" values="0.2;1;0.2" dur="1.5s" repeatCount="indefinite"/></line>
-                            <line x1="52" y1="30" x2="58" y2="30"><animate attributeName="opacity" values="0.2;1;0.2" dur="1.5s" repeatCount="indefinite"/></line>
-                        </g>
+                    <svg viewBox="0 0 8 8" class="agent-svg">
+                        <circle cx="4" cy="4" r="3" fill="#eab308"/>
+                        <rect x="3" y="3" width="2" height="2" fill="#fef9c3"/>
                     </svg>
                     <span class="agent-name">SPARK</span>
+                    <span class="agent-role">Social</span>
                 </div>
                 
-                <!-- INK - The Writer (White/Silver) -->
-                <div class="agent" data-agent="ink" style="--agent-color: #e5e5e5; --agent-delay: 0.8s;">
-                    <svg viewBox="0 0 60 60" class="agent-svg">
-                        <defs><linearGradient id="ink-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#e5e5e5"/><stop offset="100%" style="stop-color:#9ca3af"/></linearGradient></defs>
-                        <ellipse cx="30" cy="32" rx="20" ry="22" fill="url(#ink-grad)"/>
-                        <rect x="20" y="15" width="20" height="18" rx="2" fill="#1f2937"/>
-                        <line x1="22" y1="20" x2="38" y2="20" stroke="#fff" stroke-width="2"/>
-                        <line x1="22" y1="25" x2="35" y2="25" stroke="#9ca3af" stroke-width="2"/>
-                        <line x1="22" y1="30" x2="30" y2="30" stroke="#9ca3af" stroke-width="2"/>
-                        <path d="M 22 42 Q 30 48 38 42" stroke="#1f2937" stroke-width="2" fill="none"/>
+                <!-- INK - Writer - Indigo -->
+                <div class="agent" data-agent="ink" style="--agent-color: #6366f1; --agent-delay: 0.8s;">
+                    <svg viewBox="0 0 8 8" class="agent-svg">
+                        <rect x="2" y="1" width="4" height="6" rx="1" fill="#6366f1"/>
+                        <rect x="3" y="2" width="2" height="4" fill="#e0e7ff"/>
+                        <rect x="3" y="3" width="2" height="1" fill="#4338ca"/>
                     </svg>
                     <span class="agent-name">INK</span>
-                </div>
-                
-                <!-- NEXUS - The Connector (Violet) -->
-                <div class="agent" data-agent="nexus" style="--agent-color: #8b5cf6; --agent-delay: 1.8s;">
-                    <svg viewBox="0 0 60 60" class="agent-svg">
-                        <defs><linearGradient id="nexus-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#8b5cf6"/><stop offset="100%" style="stop-color:#d946ef"/></linearGradient></defs>
-                        <!-- Network nodes -->
-                        <circle cx="30" cy="15" r="6" fill="url(#nexus-grad)"/>
-                        <circle cx="15" cy="35" r="5" fill="url(#nexus-grad)" opacity="0.8"/>
-                        <circle cx="45" cy="35" r="5" fill="url(#nexus-grad)" opacity="0.8"/>
-                        <circle cx="20" cy="48" r="4" fill="url(#nexus-grad)" opacity="0.6"/>
-                        <circle cx="40" cy="48" r="4" fill="url(#nexus-grad)" opacity="0.6"/>
-                        <!-- Connection lines -->
-                        <line x1="30" y1="18" x2="17" y2="33" stroke="#8b5cf6" stroke-width="2" opacity="0.6"/>
-                        <line x1="30" y1="18" x2="43" y2="33" stroke="#8b5cf6" stroke-width="2" opacity="0.6"/>
-                        <line x1="17" y1="38" x2="22" y2="46" stroke="#8b5cf6" stroke-width="2" opacity="0.6"/>
-                        <line x1="43" y1="38" x2="38" y2="46" stroke="#8b5cf6" stroke-width="2" opacity="0.6"/>
-                        <line x1="20" y1="46" x2="40" y2="46" stroke="#8b5cf6" stroke-width="2" opacity="0.6"/>
-                    </svg>
-                    <span class="agent-name">NEXUS</span>
+                    <span class="agent-role">Writer</span>
                 </div>
             </div>
             
             <!-- Swarm interaction lines -->
             <svg class="swarm-lines" viewBox="0 0 800 400">
-                <line class="swarm-line" x1="100" y1="100" x2="250" y2="200" style="--line-color: #00e5ff;"/>
-                <line class="swarm-line" x1="250" y1="200" x2="400" y2="150" style="--line-color: #a855f7;"/>
-                <line class="swarm-line" x1="400" y1="150" x2="550" y2="250" style="--line-color: #f59e0b;"/>
-                <line class="swarm-line" x1="550" y1="250" x2="700" y2="100" style="--line-color: #22c55e;"/>
-                <line class="swarm-line" x1="700" y1="100" x2="100" y2="300" style="--line-color: #ef4444;"/>
-                <line class="swarm-line" x1="100" y1="300" x2="300" y2="50" style="--line-color: #3b82f6;"/>
+                <line class="swarm-line" x1="100" y1="100" x2="250" y2="200" style="--line-color: #3b82f6;"/>
+                <line class="swarm-line" x1="250" y1="200" x2="400" y2="150" style="--line-color: #10b981;"/>
+                <line class="swarm-line" x1="400" y1="150" x2="550" y2="250" style="--line-color: #ec4899;"/>
+                <line class="swarm-line" x1="550" y1="250" x2="700" y2="100" style="--line-color: #f59e0b;"/>
+                <line class="swarm-line" x1="700" y1="100" x2="100" y2="300" style="--line-color: #8b5cf6;"/>
+                <line class="swarm-line" x1="100" y1="300" x2="300" y2="50" style="--line-color: #ef4444;"/>
             </svg>
         </div>
         
@@ -1091,14 +1038,14 @@
         <div class="section-header">
             <div class="section-label">Meet the Swarm</div>
             <h2 class="section-title">Your AI Workforce</h2>
-            <p class="section-desc">Specialized agents that work together.</p>
+            <p class="section-desc">Specialized agents that work together in harmony.</p>
         </div>
         
         <div class="agents-grid">
             <div class="agent-card">
                 <div class="agent-avatar">
                     <svg viewBox="0 0 8 8" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="2" y="1" width="4" height="6" fill="#3b82f6"/>
+                        <rect x="2" y="1" width="4" height="6" rx="1" fill="#3b82f6"/>
                         <rect x="3" y="2" width="2" height="2" fill="#bfdbfe"/>
                         <rect x="1" y="3" width="1" height="3" fill="#2563eb"/>
                         <rect x="6" y="3" width="1" height="3" fill="#2563eb"/>
@@ -1111,7 +1058,7 @@
             <div class="agent-card">
                 <div class="agent-avatar">
                     <svg viewBox="0 0 8 8" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="1" y="2" width="6" height="4" fill="#10b981"/>
+                        <rect x="1" y="2" width="6" height="4" rx="1" fill="#10b981"/>
                         <rect x="2" y="3" width="1" height="1" fill="#111827"/>
                         <rect x="5" y="3" width="1" height="1" fill="#111827"/>
                         <rect x="3" y="5" width="2" height="1" fill="#047857"/>
@@ -1136,7 +1083,7 @@
             <div class="agent-card">
                 <div class="agent-avatar">
                     <svg viewBox="0 0 8 8" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="2" y="1" width="4" height="5" fill="#f59e0b"/>
+                        <rect x="2" y="1" width="4" height="5" rx="1" fill="#f59e0b"/>
                         <rect x="3" y="2" width="2" height="1" fill="#fef3c7"/>
                         <rect x="2" y="6" width="4" height="1" fill="#b45309"/>
                     </svg>
@@ -1159,7 +1106,7 @@
             <div class="agent-card">
                 <div class="agent-avatar">
                     <svg viewBox="0 0 8 8" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="1" y="1" width="6" height="6" fill="#ef4444" rx="1"/>
+                        <rect x="1" y="1" width="6" height="6" rx="1" fill="#ef4444"/>
                         <rect x="3" y="3" width="2" height="2" fill="#fee2e2"/>
                         <rect x="3" y="1" width="2" height="1" fill="#b91c1c"/>
                     </svg>
@@ -1171,7 +1118,7 @@
             <div class="agent-card">
                 <div class="agent-avatar">
                     <svg viewBox="0 0 8 8" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M4 1 A3 3 0 0 1 7 4 A3 3 0 0 1 4 7 A3 3 0 0 1 1 4 A3 3 0 0 1 4 1" fill="#eab308"/>
+                        <circle cx="4" cy="4" r="3" fill="#eab308"/>
                         <rect x="3" y="3" width="2" height="2" fill="#fef9c3"/>
                     </svg>
                 </div>
@@ -1182,13 +1129,29 @@
             <div class="agent-card">
                 <div class="agent-avatar">
                     <svg viewBox="0 0 8 8" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="2" y="1" width="4" height="6" fill="#6366f1"/>
+                        <rect x="2" y="1" width="4" height="6" rx="1" fill="#6366f1"/>
                         <rect x="3" y="2" width="2" height="4" fill="#e0e7ff"/>
                         <rect x="3" y="3" width="2" height="1" fill="#4338ca"/>
                     </svg>
                 </div>
                 <h4>Ink</h4>
                 <div class="role">Writer</div>
+            </div>
+            
+            <div class="agent-card">
+                <div class="agent-avatar">
+                    <svg viewBox="0 0 8 8" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="4" cy="2" r="1.5" fill="#8b5cf6"/>
+                        <circle cx="2" cy="5" r="1" fill="#8b5cf6" opacity="0.8"/>
+                        <circle cx="6" cy="5" r="1" fill="#8b5cf6" opacity="0.8"/>
+                        <line x1="4" y1="3" x2="2.5" y2="4.5" stroke="#8b5cf6" stroke-width="0.5" opacity="0.6"/>
+                        <line x1="4" y1="3" x2="5.5" y2="4.5" stroke="#8b5cf6" stroke-width="0.5" opacity="0.6"/>
+                        <line x1="2" y1="5.5" x2="3.5" y2="6" stroke="#8b5cf6" stroke-width="0.5" opacity="0.6"/>
+                        <line x1="6" y1="5.5" x2="4.5" y2="6" stroke="#8b5cf6" stroke-width="0.5" opacity="0.6"/>
+                    </svg>
+                </div>
+                <h4>Nexus</h4>
+                <div class="role">Connector</div>
             </div>
         </div>
     </section>
