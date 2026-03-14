@@ -78,12 +78,15 @@
 
 **Agent Capabilities**
 - **Real Tool Execution**: Agents now execute real tasks, not just simulate
-  - Aurora: web_search, web_fetch, analyze
-  - Cipher: code_execute, file_write
-  - Nova: file_write, generate
-  - Pulse: json_parse, csv_analyze
-  - Ink: file_write
-  - Shield: web_fetch, audit
+  - Aurora: web_search, web_fetch, neuigi_browser (all web research)
+  - Cipher: code_execute, code_debug, file_read (all coding)
+  - Nova: file_write, llm_think (create/design)
+  - Pulse: json_parse, csv_analyze, llm_think (data analytics)
+  - Quark: llm_think (strategy/planning)
+  - Shield: web_fetch, code_debug (security scanning)
+  - Spark: send_telegram, send_discord, send_email (social)
+  - Ink: file_write, llm_think (writing/editing)
+  - Nexus: file_list, process_list, llm_think (coordination)
 
 ### v15.1 (March 14, 2026)
 

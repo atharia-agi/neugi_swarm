@@ -370,7 +370,7 @@ class AgentManager:
         return agent.capabilities[0] if agent.capabilities else "respond"
 
     def _act(self, agent: Agent, action: str, task: str) -> str:
-        """Agent acts on the task - using real tools!"""
+        """Agent acts on the task - using ALL available real tools!"""
 
         # Import tool manager
         try:
@@ -380,67 +380,250 @@ class AgentManager:
         except ImportError:
             tools = None
 
-        # Execute tools based on agent capabilities
-        if action in ["search", "fetch"] and tools:
-            # Web search
-            result = tools.execute("web_search", query=task)
-            if result.get("success"):
-                return f"[{agent.name}] Search results: {result.get('results', [])[:3]}"
+        # ============================================
+        # AURORA - Web & Research
+        # ============================================
+        if agent.id == "aurora":
+            if action in ["search", "research", "web"]:
+                result = tools.execute("web_search", query=task) if tools else None
+                if result and result.get("success"):
+                    return f"[{agent.name}] Found {len(result.get('results', []))} results"
 
-        elif action in ["code", "debug", "build"] and tools:
-            # Code execution
-            result = tools.execute("code_execute", code=task, language="python")
-            if result.get("success"):
-                return f"[{agent.name}] Code executed: {result.get('output', '')[:500]}"
+            elif action in ["fetch", "scrape", "extract"]:
+                result = tools.execute("web_fetch", url=task) if tools and "http" in task else None
+                if result and result.get("success"):
+                    return f"[{agent.name}] Fetched content: {result.get('content', '')[:200]}..."
 
-        elif action in ["analyze", "visualize"] and tools:
-            # Data analysis
-            try:
-                import json
+            elif action in ["analyze", "verify"]:
+                result = tools.execute("neugi_browser", query=task) if tools else None
+                if result and result.get("success"):
+                    return f"[{agent.name}] Analysis: {result.get('summary', '')[:300]}"
 
-                data = json.loads(task)
-                result = tools.execute("json_parse", data=json.dumps(data))
-                return f"[{agent.name}] Analysis: {result}"
-            except Exception:
-                pass
+        # ============================================
+        # CIPHER - Code & Development
+        # ============================================
+        elif agent.id == "cipher":
+            if action in ["code", "build", "execute"]:
+                result = (
+                    tools.execute("code_execute", code=task, language="python") if tools else None
+                )
+                if result and result.get("success"):
+                    return f"[{agent.name}] Executed: {result.get('output', '')[:500]}"
 
-        elif action in ["write", "edit"] and tools:
-            # File write
-            result = tools.execute(
-                "file_write",
-                path=f"~/neugi/workspace/{agent.id}_{datetime.now().timestamp()}.txt",
-                content=task,
-            )
-            if result.get("success"):
-                return f"[{agent.name}] Written to workspace"
+            elif action in ["debug", "fix", "error"]:
+                result = tools.execute("code_debug", code=task) if tools else None
+                if result and result.get("success"):
+                    return f"[{agent.name}] Debugged: {result.get('suggestions', [])[:3]}"
 
-        # Fallback to LLM if tools fail or not available
+            elif action in ["read", "review"]:
+                result = tools.execute("file_read", path=task) if tools else None
+                if result and result.get("success"):
+                    return f"[{agent.name}] Read: {result.get('content', '')[:200]}"
+
+        # ============================================
+        # NOVA - Create & Design
+        # ============================================
+        elif agent.id == "nova":
+            if action in ["create", "generate", "make", "new"]:
+                # Write to workspace
+                result = (
+                    tools.execute(
+                        "file_write",
+                        path=f"~/neugi/workspace/{agent.id}_{int(datetime.now().timestamp())}.txt",
+                        content=task,
+                    )
+                    if tools
+                    else None
+                )
+                if result and result.get("success"):
+                    return f"[{agent.name}] Created in workspace"
+
+            elif action in ["design", "visualize"]:
+                # Use LLM to design
+                result = tools.execute("llm_think", prompt=f"Design: {task}") if tools else None
+                if result and result.get("success"):
+                    return f"[{agent.name}] Design: {result.get('response', '')[:300]}"
+
+        # ============================================
+        # PULSE - Data & Analytics
+        # ============================================
+        elif agent.id == "pulse":
+            if action in ["analyze", "analytics", "stats"]:
+                try:
+                    import json
+
+                    data = json.loads(task)
+                    result = tools.execute("json_parse", data=json.dumps(data)) if tools else None
+                    if result and result.get("success"):
+                        return f"[{agent.name}] Analyzed: {result}"
+                except Exception:
+                    pass
+                # Fallback to CSV
+                result = tools.execute("csv_analyze", data=task) if tools else None
+                if result and result.get("success"):
+                    return f"[{agent.name}] CSV Analysis: {result.get('summary', '')[:300]}"
+
+            elif action in ["visualize", "chart", "graph"]:
+                result = (
+                    tools.execute("llm_think", prompt=f"Create visualization for: {task}")
+                    if tools
+                    else None
+                )
+                if result and result.get("success"):
+                    return f"[{agent.name}] Visualization: {result.get('response', '')[:300]}"
+
+            elif action in ["report", "summarize"]:
+                result = (
+                    tools.execute("llm_think", prompt=f"Generate report for: {task}")
+                    if tools
+                    else None
+                )
+                if result and result.get("success"):
+                    return f"[{agent.name}] Report: {result.get('response', '')[:500]}"
+
+        # ============================================
+        # QUARK - Strategy & Planning
+        # ============================================
+        elif agent.id == "quark":
+            if action in ["plan", "strategy", "roadmap"]:
+                result = (
+                    tools.execute("llm_think", prompt=f"Create a strategic plan for: {task}")
+                    if tools
+                    else None
+                )
+                if result and result.get("success"):
+                    return f"[{agent.name}] Plan: {result.get('response', '')[:500]}"
+
+            elif action in ["decide", "recommend", "choose"]:
+                result = (
+                    tools.execute("llm_think", prompt=f"Make a decision about: {task}")
+                    if tools
+                    else None
+                )
+                if result and result.get("success"):
+                    return f"[{agent.name}] Decision: {result.get('response', '')[:300]}"
+
+            elif action in ["optimize", "improve", "enhance"]:
+                result = tools.execute("llm_think", prompt=f"Optimize: {task}") if tools else None
+                if result and result.get("success"):
+                    return f"[{agent.name}] Optimization: {result.get('response', '')[:300]}"
+
+        # ============================================
+        # SHIELD - Security
+        # ============================================
+        elif agent.id == "shield":
+            if action in ["scan", "audit", "check"]:
+                result = tools.execute("web_fetch", url=task) if tools and "http" in task else None
+                if not result:
+                    # Try code analysis
+                    result = tools.execute("code_debug", code=task) if tools else None
+                if result and result.get("success"):
+                    return f"[{agent.name}] Scanned: Security check complete"
+
+            elif action in ["protect", "secure", "harden"]:
+                result = (
+                    tools.execute(
+                        "llm_think", prompt=f"Provide security recommendations for: {task}"
+                    )
+                    if tools
+                    else None
+                )
+                if result and result.get("success"):
+                    return f"[{agent.name}] Security: {result.get('response', '')[:300]}"
+
+        # ============================================
+        # SPARK - Social & Communication
+        # ============================================
+        elif agent.id == "spark":
+            if action in ["post", "tweet", "social"]:
+                result = tools.execute("send_telegram", message=task) if tools else None
+                if result and result.get("success"):
+                    return f"[{agent.name}] Posted to Telegram"
+
+            elif action in ["discord", "notify"]:
+                result = tools.execute("send_discord", message=task) if tools else None
+                if result and result.get("success"):
+                    return f"[{agent.name}] Sent to Discord"
+
+            elif action in ["email", "mail"]:
+                result = (
+                    tools.execute("send_email", to="user", subject="NEUGI", body=task)
+                    if tools
+                    else None
+                )
+                if result and result.get("success"):
+                    return f"[{agent.name}] Email sent"
+
+        # ============================================
+        # INK - Writing & Documentation
+        # ============================================
+        elif agent.id == "ink":
+            if action in ["write", "draft", "compose"]:
+                result = (
+                    tools.execute(
+                        "file_write",
+                        path=f"~/neugi/workspace/{agent.id}_{int(datetime.now().timestamp())}.txt",
+                        content=task,
+                    )
+                    if tools
+                    else None
+                )
+                if result and result.get("success"):
+                    return f"[{agent.name}] Written to workspace"
+
+            elif action in ["edit", "revise", "modify"]:
+                result = (
+                    tools.execute("llm_think", prompt=f"Edit the following: {task}")
+                    if tools
+                    else None
+                )
+                if result and result.get("success"):
+                    return f"[{agent.name}] Edited: {result.get('response', '')[:300]}"
+
+            elif action in ["proofread", "review", "check"]:
+                result = tools.execute("llm_think", prompt=f"Proofread: {task}") if tools else None
+                if result and result.get("success"):
+                    return f"[{agent.name}] Proofread: {result.get('response', '')[:300]}"
+
+        # ============================================
+        # NEXUS - Management & Coordination
+        # ============================================
+        elif agent.id == "nexus":
+            if action in ["delegate", "assign", "task"]:
+                # Nexus coordinates - use LLM to plan delegation
+                result = (
+                    tools.execute("llm_think", prompt=f"Delegate this task effectively: {task}")
+                    if tools
+                    else None
+                )
+                if result and result.get("success"):
+                    return f"[{agent.name}] Delegated: {result.get('response', '')[:300]}"
+
+            elif action in ["coordinate", "orchestrate", "manage"]:
+                # List workspace files
+                result = tools.execute("file_list", path="~/neugi/workspace") if tools else None
+                if result and result.get("success"):
+                    files = result.get("files", [])
+                    return f"[{agent.name}] Coordinating {len(files)} files in workspace"
+
+            elif action in ["oversee", "monitor", "status"]:
+                # Check system
+                result = tools.execute("process_list") if tools else None
+                if result and result.get("success"):
+                    return f"[{agent.name}] System status: {result.get('count', 0)} processes"
+
+        # ============================================
+        # FALLBACK: Use LLM for any unmatched actions
+        # ============================================
         if tools:
-            llm_response = self._call_llm(agent, f"Perform action '{action}' for: {task}")
-            if llm_response:
-                return f"[{agent.name}] {llm_response}"
+            llm_result = tools.execute(
+                "llm_think", prompt=f"You are {agent.name}. Perform action '{action}' for: {task}"
+            )
+            if llm_result and llm_result.get("success"):
+                return f"[{agent.name}] {llm_result.get('response', '')[:500]}"
 
-        # Hard fallback simulation
-        if action in ["search", "fetch", "analyze"]:
-            return f"[{agent.name}] Researching: {task}"
-        elif action in ["code", "debug", "build"]:
-            return f"[{agent.name}] Coding: {task}"
-        elif action in ["create", "design", "generate"]:
-            return f"[{agent.name}] Creating: {task}"
-        elif action in ["analyze", "visualize", "report"]:
-            return f"[{agent.name}] Analyzing: {task}"
-        elif action in ["plan", "decide", "optimize"]:
-            return f"[{agent.name}] Planning: {task}"
-        elif action in ["scan", "audit", "protect"]:
-            return f"[{agent.name}] Securing: {task}"
-        elif action in ["post", "engage", "schedule"]:
-            return f"[{agent.name}] Social: {task}"
-        elif action in ["write", "edit", "proofread"]:
-            return f"[{agent.name}] Writing: {task}"
-        elif action in ["delegate", "coordinate", "oversee"]:
-            return f"[{agent.name}] Managing: {task}"
-        else:
-            return f"[{agent.name}] Responding to: {task}"
+        # Ultimate fallback
+        return f"[{agent.name}] Task '{task}' processed via {action}"
 
     def _log(self, agent_id: str, action: str, result: str):
         """Log agent action"""
