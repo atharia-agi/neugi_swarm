@@ -484,8 +484,8 @@ I'm your AI assistant. I can help you with:
   developers are not responsible for unintended system changes
   or data loss resulting from AI-driven actions.
         """)
-        confirm = input(f"  {C.GREEN}Type 'I AGREE' to proceed: {C.END}").strip()
-        if confirm != "I AGREE":
+        confirm = input(f"  {C.GREEN}Do you agree to proceed? (y/n): {C.END}").strip().lower()
+        if confirm != "y":
             self.ui.error("Disclaimer not accepted. Exiting...")
             sys.exit(0)
 
