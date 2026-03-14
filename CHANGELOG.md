@@ -154,6 +154,54 @@
 | `neugi.bat` | CLI wrapper (Windows) |
 | `neugi.service` | Systemd service file |
 
+---
+
+## Active File Dependencies
+
+### Core System (7 files - required for operation)
+
+| File | Purpose | Imported By |
+|------|---------|-------------|
+| `neugi_swarm.py` | Main server, HTTP dashboard | CLI, install.sh |
+| `neugi_wizard.py` | Setup wizard + Telegram setup | CLI, install.sh |
+| `neugi_assistant.py` | Chat assistant (NeugiAssistant) | neugi_swarm.py |
+| `neugi_swarm_agents.py` | Agent manager (9 agents) | neugi_swarm.py |
+| `neugi_swarm_tools.py` | Tool system (50+ tools) | neugi_swarm.py |
+| `neugi_telegram.py` | Telegram bot gateway | neugi_wizard.py |
+| `neugi` | CLI wrapper | User |
+
+### Standalone Tools (can run independently)
+
+| File | Purpose | Command |
+|------|---------|---------|
+| `neugi_technician.py` | System doctor/fixer | `python neugi_technician.py` |
+| `neugi_telegram.py` | Telegram bot | `python neugi_telegram.py` |
+
+### Extension Modules (future expansion)
+
+| File | Purpose | Status |
+|------|---------|--------|
+| `neugi_swarm_channels.py` | Multi-channel (Discord, WhatsApp) | Not imported |
+| `neugi_swarm_voice.py` | TTS/STT voice | Not imported |
+| `neugi_swarm_skills.py` | Custom skills | Not imported |
+| `neugi_swarm_gateway.py` | Alternative HTTP gateway | Not imported |
+| `ollama_assistant.py` | Advanced assistant with Groq/OpenRouter | Not imported |
+
+### Reference Files (documentation)
+
+| File | Purpose |
+|------|---------|
+| `neugi_swarm_edge.py` | Model recommendations |
+| `neugi_swarm_context.py` | Context window guide |
+| `VERIFIED_MODELS.py` | Verified model list |
+| `config_template.py` | Config template |
+
+### Deleted Files
+
+| File | Reason |
+|------|--------|
+| `neugi_swarm_setup.py` | Duplicate of `neugi_wizard.py` |
+
 ### Web
 
 | File | Purpose |
