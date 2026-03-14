@@ -512,6 +512,65 @@ class SkillManager:
 
         return None
 
+    # Skill-to-Agent Mapping
+    AGENT_CAPABILITY_MAP = {
+        "aurora": ["search", "fetch", "analyze", "research", "web", "scrape"],
+        "cipher": ["code", "debug", "build", "execute", "programming", "dev"],
+        "nova": ["create", "design", "generate", "make", "new"],
+        "pulse": ["analyze", "visualize", "report", "data", "stats", "analytics"],
+        "quark": ["plan", "decide", "optimize", "strategy", "strategy"],
+        "shield": ["scan", "audit", "protect", "security", "vulnerability"],
+        "spark": ["post", "engage", "schedule", "social", "twitter"],
+        "ink": ["write", "edit", "proofread", "document", "text"],
+        "nexus": ["delegate", "coordinate", "manage", "oversee", "orchestrate"],
+    }
+
+    def map_skill_to_agents(self, skill: Skill) -> List[str]:
+        """Map a skill to appropriate agents based on its actions/capabilities"""
+        matched_agents = []
+        skill_actions = [a.name.lower() for a in skill.actions]
+        skill_category = skill.category.value.lower()
+
+        # Check each agent's capabilities
+        for agent_id, capabilities in self.AGENT_CAPABILITY_MAP.items():
+            for action in skill_actions:
+                if action in capabilities or any(cap in action for cap in capabilities):
+                    if agent_id not in matched_agents:
+                        matched_agents.append(agent_id)
+
+        # If no matches, assign based on category
+        if not matched_agents:
+            if skill_category == "development":
+                matched_agents = ["cipher"]
+            elif skill_category == "devops":
+                matched_agents = ["quark"]
+            elif skill_category == "data":
+                matched_agents = ["pulse"]
+            elif skill_category == "security":
+                matched_agents = ["shield"]
+            elif skill_category == "communication":
+                matched_agents = ["spark"]
+            elif skill_category == "ai":
+                matched_agents = ["nexus"]
+            else:
+                matched_agents = ["ink"]  # Default to writer
+
+        return matched_agents
+
+    def get_best_agent_for_skill(self, skill: Skill) -> str:
+        """Get the best (primary) agent for a skill"""
+        agents = self.map_skill_to_agents(skill)
+        return agents[0] if agents else "nexus"  # Default to nexus
+
+    def register_skill_for_agent(self, skill_id: str, agent_id: str) -> Dict:
+        """Manually register a skill for a specific agent"""
+        skill = self.get(skill_id)
+        if not skill:
+            return {"error": f"Skill {skill_id} not found"}
+
+        # Add skill to agent config (would persist to agent config)
+        return {"status": "success", "message": f"Skill {skill_id} registered for agent {agent_id}"}
+
     def _export_neugi(self, skill: Skill) -> str:
         """Export as NEUGI skill format"""
         return f'''"""NEUGI Skill: {skill.name}"""

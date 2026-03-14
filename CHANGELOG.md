@@ -56,17 +56,34 @@
 - **pyproject.toml**: Added project configuration with pytest/mypy/ruff
 - **Test Suite**: Comprehensive tests for landing page, config, installers, core files
 - **Toast Notifications**: Professional toast instead of alert() popups
-- **OS Selection**: Windows/Mac/Linux buttons with copy command
-- **Workspace**: New isolated workspace for swarm agents
-  - `~/neugi/workspace/` - Central hub for all agents
-  - Each agent works in the shared workspace environment
-- **Enhanced Skills System**: Multi-format compatible
-  - NEUGI native (.neugi.py), OpenClaw, Claude Code, MCP
+- **OS Selection**: Windows/Mac/Linux buttons with copy command (text only, no logos)
+- **Vercel Analytics**: Added to index.html, docs.html, dashboard.html
+
+**Landing Page & Docs**
+- **Animated Agent Swarm**: Hero section with 9 agents orbiting Nexus center
+- **Custom SVG Icons**: All emojis replaced with custom SVG icons
+- **Docs Sidebar**: Passive scroll with auto-highlight, vertical list style
+- **Terminal Demo**: Clean design without emojis
+
+**Workspace & Extensions**
+- **Workspace**: `~/neugi/workspace/` - Central hub for all agents
+- **Enhanced Skills System**: 
+  - Multi-format compatible: NEUGI native, OpenClaw, Claude Code, MCP
   - 10 built-in skills (GitHub, Weather, Coding, etc.)
+  - **Skill-to-Agent Mapping**: Auto-map skills to appropriate agents based on capabilities
 - **Enhanced Plugin System**:
   - Native Python + MCP plugins
   - Install from GitHub/GitLab URL
   - Marketplace support
+
+**Agent Capabilities**
+- **Real Tool Execution**: Agents now execute real tasks, not just simulate
+  - Aurora: web_search, web_fetch, analyze
+  - Cipher: code_execute, file_write
+  - Nova: file_write, generate
+  - Pulse: json_parse, csv_analyze
+  - Ink: file_write
+  - Shield: web_fetch, audit
 
 ### v15.1 (March 14, 2026)
 
