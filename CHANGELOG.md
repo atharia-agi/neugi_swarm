@@ -46,6 +46,17 @@
 
 ## Version History
 
+### v15.1 (March 14, 2026)
+
+**Professional Landing Page & Complete Documentation**
+
+- **Animated Agent Swarm**: Hero section with 9 agents orbiting Nexus center
+- **Unified Agent Design**: Rectangle-based SVG agents matching Chiper style
+- **Terminal Demo**: Interactive wizard flow demonstration
+- **Complete docs.html**: Full documentation with installation, API, security, contact
+- **Footer**: Contact info (atharia.agi@gmail.com, @atharia_agi), Coming Soon links
+- **Responsive Design**: Mobile-friendly with glassmorphism effects
+
 ### v15.0 (March 14, 2026)
 
 **Native Web Browser Agent - NO API KEYS NEEDED!**
