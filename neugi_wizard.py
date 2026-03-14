@@ -11,16 +11,20 @@ Single entry point for:
 
 Powered by Ollama AI!
 
-Version: 15.4.0
+Version: 15.6.0
 Date: March 15, 2026
 """
 
 import os
 import json
 import requests
-import subprocess
-import sys
-import re
+import webbrowser
+import psutil
+import platform
+try:
+    import winreg
+except ImportError:
+    winreg = None
 from typing import Dict, List
 from datetime import datetime
 
@@ -146,7 +150,7 @@ Think step by step:
 
 Provide diagnosis and fix in this format:
 DIAGNOSIS: [your diagnosis]
-FIX: [command or action to fix]"
+FIX: [command or action to fix]
 """
         return self.chat(prompt)
 
@@ -282,6 +286,86 @@ class SystemChecker:
                 diag["granular_issues"].append(f"Session database is large ({size / 1024 / 1024:.1f}MB)")
 
         return diag
+
+
+# ============================================================
+# PERSISTENCE (AUTO-BOOT)
+# ============================================================
+
+
+class PersistenceManager:
+    """Manage system persistence (auto-boot)"""
+
+    REG_PATH = r"Software\Microsoft\Windows\CurrentVersion\Run"
+    APP_NAME = "NEUGI_Sovereign_Intelligence"
+
+    @staticmethod
+    def is_enabled() -> bool:
+        """Check if auto-boot is enabled in registry"""
+        if platform.system() != "Windows" or not winreg:
+            return False
+
+        try:
+            key = winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER, PersistenceManager.REG_PATH, 0, winreg.KEY_READ
+            )
+            _, _ = winreg.QueryValueEx(key, PersistenceManager.APP_NAME)
+            winreg.CloseKey(key)
+            return True
+        except WindowsError:
+            return False
+
+    @staticmethod
+    def enable() -> bool:
+        """Enable auto-boot by adding registry key"""
+        if platform.system() != "Windows" or not winreg:
+            return False
+
+        try:
+            # Point to the master start script
+            batch_path = os.path.join(NEUGI_DIR, "neugi_start.bat")
+            if not os.path.exists(batch_path):
+                # Fallback to creating a simple script if missing
+                return False
+
+            key = winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER,
+                PersistenceManager.REG_PATH,
+                0,
+                winreg.KEY_SET_VALUE,
+            )
+            winreg.SetValueEx(
+                key,
+                PersistenceManager.APP_NAME,
+                0,
+                winreg.REG_SZ,
+                f'"{batch_path}"',
+            )
+            winreg.CloseKey(key)
+            return True
+        except Exception:
+            return False
+
+    @staticmethod
+    def disable() -> bool:
+        """Disable auto-boot by removing registry key"""
+        if platform.system() != "Windows" or not winreg:
+            return False
+
+        try:
+            key = winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER,
+                PersistenceManager.REG_PATH,
+                0,
+                winreg.KEY_SET_VALUE,
+            )
+            winreg.DeleteValue(key, PersistenceManager.APP_NAME)
+            winreg.CloseKey(key)
+            return True
+        except WindowsError:
+            return True  # Already disabled
+        except Exception:
+            return False
 
 
 # ============================================================
@@ -433,6 +517,8 @@ I'm your AI assistant. I can help you with:
         while True:
             choice = self.ui.menu(
                 [
+                    ("heartbeat", "💓 Sovereign Heartbeat"),
+                    ("autoboot", "🔄 Toggle Auto-Boot (BETA)"),
                     ("setup", "🎯 Setup / First Time Install"),
                     ("repair", "🔧 Repair / Fix Problems"),
                     ("diagnose", "🧠 Diagnose System"),
@@ -446,20 +532,24 @@ I'm your AI assistant. I can help you with:
             )
 
             if choice == "1":
-                self.run_setup()
+                self.run_heartbeat()
             elif choice == "2":
-                self.run_repair()
+                self.run_autoboot()
             elif choice == "3":
-                self.run_diagnose()
+                self.run_setup()
             elif choice == "4":
-                self.run_chat()
+                self.run_repair()
             elif choice == "5":
-                self.run_plugins()
+                self.run_diagnose()
             elif choice == "6":
-                self.run_update()
+                self.run_chat()
             elif choice == "7":
+                self.run_plugins()
+            elif choice == "8":
+                self.run_update()
+            elif choice == "9":
                 self.run_security()
-            elif choice == "8" or choice.lower() in ["quit", "exit", "q"]:
+            elif choice == "10" or choice.lower() in ["quit", "exit", "q"]:
                 print(f"\n{C.CYAN}Happy to help! See you next time! 👋{C.END}\n")
                 break
             else:
@@ -488,6 +578,40 @@ I'm your AI assistant. I can help you with:
         if confirm != "y":
             self.ui.error("Disclaimer not accepted. Exiting...")
             sys.exit(0)
+
+    # ============================================================
+    # HEARTBEAT FLOW
+    # ============================================================
+
+    def run_heartbeat(self):
+        """Quick Sovereign Health Check"""
+        self.ui.header("💓 SOVEREIGN HEARTBEAT")
+        
+        # CPU/RAM
+        cpu = psutil.cpu_percent()
+        ram = psutil.virtual_memory().percent
+        self.ui.info(f"System Load: CPU {cpu}% | RAM {ram}%")
+        
+        # Ollama
+        ollama = SystemChecker.check_ollama()
+        if ollama["running"]:
+            self.ui.success(f"Ollama Status: ONLINE ({len(ollama['models'])} models mapped)")
+        else:
+            self.ui.error("Ollama Status: OFFLINE")
+            
+        # Dashboard
+        dashboard_url = "http://localhost:19888"
+        try:
+            r = requests.get(f"{dashboard_url}/health", timeout=1)
+            if r.ok:
+                self.ui.success(f"Sovereign Node: ACTIVE ({dashboard_url})")
+            else:
+                self.ui.warning(f"Sovereign Node: IDLE ({dashboard_url})")
+        except:
+            self.ui.warning(f"Sovereign Node: OFFLINE ({dashboard_url})")
+            
+        print(f"\n{C.GREEN}Everything seems in order. Sovereign Intelligence is stable.{C.END}")
+        input(f"\n{C.CYAN}Press Enter to return to menu... {C.END}")
 
     # ============================================================
     # SETUP FLOW
@@ -576,6 +700,11 @@ I'm your AI assistant. I can help you with:
 
         # Show examples
         self.show_examples(use_case)
+
+        # Final Polishing: Auto-launch Dashboard
+        self.ui.success("Launching Sovereign Dashboard...")
+        dashboard_url = "http://localhost:19888"
+        webbrowser.open(dashboard_url)
 
     def show_examples(self, use_case: str):
         """Show example questions"""
@@ -876,6 +1005,54 @@ System status:
             security_wizard()
         except Exception as e:
             self.ui.error(f"Error: {e}")
+
+    # ============================================================
+    # AUTO-BOOT FLOW
+    # ============================================================
+
+    def run_autoboot(self):
+        """Manage auto-boot persistence"""
+        self.ui.header("🔄 SOVEREIGN AUTO-BOOT")
+
+        if platform.system() != "Windows":
+            self.ui.warning(
+                "Auto-Boot persistence is currently only optimized for Windows."
+            )
+            input("\nPress Enter to return...")
+            return
+
+        enabled = PersistenceManager.is_enabled()
+        status = f"{C.GREEN}ENABLED{C.END}" if enabled else f"{C.RED}DISABLED{C.END}"
+
+        print(f"  Current Status: {status}")
+        print(
+            f"\n  {C.YELLOW}The system will automatically start Ollama, the Swarm Engine,"
+        )
+        print(f"  and open the Dashboard upon device restart.{C.END}")
+
+        choice = (
+            input(
+                f"\n  {C.CYAN}Would you like to {'DISABLE' if enabled else 'ENABLE'} Auto-Boot? (y/n): {C.END}"
+            )
+            .strip()
+            .lower()
+        )
+
+        if choice == "y":
+            if enabled:
+                if PersistenceManager.disable():
+                    self.ui.success("Auto-Boot disabled successfully.")
+                else:
+                    self.ui.error("Failed to disable Auto-Boot.")
+            else:
+                if PersistenceManager.enable():
+                    self.ui.success("Auto-Boot enabled successfully!")
+                else:
+                    self.ui.error(
+                        "Failed to enable Auto-Boot. Ensure you have permissions."
+                    )
+
+        input(f"\n{C.CYAN}Press Enter to return to menu... {C.END}")
 
     # ============================================================
     # HELPERS
