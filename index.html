@@ -832,6 +832,23 @@
         <a href="docs.html" class="btn btn-ghost btn-large">📖 Documentation</a>
     </div>
         
+        <!-- Quick Install -->
+        <div style="max-width:600px;margin:2rem auto;text-align:center;">
+            <p style="color:var(--text-muted);margin-bottom:0.75rem;">Choose your OS to get started:</p>
+            <div style="display:flex;gap:0.5rem;justify-content:center;margin-bottom:1rem;flex-wrap:wrap;">
+                <button class="btn btn-ghost" onclick="showInstallCmd('windows')" style="padding:8px 16px;">🪟 Windows</button>
+                <button class="btn btn-ghost" onclick="showInstallCmd('mac')" style="padding:8px 16px;">🍎 Mac</button>
+                <button class="btn btn-ghost" onclick="showInstallCmd('linux')" style="padding:8px 16px;">🐧 Linux</button>
+            </div>
+            <div id="installCmd" style="display:none;background:var(--bg-card);border-radius:8px;padding:1rem;margin-bottom:1rem;text-align:left;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+                    <span style="color:var(--text-muted);font-size:0.85rem;" id="osLabel">Run this command:</span>
+                    <button onclick="copyInstallCmd()" style="background:var(--accent);border:none;border-radius:4px;padding:4px 12px;cursor:pointer;font-size:0.8rem;">📋 Copy</button>
+                </div>
+                <code id="installCommand" style="color:var(--text);font-family:monospace;word-break:break-all;"></code>
+            </div>
+        </div>
+        
         <!-- Terminal Demo -->
         <div class="terminal" style="max-width:600px;margin:2rem auto;">
             <div class="terminal-header">
@@ -1300,6 +1317,28 @@
     </footer>
     
     <script>
+        const installCommands = {
+            windows: 'irm neugi.com/install | iex',
+            mac: 'curl -fsSL https://neugi.com/install.sh | bash',
+            linux: 'curl -fsSL https://neugi.com/install.sh | bash'
+        };
+        
+        function showInstallCmd(os) {
+            const cmdBox = document.getElementById('installCmd');
+            const cmd = document.getElementById('installCommand');
+            const label = document.getElementById('osLabel');
+            cmdBox.style.display = 'block';
+            cmd.textContent = installCommands[os];
+            label.textContent = os === 'windows' ? 'Windows PowerShell (Admin):' : 'Terminal:';
+        }
+        
+        function copyInstallCmd() {
+            const cmd = document.getElementById('installCommand').textContent;
+            navigator.clipboard.writeText(cmd).then(() => {
+                alert('Copied to clipboard!');
+            });
+        }
+        
         window.addEventListener('scroll', () => {
             const header = document.querySelector('header');
             header.style.background = window.scrollY > 20 ? 
