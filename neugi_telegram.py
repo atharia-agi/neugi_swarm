@@ -272,4 +272,3 @@ if __name__ == "__main__":
             gw.start_polling()
         except KeyboardInterrupt:
             print("\nShutting down Telegram Gateway...")
-EOF
