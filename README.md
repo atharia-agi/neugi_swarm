@@ -7,6 +7,7 @@
   <img src="https://img.shields.io/badge/NEUGI-NGI-blue" alt="NEUGI">
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
   <img src="https://img.shields.io/badge/Python-3.8+-yellow" alt="Python">
+  <a href="https://neugi-swarm.vercel.app"><img src="https://img.shields.io/badge/Website-Live-green" alt="Website"></a>
 </p>
 
 ---
@@ -27,6 +28,70 @@ curl -fsSL https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/instal
 5. Install NEUGI CLI
 6. **Run Setup Wizard** ← Anda input di sini!
 7. Start NEUGI + Activity Log
+
+---
+
+## 🌐 Website & Dashboard
+
+### Official Website
+Visit our landing page: **[neugi-swarm.vercel.app](https://neugi-swarm.vercel.app)**
+
+### Dashboard
+After install, access:
+```
+http://localhost:19888
+```
+
+---
+
+## 📖 Documentation
+
+Full documentation available at: **[docs.html](https://neugi-swarm.vercel.app/docs.html)**
+
+Includes:
+- Installation Guide
+- Configuration
+- API Reference
+- Security Settings
+- Plugin System
+- Troubleshooting
+
+---
+
+## 🔧 Features
+
+| Feature | Description |
+|---------|-------------|
+| **True NGI** | Neural General Intelligence with Knowledge Graph, Reasoning, Planning |
+| **Native Web Browser** | FREE web search - DuckDuckGo, SearXNG, Brave (no API keys!) |
+| **Auto-Install** | One command installs everything including Ollama |
+| **Smart Wizard v3.0** | All-in-one: setup, repair, diagnose, chat, plugins, update |
+| **Technician** | Can fix system issues automatically |
+| **Free Models** | qwen3.5:cloud works with Ollama Free tier |
+| **Multi-Provider** | Support Groq, OpenRouter, OpenAI, Anthropic |
+| **CLI** | Like `openclaw` - neugi start/stop/status |
+| **Telegram Control** | Manage your swarm from your phone via Telegram Bot |
+| **Streaming Responses** | Real-time AI responses |
+| **Memory System** | Conversation history & user preferences |
+| **Plugin System** | Extend functionality |
+| **Auto-Updater** | Stay up to date |
+| **Security Layer** | Sandbox & full access modes |
+
+---
+
+## 🤖 Agent Swarm
+
+NEUGI comes with 9 specialized agents:
+
+- **Aurora** - Vision & image analysis
+- **Cipher** - Security & encryption
+- **Nova** - Creative writing
+- **Pulse** - Data analysis
+- **Quark** - Code generation
+- **Shield** - Defense & safety
+- **Spark** - Innovation
+- **Ink** - Documentation
+- **Nexus** - Central coordinator
 
 ---
 
@@ -59,39 +124,6 @@ neugi wizard
 
 ---
 
-## 🌐 Dashboard
-
-Setelah install, akses:
-
-```
-http://localhost:19888
-```
-
----
-
-## 🔧 Features
-
-| Feature | Description |
-|---------|-------------|
-| **True NGI** | Neural General Intelligence with Knowledge Graph, Reasoning, Planning |
-| **Auto-Install** | One command installs everything including Ollama |
-| **Smart Wizard** | Auto-setup with Q&A |
-| **Technician** | Can fix system issues automatically |
-| **Free Models** | qwen3.5:cloud works with Ollama Free tier |
-| **Multi-Provider** | Support Groq, OpenRouter, OpenAI, Anthropic |
-| **CLI** | Like `openclaw` - neugi start/stop/status |
-| **Telegram Control** | Manage your swarm from your phone via Telegram Bot |
-
----
-
-## 📋 Requirements
-
-- Python 3.8+
-- Internet connection (for install)
-- 2GB RAM (minimum)
-
----
-
 ## 💾 After Restart
 
 ```bash
@@ -105,12 +137,6 @@ python3 neugi_swarm.py
 
 ---
 
-## 📚 Documentation
-
-All documentation is contained within the codebase and this README.
-
----
-
 ## 🌟 Why NEUGI?
 
 | Traditional AI | NEUGI |
@@ -119,13 +145,18 @@ All documentation is contained within the codebase and this README.
 | Complex setup | **Smart wizard** |
 | Just chatbot | **True NGI** |
 | No CLI | **neugi CLI** |
+| Paid search APIs | **FREE web browser** |
+| macOS only | **Windows, Linux, macOS** |
 
 ---
 
 ## 📞 Support
 
-- GitHub: https://github.com/atharia-agi/neugi_swarm
-- Issues: https://github.com/atharia-agi/neugi_swarm/issues
+- 🌐 Website: [neugi-swarm.vercel.app](https://neugi-swarm.vercel.app)
+- 📧 Email: atharia.agi@gmail.com
+- 🐦 Twitter: @atharia_agi
+- 🐙 GitHub: https://github.com/atharia-agi/neugi_swarm
+- 📝 Issues: https://github.com/atharia-agi/neugi_swarm/issues
 
 ---
 
