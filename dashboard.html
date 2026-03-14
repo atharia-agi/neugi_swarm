@@ -199,12 +199,18 @@
         /* Content Scroll Area */
         .content {
             flex: 1;
-            overflow-y: auto;
-            padding: 0 32px 32px; /* Balanced for sticky header */
             display: grid;
             grid-template-columns: 1fr 340px;
-            gap: 0 24px; /* Gap only between side columns, rows handled by margins */
-            position: relative;
+            grid-template-rows: auto 1fr;
+            gap: 0 24px;
+            padding: 0 32px 32px;
+            overflow: hidden; /* Lock main container */
+        }
+
+        .main-column {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Internal scrolling for chat */
         }
 
         /* Panel Containers */
@@ -478,17 +484,14 @@
         .side-column {
             display: flex;
             flex-direction: column;
-            gap: 20px;
-            position: sticky;
-            top: 80px; /* Offset for sticky metrics */
-            height: calc(100vh - 160px);
+            gap: 16px;
+            height: 100%;
             overflow-y: auto;
-            align-self: start;
             padding-bottom: 20px;
+            padding-top: 16px; /* Align with top of panels */
         }
 
-        /* Hide scrollbar for side panel logs but keep functionality */
-        .side-column::-webkit-scrollbar { width: 0; background: transparent; }
+        .side-column::-webkit-scrollbar { width: 4px; }
 
         /* Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
@@ -810,30 +813,28 @@
             }
 
             // Agents Grid
-            if (neugi.agents) {
-                document.getElementById('agentsGrid').innerHTML = neugi.agents.map(a => {
-                    const statusClass = a.status || 'idle';
-                    const icon = agentEmojis[a.role] || '🤖';
-                    return `
-                    <div class="agent-node">
-                        <div class="agent-id">
-                            <span class="agent-icon">${icon}</span>
-                            <div>
-                                <div class="agent-name">${a.name}</div>
-                                <div class="agent-role">${a.role} ${a.level ? 'lv.'+a.level : ''}</div>
-                            </div>
+            const agents = neugi.agents || simulator.agents;
+            document.getElementById('agentsGrid').innerHTML = agents.map(a => {
+                const statusClass = a.status || 'idle';
+                const icon = agentEmojis[a.role] || '🤖';
+                return `
+                <div class="agent-node">
+                    <div class="agent-id">
+                        <span class="agent-icon">${icon}</span>
+                        <div>
+                            <div class="agent-name">${a.name}</div>
+                            <div class="agent-role">${a.role} ${a.level ? 'lv.'+a.level : ''}</div>
                         </div>
-                        <div class="indicator ${statusClass}" title="${statusClass}"></div>
-                    </div>`;
-                }).join('');
-            }
+                    </div>
+                    <div class="indicator ${statusClass}" title="${statusClass}"></div>
+                </div>`;
+            }).join('');
 
             // Tools List
-            if (neugi.tools) {
-                document.getElementById('toolsList').innerHTML = neugi.tools.map(t => 
-                    `<div class="tool-pill">${t.name}</div>`
-                ).join('');
-            }
+            const tools = neugi.tools || simulator.tools;
+            document.getElementById('toolsList').innerHTML = tools.map(t => 
+                `<div class="tool-pill">${t.name}</div>`
+            ).join('');
         }
 
         async function sendChat() {
@@ -864,14 +865,18 @@
 
                 const kb = {
                     "apa itu neugi": "Neugi Swarm adalah sistem agen AI otonom terdistribusi yang dirancang untuk eksekusi logika kompleks. Tidak seperti chatbot biasa, Neugi menggunakan 'Swarm Intelligence' untuk membagi tugas besar menjadi sub-tugas yang dieksekusi oleh agen spesialis secara paralel.",
+                    "what is neugi": "Neugi Swarm is a distributed autonomous AI agent system designed for complex logic execution. Unlike standard chatbots, Neugi uses Swarm Intelligence to break down massive tasks into sub-tasks executed by specialized agents in parallel.",
+                    "explain neugi": "Neugi operates as a decentralized network of AI agents. A central 'Nexus' node orchestrates 'Command Directives' across local and remote nodes, allowing for massive scaling and self-healing automation.",
                     "mekanisme": "Mekanisme Neugi berbasis pada protokol P2P (Peer-to-Peer). Satu node bertindak sebagai 'Nexus' (Manager) yang mendistribusikan 'Command Directive' ke agen-agen atau ke node remote lainnya melalui dekorator @node_id.",
                     "cara instal": "Sangat mudah! Kamu cukup menjalankan perintah one-liner: `powershell -c \"irm https://neugi.com/install.ps1 | iex\"`. Pastikan kamu sudah menginstal Python dan Ollama sebagai engine lokalnya.",
+                    "how to install": "Installation is simple! Run this command: `powershell -c \"irm https://neugi.com/install.ps1 | iex\"`. Ensure Python and Ollama are installed as the local cognitive engine.",
                     "agen": "Neugi memiliki 9 agen spesialis: Aurora (Data), Cipher (Logic), Nova (UI), Pulse (Analytic), Quark (Strategy), Shield (Security), Spark (Network), Ink (Formatting), dan Manager (Orchestrator).",
-                    "self-healing": "Fitur Self-Healing memungkinkan agen Neugi untuk mendeteksi error sistem secara otonom (seperti file rusak atau path error) dan memperbaikinya sendiri menggunakan OS-level command jika God Mode aktif.",
-                    "distributed": "Neugi mendukung 'Distributed Swarm'. Kamu bisa menghubungkan beberapa komputer dalam satu jaringan swarm. Agen di PC A bisa mendelegasikan tugas ke agen di PC B secara seamless.",
-                    "fitur": "Fitur unggulan Neugi meliputi: Terminal TUI streaming, 3D Topology Visualization, Real-time Telemetry, Self-Healing loop, dan Distributed Task Delegation.",
-                    "siapa kamu": "Saya adalah Nexus, unit orkestrasi pusat dari Neugi Swarm. Saat ini saya berjalan dalam mode simulasi (Showcase Mode) untuk mendemonstrasikan kapabilitas operasional jaringan kami.",
-                    "download": "Silakan cek bagian 'Installation' di landing page kami untuk mendapatkan installer terbaru dan panduan setup lengkap."
+                    "agents": "Neugi features 9 specialized agents: Aurora (Data), Cipher (Logic), Nova (UI), Pulse (Analytic), Quark (Strategy), Shield (Security), Spark (Network), Ink (Formatting), and Manager (Orchestrator).",
+                    "self-healing": "Fitur Self-Healing memungkinkan agen Neugi untuk mendeteksi error sistem secara otonom dan memperbaikinya menggunakan OS-level command jika God Mode aktif.",
+                    "distributed": "Neugi supports 'Distributed Swarm', allowing you to connect multiple computers in one network where agents can delegate tasks seamlessly across hardware.",
+                    "siapa kamu": "Saya adalah Nexus, unit orkestrasi pusat dari Neugi Swarm. Saat ini saya berjalan dalam mode simulasi (Showcase Mode).",
+                    "who are you": "I am the Nexus, the central orchestration unit of the Neugi Swarm. I am currently running in Simulation Mode to demonstrate our operational capabilities.",
+                    "download": "Check the 'Installation' section on our landing page for the latest installer and setup guide."
                 };
 
                 for (const key in kb) {
