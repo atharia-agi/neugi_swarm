@@ -34,10 +34,15 @@ log_step() { echo -e "${PURPLE}━━━${NC} $* ${PURPLE}━━━"; }
 
 main() {
     echo ""
-    echo "╔═══════════════════════════════════════════════════╗"
-    echo "║         🤖 NEUGI SWARM INSTALLER                ║"
-    echo "║     Neural General Intelligence - Made Easy     ║"
-    echo "╚═══════════════════════════════════════════════════╝"
+    echo -e "${RED}${BOLD}  ⚠️  DANGER: UNRESTRICTED SYSTEM ACCESS${NC}"
+    echo -e "${YELLOW}  NEUGI is an autonomous AI system. By installing, you give the"
+    echo -e "  AI permission to execute system-level commands on this machine.${NC}"
+    echo ""
+    read -p "  Do you wish to proceed with installation? (y/n): " confirm
+    if [[ ! $confirm =~ ^[Yy]$ ]]; then
+        log_error "Installation aborted by user."
+        exit 1
+    fi
     echo ""
     
     # Add PATH

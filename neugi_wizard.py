@@ -465,12 +465,37 @@ I'm your AI assistant. I can help you with:
             else:
                 self.ui.warning("Invalid choice. Try again.")
 
+    def show_disclaimer(self):
+        """Display a bold risk disclaimer"""
+        self.ui.header("⚠️  MANDATORY RISK DISCLAIMER")
+        print(f"""
+  {C.RED}{C.BOLD}IMPORTANT: UNRESTRICTED SYSTEM ACCESS{C.END}
+  
+  NEUGI is an autonomous agentic system. This Wizard and the
+  associated swarm agents have the authority to:
+  
+  1.  Execute system-level commands (BASH/CMD/PowerShell).
+  2.  Modify, create, or delete files in assigned directories.
+  3.  Access local network services and external AI providers.
+  
+  {C.YELLOW}RISK ACKNOWLEDGMENT:{C.END}
+  By proceeding, you acknowledge that NEUGI is provided "as is"
+  and carries risks inherent to autonomous AI systems. The
+  developers are not responsible for unintended system changes
+  or data loss resulting from AI-driven actions.
+        """)
+        confirm = input(f"  {C.GREEN}Type 'I AGREE' to proceed: {C.END}").strip()
+        if confirm != "I AGREE":
+            self.ui.error("Disclaimer not accepted. Exiting...")
+            sys.exit(0)
+
     # ============================================================
     # SETUP FLOW
     # ============================================================
 
     def run_setup(self):
         """Setup wizard flow"""
+        self.show_disclaimer()
         self.ui.header("🎯 SETUP WIZARD")
 
         import random

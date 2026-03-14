@@ -1,9 +1,21 @@
 @echo off
 setlocal enabledelayedexpansion
 
-echo ===================================================
-echo         NEUGI SWARM INSTALLER (Windows)
-echo ===================================================
+echo.
+echo !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+echo   DANGER: UNRESTRICTED SYSTEM ACCESS 
+echo !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+echo.
+echo NEUGI is an autonomous AI system. By installing, you 
+echo give the AI permission to execute system-level 
+echo commands on this machine.
+echo.
+set /p confirm="Do you wish to proceed? (y/n): "
+if /i "%confirm%" neq "y" (
+    echo [ERROR] Installation aborted.
+    pause
+    exit /b
+)
 echo.
 
 :: 1. Check Ollama
