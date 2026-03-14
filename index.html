@@ -29,6 +29,11 @@
             --gradient: linear-gradient(135deg, var(--accent), var(--primary));
         }
         
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -1282,19 +1287,19 @@
                     <a href="#features">Features</a>
                     <a href="#agents">Agents</a>
                     <a href="https://github.com/atharia-agi/neugi_swarm" target="_blank">Download</a>
-                    <a href="javascript:void(0)" onclick="alert('Coming Soon!')">Pricing</a>
+                    <a href="javascript:void(0)" onclick="showToast('Coming Soon!')">Pricing</a>
                 </div>
                 <div class="footer-col">
                     <h4>Resources</h4>
                     <a href="https://github.com/atharia-agi/neugi_swarm" target="_blank">Documentation</a>
                     <a href="https://github.com/atharia-agi/neugi_swarm" target="_blank">API Reference</a>
-                    <a href="javascript:void(0)" onclick="alert('Coming Soon!')">Community Forum</a>
-                    <a href="javascript:void(0)" onclick="alert('Coming Soon!')">Blog</a>
+                    <a href="javascript:void(0)" onclick="showToast('Coming Soon!')">Community Forum</a>
+                    <a href="javascript:void(0)" onclick="showToast('Coming Soon!')">Blog</a>
                 </div>
                 <div class="footer-col">
                     <h4>Company</h4>
-                    <a href="javascript:void(0)" onclick="alert('Coming Soon!')">About Us</a>
-                    <a href="javascript:void(0)" onclick="alert('Coming Soon!')">Careers</a>
+                    <a href="javascript:void(0)" onclick="showToast('Coming Soon!')">About Us</a>
+                    <a href="javascript:void(0)" onclick="showToast('Coming Soon!')">Careers</a>
                     <a href="mailto:atharia.agi@gmail.com">Contact</a>
                     <a href="https://x.com/atharia_agi" target="_blank">Twitter</a>
                 </div>
@@ -1307,10 +1312,10 @@
                     <a href="https://x.com/atharia_agi" target="_blank" style="color: var(--accent);">@atharia_agi</a>
                 </div>
                 <div class="legal-links">
-                    <a href="javascript:void(0)" onclick="alert('Coming Soon!')">Terms of Service</a>
-                    <a href="javascript:void(0)" onclick="alert('Coming Soon!')">Privacy Policy</a>
-                    <a href="javascript:void(0)" onclick="alert('Coming Soon!')">Cookie Policy</a>
-                    <a href="javascript:void(0)" onclick="alert('Coming Soon!')">Security</a>
+                    <a href="javascript:void(0)" onclick="showToast('Coming Soon!')">Terms of Service</a>
+                    <a href="javascript:void(0)" onclick="showToast('Coming Soon!')">Privacy Policy</a>
+                    <a href="javascript:void(0)" onclick="showToast('Coming Soon!')">Cookie Policy</a>
+                    <a href="javascript:void(0)" onclick="showToast('Coming Soon!')">Security</a>
                 </div>
             </div>
         </div>
@@ -1335,8 +1340,16 @@
         function copyInstallCmd() {
             const cmd = document.getElementById('installCommand').textContent;
             navigator.clipboard.writeText(cmd).then(() => {
-                alert('Copied to clipboard!');
+                showToast('Command copied to clipboard!');
             });
+        }
+        
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--accent);padding:12px 24px;border-radius:8px;color:var(--text);font-size:0.9rem;z-index:9999;animation:fadeIn 0.3s ease;';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
         }
         
         window.addEventListener('scroll', () => {
