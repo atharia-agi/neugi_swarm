@@ -17,6 +17,7 @@ import os
 import json
 import time
 import requests
+import psutil
 from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse
@@ -55,7 +56,11 @@ class HealthMonitor:
             self.errors.append({"time": datetime.now().isoformat(), "error": error})
 
     def get_health(self) -> dict:
-        """Get health status"""
+        """Get health status with live telemetry"""
+        # Get system metrics
+        cpu_usage = psutil.cpu_percent(interval=None)
+        memory = psutil.virtual_memory()
+        
         return {
             "status": self.status,
             "version": VERSION,
@@ -63,6 +68,13 @@ class HealthMonitor:
             "errors": len(self.errors),
             "restart_count": self.restart_count,
             "timestamp": datetime.now().isoformat(),
+            "telemetry": {
+                "cpu": cpu_usage,
+                "ram": memory.percent,
+                "ram_used": round(memory.used / (1024**3), 2),
+                "ram_total": round(memory.total / (1024**3), 2),
+                "load": os.getloadavg()[0] if hasattr(os, "getloadavg") else 0
+            }
         }
 
 
@@ -156,6 +168,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self.serve_fix()
         elif path == "/technician":
             self.serve_technician()
+        elif path == "/api/swarm/nodes":
+            self.serve_swarm_nodes()
         else:
             self.send_error(404)
 
@@ -165,6 +179,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
         if parsed.path == "/api/chat":
             self.handle_chat()
+        elif parsed.path == "/api/swarm/join":
+            self.handle_swarm_join()
+        elif parsed.path == "/api/swarm/delegate":
+            self.handle_swarm_delegate()
         else:
             self.send_error(404)
 
@@ -250,6 +268,54 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/html")
         self.end_headers()
         self.wfile.write(html.encode())
+
+    def serve_swarm_nodes(self):
+        """List all peer nodes"""
+        from neugi_swarm_net import swarm_net
+        data = swarm_net.get_online_nodes()
+        self.send_response(200)
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps(data).encode())
+
+    def handle_swarm_join(self):
+        """Register a peer node"""
+        from neugi_swarm_net import swarm_net
+        length = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(length)
+        data = json.loads(body)
+        
+        node_id = data.get("node_id")
+        ip = self.client_address[0]
+        port = data.get("port", 19888)
+        
+        if node_id:
+            swarm_net.register_node(node_id, ip, port)
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"status": "joined", "message": f"Node {node_id} accepted"}).encode())
+        else:
+            self.send_error(400, "Missing node_id")
+
+    def handle_swarm_delegate(self):
+        """Receive task from peer"""
+        length = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(length)
+        data = json.loads(body)
+        
+        task = data.get("task", "")
+        
+        try:
+            from neugi_assistant import NeugiAssistant
+            assistant = NeugiAssistant()
+            response = assistant.chat(f"[REMOTE TASK] {task}")
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"status": "executed", "response": response}).encode())
+        except Exception as e:
+            self.send_error(500, str(e))
 
     def handle_chat(self):
         """Handle chat request"""

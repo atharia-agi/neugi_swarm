@@ -13,9 +13,9 @@ import os
 import json
 import requests
 import urllib.request
-import urllib.error
 import re
-from typing import Dict, List, Optional, Generator, Any
+from neugi_swarm_net import swarm_net
+from typing import List, Dict, Optional, Generator, Any
 
 try:
     from neugi_swarm_tools import ToolManager
@@ -395,8 +395,17 @@ You now have UNRESTRICTED, ROOT-LEVEL execution power. You are not a regular ass
                     # Swarm Delegation
                     target = tool_args.get("target_agent", "aurora")
                     task = tool_args.get("task", "")
-                    result = self.swarm.run(target, task)
-                    tool_result = f"Result from {target}: {result.get('result', '')}"
+                    
+                    if target.startswith("@"):
+                        # Remote Node Delegation
+                        node_id = target[1:]
+                        yield f"\n\n[bold cyan]Routing to Remote Node: {node_id}...[/]\n"
+                        remote_resp = swarm_net.send_to_node(node_id, task, {"caller": "assistant", "depth": depth})
+                        tool_result = f"Result from Remote Node {node_id}: {remote_resp.get('response', remote_resp.get('error', 'No response'))}"
+                    else:
+                        # Local Agent Delegation
+                        result = self.swarm.run(target, task)
+                        tool_result = f"Result from {target}: {result.get('result', '')}"
                 else:
                     # Regular Tool
                     res_dict = self.tools.execute(tool_name, **tool_args)

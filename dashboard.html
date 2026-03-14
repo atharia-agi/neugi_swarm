@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/3d-force-graph"></script>
     
     <style>
         :root {
@@ -537,12 +538,12 @@
                         <div class="value" id="uptime">00:00:00</div>
                     </div>
                     <div class="metric-card">
-                        <h4>Active Engine</h4>
-                        <div class="value" id="model" style="font-size: 18px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">--</div>
+                        <h4>CPU Usage</h4>
+                        <div class="value" id="cpuUsage">--%</div>
                     </div>
                     <div class="metric-card">
-                        <h4>Gateway Port</h4>
-                        <div class="value" id="port">19888</div>
+                        <h4>RAM Load</h4>
+                        <div class="value" id="ramUsage">--%</div>
                     </div>
                     <div class="metric-card">
                         <h4>Anomalies</h4>
@@ -578,6 +579,15 @@
                     </div>
                     <div class="agents-list" id="agentsGrid">
                         <div style="font-size: 13px; color: var(--text-tertiary);">Loading matrix...</div>
+                    </div>
+                </div>
+
+                <div class="panel" style="margin-bottom: 24px;">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Swarm Topology View</h2>
+                    </div>
+                    <div id="swarmGraph" style="height: 300px; background: #000; position: relative;">
+                        <!-- Graph Container -->
                     </div>
                 </div>
 
@@ -631,6 +641,14 @@
                 }
                 const currentUptime = Math.floor((Date.now() - startTimestamp) / 1000) + serverUptimeOffset;
                 document.getElementById('uptime').textContent = formatTime(currentUptime);
+                
+                if (data.neugi && data.neugi.telemetry) {
+                    const tel = data.neugi.telemetry;
+                    document.getElementById('cpuUsage').textContent = tel.cpu + '%';
+                    document.getElementById('ramUsage').textContent = tel.ram + '%';
+                    document.getElementById('cpuUsage').style.color = tel.cpu > 80 ? 'var(--status-red)' : 'var(--text-primary)';
+                    document.getElementById('ramUsage').style.color = tel.ram > 80 ? 'var(--status-red)' : 'var(--text-primary)';
+                }
                 
                 let modelName = 'Offline';
                 if (data.ollama && data.ollama.status === 'running') {
@@ -748,6 +766,53 @@
             const currentUptime = Math.floor((Date.now() - startTimestamp) / 1000) + serverUptimeOffset;
             document.getElementById('uptime').textContent = formatTime(currentUptime);
         }, 1000);
+
+        // --- SWARM GRAPH INITIALIZATION ---
+        const Graph = ForceGraph3D()(document.getElementById('swarmGraph'))
+            .backgroundColor('#000000')
+            .showNavInfo(false)
+            .height(300)
+            .nodeLabel('name')
+            .nodeAutoColorBy('group')
+            .linkDirectionalParticles(2)
+            .linkDirectionalParticleSpeed(d => 0.01);
+
+        async function updateGraph() {
+            try {
+                const [statusResp, nodesResp] = await Promise.all([
+                    fetch('/api/status'),
+                    fetch('/api/swarm/nodes')
+                ]);
+                const status = await statusResp.json();
+                const remoteNodes = await nodesResp.json();
+                
+                const gData = { nodes: [], links: [] };
+                
+                // Root Node (Manager/Nexus)
+                gData.nodes.push({ id: 'nexus', name: 'Nexus (Local)', group: 1, val: 5 });
+                
+                // Local Agents
+                if (status.agents) {
+                    status.agents.forEach(a => {
+                        gData.nodes.push({ id: a.id, name: `${a.name} (${a.role})`, group: 2, val: 3 });
+                        gData.links.push({ source: 'nexus', target: a.id });
+                    });
+                }
+                
+                // Remote Nodes
+                remoteNodes.forEach(rn => {
+                    gData.nodes.push({ id: rn.id, name: `Remote: ${rn.id}`, group: 3, val: 4 });
+                    gData.links.push({ source: 'nexus', target: rn.id });
+                });
+                
+                Graph.graphData(gData);
+            } catch(e) {
+                console.error("Swarm graph sync failed:", e);
+            }
+        }
+        
+        setInterval(updateGraph, 5000);
+        updateGraph();
     </script>
 </body>
 </html>

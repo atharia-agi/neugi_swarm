@@ -275,6 +275,8 @@ class ToolManager:
         self.register(Tool(id="delegate_task", name="Delegate Task", category="ai", description="Delegate a task to another agent", function=self._delegate_task))
         self.register(Tool(id="search_memory", name="Search Memory", category="ai", description="Retrieve context from the codebase RAG", function=self._search_memory))
         self.register(Tool(id="git_execute", name="Git Execute", category="system", description="Execute safe git commands", function=self._git_execute))
+        self.register(Tool(id="request_diagnostic", name="Request Diagnostic", category="system", description="Run system-wide health checks and auto-fix common issues", function=self._request_diagnostic))
+        self.register(Tool(id="self_heal", name="Self Heal", category="system", description="Attempt to fix a specific system error or friction", function=self._self_heal))
 
     def register(self, tool: Tool):
         """Register a tool"""
@@ -604,6 +606,44 @@ class ToolManager:
     def _process_list(self, **kwargs) -> Dict:
         """List processes"""
         return {"processes": "would_list"}
+
+    def _request_diagnostic(self, **kwargs) -> Dict:
+        """Run system-wide health checks and auto-fix"""
+        from neugi_swarm import ErrorHandler
+        issues = ErrorHandler.detect_and_fix()
+        fixes = ErrorHandler.auto_fix()
+        
+        return {
+            "status": "diagnostic_complete",
+            "issues_found": issues,
+            "actions_taken": fixes,
+            "summary": f"Detected {len(issues)} issues, applied {len(fixes)} fixes."
+        }
+
+    def _self_heal(self, error_message: str, **kwargs) -> Dict:
+        """Attempt to fix a specific error using LLM reasoning + God Mode"""
+        god_mode = os.environ.get("NEUGI_GOD_MODE") == "1"
+        if not god_mode:
+            return {"error": "Self-healing requires God Mode to perform system fixes."}
+            
+        # 1. Think about the fix
+        think_prompt = f"System Error encountered: '{error_message}'. Provide a specific shell command to fix this issue. Output ONLY the command, no talk."
+        res = self._llm_think(prompt=think_prompt)
+        
+        if not res.get("success"):
+            return {"error": "Failed to generate healing command."}
+            
+        fix_cmd = res.get("response", "").strip().strip('`')
+        
+        # 2. Execute the fix
+        exec_res = self._code_execute(code=fix_cmd, language="bash")
+        
+        return {
+            "error_addressed": error_message,
+            "proposed_fix": fix_cmd,
+            "execution_result": exec_res,
+            "status": "healed" if exec_res.get("success") else "healing_failed"
+        }
 
 
 class NativeWebBrowser:
