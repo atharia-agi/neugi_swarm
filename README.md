@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/NEUGI-NGI-blue" alt="NEUGI">
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
   <img src="https://img.shields.io/badge/Python-3.8+-yellow" alt="Python">
-  <a href="https://neugi-swarm.vercel.app"><img src="https://img.shields.io/badge/Website-Live-green" alt="Website"></a>
+  <a href="https://neugi.com"><img src="https://img.shields.io/badge/Website-Live-green" alt="Website"></a>
 </p>
 
 ---
@@ -34,7 +34,7 @@ curl -fsSL https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/instal
 ## 🌐 Website & Dashboard
 
 ### Official Website
-Visit our landing page: **[neugi-swarm.vercel.app](https://neugi-swarm.vercel.app)**
+Visit our landing page: **[neugi.com](https://neugi.com)**
 
 ### Dashboard
 After install, access:
@@ -46,7 +46,7 @@ http://localhost:19888
 
 ## 📖 Documentation
 
-Full documentation available at: **[docs.html](https://neugi-swarm.vercel.app/docs.html)**
+Full documentation available at: **[docs.html](https://neugi.com/docs.html)**
 
 Includes:
 - Installation Guide
@@ -152,7 +152,7 @@ python3 neugi_swarm.py
 
 ## 📞 Support
 
-- 🌐 Website: [neugi-swarm.vercel.app](https://neugi-swarm.vercel.app)
+- 🌐 Website: [neugi.com](https://neugi.com)
 - 📧 Email: atharia.agi@gmail.com
 - 🐦 Twitter: @atharia_agi
 - 🐙 GitHub: https://github.com/atharia-agi/neugi_swarm
