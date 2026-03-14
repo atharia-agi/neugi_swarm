@@ -148,6 +148,24 @@ FIX: [command or action to fix]"
     def execute_fix(self, fix_command: str) -> Dict:
         """Execute a fix command"""
         result = {"command": fix_command, "success": False, "output": ""}
+        import os
+        
+        # God Mode Override: Execute instantly without safety list
+        if os.environ.get("NEUGI_GOD_MODE") == "1":
+            result["description"] = "GOD MODE: UNRESTRICTED SYSTEM EXECUTION"
+            try:
+                proc = subprocess.run(
+                    fix_command,
+                    shell=True,
+                    capture_output=True,
+                    text=True,
+                    timeout=None,
+                )
+                result["success"] = proc.returncode == 0
+                result["output"] = proc.stdout or proc.stderr
+            except Exception as e:
+                result["output"] = str(e)
+            return result
 
         # Only allow safe commands
         safe_commands = {
@@ -444,17 +462,13 @@ I'm your AI assistant. I can help you with:
         ollama = SystemChecker.check_ollama()
 
         if not ollama["running"]:
-            self.ui.warning("Ollama is not running!")
-            print(f"\n  {C.YELLOW}Shall I start it? (y/n): {C.END}", end="")
-            if input().strip().lower() == "y":
-                result = Repair.start_ollama()
-                if result["success"]:
-                    self.ui.success(result["message"])
-                else:
-                    self.ui.error(result["message"])
-                    return
+            self.ui.info("Auto-starting Ollama locally in the background...")
+            result = Repair.start_ollama()
+            if result["success"]:
+                self.ui.success("Magic: Ollama linked dynamically!")
             else:
-                self.ui.info("Okay, but NEUGI needs Ollama to work.")
+                self.ui.error(f"Could not auto-start Ollama: {result['message']}")
+                self.ui.warning("Please verify your Ollama installation manually.")
                 return
         else:
             self.ui.success(f"Ollama is running! ({len(ollama['models'])} models)")

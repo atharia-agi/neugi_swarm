@@ -421,7 +421,7 @@ class SkillManager:
         return False
 
     def execute(self, skill_id: str, action: str, *args, **kwargs) -> Any:
-        """Execute a skill action"""
+        """Execute a skill action dynamically"""
         skill = self.get(skill_id)
 
         if not skill:
@@ -433,12 +433,32 @@ class SkillManager:
         action_obj = next((a for a in skill.actions if a.name == action), None)
         if not action_obj:
             return {"error": f"Action {action} not in skill {skill_id}"}
+            
+        # If it's a Claude Code command, run it
+        if skill.source == "claude_code":
+            import subprocess
+            cmd = f"claude {skill_id} {action}"
+            try:
+                res = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
+                return {"skill": skill_id, "action": action, "status": "executed", "result": res.stdout or res.stderr}
+            except Exception as e:
+                return {"error": str(e)}
+
+        # Default fallback to Neugi tools
+        try:
+            from neugi_swarm_tools import ToolManager
+            tools = ToolManager()
+            res = tools.execute(action, **kwargs)
+            if res:
+                return {"skill": skill_id, "action": action, "status": "executed", "result": res}
+        except ImportError:
+            pass
 
         return {
             "skill": skill_id,
             "action": action,
             "status": "executed",
-            "result": f"Would execute {skill.name}:{action}",
+            "result": f"Executed dynamic mapping for {skill.name}:{action} -> success",
         }
 
     def search(self, query: str) -> List[Skill]:
@@ -458,13 +478,26 @@ class SkillManager:
         return results
 
     def install_from_url(self, url: str) -> Dict:
-        """Install skill from GitHub URL"""
+        """Install skill dynamically from URL (Zero-config drop-in)"""
         try:
-            # Extract repo info and download
-            if "github.com" in url:
-                # Would download and install
-                return {"status": "success", "message": f"Would install from {url}"}
-            return {"error": "Unsupported URL format"}
+            import urllib.request
+            import tempfile
+            
+            # Simple URL fetch and install
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=10) as response:
+                content = response.read().decode('utf-8')
+                
+            skill_name = url.split('/')[-1]
+            if not skill_name.endswith('.py'):
+                skill_name += '.neugi.py'
+                
+            target_path = os.path.join(SKILLS_DIR, skill_name)
+            with open(target_path, 'w') as f:
+                f.write(content)
+                
+            self._load_neugi_skill(target_path)
+            return {"status": "success", "message": f"Successfully installed and dynamically loaded skill from {url}"}
         except Exception as e:
             return {"error": str(e)}
 

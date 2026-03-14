@@ -1,761 +1,276 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEUGI SWARM - Documentation</title>
-    <script defer src="/_vercel/insights/script.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <title>Documentation — Neugi Swarm</title>
+    <!-- Preconnect & Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --bg: #030305;
-            --bg-elevated: #0a0a0f;
-            --bg-card: #12121a;
-            --bg-glass: rgba(18, 18, 26, 0.7);
-            --text: #f0f0f5;
-            --text-muted: #8b8b9e;
-            --border: rgba(255,255,255,0.08);
-            --accent: #00e5ff;
-            --primary: #9d4edd;
-            --danger: #ff3366;
-            --warning: #ffb84d;
-            --success: #00e5ff;
+            /* OpenAI / Stripe / Anthropic Documentation Theme */
+            --bg-base: #000000;
+            --bg-sidebar: #050505;
+            --bg-layer: rgba(255, 255, 255, 0.04);
+            --bg-layer-hover: rgba(255, 255, 255, 0.07);
+            
+            --text-primary: #ffffff;
+            --text-secondary: #a1a1aa;
+            --text-tertiary: #71717a;
+            
+            --border-subtle: rgba(255, 255, 255, 0.1);
+            --border-hover: rgba(255, 255, 255, 0.2);
+            
+            --accent: #ffffff;
+            --code-bg: #0a0a0a;
+            
+            --font-sans: 'Inter', -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
         }
-        
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+
         body {
-            font-family: 'Outfit', -apple-system, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.7;
-        }
-        
-        .bg-grid {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
-            background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), 
-                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-            background-size: 40px 40px;
-        }
-        
-        header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            padding: 12px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(6, 6, 10, 0.85);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--border);
-            z-index: 100;
-        }
-        
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 18px;
-            font-weight: 700;
-            letter-spacing: 1px;
-        }
-        
-        .logo svg { width: 24px; height: 24px; }
-        
-        nav { display: flex; gap: 24px; }
-        
-        nav a {
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 14px;
-            transition: color 0.2s;
-        }
-        
-        nav a:hover { color: var(--text); }
-        
-        .container { 
-            max-width: 1200px; 
-            margin: 0 auto; 
-            padding: 100px 40px 60px;
-            display: flex;
-            gap: 40px;
-        }
-        
-        /* Sidebar */
-        .sidebar {
-            position: sticky;
-            top: 100px;
-            width: 200px;
-            height: fit-content;
-            max-height: calc(100vh - 140px);
-            overflow-y: auto;
-            flex-shrink: 0;
-        }
-        
-        .sidebar::-webkit-scrollbar { width: 6px; }
-        .sidebar::-webkit-scrollbar-track { background: transparent; }
-        .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-        .sidebar::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
-        
-        .sidebar-section {
-            margin-bottom: 24px;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .sidebar-title {
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-muted);
-            margin-bottom: 12px;
-        }
-        
-        .sidebar a {
-            display: block;
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 14px;
-            padding: 8px 0;
-            border-left: 2px solid transparent;
-            transition: all 0.2s;
-        }
-        
-        .sidebar a:hover { 
-            color: var(--accent);
-            border-left-color: var(--accent);
-            padding-left: 12px;
-        }
-        
-        .sidebar a.active { 
-            color: var(--accent);
-            border-left-color: var(--accent);
-        }
-        
-        .content { 
-            flex: 1; 
-            min-width: 0;
-            max-width: 750px;
-        }
-        
-        h1 {
-            font-size: 48px;
-            font-weight: 700;
-            margin-bottom: 16px;
-            letter-spacing: -1px;
-        }
-        
-        h1 .accent { background: linear-gradient(135deg, var(--accent), var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        
-        h2 {
-            font-size: 32px;
-            font-weight: 600;
-            margin: 40px 0 20px;
-            padding-top: 40px;
-            border-top: 1px solid var(--border);
-        }
-        
-        h2:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
-        
-        h3 { font-size: 20px; font-weight: 600; margin: 24px 0 12px; color: var(--accent); }
-        
-        p { color: var(--text-muted); margin-bottom: 16px; }
-        
-        code {
-            font-family: 'JetBrains Mono', monospace;
-            background: var(--bg-elevated);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 14px;
-            color: var(--accent);
-        }
-        
-        pre {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 20px;
-            overflow-x: auto;
-            margin: 16px 0;
-        }
-        
-        pre code {
-            background: none;
-            padding: 0;
-            color: var(--text);
-            display: block;
+            font-family: var(--font-sans);
+            background-color: var(--bg-base);
+            color: var(--text-primary);
             line-height: 1.6;
-        }
-        
-        .cmd { color: #22c55e; }
-        .comment { color: #6b7280; }
-        .output { color: var(--text-muted); }
-        
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 24px;
-            margin: 20px 0;
-        }
-        
-        .card-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin: 24px 0;
-        }
-        
-        .card h3 { margin-top: 0; color: var(--text); }
-        
-        .card p { font-size: 14px; margin-bottom: 0; }
-        
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.2s;
-            margin: 4px;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent), var(--primary));
-            color: #fff;
-        }
-        
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0, 229, 255, 0.3); }
-        
-        .toc {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 40px;
-        }
-        
-        .toc h3 { margin-top: 0; }
-        
-        .toc ul { list-style: none; }
-        
-        .toc li { margin: 8px 0; }
-        
-        .toc a {
-            color: var(--text-muted);
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-        
-        .toc a:hover { color: var(--accent); }
-        
-        .agent-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin: 20px 0;
-        }
-        
-        .agent-item {
-            background: var(--bg-elevated);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 16px;
-            text-align: center;
-        }
-        
-        .agent-item .name {
-            font-weight: 600;
-            color: var(--accent);
-            margin-bottom: 4px;
-        }
-        
-        .agent-item .role {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-        }
-        
-        .agent-item .tools {
-            font-size: 10px;
-            color: var(--primary);
-            font-family: 'JetBrains Mono', monospace;
-            background: var(--bg-card);
-            padding: 4px 8px;
-            border-radius: 4px;
-        }
-        
-        .feature-list {
-            list-style: none;
-            margin: 16px 0;
-        }
-        
-        .feature-list li {
-            padding: 8px 0;
-            border-bottom: 1px solid var(--border);
+            -webkit-font-smoothing: antialiased;
             display: flex;
-            align-items: center;
-            gap: 12px;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Top Navigation */
+        .global-nav {
+            position: fixed;
+            top: 0; left: 0; right: 0; height: 64px;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-subtle);
+            z-index: 100;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 32px;
+        }
+
+        .brand-logo {
+            display: flex; align-items: center; gap: 12px;
+            font-size: 15px; font-weight: 500; color: var(--text-primary); text-decoration: none;
         }
         
-        .feature-list li:last-child { border-bottom: none; }
+        .brand-logo img {
+            width: 24px; height: 24px; border-radius: 4px; border: 1px solid var(--border-subtle);
+        }
+
+        .nav-right { display: flex; gap: 24px; align-items: center; }
+        .nav-link { font-size: 14px; font-weight: 500; color: var(--text-secondary); text-decoration: none; transition: color 0.2s; }
+        .nav-link:hover { color: var(--text-primary); }
+        .nav-btn {
+            background: var(--text-primary); color: var(--bg-base);
+            padding: 6px 12px; border-radius: 4px; font-size: 13px; font-weight: 500; text-decoration: none;
+        }
+
+        /* Layout Structure */
+        .layout-container {
+            display: flex; width: 100%; height: 100%; padding-top: 64px;
+        }
+
+        /* Left Sidebar Nav */
+        .sidebar {
+            width: 260px; height: 100%; border-right: 1px solid var(--border-subtle);
+            background: var(--bg-sidebar); padding: 32px 0 32px 24px;
+            overflow-y: auto; flex-shrink: 0;
+        }
+
+        .sidebar-section { margin-bottom: 32px; }
+        .sidebar-title { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 12px; letter-spacing: 0.05em; }
         
-        .feature-list .icon { font-size: 20px; }
-        
-        .note {
-            background: rgba(255, 184, 77, 0.1);
-            border: 1px solid var(--warning);
-            border-radius: 8px;
-            padding: 16px;
-            margin: 16px 0;
+        .sidebar-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+        .sidebar-item a {
+            display: block; font-size: 14px; color: var(--text-secondary); text-decoration: none;
+            padding: 4px 8px; border-radius: 4px; transition: all 0.2s; margin-left: -8px;
+        }
+        .sidebar-item a:hover { color: var(--text-primary); background: var(--bg-layer); }
+        .sidebar-item a.active { color: var(--accent); background: var(--bg-layer-hover); font-weight: 500; }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1; overflow-y: auto; padding: 48px 64px 80px;
+            display: flex; justify-content: center;
         }
         
-        .note-title {
-            color: var(--warning);
-            font-weight: 600;
-            margin-bottom: 8px;
+        .article-wrapper {
+            max-width: 760px; width: 100%;
+        }
+
+        /* Typography inside articles */
+        .content-header { margin-bottom: 48px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 32px; }
+        h1 { font-size: 40px; font-weight: 600; letter-spacing: -0.03em; margin-bottom: 16px; }
+        .subtitle { font-size: 18px; color: var(--text-secondary); }
+
+        h2 { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin: 48px 0 20px; padding-top: 24px; }
+        h3 { font-size: 18px; font-weight: 600; margin: 32px 0 16px; }
+        p { margin-bottom: 20px; font-size: 15px; color: #d4d4d8; }
+        
+        ul.bullet-list { margin-bottom: 20px; padding-left: 20px; font-size: 15px; color: #d4d4d8; }
+        ul.bullet-list li { margin-bottom: 8px; }
+
+        /* Code Blocks */
+        pre {
+            background: var(--code-bg); border: 1px solid var(--border-subtle); border-radius: 8px;
+            padding: 16px 20px; overflow-x: auto; margin-bottom: 24px; font-family: var(--font-mono); font-size: 13px;
+        }
+        code { font-family: var(--font-mono); color: #e4e4e7; }
+        p code, li code { background: var(--bg-layer-hover); padding: 2px 6px; border-radius: 4px; font-size: 13px; color: #fff; }
+
+        /* Note Callouts */
+        .callout {
+            border-left: 3px solid var(--accent); background: var(--bg-layer);
+            padding: 16px 20px; border-radius: 0 8px 8px 0; margin-bottom: 24px; font-size: 14px; color: var(--text-secondary);
         }
         
-        footer {
-            border-top: 1px solid var(--border);
-            padding: 40px 24px;
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 14px;
+        /* Right TOC (Sticky) */
+        .toc-sidebar {
+            width: 220px; padding: 48px 32px 0; flex-shrink: 0;
         }
-        
-        @media (max-width: 768px) {
-            h1 { font-size: 32px; }
-            h2 { font-size: 24px; }
-            .container {
-                padding-top: 100px;
-                flex-direction: column;
-            }
-            .sidebar {
-                position: static;
-                width: 100%;
-                max-height: none;
-            }
-            .content {
-                max-width: 100%;
-            }
-        }
-        
+        .toc-wrapper { position: sticky; top: 112px; }
+        .toc-title { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-primary); margin-bottom: 16px; letter-spacing: 0.05em; }
+        .toc-list { list-style: none; display: flex; flex-direction: column; gap: 10px; border-left: 1px solid var(--border-subtle); padding-left: 16px; margin-left: -1px; }
+        .toc-list a { font-size: 13px; color: var(--text-secondary); text-decoration: none; transition: color 0.2s; }
+        .toc-list a:hover { color: var(--text-primary); }
+
         @media (max-width: 1024px) {
-            .container {
-                flex-direction: column;
-                padding: 100px 16px 40px;
-            }
-            .sidebar {
-                position: static;
-                width: 100%;
-            }
-            .content {
-                max-width: 100%;
-            }
+            .toc-sidebar { display: none; }
+            .sidebar { width: 220px; }
+            .main-content { padding: 48px 32px; }
+        }
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .nav-right .nav-link { display: none; }
         }
     </style>
 </head>
 <body>
-    <div class="bg-grid"></div>
-    
-    <header>
-        <div class="logo">
-            <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">
-                <circle cx="12" cy="12" r="8"/>
-                <circle cx="12" cy="12" r="3"/>
-            </svg>
-            NEUGI SWARM
+    <nav class="global-nav">
+        <a href="index.html" class="brand-logo">
+            <img src="assets/img/neugi_icon.webp" alt="Neugi Icon">
+            Neugi
+        </a>
+        <div class="nav-right">
+            <a href="index.html" class="nav-link">Home</a>
+            <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <a href="https://github.com/atharia-agi/neugi_swarm" class="nav-link" target="_blank">GitHub</a>
+            <a href="dashboard.html" class="nav-btn">Console</a>
         </div>
-        <nav>
-            <a href="index.html">Home</a>
-            <a href="docs.html">Docs</a>
-            <a href="https://github.com/atharia-agi/neugi_swarm" target="_blank">GitHub</a>
-        </nav>
-    </header>
-    
-    <div class="container">
-        <!-- Sidebar -->
-        <nav class="sidebar">
+    </nav>
+
+    <div class="layout-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
             <div class="sidebar-section">
                 <div class="sidebar-title">Getting Started</div>
-                <a href="#quickstart">Quick Start</a>
-                <a href="#installation">Installation</a>
-                <a href="#configuration">Configuration</a>
+                <ul class="sidebar-list">
+                    <li class="sidebar-item"><a href="#introduction" class="active">Introduction</a></li>
+                    <li class="sidebar-item"><a href="#quickstart">Quickstart</a></li>
+                    <li class="sidebar-item"><a href="#installation">Installation Guide</a></li>
+                    <li class="sidebar-item"><a href="#architecture">Architecture</a></li>
+                </ul>
             </div>
             <div class="sidebar-section">
-                <div class="sidebar-title">Core</div>
-                <a href="#wizard">Wizard</a>
-                <a href="#agents">Agents</a>
-                <a href="#features">Features</a>
-                <a href="#commands">Commands</a>
+                <div class="sidebar-title">Core Concepts</div>
+                <ul class="sidebar-list">
+                    <li class="sidebar-item"><a href="#agents">The 9 Agents</a></li>
+                    <li class="sidebar-item"><a href="#godmode">God Mode (Root)</a></li>
+                    <li class="sidebar-item"><a href="#rag">Context Memory (RAG)</a></li>
+                    <li class="sidebar-item"><a href="#tools">Tool Integration</a></li>
+                </ul>
             </div>
             <div class="sidebar-section">
-                <div class="sidebar-title">Advanced</div>
-                <a href="#plugins">Plugins</a>
-                <a href="#skills">Skills</a>
-                <a href="#workspace">Workspace</a>
-                <a href="#troubleshooting">Troubleshooting</a>
-                <a href="#security">Security</a>
+                <div class="sidebar-title">API & CLI</div>
+                <ul class="sidebar-list">
+                    <li class="sidebar-item"><a href="#">CLI Reference</a></li>
+                    <li class="sidebar-item"><a href="#">REST API endpoints</a></li>
+                </ul>
             </div>
-            <div class="sidebar-section">
-                <div class="sidebar-title">Resources</div>
-                <a href="https://github.com/atharia-agi/neugi_swarm" target="_blank">GitHub</a>
-                <a href="https://neugi.com" target="_blank">Website</a>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="article-wrapper">
+                <div class="content-header">
+                    <img src="assets/img/neugi_logo.webp" alt="Neugi Developer Logo" style="height: 64px; border-radius: 8px; margin-bottom: 24px;">
+                    <h1 id="introduction">Neugi Swarm Documentation</h1>
+                    <div class="subtitle">Deploy, manage, and scale a 9-node neural network acting autonomously on your infrastructure.</div>
+                </div>
+
+                <p>Welcome to the Neugi documentation. Here you will find everything you need to know about setting up and running a local fleet of specialized, deterministic AI agents capable of raw operating system execution.</p>
+                
+                <div class="callout">
+                    Neugi is specifically optimized for small, lightweight models (1B LLMs) like Qwen/Llama running locally via Ollama, though it can scale gracefully to larger cluster setups.
+                </div>
+
+                <h2 id="quickstart">Quickstart</h2>
+                <p>To begin, ensure you have Python 3.11+ and Ollama installed. Run the one-line install script on your terminal.</p>
+
+                <h3>Windows (PowerShell)</h3>
+<pre><code>irm neugi.sh/install | iex</code></pre>
+
+                <h3>macOS / Linux</h3>
+<pre><code>curl -fsSL https://neugi.sh/install | bash</code></pre>
+
+                <p>Once cloned, initialize the dashboard ecosystem using:</p>
+<pre><code>python3 neugi_wizard.py</code></pre>
+
+                <h2 id="godmode">God Mode Root Integrity</h2>
+                <p>By default, Neugi incorporates strict safety evaluations via the <code>Shield</code> node. Operations mutating kernel state, deleting significant directory trees, or exposing subnets are immediately blocked.</p>
+                <p>You can bypass these bounds entirely for total autonomy by triggering <strong>God Mode</strong>:</p>
+<pre><code>export NEUGI_GOD_MODE=1
+python3 neugi_assistant.py</code></pre>
+
+                <div class="callout">
+                    <strong>Warning:</strong> God Mode allows the Cipher and Quark nodes to execute unrestrained Bash and PowerShell scripts without a human-in-the-loop limit timeout. Use with extreme caution.
+                </div>
+
+                <h2 id="rag">Context Memory (RAG)</h2>
+                <p>Neugi doesn't rely solely on strict LLM token limits (`context_window`). Instead, it builds an intrinsic graph database indexing your project files silently in the background.</p>
+                <ul class="bullet-list">
+                    <li>The <code>Aurora</code> node vectorizes documents.</li>
+                    <li>The <code>Pulse</code> node retrieves highly relevant semantic chunks when a directive is issued.</li>
+                    <li>Context remains active across isolated terminal sessions.</li>
+                </ul>
+
+                <h2 id="agents">The Agentic Network</h2>
+                <p>Rather than relying on one monolith query, Neugi shards work among 9 nodes:</p>
+                <ul class="bullet-list">
+                    <li><strong>Cipher</strong> &mdash; Syntax evaluation and explicit code architecture.</li>
+                    <li><strong>Quark</strong> &mdash; Higher-order logical planning.</li>
+                    <li><strong>Shield</strong> &mdash; System safety bounds checker.</li>
+                    <li><strong>Nova</strong> &mdash; Design system compilation.</li>
+                    <li><strong>Ink</strong> &mdash; Linguistic I/O generation.</li>
+                </ul>
+
+                <p style="margin-top: 60px; font-size: 13px; color: var(--text-tertiary); border-top: 1px solid var(--border-subtle); padding-top: 20px;">
+                    Last updated March 15th, 2026.
+                </p>
             </div>
-        </nav>
-        
-        <div class="content">
-        <h1><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg> NEUGI <span class="accent">Documentation</span></h1>
-        <p>Complete guide to NEUGI SWARM - Your Personal AI Agent Swarm</p>
-        
-        <!-- Table of Contents -->
-        <div class="toc">
-            <h3>Table of Contents</h3>
-            <ul>
-                <li><a href="#quickstart">Quick Start</a></li>
-                <li><a href="#installation">Installation</a></li>
-                <li><a href="#wizard">Wizard</a></li>
-                <li><a href="#agents">Agents</a></li>
-                <li><a href="#features">Features</a></li>
-                <li><a href="#commands">Commands</a></li>
-                <li><a href="#troubleshooting">Troubleshooting</a></li>
-                <li><a href="#security">Security</a></li>
-            </ul>
-        </div>
-        
-        <!-- Quick Start -->
-        <h2 id="quickstart">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            Quick Start
-        </h2>
-        
-        <div class="card">
-            <h3>One-Command Installation</h3>
-            <pre><code><span class="cmd">$</span> curl -fsSL https://neugi.sh/install | bash</code></pre>
-            <p>Or manually:</p>
-            <pre><code><span class="cmd">$</span> git clone https://github.com/atharia-agi/neugi_swarm.git
-<span class="cmd">$</span> cd neugi_swarm
-<span class="cmd">$</span> python3 neugi_wizard.py</code></pre>
-        </div>
-        
-        <!-- Installation -->
-        <h2 id="installation">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-            Installation
-        </h2>
-        
-        <h3>Requirements</h3>
-        <ul class="feature-list">
-            <li><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg> Python 3.8+</li>
-            <li><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="var(--accent)"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9" stroke="var(--bg)" stroke-width="2"/><line x1="15" y1="9" x2="15.01" y2="9" stroke="var(--bg)" stroke-width="2"/></svg> Ollama (installed automatically)</li>
-            <li><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="var(--accent)"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Windows, macOS, or Linux</li>
-        </ul>
-        
-        <h3>Installation Steps</h3>
-        
-        <div class="card">
-            <h3>Step 1: Clone Repository</h3>
-            <pre><code><span class="cmd">$</span> git clone https://github.com/atharia-agi/neugi_swarm.git
-<span class="cmd">$</span> cd neugi_swarm</code></pre>
-        </div>
-        
-        <div class="card">
-            <h3>Step 2: Run Wizard</h3>
-            <pre><code><span class="cmd">$</span> python3 neugi_wizard.py</code></pre>
-            <p>The wizard will guide you through:</p>
-            <ul class="feature-list">
-                <li><svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Check Ollama installation</li>
-                <li><svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Auto-start Ollama if needed</li>
-                <li><svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Configure your name</li>
-                <li><svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Set up Telegram (optional)</li>
-            </ul>
-        </div>
-        
-        <div class="card">
-            <h3>Step 3: Start NEUGI</h3>
-            <pre><code><span class="cmd">$</span> python3 neugi_swarm.py</code></pre>
-            <p>Then open: <code>http://localhost:19888</code></p>
-        </div>
-        
-        <!-- Wizard -->
-        <h2 id="wizard">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-            NEUGI Wizard
-        </h2>
-        
-        <p>The Wizard is your AI-powered setup assistant. Run it anytime with:</p>
-        <pre><code><span class="cmd">$</span> python3 neugi_wizard.py</code></pre>
-        
-        <div class="card-grid">
-            <div class="card">
-                <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg> Setup</h3>
-                <p>First-time installation and configuration</p>
+        </main>
+
+        <!-- Right TOC -->
+        <aside class="toc-sidebar">
+            <div class="toc-wrapper">
+                <div class="toc-title">On this page</div>
+                <ul class="toc-list">
+                    <li><a href="#introduction">Introduction</a></li>
+                    <li><a href="#quickstart">Quickstart</a></li>
+                    <li><a href="#godmode">God Mode</a></li>
+                    <li><a href="#rag">Context Memory</a></li>
+                    <li><a href="#agents">Agentic Network</a></li>
+                </ul>
             </div>
-            <div class="card">
-                <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> Repair</h3>
-                <p>Auto-fix problems automatically</p>
-            </div>
-            <div class="card">
-                <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Diagnose</h3>
-                <p>System analysis with AI advice</p>
-            </div>
-            <div class="card">
-                <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Chat</h3>
-                <p>Chat with AI about anything</p>
-            </div>
-            <div class="card">
-                <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg> Plugins</h3>
-                <p>Extend functionality with plugins</p>
-            </div>
-            <div class="card">
-                <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Update</h3>
-                <p>Check for and install updates</p>
-            </div>
-            <div class="card">
-                <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Security</h3>
-                <p>Configure security settings</p>
-            </div>
-            <div class="card">
-                <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> Repair</h3>
-                <p>Auto-fix problems automatically</p>
-            </div>
-            <div class="card">
-                <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Diagnose</h3>
-                <p>System analysis with AI advice</p>
-            </div>
-            <div class="card">
-                <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Chat</h3>
-                <p>Talk to AI about anything</p>
-            </div>
-            <div class="card">
-                <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg> Plugins</h3>
-                <p>Manage extensions</p>
-            </div>
-            <div class="card">
-                <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Update</h3>
-                <p>Check for updates</p>
-            </div>
-        </div>
-        
-        <!-- Agents -->
-        <h2 id="agents">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
-            Meet the Agents
-        </h2>
-        
-        <p>NEUGI comes with 9 specialized agents that work together as a swarm. Each agent has real tool execution capabilities:</p>
-        
-        <div class="agent-grid">
-            <div class="agent-item">
-                <div class="name">AURORA</div>
-                <div class="role">Research</div>
-                <div class="tools">web_search, web_fetch</div>
-            </div>
-            <div class="agent-item">
-                <div class="name">CIPHER</div>
-                <div class="role">Coder</div>
-                <div class="tools">code_execute, code_debug</div>
-            </div>
-            <div class="agent-item">
-                <div class="name">NOVA</div>
-                <div class="role">Creator</div>
-                <div class="tools">file_write, llm_think</div>
-            </div>
-            <div class="agent-item">
-                <div class="name">PULSE</div>
-                <div class="role">Analyst</div>
-                <div class="tools">json_parse, csv_analyze</div>
-            </div>
-            <div class="agent-item">
-                <div class="name">QUARK</div>
-                <div class="role">Strategy</div>
-                <div class="tools">llm_think</div>
-            </div>
-            <div class="agent-item">
-                <div class="name">SHIELD</div>
-                <div class="role">Security</div>
-                <div class="tools">web_fetch, code_debug</div>
-            </div>
-            <div class="agent-item">
-                <div class="name">SPARK</div>
-                <div class="role">Social</div>
-                <div class="tools">send_telegram, send_discord</div>
-            </div>
-            <div class="agent-item">
-                <div class="name">INK</div>
-                <div class="role">Writer</div>
-                <div class="tools">file_write, llm_think</div>
-            </div>
-            <div class="agent-item">
-                <div class="name">NEXUS</div>
-                <div class="role">Connector</div>
-                <div class="tools">file_list, process_list</div>
-            </div>
-        </div>
-        
-        <!-- Features -->
-        <!-- Features -->
-        <h2 id="features">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            Features
-        </h2>
-        
-        <div class="card">
-            <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Free Web Browser Agent</h3>
-            <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> Telegram Gateway</h3>
-            <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Streaming Responses</h3>
-            <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Enhanced Memory</h3>
-            <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg> Plugin System</h3>
-            <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Auto-Updater</h3>
-            <p>Keep NEUGI up to date</p>
-            <pre><code><span class="cmd">$</span> python3 neugi_updater.py check
-<span class="cmd">$</span> python3 neugi_updater.py apply</code></pre>
-        </div>
-        
-        <!-- Commands -->
-        <h2 id="commands">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><path d="M6 8h.01"/><path d="M10 8h.01"/><path d="M14 8h.01"/><path d="M18 8h.01"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/></svg>
-            Commands Reference
-        </h2>
-        
-        <h3>NEUGI CLI (Recommended)</h3>
-        <pre><code><span class="cmd">neugi start</span>          <span class="comment"># Start NEUGI server</span>
-<span class="cmd">neugi stop</span>           <span class="comment"># Stop NEUGI server</span>
-<span class="cmd">neugi restart</span>        <span class="comment"># Restart NEUGI</span>
-<span class="cmd">neugi status</span>         <span class="comment"># Check status</span>
-<span class="cmd">neugi logs</span>           <span class="comment"># View logs</span>
-<span class="cmd">neugi dashboard</span>      <span class="comment"># Open dashboard</span>
-<span class="cmd">neugi wizard</span>         <span class="comment"># Run setup wizard</span></code></pre>
-        
-        <h3>Python Direct</h3>
-        <pre><code><span class="cmd">python3 neugi_swarm.py</span>          <span class="comment"># Start NEUGI server</span>
-<span class="cmd">python3 neugi_wizard.py</span>        <span class="comment"># Run setup wizard</span>
-<span class="cmd">python3 neugi_technician.py</span>    <span class="comment"># System doctor</span></code></pre>
-        
-        <h3>Additional Commands</h3>
-        <pre><code><span class="cmd">python3 neugi_telegram.py</span>       <span class="comment"># Start Telegram bot</span>
-<span class="cmd">python3 neugi_security.py</span>       <span class="comment"># Security settings</span>
-<span class="cmd">python3 neugi_plugins.py list</span>    <span class="comment"># List plugins</span>
-<span class="cmd">python3 neugi_updater.py check</span>   <span class="comment"># Check updates</span>
-<span class="cmd">python3 neugi_swarm_browser.py</span>  <span class="comment"># Web browser agent</span></code></pre>
-        
-        <!-- Troubleshooting -->
-        <!-- Troubleshooting -->
-        <h2 id="troubleshooting">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-            Troubleshooting
-        </h2>
-        
-        <div class="card">
-            <h3>Ollama Not Running</h3>
-            <pre><code><span class="cmd">$</span> ollama serve</code></pre>
-            <p>Or let NEUGI start it automatically by running the wizard.</p>
-        </div>
-        
-        <div class="card">
-            <h3>Port Already in Use</h3>
-            <pre><code><span class="cmd">$</span> lsof -i :19888  <span class="comment"># Find process</span>
-<span class="cmd">$</span> kill &lt;PID&gt;    <span class="comment"># Kill it</span></code></pre>
-        </div>
-        
-        <div class="card">
-            <h3>Reset Configuration</h3>
-            <pre><code><span class="cmd">$</span> rm ~/neugi/data/config.json
-<span class="cmd">$</span> python3 neugi_wizard.py</code></pre>
-        </div>
-        
-        <div class="card">
-            <h3>Check System Status</h3>
-            <pre><code><span class="cmd">$</span> curl http://localhost:19888/health</code></pre>
-        </div>
-        
-        <!-- Security -->
-        <!-- Security -->
-        <h2 id="security">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            Security
-        </h2>
-        
-        <p>NEUGI has built-in security with two modes:</p>
-        
-        <div class="card">
-            <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Sandbox Mode (Default)</h3>
-            <p>Secure by default! Blocks dangerous commands.</p>
-            <ul class="feature-list">
-                <li><svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Blocks: rm -rf, sudo, shell injection</li>
-                <li><svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Allowed: python, git, pip (configurable)</li>
-            </ul>
-        </div>
-        
-        <div class="card">
-            <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Full Access Mode</h3>
-            <p>For advanced users who need full control.</p>
-            <div class="note">
-                <div class="note-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Warning</div>
-                <p>Full access allows executing ANY command. Only enable when you trust what you're doing!</p>
-            </div>
-            <pre><code><span class="cmd">$</span> python3 neugi_security.py
-<span class="comment"># Select option 2 and type 'YES' to confirm</span></code></pre>
-        </div>
-        
-        <h2>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-            Contact
-        </h2>
-        <p>Questions or issues?</p>
-        <ul class="feature-list">
-            <li><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Email: atharia.agi@gmail.com</li>
-            <li><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="var(--accent)"><path d="M18.5 2h-13C4.12 2 3 3.12 3 4.5v15C3 20.88 4.12 22 5.5 22h13c1.38 0 2.5-1.12 2.5-2.5v-15C21 3.12 19.88 2 18.5 2zm-7.5 16c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm3-10c0 1.66-1.34 3-3 3s-3-1.34-3-3 1.34-3 3-3 3 1.34 3 3z"/></svg> Twitter: @atharia_agi</li>
-            <li><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="var(--accent)"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg> GitHub: github.com/atharia-agi/neugi_swarm</li>
-        </ul>
-        </div><!-- End content -->
-    </div><!-- End container -->
-    
-    <footer>
-        <p>© 2026 NEUGI SWARM - Neural General Intelligence Made Easy</p>
-    </footer>
-    
-    <script>
-        // Passive scroll - highlight active sidebar link
-        const sidebarLinks = document.querySelectorAll('.sidebar a');
-        const sections = document.querySelectorAll('h2[id]');
-        
-        function highlightSidebar() {
-            let current = '';
-            sections.forEach(section => {
-                const sectionTop = section.offsetTop;
-                if (window.scrollY >= sectionTop - 150) {
-                    current = section.getAttribute('id');
-                }
-            });
-            
-            sidebarLinks.forEach(link => {
-                link.classList.remove('active');
-                if (link.getAttribute('href') === '#' + current) {
-                    link.classList.add('active');
-                }
-            });
-        }
-        
-        window.addEventListener('scroll', highlightSidebar);
-        highlightSidebar();
-        
-        // Smooth scroll
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function(e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({ behavior: 'smooth' });
-                }
-            });
-        });
-    </script>
+        </aside>
+    </div>
 </body>
 </html>

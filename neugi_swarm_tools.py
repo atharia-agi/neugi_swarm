@@ -424,23 +424,114 @@ class ToolManager:
         return {"error": "Invalid mode. Use: search, browse, verify, or extract with url"}
 
     def _code_execute(self, code: str, language: str = "python", **kwargs) -> Dict:
-        """Execute code"""
-        # Would use sandboxed execution
-        return {"language": language, "status": "would_execute", "preview": code[:100]}
+        """Execute code safely (or omnipotently if God Mode is active)"""
+        import subprocess
+        import tempfile
+        import os
+
+        god_mode = os.environ.get("NEUGI_GOD_MODE") == "1"
+        timeout_val = None if god_mode else 15
+        
+        # God Mode: Unrestricted shell access (Native or WSL)
+        if language.lower() in ["bash", "sh", "batch", "powershell", "ps1"] and god_mode:
+            try:
+                result = subprocess.run(
+                    code,
+                    shell=True,
+                    capture_output=True,
+                    text=True,
+                    timeout=timeout_val
+                )
+                output = result.stdout if result.returncode == 0 else result.stderr
+                return {
+                    "language": language,
+                    "success": result.returncode == 0,
+                    "output": output,
+                    "exit_code": result.returncode,
+                    "god_mode_active": True
+                }
+            except Exception as e:
+                return {"error": str(e), "success": False, "god_mode_active": True}
+
+        if language.lower() not in ["python", "py"]:
+            return {"error": "Only Python is supported normally. God Mode enables bash/powershell."}
+
+        try:
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+                f.write(code)
+                temp_path = f.name
+                
+            result = subprocess.run(
+                ["python", temp_path],
+                capture_output=True,
+                text=True,
+                timeout=timeout_val
+            )
+            
+            os.unlink(temp_path)
+            
+            output = result.stdout if result.returncode == 0 else result.stderr
+            return {
+                "language": language, 
+                "success": result.returncode == 0, 
+                "output": output,
+                "exit_code": result.returncode,
+                "god_mode_active": god_mode
+            }
+        except Exception as e:
+            return {"error": str(e), "success": False, "god_mode_active": god_mode}
 
     def _code_debug(self, code: str, **kwargs) -> Dict:
         """Debug code"""
-        return {"action": "debug", "code": code[:100]}
+        return self._llm_think(prompt=f"Review and debug the following code:\n\n{code}\n\nProvide a corrected version.")
 
     def _llm_think(self, prompt: str, model: str = "auto", **kwargs) -> Dict:
         """Use LLM"""
-        api_key = os.environ.get("API_KEY", "")
+        import urllib.request
+        import json
+        import os
 
-        if not api_key:
-            return {"status": "simulation", "prompt": prompt[:50]}
+        # Use explicitly provided model if any, otherwise default local
+        primary_model = "qwen3.5:cloud"
+        fallback_model = "nemotron-3-super:cloud"
+        ollama_url = os.environ.get("OLLAMA_URL", "http://localhost:11434")
 
-        # Would call actual API
-        return {"status": "would_call", "model": model, "prompt": prompt[:50]}
+        try:
+            config_path = os.path.expanduser("~/neugi/data/config.json")
+            if os.path.exists(config_path):
+                with open(config_path, "r") as f:
+                    cfg = json.load(f)
+                    model_cfg = cfg.get("model", {})
+                    if isinstance(model_cfg, dict):
+                        primary_model = model_cfg.get("primary", primary_model)
+                        fallback_model = model_cfg.get("fallback", fallback_model)
+                    elif isinstance(model_cfg, str):
+                        primary_model = model_cfg
+        except Exception:
+            pass
+
+        target_model = model if model != "auto" else primary_model
+
+        for model_name in [target_model, fallback_model]:
+            try:
+                payload = {
+                    "model": model_name,
+                    "prompt": prompt,
+                    "stream": False,
+                    "options": {"temperature": 0.2}
+                }
+                req = urllib.request.Request(
+                    f"{ollama_url}/api/generate",
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers={"Content-Type": "application/json"}
+                )
+                with urllib.request.urlopen(req, timeout=45) as response:
+                    data = json.loads(response.read().decode())
+                    return {"success": True, "response": data.get("response", "").strip()}
+            except Exception:
+                continue
+                
+        return {"success": False, "error": "LLM simulation fallback triggered: Local LLM failed to respond."}
 
     def _embeddings(self, text: str, **kwargs) -> Dict:
         """Generate embeddings"""

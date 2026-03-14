@@ -1,1378 +1,819 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEUGI SWARM | Neural General Intelligence</title>
-    <meta name="description" content="NEUGI SWARM - AI Swarm with autonomous agents. Knowledge Graph, Reasoning, Planning, Learning.">
+    <title>Neugi Swarm — The New Standard for AI</title>
+    <meta name="description" content="Neugi Swarm: Neural General Intelligence. 9 autonomous agents, executing complex logic dynamically across your workflow.">
     
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='12' fill='none' stroke='%2322d3ee' stroke-width='2'/><circle cx='16' cy='16' r='4' fill='%23a78bfa'/></svg>">
-    
-    <script defer src="/_vercel/insights/script.js"></script>
-    
+    <!-- Preconnect & Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --bg: #06060a;
-            --bg-elevated: #0c0c11;
-            --bg-card: #101016;
-            --text: #e4e4e7;
-            --text-muted: #71717a;
-            --text-dim: #3f3f46;
-            --border: rgba(255,255,255,0.06);
-            --border-hover: rgba(255,255,255,0.12);
-            --accent: #22d3ee;
-            --accent-dim: rgba(34, 211, 238, 0.12);
-            --primary: #a78bfa;
-            --primary-dim: rgba(167, 139, 250, 0.12);
-            --gradient: linear-gradient(135deg, var(--accent), var(--primary));
+            /* OpenAI / Anthropic Tier Enterprise Dark Theme */
+            --bg-base: #000000;
+            --bg-elevated: #0a0a0a;
+            --bg-layer: rgba(255, 255, 255, 0.03);
+            --bg-layer-hover: rgba(255, 255, 255, 0.06);
+            
+            --text-primary: #ffffff;
+            --text-secondary: #a1a1aa;
+            --text-tertiary: #71717a;
+            
+            --border-subtle: rgba(255, 255, 255, 0.1);
+            --border-hover: rgba(255, 255, 255, 0.2);
+            
+            --accent-glow: rgba(255, 255, 255, 0.05);
+            
+            /* Typography Scale */
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateX(-50%) translateY(10px); }
-            to { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
-        
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
-        
+
         html {
             scroll-behavior: smooth;
+            background: var(--bg-base);
+            color: var(--text-primary);
         }
-        
+
         body {
-            font-family: 'Outfit', -apple-system, sans-serif;
-            background: var(--bg);
-            color: var(--text);
+            font-family: var(--font-sans);
             line-height: 1.6;
-            font-size: 14px;
-        }
-        
-        .bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            background-image: 
-                linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
-            background-size: 32px 32px;
-            mask-image: radial-gradient(ellipse 70% 50% at 50% 30%, black 30%, transparent 100%);
-        }
-        
-        .bg-glow {
-            position: fixed;
-            top: -20%;
-            left: 20%;
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, var(--accent-dim) 0%, transparent 70%);
-            filter: blur(80px);
-            z-index: -2;
+            font-size: 16px;
+            overflow-x: hidden;
+            background-color: var(--bg-base);
         }
 
-        .bg-glow-2 {
+        /* Abstract Premium Background Mesh */
+        .ambient-mesh {
             position: fixed;
-            bottom: -20%;
-            right: 10%;
-            width: 400px;
-            height: 400px;
-            background: radial-gradient(circle, var(--primary-dim) 0%, transparent 70%);
-            filter: blur(80px);
-            z-index: -2;
-        }
-        
-        }
-        
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-15px); }
-            100% { transform: translateY(0px); }
-        }
-        
-        /* AGENT SWARM */
-        .agent-swarm {
-            position: relative;
-            width: 100%;
-            max-width: 800px;
-            height: 400px;
-            margin: 3rem auto;
-        }
-        
-        .swarm-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-        }
-        
-        .agent {
-            position: absolute;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-            animation: swarm-float 6s ease-in-out infinite;
-            animation-delay: var(--agent-delay, 0s);
-        }
-        
-        .agent:hover {
-            transform: scale(1.15);
-            z-index: 10;
-        }
-        
-        .agent-svg {
-            width: 60px;
-            height: 60px;
-            filter: drop-shadow(0 4px 12px var(--agent-color, rgba(255,255,255,0.3)));
-            transition: filter 0.3s ease;
-        }
-        
-        .agent:hover .agent-svg {
-            filter: drop-shadow(0 8px 24px var(--agent-color, rgba(255,255,255,0.5)));
-        }
-        
-        .agent-name {
-            font-size: 10px;
-            font-weight: 700;
-            color: var(--agent-color, #fff);
-            margin-top: 4px;
-            letter-spacing: 1px;
-            opacity: 0.8;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-        }
-        
-        .agent[data-agent="aurora"] { top: 10%; left: 12%; }
-        .agent[data-agent="cipher"] { top: 10%; right: 12%; }
-        .agent[data-agent="nova"] { top: 40%; left: 5%; }
-        .agent[data-agent="pulse"] { top: 40%; right: 5%; }
-        .agent[data-agent="quark"] { top: 70%; left: 18%; }
-        .agent[data-agent="shield"] { top: 70%; right: 18%; }
-        .agent[data-agent="spark"] { top: 85%; left: 45%; }
-        .agent[data-agent="ink"] { top: 3%; left: 45%; }
-        
-        .nexus-center {
-            top: 42% !important;
-            left: 46% !important;
-            transform: translate(-50%, -50%) !important;
-            z-index: 10;
-        }
-        
-        .agent-name {
-            font-size: 10px;
-            font-weight: 700;
-            color: var(--agent-color, #fff);
-            margin-top: 4px;
-            letter-spacing: 1px;
-            opacity: 0.9;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-        }
-        
-        .agent-role {
-            font-size: 8px;
-            color: var(--text-muted, #9ca3af);
-            margin-top: 2px;
-        }
-        
-        /* Make each agent float differently */
-        .agent[data-agent="aurora"] { animation-duration: 5s; }
-        .agent[data-agent="cipher"] { animation-duration: 7s; }
-        .agent[data-agent="nova"] { animation-duration: 6s; }
-        .agent[data-agent="pulse"] { animation-duration: 4s; }
-        .agent[data-agent="quark"] { animation-duration: 8s; }
-        .agent[data-agent="shield"] { animation-duration: 5.5s; }
-        .agent[data-agent="spark"] { animation-duration: 3s; }
-        .agent[data-agent="ink"] { animation-duration: 6.5s; }
-        
-        /* Swarm connection lines */
-        .swarm-lines {
-            position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
             pointer-events: none;
-            opacity: 0.3;
-        }
-        
-        .swarm-line {
-            stroke: var(--line-color, #fff);
-            stroke-width: 1;
-            stroke-dasharray: 5, 5;
-            animation: dash-flow 20s linear infinite;
-        }
-        
-        @keyframes dash-flow {
-            to { stroke-dashoffset: -100; }
-        }
-        
-        @media (max-width: 768px) {
-            .agent-svg { width: 40px; height: 40px; }
-            .agent-name { font-size: 8px; }
-            .agent-role { font-size: 7px; }
-            .agent-swarm { height: 280px; }
-            .agent[data-agent="aurora"] { top: 5%; left: 8%; }
-            .agent[data-agent="cipher"] { top: 5%; right: 8%; }
-            .agent[data-agent="nova"] { top: 25%; left: 5%; }
-            .agent[data-agent="pulse"] { top: 25%; right: 5%; }
-            .agent[data-agent="quark"] { top: 50%; left: 12%; }
-            .agent[data-agent="shield"] { top: 50%; right: 12%; }
-            .agent[data-agent="spark"] { top: 70%; left: 42%; }
-            .agent[data-agent="ink"] { top: 3%; left: 42%; }
-            .nexus-center { top: 38% !important; left: 45% !important; }
+            z-index: -1;
+            background: 
+                radial-gradient(circle at 15% 50%, rgba(20, 20, 20, 1), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(15, 15, 15, 1), transparent 25%);
+            opacity: 0.8;
         }
 
-        /* Header */
-        header {
+        .dot-matrix {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: -2;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 32px 32px;
+            mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+        }
+
+        /* Container & Layout */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Top Navigation */
+        nav.global-nav {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            padding: 12px 24px;
+            height: 64px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-subtle);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-inner {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(6, 6, 10, 0.85);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--border);
-            z-index: 100;
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
         }
-        
-        .logo {
+
+        .brand-logo {
+            font-size: 17px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+            text-decoration: none;
             display: flex;
             align-items: center;
             gap: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            letter-spacing: -0.3px;
-            color: var(--text);
         }
-        
-        .logo-mark {
-            width: 26px;
-            height: 26px;
-            border: 2px solid transparent;
-            background: linear-gradient(var(--bg), var(--bg)) padding-box, var(--gradient) border-box;
-            border-radius: 6px;
+
+        .brand-logo svg {
+            width: 20px;
+            height: 20px;
+            stroke: var(--text-primary);
+        }
+
+        .nav-links {
             display: flex;
+            gap: 32px;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-primary);
+        }
+
+        /* Buttons Structure */
+        .btn {
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-        }
-        
-        .logo-mark svg {
-            width: 12px;
-            height: 12px;
-        }
-        
-        nav {
-            display: flex;
-            gap: 28px;
-        }
-        
-        nav a {
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 500;
-            transition: color 0.2s;
-        }
-        
-        nav a:hover {
-            color: var(--text);
-        }
-        
-        .btn {
-            padding: 8px 16px;
+            gap: 8px;
+            padding: 10px 18px;
             border-radius: 6px;
-            font-size: 12px;
+            font-size: 14px;
             font-weight: 500;
             text-decoration: none;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
             cursor: pointer;
-            border: none;
+            border: 1px solid transparent;
         }
-        
+
         .btn-primary {
-            background: var(--gradient);
-            color: #000;
+            background-color: var(--text-primary);
+            color: var(--bg-base);
         }
-        
+
         .btn-primary:hover {
-            opacity: 0.9;
+            background-color: #e4e4e7;
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px var(--accent-dim);
         }
-        
-        .btn-ghost {
-            background: transparent;
-            color: var(--text-muted);
-            border: 1px solid var(--border);
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--text-primary);
+            border-color: var(--border-subtle);
         }
-        
-        .btn-ghost:hover {
-            border-color: var(--text-muted);
-            color: var(--text);
+
+        .btn-secondary:hover {
+            background-color: var(--bg-layer);
+            border-color: var(--border-hover);
         }
-        
-        /* Hero */
+
+        /* Hero Section */
         .hero {
-            min-height: 85vh;
+            padding: 180px 0 100px;
+            text-align: center;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
-            text-align: center;
-            padding: 90px 20px 50px;
         }
-        
+
         .hero-badge {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: var(--accent-dim);
-            border: 1px solid rgba(34, 211, 238, 0.2);
             padding: 6px 14px;
             border-radius: 100px;
-            font-size: 11px;
-            color: var(--accent);
-            margin-bottom: 22px;
-        }
-        
-        .hero-badge::before {
-            content: '';
-            width: 6px;
-            height: 6px;
-            background: var(--accent);
-            border-radius: 50%;
-        }
-        
-        .hero h1 {
-            font-size: clamp(30px, 5vw, 46px);
-            font-weight: 600;
-            line-height: 1.15;
-            margin-bottom: 16px;
-            letter-spacing: -1px;
-        }
-        
-        .hero h1 .accent {
-            background: var(--gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .hero p {
-            font-size: 15px;
-            color: var(--text-muted);
-            max-width: 440px;
-            margin-bottom: 26px;
-        }
-        
-        .hero-buttons {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 36px;
-        }
-        
-        .btn-large {
-            padding: 11px 24px;
+            background: var(--bg-layer);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
             font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 32px;
+            letter-spacing: 0.02em;
         }
-        
-        /* Terminal */
-        .terminal {
-            margin-top: 10px;
-            background: var(--bg-elevated);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            overflow: hidden;
-            max-width: 480px;
-            width: 100%;
-        }
-        
-        .terminal-header {
-            background: rgba(255,255,255,0.02);
-            padding: 10px 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border-bottom: 1px solid var(--border);
-        }
-        
-        .terminal-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-        }
-        
-        .terminal-dot.red { background: #ff5f56; }
-        .terminal-dot.yellow { background: #ffbd2e; }
-        .terminal-dot.green { background: #27ca40; }
-        
-        .terminal-title {
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-left: 8px;
-            font-family: 'JetBrains Mono', monospace;
-        }
-        
-        .terminal-body {
-            padding: 12px 16px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 11px;
-            text-align: left;
-        }
-        
-        .terminal-line {
-            margin-bottom: 5px;
-            display: flex;
-            gap: 10px;
-        }
-        
-        .terminal-prompt {
-            color: var(--accent);
-        }
-        
-        .terminal-output {
-            color: var(--text-dim);
-            padding-left: 16px;
-        }
-        
-        .terminal-output.success {
-            color: var(--text-muted);
-        }
-        
-        /* Section */
-        .section {
-            padding: 56px 20px;
-            max-width: 780px;
-            margin: 0 auto;
-        }
-        
-        .section-header {
-            text-align: center;
-            margin-bottom: 36px;
-        }
-        
-        .section-label {
-            font-size: 10px;
+
+        .hero h1 {
+            font-size: clamp(48px, 6vw, 76px);
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: var(--accent);
-            margin-bottom: 10px;
-        }
-        
-        .section-title {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 10px;
-            letter-spacing: -0.5px;
-        }
-        
-        .section-desc {
-            font-size: 14px;
-            color: var(--text-muted);
-        }
-        
-        /* Cards */
-        .card-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 14px;
-        }
-        
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 18px;
-            transition: all 0.25s;
-        }
-        
-        .card:hover {
-            border-color: var(--border-hover);
-            transform: translateY(-3px);
-        }
-        
-        .card-icon {
-            width: 32px;
-            height: 32px;
-            background: var(--bg-elevated);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 12px;
-        }
-        
-        .card-icon svg {
-            width: 18px;
-            height: 18px;
-            stroke: var(--accent);
-            fill: none;
-            stroke-width: 1.5;
-        }
-        
-        .card-icon.purple svg {
-            stroke: var(--primary);
-        }
-        
-        .card h3 {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-        
-        .card p {
-            font-size: 12px;
-            color: var(--text-muted);
-            line-height: 1.55;
-        }
-        
-        /* Agents */
-        .agents-section {
-            background: var(--bg-card);
-            border-top: 1px solid var(--border);
-            border-bottom: 1px solid var(--border);
-            padding: 56px 20px;
-        }
-        
-        .agents-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-            gap: 12px;
-            max-width: 780px;
-            margin: 0 auto;
-        }
-        
-        .agent-card {
-            background: var(--bg-elevated);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 14px;
-            text-align: center;
-            transition: all 0.2s;
-        }
-        
-        .agent-card:hover {
-            border-color: var(--border-hover);
-            transform: translateY(-2px);
-        }
-        
-        .agent-avatar {
-            width: 44px;
-            height: 44px;
-            margin: 0 auto 10px;
-            background: var(--bg);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            border: 1px solid var(--border);
-        }
-        
-        /* Custom Pixel SVG Avatars */
-        .agent-avatar svg {
-            width: 36px;
-            height: 36px;
-            shape-rendering: crispEdges;
-        }
-        
-        .agent-card h4 {
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 2px;
-        }
-        
-        .agent-card .role {
-            font-size: 10px;
-            color: var(--text-muted);
-        }
-        
-        /* Stats */
-        .stats-section {
-            padding: 36px 20px;
-            background: var(--bg-card);
-            border-top: 1px solid var(--border);
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            max-width: 520px;
-            margin: 0 auto;
-            text-align: center;
-        }
-        
-        .stat-item .value {
-            font-size: 22px;
-            font-weight: 600;
-            background: var(--gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.04em;
+            line-height: 1.05;
+            color: transparent;
+            background: linear-gradient(180deg, #ffffff 0%, #a1a1aa 100%);
             background-clip: text;
-        }
-        
-        .stat-item .label {
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-top: 3px;
-        }
-        
-        /* Steps */
-        .steps {
-            max-width: 420px;
-            margin: 0 auto;
-        }
-        
-        .step {
-            display: flex;
-            gap: 14px;
-            margin-bottom: 20px;
-        }
-        
-        .step-num {
-            width: 28px;
-            height: 28px;
-            background: var(--accent-dim);
-            border: 1px solid rgba(34, 211, 238, 0.2);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: 600;
-            flex-shrink: 0;
-            color: var(--accent);
-        }
-        
-        .step h3 {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 3px;
-        }
-        
-        .step p {
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-        
-        /* Footer */
-        footer {
-            padding: 40px 20px;
-            border-top: 1px solid var(--border);
-            background: var(--bg);
-        }
-        
-        .footer-container {
-            max-width: 780px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        
-        .footer-logo {
-            font-size: 16px;
-            font-weight: 600;
+            -webkit-background-clip: text;
+            max-width: 800px;
             margin-bottom: 24px;
+        }
+
+        .hero p {
+            font-size: 20px;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin-bottom: 40px;
+            line-height: 1.5;
+            font-weight: 400;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        /* Code Terminal Installation */
+        .install-box {
+            margin: 60px auto 0;
+            max-width: 640px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            overflow: hidden;
+            text-align: left;
+            box-shadow: 0 24px 48px rgba(0,0,0,0.5);
+        }
+
+        .install-header {
             display: flex;
             align-items: center;
-            gap: 8px;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border-subtle);
+            background: rgba(255,255,255,0.01);
         }
-        
-        .footer-logo svg {
-            width: 14px;
-            height: 14px;
-            stroke: var(--accent);
-            fill: none;
-            stroke-width: 2;
-        }
-        
-        .footer-grid {
+
+        .os-tabs {
             display: flex;
-            justify-content: center;
-            gap: 60px;
-            margin-bottom: 40px;
-            width: 100%;
+            gap: 20px;
         }
-        
-        .footer-col {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        
-        .footer-col h4 {
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-dim);
-            margin-bottom: 4px;
-        }
-        
-        .footer-col a {
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 12px;
+
+        .os-tab {
+            background: none;
+            border: none;
+            color: var(--text-tertiary);
+            font-size: 13px;
+            font-family: var(--font-sans);
+            font-weight: 500;
+            cursor: pointer;
+            padding: 0;
             transition: color 0.2s;
         }
-        
-        .footer-col a:hover {
-            color: var(--text);
+
+        .os-tab.active {
+            color: var(--text-primary);
         }
-        
-        .footer-bottom {
-            width: 100%;
-            padding-top: 24px;
-            border-top: 1px solid var(--border);
+
+        .os-tab:hover:not(.active) {
+            color: var(--text-secondary);
+        }
+
+        .install-body {
+            padding: 24px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 11px;
-            color: var(--text-dim);
+            background: #050505;
         }
-        
-        .legal-links {
+
+        .install-cmd {
+            font-family: var(--font-mono);
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+
+        .install-cmd .prompt {
+            color: var(--text-tertiary);
+            user-select: none;
+            margin-right: 12px;
+        }
+
+        .copy-btn {
+            background: transparent;
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            padding: 6px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
             display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .copy-btn:hover {
+            background: var(--bg-layer);
+            color: var(--text-primary);
+        }
+
+        /* Metrics Grid */
+        .metrics {
+            padding: 80px 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 32px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.03em;
+            margin-bottom: 4px;
+        }
+
+        .metric-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* Section Layouts */
+        .section {
+            padding: 120px 0;
+        }
+
+        .section-header {
+            margin-bottom: 64px;
+        }
+
+        .section-badge {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 16px;
+            display: block;
+        }
+
+        .section-title {
+            font-size: 40px;
+            font-weight: 600;
+            letter-spacing: -0.03em;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+        }
+
+        .section-desc {
+            font-size: 18px;
+            color: var(--text-secondary);
+            max-width: 600px;
+            line-height: 1.5;
+        }
+
+        /* Feature Cards */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 32px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            border-color: var(--border-hover);
+            background: rgba(20, 20, 20, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .feature-icon {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-layer);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+        }
+
+        .feature-icon svg {
+            width: 20px;
+            height: 20px;
+            stroke: var(--text-primary);
+            fill: none;
+            stroke-width: 1.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .feature-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            letter-spacing: -0.01em;
+        }
+
+        .feature-desc {
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Agents Grid */
+        .agents-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
             gap: 16px;
         }
-        
-        .legal-links a {
-            color: var(--text-dim);
+
+        .agent-card {
+            background: transparent;
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: all 0.2s ease;
+        }
+
+        .agent-card:hover {
+            border-color: var(--border-hover);
+            background: var(--bg-layer);
+        }
+
+        .agent-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .agent-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .agent-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .agent-role {
+            font-size: 13px;
+            color: var(--text-tertiary);
+            font-family: var(--font-mono);
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border-subtle);
+            padding: 60px 0 40px;
+            margin-top: 60px;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 60px;
+            margin-bottom: 60px;
+        }
+
+        .footer-brand .brand-logo {
+            margin-bottom: 16px;
+        }
+
+        .footer-desc {
+            font-size: 14px;
+            color: var(--text-tertiary);
+            max-width: 300px;
+        }
+
+        .footer-col h4 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            letter-spacing: 0.02em;
+        }
+
+        .footer-col ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .footer-col a {
+            font-size: 14px;
+            color: var(--text-secondary);
             text-decoration: none;
             transition: color 0.2s;
         }
-        
-        .legal-links a:hover {
-            color: var(--text-muted);
+
+        .footer-col a:hover {
+            color: var(--text-primary);
         }
-        
-        /* Mobile */
-        @media (max-width: 580px) {
-            header {
-                padding: 10px 16px;
-            }
-            
-            nav {
-                display: none;
-            }
-            
-            .hero h1 {
-                font-size: 26px;
-            }
-            
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .footer-grid {
-                gap: 30px;
-                flex-wrap: wrap;
-                text-align: center;
-            }
-            
-            .footer-bottom {
-                flex-direction: column;
-                gap: 12px;
-                text-align: center;
-            }
+
+        .footer-bottom {
+            padding-top: 32px;
+            border-top: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: var(--text-tertiary);
+        }
+
+        /* Responsive overrides */
+        @media (max-width: 1024px) {
+            .hero h1 { font-size: 56px; }
+            .features-grid { grid-template-columns: repeat(2, 1fr); }
+            .agents-grid { grid-template-columns: repeat(3, 1fr); }
+            .footer-grid { grid-template-columns: 1fr 1fr; gap: 40px; }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            .hero h1 { font-size: 40px; }
+            .features-grid { grid-template-columns: 1fr; }
+            .agents-grid { grid-template-columns: repeat(2, 1fr); }
+            .metrics-grid { grid-template-columns: repeat(2, 1fr); gap: 40px; }
+            .footer-grid { grid-template-columns: 1fr; }
+            .footer-bottom { flex-direction: column; gap: 16px; text-align: center; }
         }
     </style>
 </head>
 <body>
-    <div class="bg"></div>
-    <div class="bg-glow"></div>
-    <div class="bg-glow-2"></div>
-    
-    <!-- Header -->
-    <header>
-        <div class="logo">
-            <div class="logo-mark">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="8"/>
-                    <circle cx="12" cy="12" r="3"/>
-                </svg>
+    <div class="ambient-mesh"></div>
+    <div class="dot-matrix"></div>
+
+    <nav class="global-nav">
+        <div class="nav-inner">
+            <a href="index.html" class="brand-logo">
+                <img src="assets/img/neugi_icon.webp" alt="Neugi" style="width:24px; height:24px; border-radius:4px;">
+                Neugi
+            </a>
+            <div class="nav-links">
+                <a href="#architecture">Architecture</a>
+                <a href="#agents">Swarm</a>
+                <a href="docs.html">Documentation</a>
             </div>
-            NEUGI
-        </div>
-        <nav>
-            <a href="#features">Features</a>
-            <a href="#agents">Agents</a>
-            <a href="#how">How It Works</a>
-        </nav>
-        <div class="header-actions">
-            <a href="https://github.com/atharia-agi/neugi_swarm" class="btn btn-ghost" target="_blank">GitHub</a>
-            <a href="https://github.com/atharia-agi/neugi_swarm" class="btn btn-primary" target="_blank">Get Started</a>
-        </div>
-    </header>
-    
-    <!-- Hero -->
-    <section class="hero">
-        <div class="hero-badge">
-            Neural General Intelligence
-        </div>
-        
-    <h1>
-        AI Swarm for <span class="accent">Everyone</span>
-    </h1>
-    
-    <p>
-        9 autonomous agents working together in harmony. Watch them collaborate, learn, and solve problems as a swarm.
-    </p>
-    
-    <div class="hero-buttons">
-        <a href="https://github.com/atharia-agi/neugi_swarm" class="btn btn-primary btn-large" target="_blank">Install Now</a>
-        <a href="#how" class="btn btn-ghost btn-large">Learn More</a>
-        <a href="docs.html" class="btn btn-ghost btn-large">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-            Documentation
-        </a>
-    </div>
-        
-        <!-- Quick Install -->
-        <div style="max-width:600px;margin:2rem auto;text-align:center;">
-            <p style="color:var(--text-muted);margin-bottom:0.75rem;">Choose your OS to get started:</p>
-            <div style="display:flex;gap:0.5rem;justify-content:center;margin-bottom:1rem;flex-wrap:wrap;">
-                <button class="btn btn-ghost" onclick="showInstallCmd('windows')" style="padding:8px 16px;">Windows</button>
-                <button class="btn btn-ghost" onclick="showInstallCmd('mac')" style="padding:8px 16px;">Mac</button>
-                <button class="btn btn-ghost" onclick="showInstallCmd('linux')" style="padding:8px 16px;">Linux</button>
+            <div style="display:flex; gap: 12px;">
+                <a href="dashboard.html" class="btn btn-secondary">Console</a>
+                <a href="https://github.com/atharia-agi/neugi_swarm" class="btn btn-primary" target="_blank">Build</a>
             </div>
-            <div id="installCmd" style="display:none;background:var(--bg-card);border-radius:8px;padding:1rem;margin-bottom:1rem;text-align:left;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
-                    <span style="color:var(--text-muted);font-size:0.85rem;" id="osLabel">Run this command:</span>
-                    <button onclick="copyInstallCmd()" style="background:var(--accent);border:none;border-radius:4px;padding:4px 12px;cursor:pointer;font-size:0.8rem;display:flex;align-items:center;gap:4px;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </div>
+    </nav>
+
+    <main>
+        <section class="hero container">
+            <div class="hero-badge">Neugi Swarm System v14.1</div>
+            <h1>The operating system <br>for autonomous intelligence.</h1>
+            <p>Deploy a flawless network of 9 interdependent agents executing deterministic complex reasoning, multi-step generation, and local execution—directly on your infrastructure.</p>
+            
+            <div class="hero-actions">
+                <a href="dashboard.html" class="btn btn-primary">Open Console</a>
+                <a href="docs.html" class="btn btn-secondary">Read Documentation</a>
+            </div>
+
+            <img src="assets/img/neugi_banner.webp" alt="Neugi Swarm Banner" style="max-width: 100%; border-radius: 16px; margin-top: 56px; margin-bottom: -32px; border: 1px solid var(--border-subtle); box-shadow: 0 32px 64px rgba(0,0,0,0.8);">
+
+            <div class="install-box">
+                <div class="install-header">
+                    <div class="os-tabs">
+                        <button class="os-tab active" onclick="switchOs('windows')">Windows</button>
+                        <button class="os-tab" onclick="switchOs('macos')">macOS</button>
+                        <button class="os-tab" onclick="switchOs('linux')">Linux</button>
+                    </div>
+                </div>
+                <div class="install-body">
+                    <div class="install-cmd" id="install-cmd-text">
+                        <span class="prompt">PS></span> irm neugi.sh/install | iex
+                    </div>
+                    <button class="copy-btn" onclick="copyInstall()">
+                        <svg viewBox="0 0 24 24" fill="none" class="feather" width="14" height="14" stroke="currentColor"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                         Copy
                     </button>
                 </div>
-                <code id="installCommand" style="color:var(--text);font-family:monospace;word-break:break-all;"></code>
+            </div>
+        </section>
+
+        <section class="metrics">
+            <div class="container">
+                <div class="metrics-grid">
+                    <div>
+                        <div class="metric-value">9</div>
+                        <div class="metric-label">Neural Pathways</div>
+                    </div>
+                    <div>
+                        <div class="metric-value">50+</div>
+                        <div class="metric-label">Execute Operations</div>
+                    </div>
+                    <div>
+                        <div class="metric-value">100%</div>
+                        <div class="metric-label">Local Integrity</div>
+                    </div>
+                    <div>
+                        <div class="metric-value">Zero</div>
+                        <div class="metric-label">API Latency</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section container" id="architecture">
+            <div class="section-header">
+                <span class="section-badge">Architecture</span>
+                <h2 class="section-title">Built for absolute scale.</h2>
+                <p class="section-desc">Neugi's architecture isn't just a chatbot loop. It's a deterministic multi-agent state machine designed for production-grade reliability.</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon"><svg><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7" stroke-dasharray="3 2"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg></div>
+                    <h3 class="feature-title">Contextual Memory Graph</h3>
+                    <p class="feature-desc">Dynamic context windows utilizing RAG memory. Knowledge persists flawlessly across terminal sessions.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><svg><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+                    <h3 class="feature-title">Root Execution</h3>
+                    <p class="feature-desc">Integrated "God Mode" allows safe or unrestricted bash execution directly into your operating system kernel.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><svg><path d="M23 6l-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></svg></div>
+                    <h3 class="feature-title">Hardware Optimization</h3>
+                    <p class="feature-desc">Perfectly tuned loops for 1B LLMs. Runs brilliantly smooth on consumer hardware without extreme fan speeds.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section container" id="agents">
+            <div class="section-header">
+                <span class="section-badge">The Swarm</span>
+                <h2 class="section-title">A neural ensemble.</h2>
+                <p class="section-desc">Each agent is highly deterministic, locked to a specific role, capable of routing to specialized sub-modules without human intervention.</p>
+            </div>
+
+            <div class="agents-grid">
+                <div class="agent-card">
+                    <div class="agent-avatar">🔍</div>
+                    <div class="agent-info">
+                        <span class="agent-name">Aurora</span>
+                        <span class="agent-role">Data Extraction</span>
+                    </div>
+                </div>
+                <div class="agent-card">
+                    <div class="agent-avatar">💻</div>
+                    <div class="agent-info">
+                        <span class="agent-name">Cipher</span>
+                        <span class="agent-role">Syntax & Logic</span>
+                    </div>
+                </div>
+                <div class="agent-card">
+                    <div class="agent-avatar">🎨</div>
+                    <div class="agent-info">
+                        <span class="agent-name">Nova</span>
+                        <span class="agent-role">UI Topology</span>
+                    </div>
+                </div>
+                <div class="agent-card">
+                    <div class="agent-avatar">📊</div>
+                    <div class="agent-info">
+                        <span class="agent-name">Pulse</span>
+                        <span class="agent-role">Data Analysis</span>
+                    </div>
+                </div>
+                <div class="agent-card">
+                    <div class="agent-avatar">♟️</div>
+                    <div class="agent-info">
+                        <span class="agent-name">Quark</span>
+                        <span class="agent-role">Strategic Planning</span>
+                    </div>
+                </div>
+                <div class="agent-card">
+                    <div class="agent-avatar">🛡️</div>
+                    <div class="agent-info">
+                        <span class="agent-name">Shield</span>
+                        <span class="agent-role">Integrity Checks</span>
+                    </div>
+                </div>
+                <div class="agent-card">
+                    <div class="agent-avatar">🌐</div>
+                    <div class="agent-info">
+                        <span class="agent-name">Spark</span>
+                        <span class="agent-role">Network Ops</span>
+                    </div>
+                </div>
+                <div class="agent-card">
+                    <div class="agent-avatar">✍️</div>
+                    <div class="agent-info">
+                        <span class="agent-name">Ink</span>
+                        <span class="agent-role">I/O Formatting</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="container">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <a href="#" class="brand-logo">
+                    <img src="assets/img/neugi_icon.webp" alt="Neugi" style="width:24px; height:24px; border-radius:4px;">
+                    Neugi
+                </a>
+                <p class="footer-desc">The OS for autonomous intelligence. Bridging the gap between raw hardware capabilities and human intent.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Ecosystem</h4>
+                <ul>
+                    <li><a href="dashboard.html">Cloud Console</a></li>
+                    <li><a href="technician.html">Diagnostic Tech</a></li>
+                    <li><a href="#">Enterprise</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Developers</h4>
+                <ul>
+                    <li><a href="docs.html">Documentation</a></li>
+                    <li><a href="#">API Reference</a></li>
+                    <li><a href="https://github.com/atharia-agi/neugi_swarm">GitHub</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Company</h4>
+                <ul>
+                    <li><a href="#">About</a></li>
+                    <li><a href="#">Careers</a></li>
+                    <li><a href="#">Security</a></li>
+                </ul>
             </div>
         </div>
-        
-        <!-- Terminal Demo -->
-        <div class="terminal" style="max-width:600px;margin:2rem auto;">
-            <div class="terminal-header">
-                <div class="terminal-dot red"></div>
-                <div class="terminal-dot yellow"></div>
-                <div class="terminal-dot green"></div>
-                <span class="terminal-title">neugi@localhost ~ neugi_wizard.py</span>
-            </div>
-            <div class="terminal-body">
-                <div class="terminal-line">
-                    <span class="terminal-prompt">$</span>
-                    python3 neugi_wizard.py
-                </div>
-                <div class="terminal-line">
-                    <span class="terminal-output">NEUGI WIZARD v3.0 - AI-Powered!</span>
-                </div>
-                <div class="terminal-line">
-                    <span class="terminal-output">1. Setup / First Time Install</span>
-                </div>
-                <div class="terminal-line">
-                    <span class="terminal-output">2. Repair / Fix Problems</span>
-                </div>
-                <div class="terminal-line">
-                    <span class="terminal-output">3. Diagnose System</span>
-                </div>
-                <div class="terminal-line">
-                    <span class="terminal-output">4. Chat with AI</span>
-                </div>
-                <div class="terminal-line">
-                    <span class="terminal-output">...</span>
-                </div>
-                <div class="terminal-line">
-                    <span class="terminal-prompt">></span>
-                    <span style="color:#22c55e;">1</span>
-                </div>
-                <div class="terminal-line">
-                    <span class="terminal-output" style="color:#22c55e;">OK Ollama detected</span>
-                </div>
-                <div class="terminal-line">
-                    <span class="terminal-output" style="color:#22c55e;">OK 9 agents ready</span>
-                </div>
-                <div class="terminal-line">
-                    <span class="terminal-output success">OK Running on http://localhost:19888</span>
-                </div>
-            </div>
-        </div>
-        
-        <!-- AGENT SWARM ANIMATION - 9 Agents with Nexus in Center -->
-        <div class="agent-swarm" id="agentSwarm">
-            <div class="swarm-container">
-                <!-- AURORA - Research - Blue (Top Left) -->
-                <div class="agent" data-agent="aurora" style="--agent-color: #3b82f6; --agent-delay: 0s;">
-                    <svg viewBox="0 0 8 8" class="agent-svg">
-                        <rect x="2" y="1" width="4" height="6" rx="1" fill="#3b82f6"/>
-                        <rect x="3" y="2" width="2" height="2" fill="#bfdbfe"/>
-                        <rect x="1" y="3" width="1" height="3" fill="#2563eb"/>
-                        <rect x="6" y="3" width="1" height="3" fill="#2563eb"/>
-                    </svg>
-                    <span class="agent-name">AURORA</span>
-                    <span class="agent-role">Research</span>
-                </div>
-                
-                <!-- CIPHER - Coder - Green (Top Right) -->
-                <div class="agent" data-agent="cipher" style="--agent-color: #10b981; --agent-delay: 1s;">
-                    <svg viewBox="0 0 8 8" class="agent-svg">
-                        <rect x="1" y="2" width="6" height="4" rx="1" fill="#10b981"/>
-                        <rect x="2" y="3" width="1" height="1" fill="#111827"/>
-                        <rect x="5" y="3" width="1" height="1" fill="#111827"/>
-                        <rect x="3" y="5" width="2" height="1" fill="#047857"/>
-                    </svg>
-                    <span class="agent-name">CIPHER</span>
-                    <span class="agent-role">Coder</span>
-                </div>
-                
-                <!-- NOVA - Creator - Pink (Left) -->
-                <div class="agent" data-agent="nova" style="--agent-color: #ec4899; --agent-delay: 2s;">
-                    <svg viewBox="0 0 8 8" class="agent-svg">
-                        <rect x="3" y="1" width="2" height="6" fill="#ec4899"/>
-                        <rect x="1" y="3" width="6" height="2" fill="#db2777"/>
-                        <rect x="3" y="3" width="2" height="2" fill="#fbcfe8"/>
-                    </svg>
-                    <span class="agent-name">NOVA</span>
-                    <span class="agent-role">Creator</span>
-                </div>
-                
-                <!-- PULSE - Analyst - Yellow (Right) -->
-                <div class="agent" data-agent="pulse" style="--agent-color: #f59e0b; --agent-delay: 0.5s;">
-                    <svg viewBox="0 0 8 8" class="agent-svg">
-                        <rect x="2" y="1" width="4" height="5" rx="1" fill="#f59e0b"/>
-                        <rect x="3" y="2" width="2" height="1" fill="#fef3c7"/>
-                        <rect x="2" y="6" width="4" height="1" fill="#b45309"/>
-                    </svg>
-                    <span class="agent-name">PULSE</span>
-                    <span class="agent-role">Analyst</span>
-                </div>
-                
-                <!-- QUARK - Strategy - Purple (Bottom Left) -->
-                <div class="agent" data-agent="quark" style="--agent-color: #8b5cf6; --agent-delay: 1.5s;">
-                    <svg viewBox="0 0 8 8" class="agent-svg">
-                        <polygon points="4,1 7,7 1,7" fill="#8b5cf6"/>
-                        <rect x="3" y="4" width="2" height="2" fill="#ede9fe"/>
-                    </svg>
-                    <span class="agent-name">QUARK</span>
-                    <span class="agent-role">Strategy</span>
-                </div>
-                
-                <!-- SHIELD - Security - Red (Bottom Right) -->
-                <div class="agent" data-agent="shield" style="--agent-color: #ef4444; --agent-delay: 2.5s;">
-                    <svg viewBox="0 0 8 8" class="agent-svg">
-                        <rect x="1" y="1" width="6" height="6" rx="1" fill="#ef4444"/>
-                        <rect x="3" y="3" width="2" height="2" fill="#fee2e2"/>
-                        <rect x="3" y="1" width="2" height="1" fill="#b91c1c"/>
-                    </svg>
-                    <span class="agent-name">SHIELD</span>
-                    <span class="agent-role">Security</span>
-                </div>
-                
-                <!-- SPARK - Social - Orange (Bottom) -->
-                <div class="agent" data-agent="spark" style="--agent-color: #eab308; --agent-delay: 3s;">
-                    <svg viewBox="0 0 8 8" class="agent-svg">
-                        <circle cx="4" cy="4" r="3" fill="#eab308"/>
-                        <rect x="3" y="3" width="2" height="2" fill="#fef9c3"/>
-                    </svg>
-                    <span class="agent-name">SPARK</span>
-                    <span class="agent-role">Social</span>
-                </div>
-                
-                <!-- INK - Writer - Indigo (Top) -->
-                <div class="agent" data-agent="ink" style="--agent-color: #6366f1; --agent-delay: 0.8s;">
-                    <svg viewBox="0 0 8 8" class="agent-svg">
-                        <rect x="2" y="1" width="4" height="6" rx="1" fill="#6366f1"/>
-                        <rect x="3" y="2" width="2" height="4" fill="#e0e7ff"/>
-                        <rect x="3" y="3" width="2" height="1" fill="#4338ca"/>
-                    </svg>
-                    <span class="agent-name">INK</span>
-                    <span class="agent-role">Writer</span>
-                </div>
-                
-                <!-- NEXUS - Connector - Violet (CENTER - Hub) -->
-                <div class="agent nexus-center" data-agent="nexus" style="--agent-color: #8b5cf6; --agent-delay: 1.8s;">
-                    <svg viewBox="0 0 12 12" class="agent-svg" style="width:70px;height:70px;">
-                        <!-- Network nodes -->
-                        <circle cx="6" cy="2" r="2" fill="#8b5cf6"/>
-                        <circle cx="2" cy="6" r="1.5" fill="#a78bfa" opacity="0.9"/>
-                        <circle cx="10" cy="6" r="1.5" fill="#a78bfa" opacity="0.9"/>
-                        <circle cx="3" cy="10" r="1.5" fill="#c4b5fd" opacity="0.8"/>
-                        <circle cx="9" cy="10" r="1.5" fill="#c4b5fd" opacity="0.8"/>
-                        <!-- Connection lines -->
-                        <line x1="6" y1="3" x2="3" y2="5" stroke="#8b5cf6" stroke-width="1" opacity="0.7"/>
-                        <line x1="6" y1="3" x2="9" y2="5" stroke="#8b5cf6" stroke-width="1" opacity="0.7"/>
-                        <line x1="3" y1="7" x2="3" y2="9" stroke="#a78bfa" stroke-width="1" opacity="0.6"/>
-                        <line x1="9" y1="7" x2="9" y2="9" stroke="#a78bfa" stroke-width="1" opacity="0.6"/>
-                        <line x1="4" y1="8" x2="8" y2="8" stroke="#c4b5fd" stroke-width="1" opacity="0.5"/>
-                    </svg>
-                    <span class="agent-name">NEXUS</span>
-                    <span class="agent-role">Connector</span>
-                </div>
-            </div>
-            
-            <!-- Swarm connection lines - All connecting to Nexus -->
-            <svg class="swarm-lines" viewBox="0 0 800 400">
-                <!-- Aurora to Nexus -->
-                <line class="swarm-line" x1="100" y1="45" x2="370" y2="175" style="--line-color: #3b82f6;"/>
-                <!-- Cipher to Nexus -->
-                <line class="swarm-line" x1="700" y1="45" x2="390" y2="175" style="--line-color: #10b981;"/>
-                <!-- Nova to Nexus -->
-                <line class="swarm-line" x1="80" y1="165" x2="360" y2="180" style="--line-color: #ec4899;"/>
-                <!-- Pulse to Nexus -->
-                <line class="swarm-line" x1="720" y1="165" x2="400" y2="180" style="--line-color: #f59e0b;"/>
-                <!-- Quark to Nexus -->
-                <line class="swarm-line" x1="160" y1="295" x2="355" y2="195" style="--line-color: #8b5cf6;"/>
-                <!-- Shield to Nexus -->
-                <line class="swarm-line" x1="640" y1="295" x2="405" y2="195" style="--line-color: #ef4444;"/>
-                <!-- Spark to Nexus -->
-                <line class="swarm-line" x1="365" y1="350" x2="368" y2="210" style="--line-color: #eab308;"/>
-                <!-- Ink to Nexus -->
-                <line class="swarm-line" x1="365" y1="25" x2="368" y2="145" style="--line-color: #6366f1;"/>
-            </svg>
-        </div>
-    </section>
-    
-    <!-- Stats -->
-    <section class="stats-section">
-        <div class="stats-grid">
-            <div class="stat-item">
-                <div class="value">9</div>
-                <div class="label">Core Agents</div>
-            </div>
-            <div class="stat-item">
-                <div class="value">50+</div>
-                <div class="label">Tools</div>
-            </div>
-            <div class="stat-item">
-                <div class="value">Swarm</div>
-                <div class="label">Intelligence</div>
-            </div>
-            <div class="stat-item">
-                <div class="value">Free</div>
-                <div class="label">Forever</div>
-            </div>
-        </div>
-    </section>
-    
-    <!-- Features -->
-    <section class="section" id="features">
-        <div class="section-header">
-            <div class="section-label">Core Technology</div>
-            <h2 class="section-title">What is NGI?</h2>
-            <p class="section-desc">Not just a chatbot. True Neural General Intelligence.</p>
-        </div>
-        
-        <div class="card-grid">
-            <div class="card">
-                <div class="card-icon">
-                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7" stroke-dasharray="3 2"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg>
-                </div>
-                <h3>Knowledge Graph</h3>
-                <p>Structured memory connecting entities and facts. Learns from every interaction.</p>
-            </div>
-            
-            <div class="card">
-                <div class="card-icon purple">
-                    <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-                </div>
-                <h3>Reasoning</h3>
-                <p>Multi-step logical reasoning. Can explain "why" and draw conclusions.</p>
-            </div>
-            
-            <div class="card">
-                <div class="card-icon">
-                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                </div>
-                <h3>Planning</h3>
-                <p>Decomposes goals into actionable steps with dependency handling.</p>
-            </div>
-            
-            <div class="card">
-                <div class="card-icon purple">
-                    <svg viewBox="0 0 24 24"><path d="M23 6l-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></svg>
-                </div>
-                <h3>Learning</h3>
-                <p>Extracts patterns from experience. Improves over time.</p>
-            </div>
-            
-            <div class="card">
-                <div class="card-icon">
-                    <svg viewBox="0 0 24 24"><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/></svg>
-                </div>
-                <h3>Auto-Recovery</h3>
-                <p>Detects and fixes issues automatically.</p>
-            </div>
-            
-            <div class="card">
-                <div class="card-icon purple">
-                    <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-                </div>
-                <h3>Security</h3>
-                <p>Role-based authorization and emergency stop.</p>
-            </div>
-        </div>
-    </section>
-    
-    <!-- Agents -->
-    <section class="agents-section" id="agents">
-        <div class="section-header">
-            <div class="section-label">Meet the Swarm</div>
-            <h2 class="section-title">Your AI Workforce</h2>
-            <p class="section-desc">Specialized agents that work together in harmony.</p>
-        </div>
-        
-        <div class="agents-grid">
-            <div class="agent-card">
-                <div class="agent-avatar">
-                    <svg viewBox="0 0 8 8" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="2" y="1" width="4" height="6" rx="1" fill="#3b82f6"/>
-                        <rect x="3" y="2" width="2" height="2" fill="#bfdbfe"/>
-                        <rect x="1" y="3" width="1" height="3" fill="#2563eb"/>
-                        <rect x="6" y="3" width="1" height="3" fill="#2563eb"/>
-                    </svg>
-                </div>
-                <h4>Aurora</h4>
-                <div class="role">Research</div>
-            </div>
-            
-            <div class="agent-card">
-                <div class="agent-avatar">
-                    <svg viewBox="0 0 8 8" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="1" y="2" width="6" height="4" rx="1" fill="#10b981"/>
-                        <rect x="2" y="3" width="1" height="1" fill="#111827"/>
-                        <rect x="5" y="3" width="1" height="1" fill="#111827"/>
-                        <rect x="3" y="5" width="2" height="1" fill="#047857"/>
-                    </svg>
-                </div>
-                <h4>Cipher</h4>
-                <div class="role">Coder</div>
-            </div>
-            
-            <div class="agent-card">
-                <div class="agent-avatar">
-                    <svg viewBox="0 0 8 8" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="3" y="1" width="2" height="6" fill="#ec4899"/>
-                        <rect x="1" y="3" width="6" height="2" fill="#db2777"/>
-                        <rect x="3" y="3" width="2" height="2" fill="#fbcfe8"/>
-                    </svg>
-                </div>
-                <h4>Nova</h4>
-                <div class="role">Creator</div>
-            </div>
-            
-            <div class="agent-card">
-                <div class="agent-avatar">
-                    <svg viewBox="0 0 8 8" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="2" y="1" width="4" height="5" rx="1" fill="#f59e0b"/>
-                        <rect x="3" y="2" width="2" height="1" fill="#fef3c7"/>
-                        <rect x="2" y="6" width="4" height="1" fill="#b45309"/>
-                    </svg>
-                </div>
-                <h4>Pulse</h4>
-                <div class="role">Analyst</div>
-            </div>
-            
-            <div class="agent-card">
-                <div class="agent-avatar">
-                    <svg viewBox="0 0 8 8" xmlns="http://www.w3.org/2000/svg">
-                        <polygon points="4,1 7,7 1,7" fill="#8b5cf6"/>
-                        <rect x="3" y="4" width="2" height="2" fill="#ede9fe"/>
-                    </svg>
-                </div>
-                <h4>Quark</h4>
-                <div class="role">Strategy</div>
-            </div>
-            
-            <div class="agent-card">
-                <div class="agent-avatar">
-                    <svg viewBox="0 0 8 8" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="1" y="1" width="6" height="6" rx="1" fill="#ef4444"/>
-                        <rect x="3" y="3" width="2" height="2" fill="#fee2e2"/>
-                        <rect x="3" y="1" width="2" height="1" fill="#b91c1c"/>
-                    </svg>
-                </div>
-                <h4>Shield</h4>
-                <div class="role">Security</div>
-            </div>
-            
-            <div class="agent-card">
-                <div class="agent-avatar">
-                    <svg viewBox="0 0 8 8" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="4" cy="4" r="3" fill="#eab308"/>
-                        <rect x="3" y="3" width="2" height="2" fill="#fef9c3"/>
-                    </svg>
-                </div>
-                <h4>Spark</h4>
-                <div class="role">Social</div>
-            </div>
-            
-            <div class="agent-card">
-                <div class="agent-avatar">
-                    <svg viewBox="0 0 8 8" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="2" y="1" width="4" height="6" rx="1" fill="#6366f1"/>
-                        <rect x="3" y="2" width="2" height="4" fill="#e0e7ff"/>
-                        <rect x="3" y="3" width="2" height="1" fill="#4338ca"/>
-                    </svg>
-                </div>
-                <h4>Ink</h4>
-                <div class="role">Writer</div>
-            </div>
-            
-            <div class="agent-card">
-                <div class="agent-avatar">
-                    <svg viewBox="0 0 8 8" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="4" cy="2" r="1.5" fill="#8b5cf6"/>
-                        <circle cx="2" cy="5" r="1" fill="#8b5cf6" opacity="0.8"/>
-                        <circle cx="6" cy="5" r="1" fill="#8b5cf6" opacity="0.8"/>
-                        <line x1="4" y1="3" x2="2.5" y2="4.5" stroke="#8b5cf6" stroke-width="0.5" opacity="0.6"/>
-                        <line x1="4" y1="3" x2="5.5" y2="4.5" stroke="#8b5cf6" stroke-width="0.5" opacity="0.6"/>
-                        <line x1="2" y1="5.5" x2="3.5" y2="6" stroke="#8b5cf6" stroke-width="0.5" opacity="0.6"/>
-                        <line x1="6" y1="5.5" x2="4.5" y2="6" stroke="#8b5cf6" stroke-width="0.5" opacity="0.6"/>
-                    </svg>
-                </div>
-                <h4>Nexus</h4>
-                <div class="role">Connector</div>
-            </div>
-        </div>
-    </section>
-    
-    <!-- How -->
-    <section class="section" id="how">
-        <div class="section-header">
-            <div class="section-label">Getting Started</div>
-            <h2 class="section-title">From Zero to AI in Minutes</h2>
-        </div>
-        
-        <div class="steps">
-            <div class="step">
-                <div class="step-num">1</div>
-                <div>
-                    <h3>Run One Command</h3>
-                    <p>Copy and paste the installation command.</p>
-                </div>
-            </div>
-            
-            <div class="step">
-                <div class="step-num">2</div>
-                <div>
-                    <h3>Answer Questions</h3>
-                    <p>Tell NEUGI your name and needs.</p>
-                </div>
-            </div>
-            
-            <div class="step">
-                <div class="step-num">3</div>
-                <div>
-                    <h3>Start Using</h3>
-                    <p>Your AI swarm is ready.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-    
-    <!-- Footer -->
-    <footer>
-        <div class="footer-container">
-            <div class="footer-logo">
-                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>
-                NEUGI SWARM
-            </div>
-            
-            <div class="footer-grid">
-                <div class="footer-col">
-                    <h4>Product</h4>
-                    <a href="#features">Features</a>
-                    <a href="#agents">Agents</a>
-                    <a href="https://github.com/atharia-agi/neugi_swarm" target="_blank">Download</a>
-                    <a href="javascript:void(0)" onclick="showToast('Coming Soon!')">Pricing</a>
-                </div>
-                <div class="footer-col">
-                    <h4>Resources</h4>
-                    <a href="https://github.com/atharia-agi/neugi_swarm" target="_blank">Documentation</a>
-                    <a href="https://github.com/atharia-agi/neugi_swarm" target="_blank">API Reference</a>
-                    <a href="javascript:void(0)" onclick="showToast('Coming Soon!')">Community Forum</a>
-                    <a href="javascript:void(0)" onclick="showToast('Coming Soon!')">Blog</a>
-                </div>
-                <div class="footer-col">
-                    <h4>Company</h4>
-                    <a href="javascript:void(0)" onclick="showToast('Coming Soon!')">About Us</a>
-                    <a href="javascript:void(0)" onclick="showToast('Coming Soon!')">Careers</a>
-                    <a href="mailto:atharia.agi@gmail.com">Contact</a>
-                    <a href="https://x.com/atharia_agi" target="_blank">Twitter</a>
-                </div>
-            </div>
-            
-            <div class="footer-bottom">
-                <div class="footer-copy">
-                    © 2026 NEUGI SWARM. Developed by Atharia AGI.<br>
-                    <a href="mailto:atharia.agi@gmail.com" style="color: var(--accent);">atharia.agi@gmail.com</a> · 
-                    <a href="https://x.com/atharia_agi" target="_blank" style="color: var(--accent);">@atharia_agi</a>
-                </div>
-                <div class="legal-links">
-                    <a href="javascript:void(0)" onclick="showToast('Coming Soon!')">Terms of Service</a>
-                    <a href="javascript:void(0)" onclick="showToast('Coming Soon!')">Privacy Policy</a>
-                    <a href="javascript:void(0)" onclick="showToast('Coming Soon!')">Cookie Policy</a>
-                    <a href="javascript:void(0)" onclick="showToast('Coming Soon!')">Security</a>
-                </div>
+        <div class="footer-bottom">
+            <span>© 2026 Atharia AGI. All rights reserved.</span>
+            <div style="display:flex; gap: 24px;">
+                <a href="#" style="color:var(--text-tertiary); text-decoration:none;">Privacy Policy</a>
+                <a href="#" style="color:var(--text-tertiary); text-decoration:none;">Terms of Service</a>
             </div>
         </div>
     </footer>
-    
+
     <script>
-        const installCommands = {
-            windows: 'irm neugi.com/install | iex',
-            mac: 'curl -fsSL https://neugi.com/install.sh | bash',
-            linux: 'curl -fsSL https://neugi.com/install.sh | bash'
+        const cmds = {
+            'windows': { prompt: 'PS>', cmd: 'irm neugi.sh/install | iex' },
+            'macos': { prompt: '$', cmd: 'curl -fsSL https://neugi.sh/install | bash' },
+            'linux': { prompt: '$', cmd: 'curl -fsSL https://neugi.sh/install | bash' }
         };
-        
-        function showInstallCmd(os) {
-            const cmdBox = document.getElementById('installCmd');
-            const cmd = document.getElementById('installCommand');
-            const label = document.getElementById('osLabel');
-            cmdBox.style.display = 'block';
-            cmd.textContent = installCommands[os];
-            label.textContent = os === 'windows' ? 'Windows PowerShell (Admin):' : 'Terminal:';
+
+        let currentOs = 'windows';
+
+        function switchOs(os) {
+            currentOs = os;
+            document.querySelectorAll('.os-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`button[onclick="switchOs('${os}')"]`).classList.add('active');
+            
+            document.getElementById('install-cmd-text').innerHTML = `
+                <span class="prompt">${cmds[os].prompt}</span> ${cmds[os].cmd}
+            `;
         }
-        
-        function copyInstallCmd() {
-            const cmd = document.getElementById('installCommand').textContent;
-            navigator.clipboard.writeText(cmd).then(() => {
-                showToast('Command copied to clipboard!');
-            });
+
+        function copyInstall() {
+            navigator.clipboard.writeText(cmds[currentOs].cmd);
+            const btn = document.querySelector('.copy-btn');
+            const original = btn.innerHTML;
+            btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" class="feather" width="14" height="14" stroke="currentColor"><polyline points="20 6 9 17 4 12"></polyline></svg> Copied`;
+            setTimeout(() => { btn.innerHTML = original; }, 2000);
         }
-        
-        function showToast(message) {
-            const toast = document.createElement('div');
-            toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--accent);padding:12px 24px;border-radius:8px;color:var(--text);font-size:0.9rem;z-index:9999;animation:fadeIn 0.3s ease;';
-            toast.textContent = message;
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 2500);
-        }
-        
-        window.addEventListener('scroll', () => {
-            const header = document.querySelector('header');
-            header.style.background = window.scrollY > 20 ? 
-                'rgba(6, 6, 10, 0.95)' : 'rgba(6, 6, 10, 0.85)';
-        });
-        
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function(e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) target.scrollIntoView({ behavior: 'smooth' });
-            });
-        });
     </script>
 </body>
 </html>
