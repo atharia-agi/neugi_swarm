@@ -87,58 +87,48 @@
         .sidebar {
             position: sticky;
             top: 100px;
-            width: 220px;
+            width: 200px;
             height: fit-content;
             max-height: calc(100vh - 140px);
             overflow-y: auto;
             flex-shrink: 0;
-            padding: 16px;
-            background: var(--bg-card);
-            border-radius: 12px;
-            border: 1px solid var(--border);
         }
         
         .sidebar::-webkit-scrollbar { width: 4px; }
         .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
         
         .sidebar-section {
-            margin-bottom: 16px;
-        }
-        
-        .sidebar-section:last-child {
-            margin-bottom: 0;
+            margin-bottom: 24px;
         }
         
         .sidebar-title {
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: var(--accent);
-            margin-bottom: 8px;
-            padding-bottom: 6px;
-            border-bottom: 1px solid var(--border);
+            color: var(--text-muted);
+            margin-bottom: 12px;
         }
         
         .sidebar a {
             display: block;
             color: var(--text-muted);
             text-decoration: none;
-            font-size: 13px;
-            padding: 6px 10px;
-            margin: 2px 0;
-            border-radius: 6px;
+            font-size: 14px;
+            padding: 8px 0;
+            border-left: 2px solid transparent;
             transition: all 0.2s;
         }
         
         .sidebar a:hover { 
-            color: var(--text);
-            background: var(--bg-elevated);
+            color: var(--accent);
+            border-left-color: var(--accent);
+            padding-left: 12px;
         }
         
         .sidebar a.active { 
             color: var(--accent);
-            background: rgba(0, 229, 255, 0.1);
+            border-left-color: var(--accent);
         }
         
         .content { 
@@ -328,7 +318,7 @@
         @media (max-width: 768px) {
             h1 { font-size: 32px; }
             h2 { font-size: 24px; }
-            .container { 
+            .container {
                 padding-top: 100px;
                 flex-direction: column;
             }
@@ -336,7 +326,6 @@
                 position: static;
                 width: 100%;
                 max-height: none;
-                margin-bottom: 20px;
             }
             .content {
                 max-width: 100%;
@@ -351,7 +340,6 @@
             .sidebar {
                 position: static;
                 width: 100%;
-                max-height: 200px;
             }
             .content {
                 max-width: 100%;
