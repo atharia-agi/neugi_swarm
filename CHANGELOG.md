@@ -46,6 +46,21 @@
 
 ## Version History
 
+### v15.2 (March 14, 2026)
+
+**Code Quality & CI/CD**
+
+- **GitHub Actions CI**: Automated test, lint, and build workflows
+- **Ruff Linting**: Fixed 116 lint errors across all Python files
+  - Bare `except` → `except Exception:`
+  - Removed unused imports
+  - Fixed ambiguous variable names
+- **Requirements.txt**: Added proper dependencies
+- **pyproject.toml**: Added project configuration with pytest/mypy/ruff
+- **Test Suite**: Comprehensive tests for landing page, config, installers, core files
+- **Toast Notifications**: Professional toast instead of alert() popups
+- **OS Selection**: Windows/Mac/Linux buttons with copy command
+
 ### v15.1 (March 14, 2026)
 
 **Professional Landing Page & Complete Documentation**
