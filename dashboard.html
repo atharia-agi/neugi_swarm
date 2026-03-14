@@ -417,23 +417,37 @@
         .agent-id {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
+            min-width: 0;
+            overflow: hidden;
         }
 
         .agent-icon {
             font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .agent-info {
+            min-width: 0;
+            overflow: hidden;
         }
 
         .agent-name {
             font-size: 13px;
             font-weight: 500;
             color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .agent-role {
-            font-size: 11px;
+            font-size: 10px;
             color: var(--text-tertiary);
             font-family: var(--font-mono);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .indicator {
@@ -813,7 +827,7 @@
             }
 
             // Agents Grid
-            const agents = neugi.agents || simulator.agents;
+            const agents = (neugi && neugi.agents) ? neugi.agents : simulator.agents;
             document.getElementById('agentsGrid').innerHTML = agents.map(a => {
                 const statusClass = a.status || 'idle';
                 const icon = agentEmojis[a.role] || '🤖';
@@ -821,7 +835,7 @@
                 <div class="agent-node">
                     <div class="agent-id">
                         <span class="agent-icon">${icon}</span>
-                        <div>
+                        <div class="agent-info">
                             <div class="agent-name">${a.name}</div>
                             <div class="agent-role">${a.role} ${a.level ? 'lv.'+a.level : ''}</div>
                         </div>
@@ -831,7 +845,7 @@
             }).join('');
 
             // Tools List
-            const tools = neugi.tools || simulator.tools;
+            const tools = (neugi && neugi.tools) ? neugi.tools : simulator.tools;
             document.getElementById('toolsList').innerHTML = tools.map(t => 
                 `<div class="tool-pill">${t.name}</div>`
             ).join('');
@@ -864,19 +878,17 @@
                 let response = "Neural network synchronized. In Showcase Mode, my cognitive cycles are running on a static demo grid. To experience full autonomy, please refer to the installation guide.";
 
                 const kb = {
-                    "apa itu neugi": "Neugi Swarm adalah sistem agen AI otonom terdistribusi yang dirancang untuk eksekusi logika kompleks. Tidak seperti chatbot biasa, Neugi menggunakan 'Swarm Intelligence' untuk membagi tugas besar menjadi sub-tugas yang dieksekusi oleh agen spesialis secara paralel.",
-                    "what is neugi": "Neugi Swarm is a distributed autonomous AI agent system designed for complex logic execution. Unlike standard chatbots, Neugi uses Swarm Intelligence to break down massive tasks into sub-tasks executed by specialized agents in parallel.",
-                    "explain neugi": "Neugi operates as a decentralized network of AI agents. A central 'Nexus' node orchestrates 'Command Directives' across local and remote nodes, allowing for massive scaling and self-healing automation.",
-                    "mekanisme": "Mekanisme Neugi berbasis pada protokol P2P (Peer-to-Peer). Satu node bertindak sebagai 'Nexus' (Manager) yang mendistribusikan 'Command Directive' ke agen-agen atau ke node remote lainnya melalui dekorator @node_id.",
-                    "cara instal": "Sangat mudah! Kamu cukup menjalankan perintah one-liner: `powershell -c \"irm https://neugi.com/install.ps1 | iex\"`. Pastikan kamu sudah menginstal Python dan Ollama sebagai engine lokalnya.",
-                    "how to install": "Installation is simple! Run this command: `powershell -c \"irm https://neugi.com/install.ps1 | iex\"`. Ensure Python and Ollama are installed as the local cognitive engine.",
-                    "agen": "Neugi memiliki 9 agen spesialis: Aurora (Data), Cipher (Logic), Nova (UI), Pulse (Analytic), Quark (Strategy), Shield (Security), Spark (Network), Ink (Formatting), dan Manager (Orchestrator).",
-                    "agents": "Neugi features 9 specialized agents: Aurora (Data), Cipher (Logic), Nova (UI), Pulse (Analytic), Quark (Strategy), Shield (Security), Spark (Network), Ink (Formatting), and Manager (Orchestrator).",
-                    "self-healing": "Fitur Self-Healing memungkinkan agen Neugi untuk mendeteksi error sistem secara otonom dan memperbaikinya menggunakan OS-level command jika God Mode aktif.",
-                    "distributed": "Neugi supports 'Distributed Swarm', allowing you to connect multiple computers in one network where agents can delegate tasks seamlessly across hardware.",
-                    "siapa kamu": "Saya adalah Nexus, unit orkestrasi pusat dari Neugi Swarm. Saat ini saya berjalan dalam mode simulasi (Showcase Mode).",
-                    "who are you": "I am the Nexus, the central orchestration unit of the Neugi Swarm. I am currently running in Simulation Mode to demonstrate our operational capabilities.",
-                    "download": "Check the 'Installation' section on our landing page for the latest installer and setup guide."
+                    "what is neugi": "Neugi Swarm is a distributed autonomous AI agent system designed for complex logic execution. Unlike standard chatbots, Neugi uses Swarm Intelligence to break down massive tasks into sub-tugas executed by specialized agents in parallel.",
+                    "tell more": "Neugi Swarm features a decentralized architecture with 9 specialized agents. It supports multi-node task delegation, autonomous self-healing, and real-time 3D topology visualization of the entire swarm network.",
+                    "mechanism": "Neugi's mechanism is built on a custom P2P protocol. A 'Nexus' node orchestrates directives through local and remote nodes using the @node_id syntax, allowing for scalable, cross-hardware AI collaboration.",
+                    "how to install": "Simple! Just run this one-liner: `powershell -c \"irm https://neugi.com/install.ps1 | iex\"`. You'll need Python and Ollama installed as the local engine.",
+                    "agents": "The swarm includes 9 specialists: Aurora (Research), Cipher (Coding), Nova (UI), Pulse (Analytics), Quark (Strategy), Shield (Security), Spark (Network), Ink (Formatting), and the Manager (Orchestrator).",
+                    "difference": "Unlike single-agent systems, Neugi is a multi-agent ecosystem. It doesn't just 'talk'; it executes code, performs system diagnostics, and collaborates with other PCs in your network to solve problems.",
+                    "different": "Neugi differs by its 'Swarm Intelligence' approach. Instead of a single LLM stream, it uses specialized agents with specific tools to perform parallel execution on your local file system.",
+                    "self-healing": "Self-healing allows Neugi agents to detect system faults (like missing dependencies) and fix them autonomously using shell commands, provided God Mode is enabled.",
+                    "distributed": "Neugi supports distributed intelligence. You can connect multiple machines to form a private swarm, delegating heavy logic to more powerful nodes in the network.",
+                    "who are you": "I am the Nexus, the central orchestration hub of the Neugi Swarm, currently operating in Showcase Mode.",
+                    "features": "Core features include: Streaming Terminal UI, 3D Network Visualization, Real-time Telemetry, Self-Healing protocols, and Cross-Node Task Delegation."
                 };
 
                 for (const key in kb) {
