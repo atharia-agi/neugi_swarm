@@ -26,9 +26,15 @@ from typing import Optional
 # CONFIG
 # ============================================================
 
-VERSION = "14.1.0"
+VERSION = "15.2.0"
 PORT = 19888
 NEUGI_DIR = os.path.expanduser("~/neugi")
+NEXUS_DIR = os.path.expanduser("~/neugi/nexus")
+SANDBOX_DIR = os.path.expanduser("~/neugi/nexus/sandbox")
+
+# Ensure directories exist
+os.makedirs(NEXUS_DIR, exist_ok=True)
+os.makedirs(SANDBOX_DIR, exist_ok=True)
 
 # ============================================================
 # HEALTH MONITOR

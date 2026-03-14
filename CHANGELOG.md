@@ -52,14 +52,15 @@
 
 - **GitHub Actions CI**: Automated test, lint, and build workflows
 - **Ruff Linting**: Fixed 116 lint errors across all Python files
-  - Bare `except` → `except Exception:`
-  - Removed unused imports
-  - Fixed ambiguous variable names
 - **Requirements.txt**: Added proper dependencies
 - **pyproject.toml**: Added project configuration with pytest/mypy/ruff
 - **Test Suite**: Comprehensive tests for landing page, config, installers, core files
 - **Toast Notifications**: Professional toast instead of alert() popups
 - **OS Selection**: Windows/Mac/Linux buttons with copy command
+- **NEXUS Workspace**: New isolated workspace for swarm agents
+  - `~/neugi/nexus/` - Central hub for all agents
+  - `~/neugi/nexus/sandbox/` - Isolated workspace per agent
+  - Each agent works in its own sandboxed environment
 
 ### v15.1 (March 14, 2026)
 
