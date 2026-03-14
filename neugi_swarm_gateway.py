@@ -19,11 +19,8 @@ Usage:
     gateway.start()
 """
 
-import os
 import json
-import asyncio
-import threading
-from typing import Dict, List, Any, Optional, Callable
+from typing import List, Optional
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -119,7 +116,6 @@ class Gateway:
         @self.app.route("/api/channels", methods=["GET", "POST"])
         def channels():
             if request.method == "POST":
-                data = request.json
                 # Add channel
                 return jsonify({"status": "success", "channel_id": "new_channel"})
             return jsonify({"channels": []})
@@ -152,7 +148,6 @@ class Gateway:
         @self.app.route("/api/memory", methods=["GET", "POST"])
         def memory():
             if request.method == "POST":
-                data = request.json
                 # Store memory
                 return jsonify({"status": "success", "memory_id": "new_memory"})
             return jsonify({"memories": []})
@@ -208,14 +203,14 @@ class Gateway:
 
     def start(self, blocking: bool = True):
         """Start the gateway"""
-        print(f"\n🌐 Neugi Swarm Gateway")
+        print("\n🌐 Neugi Swarm Gateway")
         print(f"   Host: {self.config.host}")
         print(f"   Port: {self.config.port}")
         print(f"   WebSocket: {'Enabled' if self.socketio else 'Disabled'}")
 
         if FLASK_AVAILABLE:
             if self.socketio:
-                print(f"\n🚀 Starting server...")
+                print("\n🚀 Starting server...")
                 self.socketio.run(
                     self.app,
                     host=self.config.host,
@@ -223,7 +218,7 @@ class Gateway:
                     debug=self.config.debug,
                 )
             else:
-                print(f"\n🚀 Starting Flask server...")
+                print("\n🚀 Starting Flask server...")
                 self.app.run(
                     host=self.config.host,
                     port=self.config.port,

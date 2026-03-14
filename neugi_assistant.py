@@ -74,7 +74,7 @@ class NeugiAssistant:
                     cfg = json.load(f)
                     user = cfg.get("user", {})
                     self.user_name = user.get("name", "User")
-        except:
+        except Exception:
             pass
 
     def _load_config(self):
@@ -94,7 +94,7 @@ class NeugiAssistant:
                         )
                     elif isinstance(assistant_cfg, str):
                         self.primary_model = assistant_cfg
-        except:
+        except Exception:
             pass
 
     def _build_system_prompt(self) -> str:
@@ -138,7 +138,7 @@ When you learn something important about the user (preferences, facts, etc), rem
                 context += f"{role}: {content}\n"
 
             return context
-        except:
+        except Exception:
             return ""
 
     def _get_user_memories(self) -> str:
@@ -160,7 +160,7 @@ When you learn something important about the user (preferences, facts, etc), rem
                 context += f"- {m.content}\n"
 
             return context
-        except:
+        except Exception:
             return ""
 
     def _save_to_memory(self, role: str, content: str):
@@ -173,7 +173,7 @@ When you learn something important about the user (preferences, facts, etc), rem
 
             # Extract and remember important info
             self._extract_and_remember(content, role)
-        except:
+        except Exception:
             pass
 
     def _extract_and_remember(self, content: str, role: str):
@@ -203,7 +203,7 @@ When you learn something important about the user (preferences, facts, etc), rem
                         importance=7,
                         tags=["user", "preference"],
                     )
-                except:
+                except Exception:
                     pass
                 break
 
@@ -212,7 +212,7 @@ When you learn something important about the user (preferences, facts, etc), rem
         try:
             r = requests.get(f"{self.url}/api/tags", timeout=3)
             return r.ok
-        except:
+        except Exception:
             return False
 
     def chat(self, message: str) -> str:
@@ -266,7 +266,7 @@ When you learn something important about the user (preferences, facts, etc), rem
 
                 return result
 
-        except Exception as e:
+        except Exception:
             # Try fallback
             result = self._fallback_chat(message, context + user_memories)
             self._save_to_memory("assistant", result)
@@ -336,13 +336,13 @@ When you learn something important about the user (preferences, facts, etc), rem
                                 if callback:
                                     callback(chunk)
                                 yield chunk
-                        except:
+                        except Exception:
                             continue
 
             # Save complete response to memory
             self._save_to_memory("assistant", full_response)
 
-        except Exception as e:
+        except Exception:
             # Fallback to non-streaming
             try:
                 context = self._get_conversation_context()
@@ -392,7 +392,7 @@ When you learn something important about the user (preferences, facts, etc), rem
                     data = json.loads(response.read().decode())
                     return data.get("response", "").strip()
 
-            except:
+            except Exception:
                 continue
 
         return self._offline_response(message)

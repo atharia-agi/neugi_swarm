@@ -187,7 +187,7 @@ if __name__ == "__main__":
         print(f"\n{name.upper()}: {sizes}")
         print(f"   Context: {info['ctx']}")
         if "0.8b" in str(info.get("sizes", [])):
-            print(f"   ⚡ NEW: 0.8B version available!")
+            print("   ⚡ NEW: 0.8B version available!")
 
     print("\n\n🔵 GROQ - Free API")
     print("-" * 40)

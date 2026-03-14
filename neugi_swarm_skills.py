@@ -18,9 +18,7 @@ Usage:
     skills.execute("github", "status")
 """
 
-import os
-import json
-from typing import Dict, List, Callable, Any
+from typing import Dict, List, Any
 from dataclasses import dataclass
 from enum import Enum
 

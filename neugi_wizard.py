@@ -20,9 +20,8 @@ import json
 import requests
 import subprocess
 import sys
-import shutil
 import re
-from typing import Optional, Dict, List
+from typing import Dict, List
 from datetime import datetime
 
 # ============================================================
@@ -116,7 +115,7 @@ Be helpful, clear, and concise. When asked to fix something, actually perform th
                             data = json.loads(line.decode())
                             if "response" in data:
                                 yield data["response"]
-                        except:
+                        except Exception:
                             continue
 
         except Exception as e:
@@ -219,13 +218,13 @@ class SystemChecker:
             try:
                 with open(config_path) as f:
                     result["config"] = json.load(f)
-            except:
+            except Exception:
                 pass
 
         try:
-            r = requests.get(f"http://localhost:19888/health", timeout=2)
+            r = requests.get("http://localhost:19888/health", timeout=2)
             result["running"] = r.ok
-        except:
+        except Exception:
             pass
 
         return result
@@ -502,7 +501,7 @@ I'm your AI assistant. I can help you with:
         with open(config_path, "w") as f:
             json.dump(config, f, indent=2)
 
-        self.ui.success(f"Setup complete! Config saved.")
+        self.ui.success("Setup complete! Config saved.")
 
         # Ask to start
         print(f"\n  {C.YELLOW}Start {BRAND} now? (y/n): {C.END}", end="")
@@ -735,7 +734,7 @@ System status:
             if not plugins:
                 print(f"\n{C.YELLOW}No plugins found.{C.END}")
                 print(f"\n{C.CYAN}Plugin directory: ~/neugi/plugins{C.END}")
-                print(f"Want to create an example plugin? (y/n): ", end="")
+                print("Want to create an example plugin? (y/n): ", end="")
                 if input().strip().lower() == "y":
                     from neugi_plugins import create_example_plugin
 
@@ -806,7 +805,7 @@ System status:
         self.ui.header("🔐 SECURITY SETTINGS")
 
         try:
-            from neugi_security import SecurityManager, security_wizard
+            from neugi_security import security_wizard
 
             security_wizard()
         except Exception as e:
@@ -868,7 +867,7 @@ System status:
                     with open(os.path.join(NEUGI_DIR, f), "w") as fp:
                         fp.write(r.text)
                     self.ui.success(f"Downloaded: {f}")
-            except:
+            except Exception:
                 self.ui.error(f"Failed: {f}")
 
 

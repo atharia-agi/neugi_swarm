@@ -21,7 +21,6 @@ Usage:
 
 import os
 import json
-import subprocess
 import requests
 import re
 from typing import Dict, List, Any, Callable, Optional
@@ -285,9 +284,7 @@ class ToolManager:
         """Get a tool"""
         return self.tools.get(tool_id)
 
-    def list(
-        self, category: Optional[str] = None, enabled_only: bool = False
-    ) -> List[Tool]:
+    def list(self, category: Optional[str] = None, enabled_only: bool = False) -> List[Tool]:
         """List tools"""
         tools = list(self.tools.values())
 
@@ -424,9 +421,7 @@ class ToolManager:
             result = browser.extract_content(url)
             return result
 
-        return {
-            "error": "Invalid mode. Use: search, browse, verify, or extract with url"
-        }
+        return {"error": "Invalid mode. Use: search, browse, verify, or extract with url"}
 
     def _code_execute(self, code: str, language: str = "python", **kwargs) -> Dict:
         """Execute code"""
@@ -463,9 +458,7 @@ class ToolManager:
     def _file_write(self, path: str, content: str, **kwargs) -> Dict:
         """Write file"""
         try:
-            os.makedirs(
-                os.path.dirname(path) if os.path.dirname(path) else ".", exist_ok=True
-            )
+            os.makedirs(os.path.dirname(path) if os.path.dirname(path) else ".", exist_ok=True)
             with open(path, "w") as f:
                 f.write(content)
             return {"path": path, "status": "written"}
@@ -500,15 +493,11 @@ class ToolManager:
         """Send email"""
         return {"to": to, "subject": subject, "status": "would_send"}
 
-    def _send_telegram(
-        self, message: str, chat_id: Optional[str] = None, **kwargs
-    ) -> Dict:
+    def _send_telegram(self, message: str, chat_id: Optional[str] = None, **kwargs) -> Dict:
         """Send Telegram"""
         return {"chat_id": chat_id, "message": message, "status": "would_send"}
 
-    def _send_discord(
-        self, message: str, webhook_url: Optional[str] = None, **kwargs
-    ) -> Dict:
+    def _send_discord(self, message: str, webhook_url: Optional[str] = None, **kwargs) -> Dict:
         """Send Discord"""
         return {"message": message, "status": "would_send"}
 
@@ -541,9 +530,7 @@ class NativeWebBrowser:
     def __init__(self):
         self.session = requests.Session()
         self.session.headers.update(
-            {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-            }
+            {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
         )
 
     def search(self, query: str, num_results: int = 5) -> List[Dict]:
@@ -560,7 +547,7 @@ class NativeWebBrowser:
             for future in futures:
                 try:
                     results.extend(future.result())
-                except:
+                except Exception:
                     pass
 
         # Deduplicate
@@ -597,7 +584,7 @@ class NativeWebBrowser:
                         )
                     if len(results) >= num_results:
                         break
-        except:
+        except Exception:
             pass
         return results
 
@@ -618,7 +605,7 @@ class NativeWebBrowser:
                             "quality": 0.8,
                         }
                     )
-        except:
+        except Exception:
             pass
         return results
 
@@ -643,7 +630,7 @@ class NativeWebBrowser:
                         )
                     if len(results) >= num_results:
                         break
-        except:
+        except Exception:
             pass
         return results
 
@@ -659,7 +646,7 @@ class NativeWebBrowser:
                 result["success"] = True
                 result["method"] = "jina_ai"
                 return result
-        except:
+        except Exception:
             pass
 
         # Fallback to basic extraction
@@ -672,11 +659,11 @@ class NativeWebBrowser:
                 for tag in soup(["script", "style", "nav", "footer"]):
                     tag.decompose()
                 text = soup.get_text(separator="\n")
-                lines = [l.strip() for l in text.split("\n") if l.strip()]
+                lines = [line.strip() for line in text.split("\n") if line.strip()]
                 result["content"] = "\n".join(lines)[:max_length]
                 result["success"] = True
                 result["method"] = "readability"
-        except:
+        except Exception:
             pass
 
         return result
@@ -721,7 +708,7 @@ if __name__ == "__main__":
     print("🤖 Neugi Swarm Tools")
     print("=" * 40)
     print(f"Total tools: {len(tools.tools)}")
-    print(f"\nBy category:")
+    print("\nBy category:")
 
     for cat in tools.CATEGORIES:
         count = len(tools.list(cat))

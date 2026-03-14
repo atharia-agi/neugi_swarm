@@ -1,6 +1,5 @@
 """NEUGI SWARM - Test Suite"""
 
-import pytest
 import os
 
 

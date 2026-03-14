@@ -11,7 +11,6 @@ Usage:
     channels.send("telegram", "Hello!")
 """
 
-import os
 import json
 import asyncio
 import requests

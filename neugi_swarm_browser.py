@@ -14,13 +14,10 @@ Version: 2.0
 Date: March 14, 2026
 """
 
-import os
 import re
-import json
 import requests
-import subprocess
-from typing import Dict, List, Optional, Any
-from urllib.parse import quote_plus, urljoin
+from typing import Dict, List, Optional
+from urllib.parse import quote_plus
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -38,9 +35,7 @@ class SearchEngine:
     def __init__(self):
         self.session = requests.Session()
         self.session.headers.update(
-            {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-            }
+            {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
         )
 
     def search_duckduckgo(self, query: str, num_results: int = 5) -> List[Dict]:
@@ -97,7 +92,7 @@ class SearchEngine:
                         )
                     if results:
                         break
-            except:
+            except Exception:
                 continue
         return results
 
@@ -125,7 +120,7 @@ class SearchEngine:
                         )
                     if len(results) >= num_results:
                         break
-        except:
+        except Exception:
             pass
         return results
 
@@ -145,7 +140,7 @@ class SearchEngine:
                 try:
                     results = future.result()
                     all_results.extend(results)
-                except:
+                except Exception:
                     pass
 
         # Deduplicate by URL domain
@@ -168,9 +163,7 @@ class ContentExtractor:
     def __init__(self):
         self.session = requests.Session()
         self.session.headers.update(
-            {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-            }
+            {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
         )
 
     def extract_jina(self, url: str) -> Optional[str]:
@@ -179,7 +172,7 @@ class ContentExtractor:
             r = requests.get(f"https://r.jina.ai/{url}", timeout=15)
             if r.ok:
                 return r.text
-        except:
+        except Exception:
             pass
         return None
 
@@ -198,9 +191,9 @@ class ContentExtractor:
 
                 # Get text
                 text = soup.get_text(separator="\n")
-                lines = [l.strip() for l in text.split("\n") if l.strip()]
+                lines = [line.strip() for line in text.split("\n") if line.strip()]
                 return "\n".join(lines[:100])  # First 100 lines
-        except:
+        except Exception:
             pass
         return None
 
@@ -282,18 +275,14 @@ class ClaimVerifier:
                 source_info = {
                     "url": source["url"],
                     "title": source.get("title", ""),
-                    "content": content_data["content"][:500]
-                    if content_data["content"]
-                    else "",
+                    "content": content_data["content"][:500] if content_data["content"] else "",
                     "agree": False,
                     "contradict": False,
                 }
 
                 # Simple keyword-based analysis
-                content_lower = (
-                    content_data["content"].lower() if content_data["content"] else ""
-                )
-                claim_lower = claim.lower()
+                content_lower = content_data["content"].lower() if content_data["content"] else ""
+                claim.lower()
 
                 # Check for agreement/contradiction keywords
                 positive = ["yes", "true", "correct", "confirmed", "verified"]
@@ -318,9 +307,7 @@ class ClaimVerifier:
             result["verdict"] = "UNVERIFIABLE"
             result["confidence"] = 5
         else:
-            agreement_ratio = (result["agree"] - result["contradict"]) / result[
-                "sources_checked"
-            ]
+            agreement_ratio = (result["agree"] - result["contradict"]) / result["sources_checked"]
 
             if result["agree"] >= num_sources and result["contradict"] == 0:
                 result["verdict"] = "VERIFIED"
@@ -418,9 +405,7 @@ class WebBrowser:
 
         if output["verification"]:
             v = output["verification"]
-            output["summary"] += (
-                f"Verification: {v['verdict']} ({v['confidence']}% confidence)"
-            )
+            output["summary"] += f"Verification: {v['verdict']} ({v['confidence']}% confidence)"
 
         return output
 

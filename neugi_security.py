@@ -13,12 +13,9 @@ Date: March 14, 2026
 """
 
 import os
-import sys
 import json
-import re
 import subprocess
-import tempfile
-from typing import Dict, List, Optional, Any
+from typing import Dict, List
 from dataclasses import dataclass
 
 
@@ -87,7 +84,7 @@ class SecurityManager:
                 return SecurityConfig(
                     **{k: v for k, v in data.items() if k in DEFAULT_CONFIG}
                 )
-            except:
+            except Exception:
                 pass
         return SecurityConfig(**DEFAULT_CONFIG)
 
@@ -232,7 +229,7 @@ class SecurityManager:
             try:
                 with open(audit_path, "a") as f:
                     f.write(json.dumps(entry) + "\n")
-            except:
+            except Exception:
                 pass
 
     def get_audit_log(self, limit: int = 20) -> List[Dict]:

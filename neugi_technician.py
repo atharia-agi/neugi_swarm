@@ -18,10 +18,8 @@ Date: March 13, 2026
 """
 
 import os
-import sys
 import json
 import shutil
-import subprocess
 from typing import Dict, List, Optional
 from datetime import datetime
 
@@ -111,7 +109,7 @@ class NeugiTechnician:
         warnings = [d for d in self.diagnoses if d.severity == "warning"]
 
         print("\n" + "=" * 50)
-        print(f"📊 Diagnosis Complete!")
+        print("📊 Diagnosis Complete!")
         print(f"   Critical: {len(critical)}")
         print(f"   Warnings: {len(warnings)}")
 
@@ -234,7 +232,7 @@ class NeugiTechnician:
                     )
                 )
 
-        except:
+        except Exception:
             pass
 
     def _check_database(self):
@@ -250,7 +248,7 @@ class NeugiTechnician:
                     conn = sqlite3.connect(db_path)
                     conn.execute("SELECT 1")
                     conn.close()
-                except:
+                except Exception:
                     self.diagnoses.append(
                         Diagnosis(
                             issue=f"Database corrupted: {db_name}",
@@ -281,7 +279,6 @@ class NeugiTechnician:
     def _apply_fix(self, diagnosis: Diagnosis) -> Dict:
         """Apply fix for specific issue"""
 
-        fix = diagnosis.fix
 
         # Config issues
         if "config" in diagnosis.issue.lower():
@@ -401,7 +398,7 @@ class NeugiTechnician:
                 import sqlite3
 
                 conn = sqlite3.connect(sessions_db)
-                c = conn.cursor()
+                conn.cursor()
 
                 # Delete sessions older than 30 days
                 # (would add date logic here)

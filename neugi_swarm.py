@@ -14,16 +14,12 @@ Date: March 13, 2026
 """
 
 import os
-import sys
 import json
 import time
 import requests
-import threading
-import signal
 from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from urllib.parse import parse_qs, urlparse
-import socketserver
+from urllib.parse import urlparse
 from typing import Optional
 
 # ============================================================
@@ -87,7 +83,7 @@ class ErrorHandler:
             r = requests.get("http://localhost:11434/api/tags", timeout=3)
             if not r.ok:
                 issues.append("Ollama not responding")
-        except:
+        except Exception:
             issues.append("Ollama not running - run: ollama serve")
 
         # Check 2: Port available?
@@ -113,8 +109,8 @@ class ErrorHandler:
 
         # Fix 1: Start Ollama if not running
         try:
-            r = requests.get("http://localhost:11434/api/tags", timeout=2)
-        except:
+            requests.get("http://localhost:11434/api/tags", timeout=2)
+        except Exception:
             # Try to start Ollama
             import subprocess
 
@@ -125,7 +121,7 @@ class ErrorHandler:
                     stderr=subprocess.DEVNULL,
                 )
                 fixes.append("Started Ollama server")
-            except:
+            except Exception:
                 fixes.append("Could not auto-start Ollama - run manually: ollama serve")
 
         return fixes
@@ -309,7 +305,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
             if r.ok:
                 models = r.json().get("models", [])
                 return {"status": "running", "models": len(models)}
-        except:
+        except Exception:
             pass
         return {"status": "not_running"}
 

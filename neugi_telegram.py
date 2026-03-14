@@ -14,8 +14,6 @@ import os
 import json
 import time
 import requests
-import threading
-from typing import Dict, Optional
 
 # Load config
 CONFIG_PATH = os.path.expanduser("~/neugi/data/config.json")
@@ -115,7 +113,7 @@ class TelegramGateway:
                                 "🤖 Neugi Swarm linked securely. Send /help for commands.",
                             )
                             break
-                except:
+                except Exception:
                     pass
                 time.sleep(2)
 
@@ -143,7 +141,7 @@ class TelegramGateway:
         payload = {"chat_id": chat_id, "text": text, "parse_mode": parse_mode}
         try:
             requests.post(f"{self.api_url}/sendMessage", json=payload, timeout=5)
-        except:
+        except Exception:
             pass
 
     def _call_swarm(self, message: str) -> str:
@@ -187,7 +185,7 @@ class TelegramGateway:
                     self._send_message(chat_id, msg)
                 else:
                     self._send_message(chat_id, "❌ Status API failed.")
-            except Exception as e:
+            except Exception:
                 self._send_message(chat_id, "❌ Swarm unreachable.")
 
         elif text.startswith("/agents"):
@@ -199,7 +197,7 @@ class TelegramGateway:
                     for a in agents:
                         msg += f"• *{a['name']}* ({a['role']}) - `{a['status']}`\n"
                     self._send_message(chat_id, msg)
-            except:
+            except Exception:
                 self._send_message(chat_id, "❌ Swarm unreachable.")
 
         elif text.startswith("/ping"):

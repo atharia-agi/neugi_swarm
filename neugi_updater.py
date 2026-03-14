@@ -8,13 +8,9 @@ Date: March 14, 2026
 """
 
 import os
-import sys
-import json
 import requests
 import subprocess
-import hashlib
 from typing import Dict, Optional
-from datetime import datetime
 
 
 class AutoUpdater:
@@ -25,8 +21,12 @@ class AutoUpdater:
     CURRENT_VERSION = "15.2"
 
     def __init__(self):
-        self.update_url = f"https://api.github.com/repos/{self.REPO_OWNER}/{self.REPO_NAME}/releases/latest"
-        self.download_url = f"https://github.com/{self.REPO_OWNER}/{self.REPO_NAME}/archive/refs/heads/master.zip"
+        self.update_url = (
+            f"https://api.github.com/repos/{self.REPO_OWNER}/{self.REPO_NAME}/releases/latest"
+        )
+        self.download_url = (
+            f"https://github.com/{self.REPO_OWNER}/{self.REPO_NAME}/archive/refs/heads/master.zip"
+        )
 
     def get_latest_version(self) -> Optional[str]:
         """Get latest version from GitHub"""
@@ -35,7 +35,7 @@ class AutoUpdater:
             if response.ok:
                 data = response.json()
                 return data.get("tag_name", "").lstrip("v")
-        except:
+        except Exception:
             pass
         return None
 
@@ -56,13 +56,13 @@ class AutoUpdater:
                 curr_parts = [int(x) for x in current.split(".")]
                 latest_parts = [int(x) for x in latest.split(".")]
 
-                for c, l in zip(curr_parts, latest_parts):
-                    if l > c:
+                for curr, latest in zip(curr_parts, latest_parts):
+                    if latest > curr:
                         result["update_available"] = True
                         break
-                    elif l < c:
+                    elif latest < curr:
                         break
-            except:
+            except Exception:
                 pass
 
         return result
@@ -90,15 +90,11 @@ class AutoUpdater:
 
                 # Extract
                 print("📦 Extracting...")
-                subprocess.run(
-                    ["unzip", "-o", zip_path, "-d", target_dir], capture_output=True
-                )
+                subprocess.run(["unzip", "-o", zip_path, "-d", target_dir], capture_output=True)
 
                 result["success"] = True
                 result["message"] = f"Update downloaded to {target_dir}"
-                result["extracted"] = os.path.join(
-                    target_dir, f"{self.REPO_NAME}-master"
-                )
+                result["extracted"] = os.path.join(target_dir, f"{self.REPO_NAME}-master")
             else:
                 result["message"] = "Download failed"
 
@@ -158,12 +154,8 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="NEUGI Auto-Updater")
-    parser.add_argument(
-        "action", choices=["check", "download", "apply"], help="Action to perform"
-    )
-    parser.add_argument(
-        "--backup", action="store_true", default=True, help="Backup before update"
-    )
+    parser.add_argument("action", choices=["check", "download", "apply"], help="Action to perform")
+    parser.add_argument("--backup", action="store_true", default=True, help="Backup before update")
 
     args = parser.parse_args()
 

@@ -16,7 +16,7 @@ Date: March 13, 2026
 import os
 import json
 import requests
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 # ============================================================
 # OLLAMA CLOUD CONFIG
@@ -118,7 +118,7 @@ You have access to installation docs and can guide users step by step."""
             r = requests.get("http://localhost:11434/api/tags", timeout=2)
             if r.ok:
                 return "ollama_local"
-        except:
+        except Exception:
             pass
 
         return "simulation"
@@ -176,7 +176,7 @@ You have access to installation docs and can guide users step by step."""
                 # Fallback
                 return self._fallback_response(messages)
 
-        except Exception as e:
+        except Exception:
             return self._fallback_response(messages)
 
     def _call_groq(self, messages: list) -> str:
@@ -205,7 +205,7 @@ You have access to installation docs and can guide users step by step."""
 
             if r.ok:
                 return r.json()["choices"][0]["message"]["content"]
-        except:
+        except Exception:
             pass
 
         return self._fallback_response(messages)
@@ -232,7 +232,7 @@ You have access to installation docs and can guide users step by step."""
 
             if r.ok:
                 return r.json()["choices"][0]["message"]["content"]
-        except:
+        except Exception:
             pass
 
         return self._fallback_response(messages)
@@ -253,11 +253,11 @@ You have access to installation docs and can guide users step by step."""
         data = {"model": "llama2", "messages": msgs, "stream": False}
 
         try:
-            r = requests.post(url, json=data, timeout=60)
+            r = requests.post(url, json=data, timeout=20)
 
             if r.ok:
-                return r.json()["message"]["content"]
-        except:
+                return r.json()["choices"][0]["message"]["content"]
+        except Exception:
             pass
 
         return self._fallback_response(messages)

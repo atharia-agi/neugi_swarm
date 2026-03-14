@@ -31,12 +31,10 @@ Usage:
 import os
 import json
 import sqlite3
-import hashlib
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
 from dataclasses import dataclass, field
 from enum import Enum
-import random
 
 
 class AgentRole(Enum):
@@ -357,7 +355,7 @@ class AgentManager:
                 )
                 if r.ok:
                     return r.json().get("message", {}).get("content", "").strip()
-        except Exception as e:
+        except Exception:
             pass
         return ""
 
