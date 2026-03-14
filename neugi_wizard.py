@@ -11,8 +11,8 @@ Single entry point for:
 
 Powered by Ollama AI!
 
-Version: 3.0
-Date: March 14, 2026
+Version: 15.4.0
+Date: March 15, 2026
 """
 
 import os

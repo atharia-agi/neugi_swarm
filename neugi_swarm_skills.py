@@ -29,7 +29,7 @@ Usage:
     skills.install_from_url("https://github.com/user/neugi-skill")
     skills.import_from_claude_code("/path/to/.claude/commands")
 
-Version: 15.2.0
+Version: 15.4.0
 """
 
 import os

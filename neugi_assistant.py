@@ -5,8 +5,8 @@
 Smart assistant using qwen3.5:cloud (Ollama Cloud)
 With ENHANCED MEMORY - remembers conversations and user preferences!
 
-Version: 2.0
-Date: March 14, 2026
+Version: 15.4.0
+Date: March 15, 2026
 """
 
 import os

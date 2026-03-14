@@ -103,6 +103,16 @@
         .sidebar-item a:hover { color: var(--text-primary); background: var(--bg-layer); }
         .sidebar-item a.active { color: var(--accent); background: var(--bg-layer-hover); font-weight: 500; }
 
+        /* Search Styles */
+        .search-container { padding: 0 24px 20px 0; margin-bottom: 20px; border-bottom: 1px solid var(--border-subtle); }
+        #docSearch {
+            width: 100%; background: var(--bg-layer); border: 1px solid var(--border-subtle);
+            color: var(--text-primary); padding: 8px 12px; border-radius: 6px; font-size: 13px;
+            outline: none; transition: border-color 0.2s;
+        }
+        #docSearch:focus { border-color: var(--border-hover); }
+        .hidden { display: none !important; }
+
         /* Main Content Area */
         .main-content {
             flex: 1; overflow-y: auto; padding: 48px 64px 80px;
@@ -158,6 +168,17 @@
             .sidebar { display: none; }
             .nav-right .nav-link { display: none; }
         }
+
+        /* Copy Button */
+        .code-wrapper { position: relative; }
+        .copy-code {
+            position: absolute; top: 12px; right: 12px;
+            background: var(--bg-layer); border: 1px solid var(--border-subtle);
+            color: var(--text-tertiary); padding: 4px 8px; border-radius: 4px;
+            font-size: 11px; cursor: pointer; transition: all 0.2s;
+            z-index: 10;
+        }
+        .copy-code:hover { background: var(--bg-layer-hover); color: var(--text-primary); }
     </style>
 </head>
 <body>
@@ -177,6 +198,9 @@
     <div class="layout-container">
         <!-- Sidebar Navigation -->
         <aside class="sidebar">
+            <div class="search-container">
+                <input type="text" id="docSearch" placeholder="Search docs..." onkeyup="searchDocs()">
+            </div>
             <div class="sidebar-section">
                 <div class="sidebar-title">Getting Started</div>
                 <ul class="sidebar-list">
@@ -223,19 +247,31 @@
                 <p>To begin, ensure you have Python 3.11+ and Ollama installed. Run the one-line install script on your terminal.</p>
 
                 <h3>Windows (PowerShell)</h3>
-<pre><code>irm neugi.sh/install | iex</code></pre>
+                <div class="code-wrapper">
+                    <button class="copy-code" onclick="copyCode(this)">Copy</button>
+                    <pre><code>irm neugi.sh/install | iex</code></pre>
+                </div>
 
                 <h3>macOS / Linux</h3>
-<pre><code>curl -fsSL https://neugi.sh/install | bash</code></pre>
+                <div class="code-wrapper">
+                    <button class="copy-code" onclick="copyCode(this)">Copy</button>
+                    <pre><code>curl -fsSL https://neugi.sh/install | bash</code></pre>
+                </div>
 
                 <p>Once cloned, initialize the dashboard ecosystem using:</p>
-<pre><code>python3 neugi_wizard.py</code></pre>
+                <div class="code-wrapper">
+                    <button class="copy-code" onclick="copyCode(this)">Copy</button>
+                    <pre><code>python3 neugi_wizard.py</code></pre>
+                </div>
 
                 <h2 id="godmode">God Mode Root Integrity</h2>
                 <p>By default, Neugi incorporates strict safety evaluations via the <code>Shield</code> node. Operations mutating kernel state, deleting significant directory trees, or exposing subnets are immediately blocked.</p>
                 <p>You can bypass these bounds entirely for total autonomy by triggering <strong>God Mode</strong>:</p>
-<pre><code>export NEUGI_GOD_MODE=1
+                <div class="code-wrapper">
+                    <button class="copy-code" onclick="copyCode(this)">Copy</button>
+                    <pre><code>export NEUGI_GOD_MODE=1
 python3 neugi_assistant.py</code></pre>
+                </div>
 
                 <div class="callout">
                     <strong>Warning:</strong> God Mode allows the Cipher and Quark nodes to execute unrestrained Bash and PowerShell scripts without a human-in-the-loop limit timeout. Use with extreme caution.
@@ -301,5 +337,23 @@ python3 neugi_assistant.py</code></pre>
             </div>
         </aside>
     </div>
+    <script>
+        function copyCode(btn) {
+            const code = btn.nextElementSibling.innerText;
+            navigator.clipboard.writeText(code);
+            const original = btn.innerText;
+            btn.innerText = 'Copied';
+            setTimeout(() => { btn.innerText = original; }, 2000);
+        }
+
+        function searchDocs() {
+            const query = document.getElementById('docSearch').value.toLowerCase();
+            const items = document.querySelectorAll('.sidebar-item');
+            items.forEach(item => {
+                const text = item.innerText.toLowerCase();
+                item.classList.toggle('hidden', !text.includes(query));
+            });
+        }
+    </script>
 </body>
 </html>

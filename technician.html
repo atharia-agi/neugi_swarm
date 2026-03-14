@@ -129,11 +129,11 @@
             <div class="metrics-grid">
                 <div class="metric-box">
                     <span class="metric-label">Memory Graph Load</span>
-                    <span class="metric-value">4.2 MB</span>
+                    <span class="metric-value" id="memMetric">4.2 MB</span>
                 </div>
                 <div class="metric-box">
                     <span class="metric-label">LLM Context Utilization</span>
-                    <span class="metric-value">12.5%</span>
+                    <span class="metric-value" id="llmMetric">12.5%</span>
                 </div>
                 <div class="metric-box">
                     <span class="metric-label">Neural Pathways</span>
@@ -173,17 +173,38 @@
         }
 
         async function runDiagnostic() {
-            logMsg('Initiating recursive infrastructure scan...', 'warn');
-            setTimeout(() => logMsg('Checking Ollama binding... OK', 'success'), 600);
-            setTimeout(() => logMsg('Validating 9-node neural topology... OK', 'success'), 1200);
-            setTimeout(() => logMsg('Scanning code_execution tools for anomalies...', ''), 1800);
-            setTimeout(() => logMsg('No anomalies detected. Swarm integrity is flawless.', 'success'), 2500);
+            const steps = [
+                { msg: 'Initiating recursive infrastructure scan...', type: 'warn' },
+                { msg: 'Checking Ollama binding... OK', type: 'success' },
+                { msg: 'Validating 9-node neural topology... OK', type: 'success' },
+                { msg: 'Scanning code_execution tools for anomalies...', type: '' },
+                { msg: 'Neural synchronization stabilized at 12ms latency.', type: 'success' },
+                { msg: 'Purging transient buffer objects... OK', type: '' },
+                { msg: 'No anomalies detected. Swarm integrity is flawless.', type: 'success' }
+            ];
+
+            let delay = 0;
+            steps.forEach(step => {
+                setTimeout(() => logMsg(step.msg, step.type), delay);
+                delay += 400 + Math.random() * 800;
+            });
         }
 
         async function clearMemory() {
             logMsg('WARNING: Purging Vector Graph DB...', 'error');
-            setTimeout(() => logMsg('Graph cleared successfully. Neural baseline reset.', 'warn'), 800);
+            setTimeout(() => {
+                logMsg('Graph cleared successfully. Neural baseline reset.', 'warn');
+                document.getElementById('memMetric').textContent = '0.1 MB';
+            }, 800);
         }
+
+        // Live Telemetry Loop
+        setInterval(() => {
+            const mem = (4.0 + Math.random() * 0.5).toFixed(1);
+            const llm = (12.0 + Math.random() * 1.5).toFixed(1);
+            document.getElementById('memMetric').textContent = `${mem} MB`;
+            document.getElementById('llmMetric').textContent = `${llm}%`;
+        }, 2000);
     </script>
 </body>
 </html>

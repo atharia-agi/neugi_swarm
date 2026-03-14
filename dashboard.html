@@ -570,8 +570,8 @@
                 <div style="font-weight: 600; font-size: 11px; letter-spacing: 0.05em; color: var(--text-secondary);">POWERED BY OLLAMA</div>
             </div>
             <div class="status-badge">
-                <div class="status-dot"></div>
-                v2.6.0 NEURAL CORE
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">v2.6.0 NEURAL CORE</span>
             </div>
         </div>
     </aside>
@@ -907,9 +907,9 @@
                     "self-healing": "Self-healing allows Neugi agents to detect system faults (like missing dependencies) and fix them autonomously using shell commands, provided God Mode is enabled.",
                     "distributed": "Neugi supports distributed intelligence. You can connect multiple machines to form a private swarm, delegating heavy logic to more powerful nodes in the network.",
                     "ollama": "Neugi is built with pride using Ollama. We leverage Ollama's MIT-licensed core for zero-config local intelligence, fail-safe recovery, and a truly open-source foundation for neural swarms.",
-                    "partnership": "We are actively seeking strategic partnerships with AI providers (Ollama, OpenAI, Anthropic, Alibaba) to refine our 'Neural General Intelligence' vision and provide world-class swarm integration.",
-                    "grant": "Neugi is currently open for partnership fund grants and specialized research allocations to expand our autonomous swarm logic and distributed intelligence network.",
-                    "collaboration": "Interested in collaborating? Our Lead Architect (Atharia.AGI) is looking for feedback and ecosystem integration opportunities. Contact us via GitHub or email to discuss the future of Neugi.",
+                    "partnership": "We are actively seeking strategic partnerships with AI providers. Visit our 'About & Contact' section on the landing page or reach out directly to @Atharia_AGI on Twitter to discuss the future of Neugi.",
+                    "grant": "Neugi is open for partnership fund grants and research allocations. Please use the inquiry form in our 'About & Contact' section at index.html#contact for formal applications.",
+                    "collaboration": "Interested in collaborating? Contact our Lead Architect at atharia.agi@gmail.com or visit the 'About & Contact' section on the landing page for team integration opportunities.",
                     "who are you": "I am the Nexus, the central orchestration hub of Neugi - a Neural General Intelligence built with Ollama, currently operating in Showcase Mode.",
                     "download": "Check the 'Installation' section on our landing page for the latest installer and setup guide."
                 };
@@ -921,6 +921,7 @@
                     }
                 }
 
+                const delay = 400 + Math.random() * 800;
                 setTimeout(() => {
                     document.getElementById(loadingId).outerHTML = `
                     <div class="msg-row">
@@ -928,7 +929,7 @@
                         <div class="msg-content">${response}</div>
                     </div>`;
                     box.scrollTop = box.scrollHeight;
-                }, 1000);
+                }, delay);
                 return;
             }
             
@@ -1032,6 +1033,9 @@
         
         setInterval(updateGraph, 5000);
         updateGraph();
+
+        // Auto-focus chat
+        window.onload = () => document.getElementById('chatInput').focus();
     </script>
 </body>
 </html>
