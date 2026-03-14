@@ -41,7 +41,7 @@ from enum import Enum
 
 # Config
 SKILLS_DIR = os.path.expanduser("~/neugi/skills")
-WORKSPACE_SKILLS_DIR = os.path.expanduser("~/neugi/workspace/skills")
+WORKSPACE_DIR = os.path.expanduser("~/neugi/workspace")
 
 
 class SkillStatus(Enum):
@@ -137,7 +137,7 @@ class SkillManager:
     def _ensure_directories(self):
         """Ensure skills directories exist"""
         os.makedirs(SKILLS_DIR, exist_ok=True)
-        os.makedirs(WORKSPACE_SKILLS_DIR, exist_ok=True)
+        os.makedirs(WORKSPACE_DIR, exist_ok=True)
 
     def _register_builtin_skills(self):
         """Register built-in skills"""
@@ -550,9 +550,9 @@ Skill = {skill.id.replace("-", "_").title()}Skill()
         """Get the skills directory path"""
         return SKILLS_DIR
 
-    def get_workspace_skills_dir(self) -> str:
-        """Get the workspace skills directory path"""
-        return WORKSPACE_SKILLS_DIR
+    def get_workspace_dir(self) -> str:
+        """Get the workspace directory path"""
+        return WORKSPACE_DIR
 
 
 # Built-in skill functions
@@ -605,7 +605,7 @@ if __name__ == "__main__":
     print("🤖 NEUGI SWARM SKILLS")
     print("=" * 50)
     print(f"Skills Directory: {manager.get_skills_dir()}")
-    print(f"Workspace Skills: {manager.get_workspace_skills_dir()}")
+    print(f"Workspace: {manager.get_workspace_dir()}")
     print()
 
     # Group by category

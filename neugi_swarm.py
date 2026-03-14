@@ -30,11 +30,9 @@ VERSION = "15.2.0"
 PORT = 19888
 NEUGI_DIR = os.path.expanduser("~/neugi")
 WORKSPACE_DIR = os.path.expanduser("~/neugi/workspace")
-SANDBOX_DIR = os.path.expanduser("~/neugi/workspace/sandbox")
 
 # Ensure directories exist
 os.makedirs(WORKSPACE_DIR, exist_ok=True)
-os.makedirs(SANDBOX_DIR, exist_ok=True)
 
 # ============================================================
 # HEALTH MONITOR

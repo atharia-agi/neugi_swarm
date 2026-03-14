@@ -57,10 +57,9 @@
 - **Test Suite**: Comprehensive tests for landing page, config, installers, core files
 - **Toast Notifications**: Professional toast instead of alert() popups
 - **OS Selection**: Windows/Mac/Linux buttons with copy command
-- **NEXUS Workspace**: New isolated workspace for swarm agents
-  - `~/neugi/workspace/` - Central hub for all agents (renamed from nexus)
-  - `~/neugi/workspace/sandbox/` - Isolated workspace per agent
-  - Each agent works in its own sandboxed environment
+- **Workspace**: New isolated workspace for swarm agents
+  - `~/neugi/workspace/` - Central hub for all agents
+  - Each agent works in the shared workspace environment
 
 ### v15.1 (March 14, 2026)
 

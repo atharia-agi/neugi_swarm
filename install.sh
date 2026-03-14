@@ -130,7 +130,7 @@ CONTEXT_WINDOW=2048
 MASTER_KEY="neugi123"
 EOF
     
-    mkdir -p data models logs workspace/sandbox
+    mkdir -p data models logs workspace
     log_success "NEUGI installed to: $NEUGI_DIR"
     
     # ============================================================
