@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
 🤖 NEUGI ASSISTANT
-===================
+==================
 Smart assistant using qwen3.5:cloud (Ollama Cloud)
-Helps users with installation, setup, and general questions
+With ENHANCED MEMORY - remembers conversations and user preferences!
 
-Version: 1.0
-Date: March 13, 2026
+Version: 2.0
+Date: March 14, 2026
 """
 
 import os
@@ -19,29 +19,66 @@ import urllib.error
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
 DEFAULT_ASSISTANT_MODEL = "qwen3.5:cloud"
 
+# Memory config
+MAX_CONVERSATION_HISTORY = 10  # Keep last 10 messages in context
+MEMORY_DB_PATH = os.path.expanduser("~/neugi/data/memory.db")
+
 
 class NeugiAssistant:
-    """Smart assistant - always ready to help!"""
+    """Smart assistant - always ready to help! - with Memory"""
 
-    def __init__(self):
+    def __init__(self, session_id: str = "default"):
         self.url = OLLAMA_URL
-        self.system_prompt = """You are NEUGI Assistant - a helpful AI assistant for NEUGI Swarm.
+        self.session_id = session_id
 
-You help users with:
-- Installation problems
-- Setup questions
-- How to use NEUGI
-- Troubleshooting
-- General questions
+        # Initialize memory
+        self._init_memory()
 
-Be friendly, concise, and helpful. Always try to solve the user's problem.
-If you don't know something, say so and suggest where to find help.
+        # Load user profile
+        self._load_user_profile()
 
-NEUGI is Neural General Intelligence - made easy!
-"""
+        self.system_prompt = self._build_system_prompt()
+
         # Load model from config with fallback
         self.primary_model = "qwen3.5:cloud"
         self.fallback_model = "nemotron-3-super:cloud"
+        self._load_config()
+
+        self.model = self.primary_model
+
+    def _init_memory(self):
+        """Initialize memory system"""
+        self.memory_available = False
+        try:
+            # Try to import memory
+            import sys
+
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            from neugi_swarm_memory import MemoryManager
+
+            self.memory = MemoryManager(MEMORY_DB_PATH)
+            self.memory_available = True
+        except Exception as e:
+            print(f"Memory not available: {e}")
+            self.memory = None
+
+    def _load_user_profile(self):
+        """Load user profile from config"""
+        self.user_name = "User"
+        self.user_preferences = {}
+
+        try:
+            config_path = os.path.expanduser("~/neugi/data/config.json")
+            if os.path.exists(config_path):
+                with open(config_path, "r") as f:
+                    cfg = json.load(f)
+                    user = cfg.get("user", {})
+                    self.user_name = user.get("name", "User")
+        except:
+            pass
+
+    def _load_config(self):
+        """Load configuration"""
         try:
             config_path = os.path.expanduser("~/neugi/data/config.json")
             if os.path.exists(config_path):
@@ -56,11 +93,119 @@ NEUGI is Neural General Intelligence - made easy!
                             "fallback", self.fallback_model
                         )
                     elif isinstance(assistant_cfg, str):
-                        # backward compatibility
                         self.primary_model = assistant_cfg
-        except Exception:
-            pass  # keep defaults
-        self.model = self.primary_model  # current model to try first
+        except:
+            pass
+
+    def _build_system_prompt(self) -> str:
+        """Build system prompt with user context"""
+        prompt = f"""You are NEUGI Assistant - a helpful AI assistant for NEUGI Swarm.
+
+Your role:
+- Help users with installation, setup, and questions
+- Be friendly, concise, and helpful
+- Remember user preferences and context from conversation
+
+About the user:
+- Name: {self.user_name}
+- This is a conversation, remember key details for future reference
+
+NEUGI is Neural General Intelligence - made easy!
+
+When you learn something important about the user (preferences, facts, etc), remember it!
+"""
+        return prompt
+
+    def _get_conversation_context(self) -> str:
+        """Get conversation history as context"""
+        if not self.memory_available:
+            return ""
+
+        try:
+            # Get recent conversation
+            messages = self.memory.get_conversation(
+                self.session_id, limit=MAX_CONVERSATION_HISTORY
+            )
+
+            if not messages:
+                return ""
+
+            # Build context
+            context = "\nRecent conversation:\n"
+            for msg in messages:
+                role = msg.get("role", "user")
+                content = msg.get("content", "")[:200]  # Truncate long messages
+                context += f"{role}: {content}\n"
+
+            return context
+        except:
+            return ""
+
+    def _get_user_memories(self) -> str:
+        """Get important user memories"""
+        if not self.memory_available:
+            return ""
+
+        try:
+            # Recall important memories about user
+            memories = self.memory.recall(
+                memory_type="preference", importance_min=7, limit=5
+            )
+
+            if not memories:
+                return ""
+
+            context = "\nUser preferences you know:\n"
+            for m in memories:
+                context += f"- {m.content}\n"
+
+            return context
+        except:
+            return ""
+
+    def _save_to_memory(self, role: str, content: str):
+        """Save message to memory"""
+        if not self.memory_available:
+            return
+
+        try:
+            self.memory.add_message(self.session_id, role, content)
+
+            # Extract and remember important info
+            self._extract_and_remember(content, role)
+        except:
+            pass
+
+    def _extract_and_remember(self, content: str, role: str):
+        """Extract important info and remember"""
+        if role != "user":
+            return
+
+        # Simple keyword-based extraction
+        content_lower = content.lower()
+
+        # Remember preferences
+        preference_keywords = [
+            ("like", "likes"),
+            ("prefer", "prefers"),
+            ("hate", "hates"),
+            ("don't like", "doesn't like"),
+            ("always", "always"),
+            ("usually", "usually"),
+        ]
+
+        for keyword, _ in preference_keywords:
+            if keyword in content_lower:
+                try:
+                    self.memory.remember(
+                        memory_type="preference",
+                        content=content[:100],
+                        importance=7,
+                        tags=["user", "preference"],
+                    )
+                except:
+                    pass
+                break
 
     def is_ollama_running(self) -> bool:
         """Check if Ollama is running"""
@@ -71,40 +216,65 @@ NEUGI is Neural General Intelligence - made easy!
             return False
 
     def chat(self, message: str) -> str:
-        """Send message and get response (non-streaming)"""
+        """Send message and get response with memory context"""
+
+        # Save user message to memory
+        self._save_to_memory("user", message)
 
         # Check if Ollama is running
         if not self.is_ollama_running():
-            return self._offline_response(message)
+            response = self._offline_response(message)
+            self._save_to_memory("assistant", response)
+            return response
+
+        # Build context with memory
+        context = self._get_conversation_context()
+        user_memories = self._get_user_memories()
+
+        # Combine system prompt with context
+        full_prompt = self.system_prompt
+        if context:
+            full_prompt += "\n" + context
+        if user_memories:
+            full_prompt += "\n" + user_memories
+        full_prompt += f"\n\nUser: {message}\n\nNEUGI:"
 
         try:
-            # Try Ollama Cloud model
+            # Try Ollama Cloud model with generate endpoint (simpler for context)
             payload = {
                 "model": self.model,
-                "messages": [
-                    {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": message},
-                ],
+                "prompt": full_prompt,
                 "stream": False,
+                "options": {
+                    "temperature": 0.7,
+                    "top_p": 0.9,
+                },
             }
 
             req = urllib.request.Request(
-                f"{self.url}/api/chat",
+                f"{self.url}/api/generate",
                 data=json.dumps(payload).encode("utf-8"),
                 headers={"Content-Type": "application/json"},
             )
 
             with urllib.request.urlopen(req, timeout=30) as response:
                 data = json.loads(response.read().decode())
-                return data.get("message", {}).get("content", "No response")
+                result = data.get("response", "").strip()
+
+                # Save response to memory
+                self._save_to_memory("assistant", result)
+
+                return result
 
         except Exception as e:
-            # Try fallback model
-            return self._fallback_chat(message)
+            # Try fallback
+            result = self._fallback_chat(message, context + user_memories)
+            self._save_to_memory("assistant", result)
+            return result
 
     def chat_stream(self, message: str, callback=None):
         """
-        Send message and get streaming response.
+        Send message and get streaming response with memory.
 
         Args:
             message: User message
@@ -113,26 +283,42 @@ NEUGI is Neural General Intelligence - made easy!
         Yields:
             Text chunks as they arrive
         """
+        # Save user message to memory
+        self._save_to_memory("user", message)
+
         # Check if Ollama is running
         if not self.is_ollama_running():
             response = self._offline_response(message)
             if callback:
                 callback(response)
+            self._save_to_memory("assistant", response)
             yield response
             return
+
+        # Build context with memory
+        context = self._get_conversation_context()
+        user_memories = self._get_user_memories()
+
+        full_prompt = self.system_prompt
+        if context:
+            full_prompt += "\n" + context
+        if user_memories:
+            full_prompt += "\n" + user_memories
+        full_prompt += f"\n\nUser: {message}\n\nNEUGI:"
 
         try:
             payload = {
                 "model": self.model,
-                "messages": [
-                    {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": message},
-                ],
+                "prompt": full_prompt,
                 "stream": True,
+                "options": {
+                    "temperature": 0.7,
+                    "top_p": 0.9,
+                },
             }
 
             req = urllib.request.Request(
-                f"{self.url}/api/chat",
+                f"{self.url}/api/generate",
                 data=json.dumps(payload).encode("utf-8"),
                 headers={"Content-Type": "application/json"},
             )
@@ -144,8 +330,8 @@ NEUGI is Neural General Intelligence - made easy!
                     if line:
                         try:
                             data = json.loads(line.decode())
-                            if "message" in data and "content" in data["message"]:
-                                chunk = data["message"]["content"]
+                            if "response" in data:
+                                chunk = data["response"]
                                 full_response += chunk
                                 if callback:
                                     callback(chunk)
@@ -153,10 +339,15 @@ NEUGI is Neural General Intelligence - made easy!
                         except:
                             continue
 
+            # Save complete response to memory
+            self._save_to_memory("assistant", full_response)
+
         except Exception as e:
             # Fallback to non-streaming
             try:
-                response = self._fallback_chat(message)
+                context = self._get_conversation_context()
+                user_memories = self._get_user_memories()
+                response = self._fallback_chat(message, context + user_memories)
                 if callback:
                     callback(response)
                 yield response
@@ -166,7 +357,7 @@ NEUGI is Neural General Intelligence - made easy!
                     callback(error_msg)
                 yield error_msg
 
-    def _fallback_chat(self, message: str) -> str:
+    def _fallback_chat(self, message: str, context: str = "") -> str:
         """Try fallback models if primary fails"""
 
         # Start with the configured fallback, then try others
@@ -177,23 +368,29 @@ NEUGI is Neural General Intelligence - made easy!
             if model not in fallback_models:
                 fallback_models.append(model)
 
+        # Build prompt with context
+        full_prompt = self.system_prompt
+        if context:
+            full_prompt += "\n" + context
+        full_prompt += f"\n\nUser: {message}\n\nNEUGI:"
+
         for model in fallback_models:
             try:
                 payload = {
                     "model": model,
-                    "messages": [{"role": "user", "content": message}],
+                    "prompt": full_prompt,
                     "stream": False,
                 }
 
                 req = urllib.request.Request(
-                    f"{self.url}/api/chat",
+                    f"{self.url}/api/generate",
                     data=json.dumps(payload).encode("utf-8"),
                     headers={"Content-Type": "application/json"},
                 )
 
                 with urllib.request.urlopen(req, timeout=30) as response:
                     data = json.loads(response.read().decode())
-                    return data.get("message", {}).get("content", "No response")
+                    return data.get("response", "").strip()
 
             except:
                 continue
