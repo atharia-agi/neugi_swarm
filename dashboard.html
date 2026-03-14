@@ -849,17 +849,33 @@
             box.scrollTop = box.scrollHeight;
 
             if (isShowcaseMode) {
-                const simulatorResponses = [
-                    "Neural network synchronized. In Showcase Mode, my cognitive cycles are running on a static demo grid. For real-world execution, please refer to the installation guide.",
-                    "Directive received. I'm currently simulating swarm logic. To execute this on your local system, the Neugi Swarm Engine must be active.",
-                    "Cognitive link established. I can see your request, but my toolset is currently locked in sandbox mode. Install the local nexus to unlock full orchestration.",
-                    "Welcome to the Neugi Network. My agents are ready for deployment on your hardware. Check the 'Install' section to begin."
-                ];
+                const query = msg.toLowerCase();
+                let response = "Neural network synchronized. In Showcase Mode, my cognitive cycles are running on a static demo grid. To experience full autonomy, please refer to the installation guide.";
+
+                const kb = {
+                    "apa itu neugi": "Neugi Swarm adalah sistem agen AI otonom terdistribusi yang dirancang untuk eksekusi logika kompleks. Tidak seperti chatbot biasa, Neugi menggunakan 'Swarm Intelligence' untuk membagi tugas besar menjadi sub-tugas yang dieksekusi oleh agen spesialis secara paralel.",
+                    "mekanisme": "Mekanisme Neugi berbasis pada protokol P2P (Peer-to-Peer). Satu node bertindak sebagai 'Nexus' (Manager) yang mendistribusikan 'Command Directive' ke agen-agen atau ke node remote lainnya melalui dekorator @node_id.",
+                    "cara instal": "Sangat mudah! Kamu cukup menjalankan perintah one-liner: `powershell -c \"irm https://neugi.com/install.ps1 | iex\"`. Pastikan kamu sudah menginstal Python dan Ollama sebagai engine lokalnya.",
+                    "agen": "Neugi memiliki 9 agen spesialis: Aurora (Data), Cipher (Logic), Nova (UI), Pulse (Analytic), Quark (Strategy), Shield (Security), Spark (Network), Ink (Formatting), dan Manager (Orchestrator).",
+                    "self-healing": "Fitur Self-Healing memungkinkan agen Neugi untuk mendeteksi error sistem secara otonom (seperti file rusak atau path error) dan memperbaikinya sendiri menggunakan OS-level command jika God Mode aktif.",
+                    "distributed": "Neugi mendukung 'Distributed Swarm'. Kamu bisa menghubungkan beberapa komputer dalam satu jaringan swarm. Agen di PC A bisa mendelegasikan tugas ke agen di PC B secara seamless.",
+                    "fitur": "Fitur unggulan Neugi meliputi: Terminal TUI streaming, 3D Topology Visualization, Real-time Telemetry, Self-Healing loop, dan Distributed Task Delegation.",
+                    "siapa kamu": "Saya adalah Nexus, unit orkestrasi pusat dari Neugi Swarm. Saat ini saya berjalan dalam mode simulasi (Showcase Mode) untuk mendemonstrasikan kapabilitas operasional jaringan kami.",
+                    "download": "Silakan cek bagian 'Installation' di landing page kami untuk mendapatkan installer terbaru dan panduan setup lengkap."
+                };
+
+                for (const key in kb) {
+                    if (query.includes(key)) {
+                        response = kb[key];
+                        break;
+                    }
+                }
+
                 setTimeout(() => {
                     document.getElementById(loadingId).outerHTML = `
                     <div class="msg-row">
                         <div class="msg-avatar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg></div>
-                        <div class="msg-content">${simulatorResponses[Math.floor(Math.random() * simulatorResponses.length)]}</div>
+                        <div class="msg-content">${response}</div>
                     </div>`;
                     box.scrollTop = box.scrollHeight;
                 }, 1000);
