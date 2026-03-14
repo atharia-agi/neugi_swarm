@@ -390,6 +390,9 @@ I'm your AI assistant. I can help you with:
   🔧  REPAIR    - Fix problems automatically  
   🧠  DIAGNOSE  - Find out what's wrong
   💬  CHAT      - Ask me anything
+  📦  PLUGINS   - Manage plugins
+  🔄  UPDATE    - Check for updates
+  👋  EXIT      - Exit
 
 """)
 
@@ -400,6 +403,8 @@ I'm your AI assistant. I can help you with:
                     ("repair", "🔧 Repair / Fix Problems"),
                     ("diagnose", "🧠 Diagnose System"),
                     ("chat", "💬 Chat with AI"),
+                    ("plugins", "📦 Manage Plugins"),
+                    ("update", "🔄 Check for Updates"),
                     ("quit", "👋 Exit"),
                 ],
                 "What would you like to do?",
@@ -413,7 +418,11 @@ I'm your AI assistant. I can help you with:
                 self.run_diagnose()
             elif choice == "4":
                 self.run_chat()
-            elif choice == "5" or choice.lower() in ["quit", "exit", "q"]:
+            elif choice == "5":
+                self.run_plugins()
+            elif choice == "6":
+                self.run_update()
+            elif choice == "7" or choice.lower() in ["quit", "exit", "q"]:
                 print(f"\n{C.CYAN}Happy to help! See you next time! 👋{C.END}\n")
                 break
             else:
@@ -704,6 +713,85 @@ System status:
                 print(chunk, end="", flush=True)
 
             print(f"{C.END}\n")
+
+    # ============================================================
+    # PLUGINS
+    # ============================================================
+
+    def run_plugins(self):
+        """Manage plugins"""
+        self.ui.header("📦 PLUGIN MANAGER")
+
+        try:
+            from neugi_plugins import PluginManager
+
+            manager = PluginManager()
+            plugins = manager.discover_plugins()
+
+            if not plugins:
+                print(f"\n{C.YELLOW}No plugins found.{C.END}")
+                print(f"\n{C.CYAN}Plugin directory: ~/neugi/plugins{C.END}")
+                print(f"Want to create an example plugin? (y/n): ", end="")
+                if input().strip().lower() == "y":
+                    from neugi_plugins import create_example_plugin
+
+                    create_example_plugin("my_first_plugin")
+                    self.ui.success("Example plugin created!")
+                return
+
+            print(f"\n{C.BOLD}Found {len(plugins)} plugins:{C.END}\n")
+
+            for p in manager.list_plugins():
+                status = f"{C.GREEN}✓{C.END}" if p["enabled"] else f"{C.RED}✗{C.END}"
+                print(f"{status} {p['name']} v{p['version']}")
+                print(f"   {p['description']}")
+                print(f"   Functions: {', '.join(p['functions'])}")
+                print()
+
+            print(f"\n{C.CYAN}To add plugins, copy to: ~/neugi/plugins/{C.END}")
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+    # ============================================================
+    # UPDATE
+    # ============================================================
+
+    def run_update(self):
+        """Check for updates"""
+        self.ui.header("🔄 AUTO-UPDATER")
+
+        try:
+            from neugi_updater import AutoUpdater
+
+            updater = AutoUpdater()
+
+            self.ui.info("Checking for updates...")
+            result = updater.check_for_update()
+
+            print(f"\n{C.CYAN}Current version: {result['current']}{C.END}")
+            print(f"{C.CYAN}Latest version: {result['latest']}{C.END}")
+
+            if result["update_available"]:
+                self.ui.success("Update available!")
+                print(f"\n{C.YELLOW}Download and apply? (y/n): {C.END}", end="")
+                if input().strip().lower() == "y":
+                    self.ui.info("Downloading update...")
+                    dl = updater.download_update()
+                    if dl["success"]:
+                        self.ui.success("Update downloaded!")
+                        print(f"\n{C.YELLOW}Apply now? (y/n): {C.END}", end="")
+                        if input().strip().lower() == "y":
+                            apply = updater.apply_update()
+                            if apply["success"]:
+                                self.ui.success("Update applied!")
+                            else:
+                                self.ui.error(apply["message"])
+            else:
+                self.ui.success("You're up to date!")
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
 
     # ============================================================
     # HELPERS
