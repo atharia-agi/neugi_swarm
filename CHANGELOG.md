@@ -2,6 +2,7 @@
 
 > Complete development history and architecture documentation
 > Last Updated: March 14, 2026
+> Version: 15.2.0
 
 ---
 
@@ -19,34 +20,56 @@
 
 ---
 
-## Project Overview
-
-**NEUGI SWARM** (Neural General Intelligence Swarm) is an autonomous AI agent system inspired by OpenClaw, Copaw, Perplex Personal Computer, and Claude Cowork.
-
-### Core Features
-
-- **15+ Autonomous Agents** - Specialized agents (Aurora, Cipher, Nova, Pulse, Quark, Shield, Spark, Ink, Nexus)
-- **Knowledge Graph** - Structured memory connecting entities and facts
-- **Reasoning** - Multi-step logical reasoning with explanations
-- **Planning** - Goal decomposition with dependency handling
-- **Learning** - Pattern extraction from experience
-- **Auto-Recovery** - Automatic error detection and fixing
-- **Telegram Gateway** - Mobile control via Telegram bot
-- **Multi-OS Support** - Windows, macOS, Linux installers
-
-### Technology Stack
-
-- **Language**: Python 3.8+
-- **LLM Backend**: Ollama (local) / Ollama Cloud
-- **Database**: SQLite (memory storage)
-- **Web Framework**: Built-in HTTP server
-- **Mobile**: Telegram Bot API
-
----
-
 ## Version History
 
-### v15.2 (March 14, 2026)
+### v15.2.0 (March 14, 2026)
+
+**All Changes Since Project Start:**
+
+**Code Quality & CI/CD**
+- GitHub Actions CI: Automated test, lint, and build workflows
+- Ruff Linting: Fixed 116+ lint errors across all Python files
+- Requirements.txt: Added proper dependencies
+- pyproject.toml: Added project configuration with pytest/mypy/ruff
+- Test Suite: Comprehensive tests for landing page, config, installers, core files
+
+**UI/UX Improvements**
+- Toast Notifications: Professional toast instead of alert() popups
+- OS Selection: Windows/Mac/Linux buttons with copy command (text only)
+- Vercel Analytics: Added to index.html, docs.html, dashboard.html
+- Animated Agent Swarm: Hero section with 9 agents orbiting Nexus center
+- Custom SVG Icons: All emojis replaced with custom SVG icons
+- Docs Sidebar: Passive scroll with auto-highlight, vertical list style
+- Terminal Demo: Clean design without emojis
+
+**Core Features**
+- Workspace: ~/neugi/workspace/ - Central hub for all agents
+- Enhanced Skills System: Multi-format compatible (NEUGI native, OpenClaw, Claude Code, MCP)
+- Skill-to-Agent Mapping: Auto-map skills to appropriate agents based on capabilities
+- Enhanced Plugin System: Native Python + MCP plugins, install from GitHub/GitLab URL, Marketplace
+- Real Tool Execution: Agents now execute real tasks, not just simulate
+
+**Agent Tool Execution (19 Tools Connected)**
+- Aurora (Researcher): web_search, web_fetch, neuigi_browser
+- Cipher (Coder): code_execute, code_debug, file_read
+- Nova (Creator): file_write, llm_think
+- Pulse (Analyst): json_parse, csv_analyze, llm_think
+- Quark (Strategist): llm_think
+- Shield (Security): web_fetch, code_debug, llm_think
+- Spark (Social): send_telegram, send_discord, send_email
+- Ink (Writer): file_write, llm_think
+- Nexus (Manager): file_list, process_list, llm_think
+
+### v15.1 (March 14, 2026)
+
+**Professional Landing Page & Complete Documentation**
+
+- Animated Agent Swarm: Hero section with 9 agents orbiting Nexus center
+- Unified Agent Design: Rectangle-based SVG agents matching Chiper style
+- Terminal Demo: Interactive wizard flow demonstration
+- Complete docs.html: Full documentation with installation, API, security, contact
+- Footer: Contact info (atharia.agi@gmail.com, @atharia_agi), Coming Soon links
+- Responsive Design: Mobile-friendly with glassmorphism effects
 
 **Code Quality & CI/CD**
 

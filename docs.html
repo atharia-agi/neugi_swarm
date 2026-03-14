@@ -274,6 +274,16 @@
         .agent-item .role {
             font-size: 12px;
             color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        
+        .agent-item .tools {
+            font-size: 10px;
+            color: var(--primary);
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-card);
+            padding: 4px 8px;
+            border-radius: 4px;
         }
         
         .feature-list {
@@ -535,44 +545,53 @@
             Meet the Agents
         </h2>
         
-        <p>NEUGI comes with 9 specialized agents that work together as a swarm:</p>
+        <p>NEUGI comes with 9 specialized agents that work together as a swarm. Each agent has real tool execution capabilities:</p>
         
         <div class="agent-grid">
             <div class="agent-item">
                 <div class="name">AURORA</div>
                 <div class="role">Research</div>
+                <div class="tools">web_search, web_fetch</div>
             </div>
             <div class="agent-item">
                 <div class="name">CIPHER</div>
                 <div class="role">Coder</div>
+                <div class="tools">code_execute, code_debug</div>
             </div>
             <div class="agent-item">
                 <div class="name">NOVA</div>
                 <div class="role">Creator</div>
+                <div class="tools">file_write, llm_think</div>
             </div>
             <div class="agent-item">
                 <div class="name">PULSE</div>
                 <div class="role">Analyst</div>
+                <div class="tools">json_parse, csv_analyze</div>
             </div>
             <div class="agent-item">
                 <div class="name">QUARK</div>
                 <div class="role">Strategy</div>
+                <div class="tools">llm_think</div>
             </div>
             <div class="agent-item">
                 <div class="name">SHIELD</div>
                 <div class="role">Security</div>
+                <div class="tools">web_fetch, code_debug</div>
             </div>
             <div class="agent-item">
                 <div class="name">SPARK</div>
                 <div class="role">Social</div>
+                <div class="tools">send_telegram, send_discord</div>
             </div>
             <div class="agent-item">
                 <div class="name">INK</div>
                 <div class="role">Writer</div>
+                <div class="tools">file_write, llm_think</div>
             </div>
             <div class="agent-item">
                 <div class="name">NEXUS</div>
                 <div class="role">Connector</div>
+                <div class="tools">file_list, process_list</div>
             </div>
         </div>
         
