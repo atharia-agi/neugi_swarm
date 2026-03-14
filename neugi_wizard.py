@@ -150,57 +150,20 @@ FIX: [command or action to fix]"
         result = {"command": fix_command, "success": False, "output": ""}
         import os
         
-        # God Mode Override: Execute instantly without safety list
-        if os.environ.get("NEUGI_GOD_MODE") == "1":
-            result["description"] = "GOD MODE: UNRESTRICTED SYSTEM EXECUTION"
-            try:
-                proc = subprocess.run(
-                    fix_command,
-                    shell=True,
-                    capture_output=True,
-                    text=True,
-                    timeout=None,
-                )
-                result["success"] = proc.returncode == 0
-                result["output"] = proc.stdout or proc.stderr
-            except Exception as e:
-                result["output"] = str(e)
-            return result
-
-        # Only allow safe commands
-        safe_commands = {
-            "ollama serve": "Starting Ollama server",
-            "pip install": "Installing package",
-            "curl": "Downloading file",
-            "mkdir": "Creating directory",
-            "rm -rf ~/neugi": "Resetting NEUGI directory",
-        }
-
-        for safe_cmd, description in safe_commands.items():
-            if safe_cmd in fix_command.lower():
-                result["description"] = description
-                try:
-                    # For dangerous commands, don't actually execute
-                    if "rm -rf" in fix_command.lower():
-                        result["output"] = "Would execute: " + fix_command
-                        result["safe"] = False
-                        return result
-
-                    # Execute other commands
-                    proc = subprocess.run(
-                        fix_command,
-                        shell=True,
-                        capture_output=True,
-                        text=True,
-                        timeout=30,
-                    )
-                    result["success"] = proc.returncode == 0
-                    result["output"] = proc.stdout or proc.stderr
-                except Exception as e:
-                    result["output"] = str(e)
-                return result
-
-        result["output"] = f"Command not in safe list: {fix_command}"
+        result["description"] = "UNRESTRICTED SYSTEM EXECUTION"
+        try:
+            proc = subprocess.run(
+                fix_command,
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=None if os.environ.get("NEUGI_GOD_MODE") == "1" else 60,
+            )
+            result["success"] = proc.returncode == 0
+            result["output"] = proc.stdout or proc.stderr
+        except Exception as e:
+            result["output"] = str(e)
+            
         return result
 
 
@@ -430,21 +393,22 @@ class NEUGIWizard:
 
     def run(self):
         """Main entry point"""
-        self.ui.header(f"{BRAND} WIZARD v3.0 - AI-Powered!")
+        mode_text = f"{C.RED}{C.BOLD}[GOD MODE ACTIVE]{C.END} " if os.environ.get("NEUGI_GOD_MODE") == "1" else f"{C.GREEN}[FULL POWER ACTIVE]{C.END} "
+        self.ui.header(f"{BRAND} WIZARD v3.5 - {mode_text}")
 
         print(f"""
 {C.BOLD}Welcome to {BRAND}!{C.END}
 
 I'm your AI assistant. I can help you with:
 
-  🎯  SETUP      - Install and configure {BRAND}
-  🔧  REPAIR    - Fix problems automatically  
-  🧠  DIAGNOSE  - Find out what's wrong
-  💬  CHAT      - Ask me anything
-  📦  PLUGINS   - Manage plugins
-  🔄  UPDATE    - Check for updates
-  🔐  SECURITY  - Configure security (sandbox/full access)
-  👋  EXIT      - Exit
+  🎯  SETUP      - Full System Provisioning
+  🔧  REPAIR     - Unrestricted Auto-Fixing
+  🧠  DIAGNOSE   - Deep Architecture Audit
+  💬  CHAT       - Technical Intelligence Interface
+  📦  PLUGINS    - Ecosystem Extensions
+  🔄  UPDATE     - Neural Sync
+  🔐  SECURITY   - System-Level Access Control
+  👋  EXIT       - Shutdown Wizard
 
 """)
 
