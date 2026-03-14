@@ -53,6 +53,11 @@
 - **Enterprise-Tier Web Dashboard**: Completely rewrote `index.html`, `dashboard.html`, and `docs.html` conforming to a dark, minimalist OpenAI/Anthropic aesthetic.
 - **Pixel-Art Vector Avatars**: Hand-coded 8 bespoke 24x24 retro SVG avatars replacing default emojis, perfectly mapping to each Swarm Node's specialized function (e.g., Crown for Quark, Shield for Shield, Scanner for Aurora).
 
+**Phase 8: Advanced Swarm Autonomy (Recursive Orchestration)**
+- **Recursive Reasoning Loop**: Enabled `neugi_assistant.py` to detect tool calls and recursively re-prompt the LLM with results, allowing multi-step autonomous behavior.
+- **Dynamic Swarm Delegation**: Integrated `AgentManager` into the core CLI loop. The Assistant can now spin up specialized sub-agents (Aurora, Cipher, etc.) on-the-fly via the `delegate_task` tool.
+- **Live TUI Streaming**: Transitioned the Rich CLI to a true streaming architecture with real-time feedback for tool execution and sub-agent results.
+
 ### v15.2.0 (March 14, 2026)
 
 **All Changes Since Project Start:**

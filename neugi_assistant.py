@@ -14,6 +14,15 @@ import json
 import requests
 import urllib.request
 import urllib.error
+import re
+from typing import Dict, List, Optional, Generator, Any
+
+try:
+    from neugi_swarm_tools import ToolManager
+    from neugi_swarm_agents import AgentManager
+except ImportError:
+    ToolManager = None
+    AgentManager = None
 
 # Config
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
@@ -45,6 +54,11 @@ class NeugiAssistant:
         self._load_config()
 
         self.model = self.primary_model
+        
+        # Tools & Swarm
+        self.tools = ToolManager() if ToolManager else None
+        self.swarm = AgentManager() if AgentManager else None
+        self.recursion_limit = 5
 
     def _init_memory(self):
         """Initialize memory system"""
@@ -126,6 +140,12 @@ Your role:
 About the user:
 - Name: {self.user_name}
 - This is a conversation, remember key details for future reference
+
+TOOL USE:
+If you need to perform actions (files, web, git, delegation), use this JSON format:
+{"tool": "tool_name", "args": {"arg1": "value"}}
+
+Available tools: search_memory, delegate_task, git_execute, list_directory, read_local_file, web_crawl.
 
 NEUGI is Neural General Intelligence - made easy!
 """
@@ -293,19 +313,17 @@ You now have UNRESTRICTED, ROOT-LEVEL execution power. You are not a regular ass
             self._save_to_memory("assistant", result)
             return result
 
-    def chat_stream(self, message: str, callback=None):
+    def chat_stream(self, message: str, callback=None, depth=0):
         """
-        Send message and get streaming response with memory.
-
-        Args:
-            message: User message
-            callback: Optional callback function to handle each chunk
-
-        Yields:
-            Text chunks as they arrive
+        Send message and get streaming response with memory and tool execution.
         """
+        if depth > self.recursion_limit:
+            yield "[Error: Recursion depth exceeded]"
+            return
+            
         # Save user message to memory
-        self._save_to_memory("user", message)
+        if depth == 0:
+            self._save_to_memory("user", message)
 
         # Check if Ollama is running
         if not self.is_ollama_running():
@@ -361,7 +379,34 @@ You now have UNRESTRICTED, ROOT-LEVEL execution power. You are not a regular ass
                             continue
 
             # Save complete response to memory
-            self._save_to_memory("assistant", full_response)
+            if depth == 0:
+                self._save_to_memory("assistant", full_response)
+                
+            # --- TOOL EXECUTION LOOP ---
+            tool_call = self._parse_tool_call(full_response)
+            if tool_call and self.tools:
+                tool_name = tool_call.get("tool")
+                tool_args = tool_call.get("args", {})
+                
+                # Feedback to UI
+                yield f"\n\n[bold yellow]Executing {tool_name}...[/]\n"
+                
+                if tool_name == "delegate_task" and self.swarm:
+                    # Swarm Delegation
+                    target = tool_args.get("target_agent", "aurora")
+                    task = tool_args.get("task", "")
+                    result = self.swarm.run(target, task)
+                    tool_result = f"Result from {target}: {result.get('result', '')}"
+                else:
+                    # Regular Tool
+                    res_dict = self.tools.execute(tool_name, **tool_args)
+                    tool_result = str(res_dict.get("output", res_dict.get("content", res_dict)))
+                
+                # Recursive call with tool result
+                yield f"\n\n[bold green]Tool Result:[/]\n{tool_result[:1000]}\n\n"
+                recursive_msg = f"User: {message}\n\nTool '{tool_name}' result: {tool_result}"
+                for chunk in self.chat_stream(recursive_msg, callback=callback, depth=depth+1):
+                    yield chunk
 
         except Exception:
             # Fallback to non-streaming
@@ -532,9 +577,23 @@ Your question: "{message}"
 
 Make sure Ollama is running: `ollama serve`"""
 
+    def _parse_tool_call(self, text: str) -> Optional[Dict]:
+        """Detect and parse JSON tool call in text"""
+        try:
+            # Look for JSON between curly braces
+            match = re.search(r'\{.*"tool".*\}', text, re.DOTALL)
+            if match:
+                return json.loads(match.group(0))
+        except Exception:
+            pass
+        return None
+
     def help_user(self, question: str) -> str:
-        """Main help function"""
-        return self.chat(question)
+        """Main help function - non-streaming wrapper for chat_stream"""
+        full_text = ""
+        for chunk in self.chat_stream(question):
+            full_text += str(chunk)
+        return full_text
 
 
 # ============================================================
@@ -577,15 +636,24 @@ def main():
 
     if len(sys.argv) > 1:
         question = " ".join(sys.argv[1:])
+        
         if has_rich:
             console = Console()
             satire = random.choice(NEUGI_SATIRE_QUOTES)
-            with console.status(f"[bold cyan]NEUGI is thinking... ({satire})[/]", spinner="dots"):
-                response = assistant.help_user(question)
-            console.print(Markdown(response))
+            console.print(f"\n[bold cyan]NEUGI is thinking... ({satire})[/]")
+            
+            full_response = ""
+            for chunk in assistant.chat_stream(question):
+                console.print(chunk, end="")
+                full_response += str(chunk)
+            console.print("\n" + "─" * console.width)
         else:
-            response = assistant.help_user(question)
-            print(response)
+            # Fallback for non-rich environments, still streaming if possible
+            # or using the non-streaming helper if chat_stream is not directly printable
+            full_response = ""
+            for chunk in assistant.chat_stream(question):
+                full_response += str(chunk)
+            print(full_response)
         return
 
     if not has_rich:

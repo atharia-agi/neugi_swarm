@@ -444,6 +444,14 @@ class AgentManager:
             result = tools.execute(action)
         elif action == "llm_think":
             result = tools.execute(action, prompt=task)
+        elif action == "delegate_task":
+            target = task.split(":")[0] if ":" in task else "aurora"
+            sub_task = task.split(":")[1] if ":" in task else task
+            result = tools.execute(action, target_agent=target, task=sub_task)
+        elif action == "git_execute":
+            result = tools.execute(action, command=task)
+        elif action == "search_memory":
+            result = tools.execute(action, query=task)
         else:
             # Fallback for unrecognized dynamically registered tools
             result = tools.execute(action, query=task, task=task)
