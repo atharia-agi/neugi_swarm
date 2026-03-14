@@ -29,11 +29,11 @@ from typing import Optional
 VERSION = "15.2.0"
 PORT = 19888
 NEUGI_DIR = os.path.expanduser("~/neugi")
-NEXUS_DIR = os.path.expanduser("~/neugi/nexus")
-SANDBOX_DIR = os.path.expanduser("~/neugi/nexus/sandbox")
+WORKSPACE_DIR = os.path.expanduser("~/neugi/workspace")
+SANDBOX_DIR = os.path.expanduser("~/neugi/workspace/sandbox")
 
 # Ensure directories exist
-os.makedirs(NEXUS_DIR, exist_ok=True)
+os.makedirs(WORKSPACE_DIR, exist_ok=True)
 os.makedirs(SANDBOX_DIR, exist_ok=True)
 
 # ============================================================

@@ -48,8 +48,8 @@ echo MASTER_KEY="neugi123" >> config.py
 if not exist data mkdir data
 if not exist models mkdir models
 if not exist logs mkdir logs
-if not exist nexus\nul mkdir nexus
-if not exist nexus\sandbox\nul mkdir nexus\sandbox
+if not exist workspace\nul mkdir workspace
+if not exist workspace\sandbox\nul mkdir workspace\sandbox
 
 echo [SUCCESS] NEUGI installed to %NEUGI_DIR%
 echo.

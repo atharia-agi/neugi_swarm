@@ -58,8 +58,8 @@
 - **Toast Notifications**: Professional toast instead of alert() popups
 - **OS Selection**: Windows/Mac/Linux buttons with copy command
 - **NEXUS Workspace**: New isolated workspace for swarm agents
-  - `~/neugi/nexus/` - Central hub for all agents
-  - `~/neugi/nexus/sandbox/` - Isolated workspace per agent
+  - `~/neugi/workspace/` - Central hub for all agents (renamed from nexus)
+  - `~/neugi/workspace/sandbox/` - Isolated workspace per agent
   - Each agent works in its own sandboxed environment
 
 ### v15.1 (March 14, 2026)
