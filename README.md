@@ -73,9 +73,53 @@ Includes:
 | **Telegram Control** | Manage your swarm from your phone via Telegram Bot |
 | **Streaming Responses** | Real-time AI responses |
 | **Memory System** | Conversation history & user preferences |
-| **Plugin System** | Extend functionality |
+| **Plugin System** | Extend with Native, MCP, or marketplace plugins |
+| **Skills System** | Compatible with OpenClaw, Claude Code, MCP |
+| **Workspace** | Isolated workspace for agents |
 | **Auto-Updater** | Stay up to date |
 | **Security Layer** | Sandbox & full access modes |
+
+---
+
+## 📁 Directory Structure
+
+```
+~/neugi/
+├── neugi                 # Main CLI
+├── neugi_swarm.py        # Server
+├── workspace/            # Agent workspace
+├── skills/               # Custom skills
+├── plugins/              # Plugins
+├── data/                 # Config, memory, DB
+├── models/               # AI models cache
+└── logs/                # Log files
+```
+
+---
+
+## 🔌 Plugins & Skills
+
+### Plugins (Native + MCP + Marketplace)
+```bash
+# List plugins
+neugi plugins list
+
+# Install from GitHub
+neugi plugins install https://github.com/user/repo
+
+# Install from marketplace
+neugi plugins install telegram-pro
+
+# Create MCP plugin
+neugi plugins create my_plugin --mcp
+```
+
+### Skills (OpenClaw Compatible)
+```python
+from neugi_swarm_skills import SkillManager
+skills = SkillManager()
+skills.execute("github", "issue")
+```
 
 ---
 
