@@ -350,9 +350,7 @@ class AgentManager:
                     ],
                     "stream": False,
                 }
-                r = requests.post(
-                    "http://localhost:11434/api/chat", json=payload, timeout=45
-                )
+                r = requests.post("http://localhost:11434/api/chat", json=payload, timeout=45)
                 if r.ok:
                     return r.json().get("message", {}).get("content", "").strip()
         except Exception:
@@ -372,16 +370,57 @@ class AgentManager:
         return agent.capabilities[0] if agent.capabilities else "respond"
 
     def _act(self, agent: Agent, action: str, task: str) -> str:
-        """Agent acts on the task"""
+        """Agent acts on the task - using real tools!"""
 
-        # Call LLM to generate the actual response instead of simulating
-        prompt = f"Perform the action '{action}' for the following task: {task}\nProvide the exact output or result of this action."
-        llm_response = self._call_llm(agent, prompt)
+        # Import tool manager
+        try:
+            from neugi_swarm_tools import ToolManager
 
-        if llm_response:
-            return f"[{agent.name}] {llm_response}"
+            tools = ToolManager()
+        except ImportError:
+            tools = None
 
-        # Simulate action execution fallback if LLM fails
+        # Execute tools based on agent capabilities
+        if action in ["search", "fetch"] and tools:
+            # Web search
+            result = tools.execute("web_search", query=task)
+            if result.get("success"):
+                return f"[{agent.name}] Search results: {result.get('results', [])[:3]}"
+
+        elif action in ["code", "debug", "build"] and tools:
+            # Code execution
+            result = tools.execute("code_execute", code=task, language="python")
+            if result.get("success"):
+                return f"[{agent.name}] Code executed: {result.get('output', '')[:500]}"
+
+        elif action in ["analyze", "visualize"] and tools:
+            # Data analysis
+            try:
+                import json
+
+                data = json.loads(task)
+                result = tools.execute("json_parse", data=json.dumps(data))
+                return f"[{agent.name}] Analysis: {result}"
+            except Exception:
+                pass
+
+        elif action in ["write", "edit"] and tools:
+            # File write
+            result = tools.execute(
+                "file_write",
+                path=f"~/neugi/workspace/{agent.id}_{datetime.now().timestamp()}.txt",
+                content=task,
+            )
+            if result.get("success"):
+                return f"[{agent.name}] Written to workspace"
+
+        # Fallback to LLM if tools fail or not available
+        if tools:
+            llm_response = self._call_llm(agent, f"Perform action '{action}' for: {task}")
+            if llm_response:
+                return f"[{agent.name}] {llm_response}"
+
+        # Hard fallback simulation
         if action in ["search", "fetch", "analyze"]:
             return f"[{agent.name}] Researching: {task}"
         elif action in ["code", "debug", "build"]:
