@@ -466,15 +466,17 @@
         }
 
         .agent-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 6px;
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-subtle);
+            width: 48px;
+            height: 48px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .agent-avatar svg {
+            width: 100%;
+            height: 100%;
         }
 
         .agent-info {
@@ -687,7 +689,7 @@
             <div class="agents-grid">
                 <div class="agent-card">
                     <div class="agent-avatar">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
                             <path d="M4 6h16v12H4zm2 2v8h12V8H6z" opacity="0.2"/>
                             <path d="M8 10h4v4H8z"/><rect x="12" y="14" width="2" height="2"/><rect x="14" y="16" width="2" height="2"/>
                         </svg>
@@ -699,7 +701,7 @@
                 </div>
                 <div class="agent-card">
                     <div class="agent-avatar">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
                             <path d="M4 6h16v12H4zm2 2v8h12V8H6z" opacity="0.2"/>
                             <path d="M8 10h2v2H8zm2 2h2v2h-2zm-2 2h2v2H8z"/>
                             <path d="M13 14h3v2h-3z" fill="var(--status-green)"/>
@@ -712,7 +714,7 @@
                 </div>
                 <div class="agent-card">
                     <div class="agent-avatar">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
                             <path d="M4 6h16v12H4zm2 2v8h12V8H6z" opacity="0.2"/>
                             <rect x="8" y="10" width="2" height="2" fill="#ef4444"/>
                             <rect x="14" y="10" width="2" height="2" fill="#3b82f6"/>
@@ -726,7 +728,7 @@
                 </div>
                 <div class="agent-card">
                     <div class="agent-avatar">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
                             <path d="M4 6h16v12H4zm2 2v8h12V8H6z" opacity="0.2"/>
                             <path d="M6 12h3v-2h2v4h2v-2h5v2h-5v-4h-2v4H9v-2H6z" fill="var(--status-red)"/>
                         </svg>
@@ -738,7 +740,7 @@
                 </div>
                 <div class="agent-card">
                     <div class="agent-avatar">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
                             <path d="M4 8h16v10H4zm2 2v6h12v-6H6z" opacity="0.2"/>
                             <path d="M6 4h2v4H6zm5 0h2v4h-2zm5 0h2v4h-2z" fill="var(--status-yellow)"/>
                         </svg>
@@ -750,7 +752,7 @@
                 </div>
                 <div class="agent-card">
                     <div class="agent-avatar">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
                             <path d="M5 4h14v8l-7 7-7-7V4z" opacity="0.2"/>
                             <rect x="9" y="8" width="2" height="2"/><rect x="13" y="8" width="2" height="2"/>
                             <path d="M11 11h2v4h-2z" fill="var(--status-green)"/>
@@ -763,7 +765,7 @@
                 </div>
                 <div class="agent-card">
                     <div class="agent-avatar">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
                             <path d="M4 8h16v10H4zm2 2v6h12v-6H6z" opacity="0.2"/>
                             <path d="M11 2h2v6h-2z"/>
                             <path d="M13 10h2v4h-2zm-2 2h2v4h-2z" fill="var(--status-yellow)"/>
@@ -776,7 +778,7 @@
                 </div>
                 <div class="agent-card">
                     <div class="agent-avatar">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
                             <path d="M4 6h16v12H4zm2 2v8h12V8H6z" opacity="0.2"/>
                             <rect x="8" y="10" width="2" height="2"/><rect x="14" y="10" width="2" height="2"/>
                             <path d="M8 14h8v2H8z"/><path d="M16 4h2v6h-2z"/>
