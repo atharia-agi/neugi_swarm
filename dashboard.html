@@ -833,6 +833,24 @@
             
             input.value = '';
             box.scrollTop = box.scrollHeight;
+
+            if (isShowcaseMode) {
+                const simulatorResponses = [
+                    "Neural network synchronized. In Showcase Mode, my cognitive cycles are running on a static demo grid. For real-world execution, please refer to the installation guide.",
+                    "Directive received. I'm currently simulating swarm logic. To execute this on your local system, the Neugi Swarm Engine must be active.",
+                    "Cognitive link established. I can see your request, but my toolset is currently locked in sandbox mode. Install the local nexus to unlock full orchestration.",
+                    "Welcome to the Neugi Network. My agents are ready for deployment on your hardware. Check the 'Install' section to begin."
+                ];
+                setTimeout(() => {
+                    document.getElementById(loadingId).outerHTML = `
+                    <div class="msg-row">
+                        <div class="msg-avatar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg></div>
+                        <div class="msg-content">${simulatorResponses[Math.floor(Math.random() * simulatorResponses.length)]}</div>
+                    </div>`;
+                    box.scrollTop = box.scrollHeight;
+                }, 1000);
+                return;
+            }
             
             try {
                 const resp = await fetch('/api/chat', {
