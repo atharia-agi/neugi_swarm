@@ -701,60 +701,114 @@
 
         async function refreshStatus() {
             try {
-                errEl.style.color = errCount > 0 ? 'var(--status-red)' : 'var(--text-primary)';
+                const response = await fetch('/api/status');
+                if (!response.ok) throw new Error("API Offline");
+                const data = await response.json();
                 
-                const dot = document.getElementById('statusDot');
-                const text = document.getElementById('statusText');
-                
-                if (errCount > 0) {
-                    dot.className = 'status-dot error';
-                    text.textContent = 'System Anomaly';
-                } else {
-                    dot.className = 'status-dot';
-                    text.textContent = 'System Online';
+                if (isShowcaseMode && window.location.hostname === 'localhost') {
+                    window.location.reload();
                 }
                 
-                const issuesDiv = document.getElementById('issues');
-                if (errCount > 0) {
-                    issuesDiv.innerHTML = data.issues.map(i => 
-                        `<div class="diagnostic-err">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                            <span>${i}</span>
-                        </div>`
-                    ).join('');
+                updateDashboardUI(data);
+            } catch (error) {
+                if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                    startShowcaseMode();
+                    updateDashboardUI({
+                        neugi: {
+                            uptime: Math.floor((Date.now() - startTimestamp) / 1000),
+                            telemetry: simulator.generateTelemetry(),
+                            agents: [
+                                { name: 'Aurora', role: 'researcher', level: 9, status: 'working' },
+                                { name: 'Cipher', role: 'coder', level: 8, status: 'thinking' },
+                                { name: 'Nova', role: 'creator', level: 7, status: 'idle' },
+                                { name: 'Pulse', role: 'analyst', level: 9, status: 'working' }
+                            ],
+                            tools: [
+                                { name: 'web_search' }, { name: 'code_execute' }, { name: 'neugi_browser' }, { name: 'self_heal' }
+                            ]
+                        },
+                        ollama: { status: 'running', models: 'qwen3.5:cloud' },
+                        issues: []
+                    });
                 } else {
-                    issuesDiv.innerHTML = `
-                        <div class="diagnostic-ok">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                            Core integrity verified.
-                        </div>`;
+                    document.getElementById('statusDot').className = 'status-dot error';
+                    document.getElementById('statusText').textContent = 'Link Severed';
+                    document.getElementById('model').textContent = 'Offline';
                 }
+            }
+        }
 
-                if (data.agents && data.agents.length > 0) {
-                    document.getElementById('agentsGrid').innerHTML = data.agents.map(a => {
-                        const statusClass = a.status === 'idle' ? 'idle' : (a.status === 'thinking' ? 'thinking' : 'working');
-                        const icon = agentEmojis[a.role] || '🤖';
-                        return `
-                        <div class="agent-node">
-                            <div class="agent-id">
-                                <span class="agent-icon">${icon}</span>
-                                <div>
-                                    <div class="agent-name">${a.name}</div>
-                                    <div class="agent-role">${a.role} lv.${a.level}</div>
-                                </div>
+        function updateDashboardUI(data) {
+            const neugi = (data && data.neugi) ? data.neugi : {};
+            const ollama = (data && data.ollama) ? data.ollama : {};
+            
+            // Uptime
+            const serverUptimeOffset = neugi.uptime || 0;
+            const currentUptime = isShowcaseMode ? serverUptimeOffset : (Math.floor((Date.now() - startTimestamp) / 1000) + serverUptimeOffset);
+            document.getElementById('uptime').textContent = formatTime(currentUptime);
+            
+            // Telemetry
+            if (neugi.telemetry) {
+                const tel = neugi.telemetry;
+                document.getElementById('cpuUsage').textContent = tel.cpu + '%';
+                document.getElementById('ramUsage').textContent = tel.ram + '%';
+            }
+            
+            // Status Header
+            if (ollama.status === 'running') {
+                document.getElementById('model').textContent = `Ollama Engine (${ollama.models || 'active'})`;
+                if (!isShowcaseMode) {
+                    document.getElementById('statusDot').className = 'status-dot';
+                    document.getElementById('statusText').textContent = 'Engine Online';
+                }
+            }
+            
+            // Anomalies
+            const errCount = data && data.issues ? data.issues.length : 0;
+            const errEl = document.getElementById('errors');
+            errEl.textContent = errCount;
+            errEl.style.color = errCount > 0 ? 'var(--status-red)' : 'var(--text-primary)';
+            
+            const issuesDiv = document.getElementById('issues');
+            if (errCount > 0) {
+                issuesDiv.innerHTML = data.issues.map(i => 
+                    `<div class="diagnostic-err">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        <span>${i}</span>
+                    </div>`
+                ).join('');
+            } else {
+                issuesDiv.innerHTML = `
+                    <div class="diagnostic-ok">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                        Core integrity verified.
+                    </div>`;
+            }
+
+            // Agents Grid
+            if (neugi.agents) {
+                document.getElementById('agentsGrid').innerHTML = neugi.agents.map(a => {
+                    const statusClass = a.status || 'idle';
+                    const icon = agentEmojis[a.role] || '🤖';
+                    return `
+                    <div class="agent-node">
+                        <div class="agent-id">
+                            <span class="agent-icon">${icon}</span>
+                            <div>
+                                <div class="agent-name">${a.name}</div>
+                                <div class="agent-role">${a.role} ${a.level ? 'lv.'+a.level : ''}</div>
                             </div>
-                            <div class="indicator ${statusClass}" title="${a.status}"></div>
-                        </div>`;
-                    }).join('');
-                }
+                        </div>
+                        <div class="indicator ${statusClass}" title="${statusClass}"></div>
+                    </div>`;
+                }).join('');
+            }
 
-                if (data.tools && data.tools.length > 0) {
-                    document.getElementById('toolsList').innerHTML = data.tools.map(t => `<span class="tool-chip">${t.name}</span>`).join('');
-                }
-                
-            } catch(e) {
-                document.getElementById('statusText').textContent = 'Link Severed';
-                document.getElementById('statusDot').className = 'status-dot error';
+            // Tools List
+            if (neugi.tools) {
+                document.getElementById('toolsList').innerHTML = neugi.tools.map(t => 
+                    `<div class="tool-pill">${t.name}</div>`
+                ).join('');
             }
         }
 
@@ -804,11 +858,7 @@
         
         refreshStatus();
         setInterval(refreshStatus, 3000);
-        setInterval(() => {
-            const currentUptime = Math.floor((Date.now() - startTimestamp) / 1000) + serverUptimeOffset;
-            document.getElementById('uptime').textContent = formatTime(currentUptime);
-        }, 1000);
-
+        
         // --- SWARM GRAPH INITIALIZATION ---
         const Graph = ForceGraph3D()(document.getElementById('swarmGraph'))
             .backgroundColor('#000000')
