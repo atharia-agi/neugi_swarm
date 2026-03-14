@@ -467,7 +467,7 @@
             gap: 6px;
         }
 
-        .tool-chip {
+        .tool-pill {
             font-family: var(--font-mono);
             font-size: 11px;
             padding: 4px 8px;
@@ -769,7 +769,11 @@
                             ]
                         },
                         ollama: { status: 'running', models: 'qwen3.5:cloud' },
-                        issues: []
+                        issues: [
+                            "Neural pathway SF-Node-Alpha latent (12ms)",
+                            "Syncing distributed vector memory...",
+                            "Heuristic firewall: Integrity verified"
+                        ]
                     });
                 } else {
                     document.getElementById('statusDot').className = 'status-dot error';
@@ -878,17 +882,17 @@
                 let response = "Neural network synchronized. In Showcase Mode, my cognitive cycles are running on a static demo grid. To experience full autonomy, please refer to the installation guide.";
 
                 const kb = {
-                    "what is neugi": "Neugi Swarm is a distributed autonomous AI agent system designed for complex logic execution. Unlike standard chatbots, Neugi uses Swarm Intelligence to break down massive tasks into sub-tugas executed by specialized agents in parallel.",
-                    "tell more": "Neugi Swarm features a decentralized architecture with 9 specialized agents. It supports multi-node task delegation, autonomous self-healing, and real-time 3D topology visualization of the entire swarm network.",
+                    "what is neugi": "Neugi Swarm is a distributed autonomous AI agent system designed for complex logic execution. Unlike standard chatbots, Neugi uses Swarm Intelligence to break down massive tasks into sub-tasks executed by specialized agents in parallel.",
+                    "tell me more": "Neugi Swarm features a decentralized architecture with 9 specialized agents. It supports multi-node task delegation, autonomous self-healing, and real-time 3D topology visualization of the entire swarm network.",
                     "mechanism": "Neugi's mechanism is built on a custom P2P protocol. A 'Nexus' node orchestrates directives through local and remote nodes using the @node_id syntax, allowing for scalable, cross-hardware AI collaboration.",
                     "how to install": "Simple! Just run this one-liner: `powershell -c \"irm https://neugi.com/install.ps1 | iex\"`. You'll need Python and Ollama installed as the local engine.",
                     "agents": "The swarm includes 9 specialists: Aurora (Research), Cipher (Coding), Nova (UI), Pulse (Analytics), Quark (Strategy), Shield (Security), Spark (Network), Ink (Formatting), and the Manager (Orchestrator).",
                     "difference": "Unlike single-agent systems, Neugi is a multi-agent ecosystem. It doesn't just 'talk'; it executes code, performs system diagnostics, and collaborates with other PCs in your network to solve problems.",
-                    "different": "Neugi differs by its 'Swarm Intelligence' approach. Instead of a single LLM stream, it uses specialized agents with specific tools to perform parallel execution on your local file system.",
                     "self-healing": "Self-healing allows Neugi agents to detect system faults (like missing dependencies) and fix them autonomously using shell commands, provided God Mode is enabled.",
                     "distributed": "Neugi supports distributed intelligence. You can connect multiple machines to form a private swarm, delegating heavy logic to more powerful nodes in the network.",
                     "who are you": "I am the Nexus, the central orchestration hub of the Neugi Swarm, currently operating in Showcase Mode.",
-                    "features": "Core features include: Streaming Terminal UI, 3D Network Visualization, Real-time Telemetry, Self-Healing protocols, and Cross-Node Task Delegation."
+                    "features": "Core features include: Streaming Terminal UI, 3D Network Visualization, Real-time Telemetry, Self-Healing protocols, and Cross-Node Task Delegation.",
+                    "download": "Check the 'Installation' section on our landing page for the latest installer and setup guide."
                 };
 
                 for (const key in kb) {
