@@ -143,14 +143,21 @@
             text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
         
-        .agent[data-agent="aurora"] { top: 10%; left: 15%; }
-        .agent[data-agent="cipher"] { top: 5%; right: 20%; }
-        .agent[data-agent="nova"] { top: 35%; left: 5%; }
-        .agent[data-agent="pulse"] { top: 25%; right: 10%; }
-        .agent[data-agent="quark"] { top: 50%; left: 20%; }
-        .agent[data-agent="shield"] { top: 45%; right: 15%; }
-        .agent[data-agent="spark"] { top: 70%; left: 35%; }
-        .agent[data-agent="ink"] { top: 65%; right: 30%; }
+        .agent[data-agent="aurora"] { top: 10%; left: 10%; }
+        .agent[data-agent="cipher"] { top: 10%; right: 10%; }
+        .agent[data-agent="nova"] { top: 40%; left: 5%; }
+        .agent[data-agent="pulse"] { top: 40%; right: 5%; }
+        .agent[data-agent="quark"] { top: 70%; left: 15%; }
+        .agent[data-agent="shield"] { top: 70%; right: 15%; }
+        .agent[data-agent="spark"] { top: 80%; left: 45%; }
+        .agent[data-agent="ink"] { top: 5%; left: 45%; }
+        
+        .nexus-center {
+            top: 45% !important;
+            left: 45% !important;
+            transform: translate(-50%, -50%) !important;
+            z-index: 10;
+        }
         
         .agent-name {
             font-size: 10px;
@@ -200,19 +207,20 @@
             to { stroke-dashoffset: -100; }
         }
         
-        /* Responsive */
         @media (max-width: 768px) {
             .agent-svg { width: 40px; height: 40px; }
             .agent-name { font-size: 8px; }
+            .agent-role { font-size: 7px; }
             .agent-swarm { height: 280px; }
-            .agent[data-agent="aurora"] { top: 5%; left: 10%; }
-            .agent[data-agent="cipher"] { top: 5%; right: 10%; }
+            .agent[data-agent="aurora"] { top: 5%; left: 5%; }
+            .agent[data-agent="cipher"] { top: 5%; right: 5%; }
             .agent[data-agent="nova"] { top: 25%; left: 5%; }
             .agent[data-agent="pulse"] { top: 20%; right: 5%; }
-            .agent[data-agent="quark"] { top: 40%; left: 15%; }
+            .agent[data-agent="quark"] { top: 40%; left: 10%; }
             .agent[data-agent="shield"] { top: 35%; right: 10%; }
-            .agent[data-agent="spark"] { top: 60%; left: 25%; }
-            .agent[data-agent="ink"] { top: 55%; right: 20%; }
+            .agent[data-agent="spark"] { top: 55%; left: 35%; }
+            .agent[data-agent="ink"] { top: 5%; left: 35%; }
+            .nexus-center { top: 40% !important; left: 45% !important; }
         }
 
         /* Header */
@@ -810,23 +818,71 @@
             Neural General Intelligence
         </div>
         
-        <h1>
-            AI Swarm for <span class="accent">Everyone</span>
-        </h1>
+    <h1>
+        AI Swarm for <span class="accent">Everyone</span>
+    </h1>
+    
+    <p>
+        9 autonomous agents working together in harmony. Watch them collaborate, learn, and solve problems as a swarm.
+    </p>
+    
+    <div class="hero-buttons">
+        <a href="https://github.com/atharia-agi/neugi_swarm" class="btn btn-primary btn-large" target="_blank">Install Now</a>
+        <a href="#how" class="btn btn-ghost btn-large">Learn More</a>
+        <a href="docs.html" class="btn btn-ghost btn-large">📖 Documentation</a>
+    </div>
         
-        <p>
-            15+ autonomous agents working together in harmony. Watch them collaborate, learn, and solve problems as a swarm.
-        </p>
-        
-        <div class="hero-buttons">
-            <a href="https://github.com/atharia-agi/neugi_swarm" class="btn btn-primary btn-large" target="_blank">Install Now</a>
-            <a href="#how" class="btn btn-ghost btn-large">Learn More</a>
+        <!-- Terminal Demo -->
+        <div class="terminal" style="max-width:600px;margin:2rem auto;">
+            <div class="terminal-header">
+                <div class="terminal-dot red"></div>
+                <div class="terminal-dot yellow"></div>
+                <div class="terminal-dot green"></div>
+                <span class="terminal-title">neugi@localhost ~ neugi_wizard.py</span>
+            </div>
+            <div class="terminal-body">
+                <div class="terminal-line">
+                    <span class="terminal-prompt">$</span>
+                    python3 neugi_wizard.py
+                </div>
+                <div class="terminal-line">
+                    <span class="terminal-output">🤖 NEUGI WIZARD v3.0 - AI-Powered!</span>
+                </div>
+                <div class="terminal-line">
+                    <span class="terminal-output">1. 🎯 Setup / First Time Install</span>
+                </div>
+                <div class="terminal-line">
+                    <span class="terminal-output">2. 🔧 Repair / Fix Problems</span>
+                </div>
+                <div class="terminal-line">
+                    <span class="terminal-output">3. 🧠 Diagnose System</span>
+                </div>
+                <div class="terminal-line">
+                    <span class="terminal-output">4. 💬 Chat with AI</span>
+                </div>
+                <div class="terminal-line">
+                    <span class="terminal-output">...</span>
+                </div>
+                <div class="terminal-line">
+                    <span class="terminal-prompt">></span>
+                    <span style="color:#22c55e;">1</span>
+                </div>
+                <div class="terminal-line">
+                    <span class="terminal-output">✓ Ollama detected</span>
+                </div>
+                <div class="terminal-line">
+                    <span class="terminal-output">✓ 9 agents ready</span>
+                </div>
+                <div class="terminal-line">
+                    <span class="terminal-output success">✓ Running on http://localhost:19888</span>
+                </div>
+            </div>
         </div>
         
-        <!-- AGENT SWARM ANIMATION - Matching Your AI Workforce Style -->
+        <!-- AGENT SWARM ANIMATION - 9 Agents with Nexus in Center -->
         <div class="agent-swarm" id="agentSwarm">
             <div class="swarm-container">
-                <!-- AURORA - Research - Blue -->
+                <!-- AURORA - Research - Blue (Top Left) -->
                 <div class="agent" data-agent="aurora" style="--agent-color: #3b82f6; --agent-delay: 0s;">
                     <svg viewBox="0 0 8 8" class="agent-svg">
                         <rect x="2" y="1" width="4" height="6" rx="1" fill="#3b82f6"/>
@@ -838,7 +894,7 @@
                     <span class="agent-role">Research</span>
                 </div>
                 
-                <!-- CIPHER - Coder - Green -->
+                <!-- CIPHER - Coder - Green (Top Right) -->
                 <div class="agent" data-agent="cipher" style="--agent-color: #10b981; --agent-delay: 1s;">
                     <svg viewBox="0 0 8 8" class="agent-svg">
                         <rect x="1" y="2" width="6" height="4" rx="1" fill="#10b981"/>
@@ -850,7 +906,7 @@
                     <span class="agent-role">Coder</span>
                 </div>
                 
-                <!-- NOVA - Creator - Pink -->
+                <!-- NOVA - Creator - Pink (Left) -->
                 <div class="agent" data-agent="nova" style="--agent-color: #ec4899; --agent-delay: 2s;">
                     <svg viewBox="0 0 8 8" class="agent-svg">
                         <rect x="3" y="1" width="2" height="6" fill="#ec4899"/>
@@ -861,7 +917,7 @@
                     <span class="agent-role">Creator</span>
                 </div>
                 
-                <!-- PULSE - Analyst - Yellow -->
+                <!-- PULSE - Analyst - Yellow (Right) -->
                 <div class="agent" data-agent="pulse" style="--agent-color: #f59e0b; --agent-delay: 0.5s;">
                     <svg viewBox="0 0 8 8" class="agent-svg">
                         <rect x="2" y="1" width="4" height="5" rx="1" fill="#f59e0b"/>
@@ -872,7 +928,7 @@
                     <span class="agent-role">Analyst</span>
                 </div>
                 
-                <!-- QUARK - Strategy - Purple -->
+                <!-- QUARK - Strategy - Purple (Bottom Left) -->
                 <div class="agent" data-agent="quark" style="--agent-color: #8b5cf6; --agent-delay: 1.5s;">
                     <svg viewBox="0 0 8 8" class="agent-svg">
                         <polygon points="4,1 7,7 1,7" fill="#8b5cf6"/>
@@ -882,7 +938,7 @@
                     <span class="agent-role">Strategy</span>
                 </div>
                 
-                <!-- SHIELD - Security - Red -->
+                <!-- SHIELD - Security - Red (Bottom Right) -->
                 <div class="agent" data-agent="shield" style="--agent-color: #ef4444; --agent-delay: 2.5s;">
                     <svg viewBox="0 0 8 8" class="agent-svg">
                         <rect x="1" y="1" width="6" height="6" rx="1" fill="#ef4444"/>
@@ -893,7 +949,7 @@
                     <span class="agent-role">Security</span>
                 </div>
                 
-                <!-- SPARK - Social - Yellow -->
+                <!-- SPARK - Social - Orange (Bottom) -->
                 <div class="agent" data-agent="spark" style="--agent-color: #eab308; --agent-delay: 3s;">
                     <svg viewBox="0 0 8 8" class="agent-svg">
                         <circle cx="4" cy="4" r="3" fill="#eab308"/>
@@ -903,7 +959,7 @@
                     <span class="agent-role">Social</span>
                 </div>
                 
-                <!-- INK - Writer - Indigo -->
+                <!-- INK - Writer - Indigo (Top) -->
                 <div class="agent" data-agent="ink" style="--agent-color: #6366f1; --agent-delay: 0.8s;">
                     <svg viewBox="0 0 8 8" class="agent-svg">
                         <rect x="2" y="1" width="4" height="6" rx="1" fill="#6366f1"/>
@@ -913,42 +969,47 @@
                     <span class="agent-name">INK</span>
                     <span class="agent-role">Writer</span>
                 </div>
+                
+                <!-- NEXUS - Connector - Violet (CENTER - Hub) -->
+                <div class="agent nexus-center" data-agent="nexus" style="--agent-color: #8b5cf6; --agent-delay: 1.8s;">
+                    <svg viewBox="0 0 12 12" class="agent-svg" style="width:70px;height:70px;">
+                        <!-- Network nodes -->
+                        <circle cx="6" cy="2" r="2" fill="#8b5cf6"/>
+                        <circle cx="2" cy="6" r="1.5" fill="#a78bfa" opacity="0.9"/>
+                        <circle cx="10" cy="6" r="1.5" fill="#a78bfa" opacity="0.9"/>
+                        <circle cx="3" cy="10" r="1.5" fill="#c4b5fd" opacity="0.8"/>
+                        <circle cx="9" cy="10" r="1.5" fill="#c4b5fd" opacity="0.8"/>
+                        <!-- Connection lines -->
+                        <line x1="6" y1="3" x2="3" y2="5" stroke="#8b5cf6" stroke-width="1" opacity="0.7"/>
+                        <line x1="6" y1="3" x2="9" y2="5" stroke="#8b5cf6" stroke-width="1" opacity="0.7"/>
+                        <line x1="3" y1="7" x2="3" y2="9" stroke="#a78bfa" stroke-width="1" opacity="0.6"/>
+                        <line x1="9" y1="7" x2="9" y2="9" stroke="#a78bfa" stroke-width="1" opacity="0.6"/>
+                        <line x1="4" y1="8" x2="8" y2="8" stroke="#c4b5fd" stroke-width="1" opacity="0.5"/>
+                    </svg>
+                    <span class="agent-name">NEXUS</span>
+                    <span class="agent-role">Connector</span>
+                </div>
             </div>
             
-            <!-- Swarm interaction lines -->
+            <!-- Swarm connection lines - All connecting to Nexus -->
             <svg class="swarm-lines" viewBox="0 0 800 400">
-                <line class="swarm-line" x1="100" y1="100" x2="250" y2="200" style="--line-color: #3b82f6;"/>
-                <line class="swarm-line" x1="250" y1="200" x2="400" y2="150" style="--line-color: #10b981;"/>
-                <line class="swarm-line" x1="400" y1="150" x2="550" y2="250" style="--line-color: #ec4899;"/>
-                <line class="swarm-line" x1="550" y1="250" x2="700" y2="100" style="--line-color: #f59e0b;"/>
-                <line class="swarm-line" x1="700" y1="100" x2="100" y2="300" style="--line-color: #8b5cf6;"/>
-                <line class="swarm-line" x1="100" y1="300" x2="300" y2="50" style="--line-color: #ef4444;"/>
+                <!-- Aurora to Nexus -->
+                <line class="swarm-line" x1="100" y1="80" x2="400" y2="200" style="--line-color: #3b82f6;"/>
+                <!-- Cipher to Nexus -->
+                <line class="swarm-line" x1="700" y1="80" x2="400" y2="200" style="--line-color: #10b981;"/>
+                <!-- Nova to Nexus -->
+                <line class="swarm-line" x1="100" y1="200" x2="400" y2="200" style="--line-color: #ec4899;"/>
+                <!-- Pulse to Nexus -->
+                <line class="swarm-line" x1="700" y1="200" x2="400" y2="200" style="--line-color: #f59e0b;"/>
+                <!-- Quark to Nexus -->
+                <line class="swarm-line" x1="150" y1="320" x2="380" y2="220" style="--line-color: #8b5cf6;"/>
+                <!-- Shield to Nexus -->
+                <line class="swarm-line" x1="650" y1="320" x2="420" y2="220" style="--line-color: #ef4444;"/>
+                <!-- Spark to Nexus -->
+                <line class="swarm-line" x1="400" y1="350" x2="400" y2="270" style="--line-color: #eab308;"/>
+                <!-- Ink to Nexus -->
+                <line class="swarm-line" x1="400" y1="50" x2="400" y2="130" style="--line-color: #6366f1;"/>
             </svg>
-        </div>
-        
-        <!-- Terminal -->
-        <div class="terminal">
-            <div class="terminal-header">
-                <div class="terminal-dot red"></div>
-                <div class="terminal-dot yellow"></div>
-                <div class="terminal-dot green"></div>
-                <span class="terminal-title">neugi@localhost</span>
-            </div>
-            <div class="terminal-body">
-                <div class="terminal-line">
-                    <span class="terminal-prompt">$</span>
-                    curl -fsSL neugi.sh/install | bash
-                </div>
-                <div class="terminal-line">
-                    <span class="terminal-output">Installing NEUGI SWARM...</span>
-                </div>
-                <div class="terminal-line">
-                    <span class="terminal-output">✓ 15 agents ready</span>
-                </div>
-                <div class="terminal-line">
-                    <span class="terminal-output success">✓ Running on http://localhost:19888</span>
-                </div>
-            </div>
         </div>
     </section>
     
