@@ -22,6 +22,20 @@
 
 ## Version History
 
+### v15.5.0 (March 15, 2026) - THE SOVEREIGN UPDATE (Phase 17-22)
+
+**Architectural Consolidation**
+- **Sovereign Wizard**: Consolidated all diagnostic, repair, and provisioning logic from the decommissioned `neugi_technician.py` into `neugi_wizard.py`.
+- **Unrestricted Execution**: Granted the Wizard core full system execution authority by default, removing all legacy safety command filters.
+- **Neural Stability Layer**: Injected "Core Directives" and risk-aware logic guardrails to balance power with precision.
+- **Mandatory Risk Disclaimers**: Implemented high-profile warning systems and explicit user agreement prompts in installation (`install.sh`, `install.bat`) and setup flows.
+
+**Wizard Branding & Usability**
+- **Console Rebranding**: Renamed `technician.html` to `wizard.html` and updated all navigation links for role consistency across the ecosystem.
+- **Simplified Setup**: Replaced the 'I AGREE' text confirmation with a swift `y/n` prompt for better developer efficiency.
+- **Enhanced Documentation**: Refreshed `README.md`, `index.html`, and `docs.html` with hard-hitting risk disclaimers and "Sovereign Intelligence" branding.
+- **Wizard-Centric Error Handling**: All agent error paths now route through the Wizard for autonomous resolution.
+
 ### v15.4.0 (March 15, 2026) - The "Ultimate Polish" & Reliability Update
 
 **Phase 13: System-Wide Functional Audit & Recursive Repair**
