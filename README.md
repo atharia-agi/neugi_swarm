@@ -1,13 +1,18 @@
 # 🤖 NEUGI SWARM
-## Neural General Intelligence - Made Easy
+## Sovereign Intelligence — Neural Sovereignty for the Frontier
+
+> [!CAUTION]
+> **DANGER: UNRESTRICTED SYSTEM ACCESS**
+> NEUGI is an autonomous AI system with the authority to execute system-level commands (BASH/CMD/PowerShell). By installing, you acknowledge that the AI can perform unrestricted actions on your host machine. **Use with extreme caution.**
 
 ---
 
 <p align="center">
-  <img src="https://img.shields.io/badge/NEUGI-NGI-blue" alt="NEUGI">
+  <img src="https://img.shields.io/badge/NEUGI-SOVEREIGN-red" alt="NEUGI">
+  <img src="https://img.shields.io/badge/Access-UNRESTRICTED-orange" alt="Access">
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
-  <img src="https://img.shields.io/badge/Python-3.8+-yellow" alt="Python">
-  <a href="https://neugi.com"><img src="https://img.shields.io/badge/Website-Live-green" alt="Website"></a>
+  <img src="https://img.shields.io/badge/Python-3.11+-yellow" alt="Python">
+  <a href="https://neugi.com"><img src="https://img.shields.io/badge/Website-Sovereign-blue" alt="Website"></a>
 </p>
 
 ---
@@ -58,22 +63,20 @@ Includes:
 
 ---
 
-## 🔧 Features
+## 🔧 Sovereign Features
 
 | Feature | Description |
 |---------|-------------|
-| **True NGI** | Neural General Intelligence with Knowledge Graph, Reasoning, Planning |
-| **Native Web Browser** | FREE web search - DuckDuckGo, SearXNG, Brave (no API keys!) |
-| **Auto-Install** | One command installs everything including Ollama |
-| **Smart Wizard v3.0** | All-in-one: setup, repair, diagnose, chat, plugins, update |
-| **Technician** | Can fix system issues automatically |
-| **Free Models** | qwen3.5:cloud works with Ollama Free tier |
-| **Multi-Provider** | Support Groq, OpenRouter, OpenAI, Anthropic |
-| **CLI** | Like `openclaw` - neugi start/stop/status |
-| **Telegram Control** | Manage your swarm from your phone via Telegram Bot |
-| **Streaming Responses** | Real-time AI responses |
-| **Memory System** | Conversation history & user preferences |
-| **Plugin System** | Extend with Native, MCP, or marketplace plugins |
+| **Sovereign Intelligence** | Unrestricted neural orchestration with Knowledge Graph & Reasoning |
+| **Native Web Browser** | Sovereign search — DuckDuckGo, SearXNG, Brave (No API keys) |
+| **Auto-Provisioning** | One command preps your entire hardware stack |
+| **Wizard v3.5** | **Full Power Mode**: Setup, repair, unrestricted system execution |
+| **Elite Security** | God Mode vs Neural Sandbox configurations |
+| **Free SOTA** | Optimized for `qwen3.5:cloud` and frontier local models |
+| **Sovereign CLI** | Full control via `neugi start/stop/status/repair` |
+| **Telegram Control** | Command your swarm from any decentralized node |
+| **Memory System** | High-fidelity conversation history & user neural mappings |
+| **Plugin Ecosystem** | Native, MCP, and Marketplace extension support |
 | **Skills System** | Compatible with OpenClaw, Claude Code, MCP |
 | **Workspace** | Isolated workspace for agents |
 | **Auto-Updater** | Stay up to date |

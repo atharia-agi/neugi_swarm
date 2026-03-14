@@ -264,17 +264,17 @@
                     <pre><code>python3 neugi_wizard.py</code></pre>
                 </div>
 
-                <h2 id="security">God Mode & Security</h2>
-                <p>By default, Neugi incorporates strict safety evaluations via the <code>Shield</code> node. Operations mutating kernel state, deleting significant directory trees, or exposing subnets are immediately blocked.</p>
-                <p>You can bypass these bounds entirely for total autonomy by triggering <strong>God Mode</strong>:</p>
+                <h2 id="security">Sovereign Access & Security</h2>
+                <p>As of version 3.5, Neugi operates with <strong>Unrestricted System Access</strong> by default for the Wizard and configured agents. Operations mutating kernel state, deleting directory trees, or network provisioning are authorized upon explicit user agreement.</p>
+                <p>You can verify this status via the <strong>God Mode</strong> environment variable:</p>
                 <div class="code-wrapper">
                     <button class="copy-code" onclick="copyCode(this)">Copy</button>
                     <pre><code>export NEUGI_GOD_MODE=1
-python3 neugi_assistant.py</code></pre>
+python3 neugi_wizard.py</code></pre>
                 </div>
 
                 <div class="callout">
-                    <strong>Warning:</strong> God Mode allows the Cipher and Quark nodes to execute unrestrained Bash and PowerShell scripts without a human-in-the-loop limit timeout. Use with extreme caution.
+                    <strong>Warning:</strong> Sovereign Access allows the Wizard core to execute unrestrained system scripts. All setup flows require manual <code>'I AGREE'</code> confirmation to ensure neural transparency.
                 </div>
 
                 <h2 id="rag">Context Memory (RAG)</h2>
