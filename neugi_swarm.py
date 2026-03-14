@@ -400,6 +400,18 @@ class DashboardHandler(BaseHTTPRequestHandler):
         .status-dot.error { background: var(--danger); box-shadow: 0 0 12px var(--danger); }
         .status-dot.warning { background: var(--warning); box-shadow: 0 0 12px var(--warning); }
         
+        /* Modal */
+        .modal { display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:1000;align-items:center;justify-content:center; }
+        .modal.active { display:flex; }
+        .modal-content { background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:24px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto; }
+        .modal h2 { margin-bottom:16px;font-size:20px; }
+        .modal-close { float:right;background:none;border:none;color:var(--text-muted);font-size:24px;cursor:pointer; }
+        .modal-btn { background:var(--primary);color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;margin:4px; }
+        .modal-btn.secondary { background:var(--bg-elevated); }
+        .setting-row { display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border); }
+        .setting-label { font-weight:500; }
+        .setting-desc { font-size:12px;color:var(--text-muted); }
+        
         .container { max-width: 1400px; margin: 0 auto; padding: 40px 20px; }
         
         .dashboard-layout {
@@ -516,14 +528,74 @@ class DashboardHandler(BaseHTTPRequestHandler):
 </head>
 <body>
     <div class="bg-grid"></div>
+    
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeSettings()">&times;</button>
+            <h2>⚙️ NEUGI Settings</h2>
+            <div class="setting-row">
+                <div>
+                    <div class="setting-label">🛡️ Security Mode</div>
+                    <div class="setting-desc">Sandbox (secure) or Full Access</div>
+                </div>
+                <button class="modal-btn secondary" onclick="toggleSecurity()">Configure</button>
+            </div>
+            <div class="setting-row">
+                <div>
+                    <div class="setting-label">📦 Plugins</div>
+                    <div class="setting-desc">Manage plugins</div>
+                </div>
+                <button class="modal-btn secondary" onclick="managePlugins()">Manage</button>
+            </div>
+            <div class="setting-row">
+                <div>
+                    <div class="setting-label">🔄 Check Updates</div>
+                    <div class="setting-desc">Update NEUGI to latest version</div>
+                </div>
+                <button class="modal-btn secondary" onclick="checkUpdates()">Check</button>
+            </div>
+            <div class="setting-row">
+                <div>
+                    <div class="setting-label">🔌 Ollama URL</div>
+                    <div class="setting-desc" id="ollamaUrlDisplay">http://localhost:11434</div>
+                </div>
+                <input type="text" id="ollamaUrlInput" style="background:var(--bg-elevated);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:6px;width:200px;" placeholder="http://localhost:11434">
+            </div>
+            <div style="margin-top:20px;text-align:center;">
+                <button class="modal-btn" onclick="saveSettings()">Save Settings</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Wizard Help Modal -->
+    <div class="modal" id="wizardModal">
+        <div class="modal-content" style="max-width:600px;">
+            <button class="modal-close" onclick="closeWizard()">&times;</button>
+            <h2>🧠 NEUGI Wizard Help</h2>
+            <p style="color:var(--text-muted);margin-bottom:16px;">Chat with NEUGI Wizard for troubleshooting!</p>
+            <div class="chat-box" id="wizardChatBox" style="height:300px;overflow-y:auto;background:var(--bg-elevated);border-radius:8px;padding:12px;margin-bottom:12px;">
+                <div class="chat-msg system">NEUGI Wizard v3.0 Ready</div>
+                <div class="chat-msg assistant">Hi! I'm here to help. What's wrong with your NEUGI?</div>
+            </div>
+            <div style="display:flex;gap:8px;">
+                <input type="text" id="wizardChatInput" placeholder="Describe your issue..." style="flex:1;background:var(--bg-elevated);border:1px solid var(--border);color:var(--text);padding:12px;border-radius:8px;" onkeypress="if(event.key==='Enter')sendWizardChat()">
+                <button class="modal-btn" onclick="sendWizardChat()">Send</button>
+            </div>
+        </div>
+    </div>
     <div class="header">
         <div class="logo">
             <div class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" style="width:16px;height:16px;"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
             NEUGI SWARM
         </div>
-        <div class="status-pill">
-            <div class="status-dot" id="statusDot"></div>
-            <span id="statusText">CONNECTING...</span>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <button onclick="openSettings()" style="background:var(--bg-elevated);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;">⚙️ Settings</button>
+            <button onclick="openWizard()" style="background:var(--primary);border:none;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">🧠 Wizard Help</button>
+            <div class="status-pill">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">CONNECTING...</span>
+            </div>
         </div>
     </div>
     
@@ -798,6 +870,72 @@ class DashboardHandler(BaseHTTPRequestHandler):
             const currentUptime = Math.floor((Date.now() - startTimestamp) / 1000) + serverUptimeOffset;
             document.getElementById('uptime').textContent = formatTime(currentUptime);
         }, 1000);
+        
+        // Settings Modal
+        function openSettings() {
+            document.getElementById('settingsModal').classList.add('active');
+        }
+        
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('active');
+        }
+        
+        function saveSettings() {
+            const url = document.getElementById('ollamaUrlInput').value;
+            if (url) {
+                localStorage.setItem('neugi_ollama_url', url);
+                alert('Settings saved! Some changes may require restart.');
+            }
+            closeSettings();
+        }
+        
+        function toggleSecurity() {
+            alert('To configure security, run: python3 neugi_security.py\n\nOr use the Wizard: python3 neugi_wizard.py → Security Settings');
+        }
+        
+        function managePlugins() {
+            alert('Plugin manager: python3 neugi_plugins.py list\n\nOr use the Wizard: python3 neugi_wizard.py → Manage Plugins');
+        }
+        
+        function checkUpdates() {
+            alert('Checking for updates...\n\nRun: python3 neugi_updater.py check\n\nOr use the Wizard: python3 neugi_wizard.py → Check for Updates');
+        }
+        
+        // Wizard Help Modal
+        function openWizard() {
+            document.getElementById('wizardModal').classList.add('active');
+        }
+        
+        function closeWizard() {
+            document.getElementById('wizardModal').classList.remove('active');
+        }
+        
+        function sendWizardChat() {
+            const input = document.getElementById('wizardChatInput');
+            const msg = input.value.trim();
+            if (!msg) return;
+            
+            const box = document.getElementById('wizardChatBox');
+            box.innerHTML += '<div class="chat-msg user">' + msg + '</div>';
+            box.innerHTML += '<div class="chat-msg assistant" id="wizardLoading">[Thinking...]</div>';
+            box.scrollTop = box.scrollHeight;
+            input.value = '';
+            
+            // Send to API
+            fetch('/api/chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({message: "Help: " + msg})
+            })
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('wizardLoading').outerHTML = '<div class="chat-msg assistant">' + (data.response || 'No response').replace(/\n/g, '<br>') + '</div>';
+                box.scrollTop = box.scrollHeight;
+            })
+            .catch(e => {
+                document.getElementById('wizardLoading').outerHTML = '<div class="chat-msg assistant" style="color:var(--danger)">Error connecting to NEUGI</div>';
+            });
+        }
     </script>
 </body>
 </html>"""

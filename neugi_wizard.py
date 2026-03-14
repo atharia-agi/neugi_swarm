@@ -392,6 +392,7 @@ I'm your AI assistant. I can help you with:
   💬  CHAT      - Ask me anything
   📦  PLUGINS   - Manage plugins
   🔄  UPDATE    - Check for updates
+  🔐  SECURITY  - Configure security (sandbox/full access)
   👋  EXIT      - Exit
 
 """)
@@ -405,6 +406,7 @@ I'm your AI assistant. I can help you with:
                     ("chat", "💬 Chat with AI"),
                     ("plugins", "📦 Manage Plugins"),
                     ("update", "🔄 Check for Updates"),
+                    ("security", "🔐 Security Settings"),
                     ("quit", "👋 Exit"),
                 ],
                 "What would you like to do?",
@@ -422,7 +424,9 @@ I'm your AI assistant. I can help you with:
                 self.run_plugins()
             elif choice == "6":
                 self.run_update()
-            elif choice == "7" or choice.lower() in ["quit", "exit", "q"]:
+            elif choice == "7":
+                self.run_security()
+            elif choice == "8" or choice.lower() in ["quit", "exit", "q"]:
                 print(f"\n{C.CYAN}Happy to help! See you next time! 👋{C.END}\n")
                 break
             else:
@@ -790,6 +794,21 @@ System status:
             else:
                 self.ui.success("You're up to date!")
 
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+    # ============================================================
+    # SECURITY
+    # ============================================================
+
+    def run_security(self):
+        """Configure security settings"""
+        self.ui.header("🔐 SECURITY SETTINGS")
+
+        try:
+            from neugi_security import SecurityManager, security_wizard
+
+            security_wizard()
         except Exception as e:
             self.ui.error(f"Error: {e}")
 
