@@ -550,6 +550,9 @@ I'm your AI assistant. I can help you with:
   🌍  API        - REST API Server
   🐳  DOCKER     - Docker Management
   📈  MONITORING - Advanced Monitoring
+  🎨  WORKFLOW   - Visual Workflow Builder
+  🤖  AUTOMATION - Rule-based Automation
+  🗄️  DATABASE   - SQLite Persistence
   👋  EXIT       - Shutdown Wizard
 
 """)
@@ -581,6 +584,9 @@ I'm your AI assistant. I can help you with:
                     ("api", "🌍 REST API Server"),
                     ("docker", "🐳 Docker Management"),
                     ("monitoring_v2", "📈 Advanced Monitoring"),
+                    ("workflow_builder", "🎨 Visual Workflow Builder"),
+                    ("automation", "🤖 Automation Engine"),
+                    ("database", "🗄️ Database Management"),
                     ("quit", "👋 Exit"),
                 ],
                 "What would you like to do?",
@@ -634,7 +640,13 @@ I'm your AI assistant. I can help you with:
                 self.run_docker()
             elif choice == "24":
                 self.run_monitoring_v2()
-            elif choice == "25" or choice.lower() in ["quit", "exit", "q"]:
+            elif choice == "25":
+                self.run_workflow_builder()
+            elif choice == "26":
+                self.run_automation()
+            elif choice == "27":
+                self.run_database()
+            elif choice == "28" or choice.lower() in ["quit", "exit", "q"]:
                 print(f"\n{C.CYAN}Happy to help! See you next time! 👋{C.END}\n")
                 break
             else:
@@ -1583,6 +1595,133 @@ Example Workflows:
             print(f"  Network Sent: {metrics.network_sent / 1024 / 1024:.1f} MB")
             print(f"  Network Recv: {metrics.network_recv / 1024 / 1024:.1f} MB")
             print(f"\n  Prometheus metrics available at /metrics endpoint")
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    # WORKFLOW BUILDER
+    # ============================================================
+
+    def run_workflow_builder(self):
+        """Visual Workflow Builder"""
+        self.ui.header("🎨 VISUAL WORKFLOW BUILDER")
+
+        print(f"""
+{C.BOLD}Web-Based Visual Workflow Editor:{C.END}
+
+  Features:
+  • Drag and drop node editor
+  • Multiple node types (trigger, action, condition, HTTP, etc.)
+  • Connect nodes visually
+  • Execute workflows
+
+""")
+
+        try:
+            from neugi_workflow_builder import main as builder_main
+
+            print(f"{C.GREEN}Starting Workflow Builder...{C.END}")
+            print(f"  URL: http://localhost:19900\n")
+
+            builder_main()
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    # AUTOMATION
+    # ============================================================
+
+    def run_automation(self):
+        """Automation Engine"""
+        self.ui.header("🤖 AUTOMATION ENGINE")
+
+        print(f"""
+{C.BOLD}Rule-Based Automation:{C.END}
+
+  Create automation rules with:
+  • Schedule triggers (daily, hourly, interval)
+  • Webhook triggers
+  • Keyword triggers
+  • Multiple actions
+  • Conditional logic
+
+""")
+
+        try:
+            from neugi_automation import AutomationEngine, AutomationRule
+
+            engine = AutomationEngine()
+            rules = AutomationRule.list_all()
+
+            print(f"{C.BOLD}Automation Rules:{C.END}\n")
+            for r in rules:
+                status = "✅" if r["enabled"] else "❌"
+                print(f"  {status} {r['name']}")
+                print(
+                    f"      Trigger: {r['trigger_type']} | Actions: {r['action_count']} | Runs: {r['trigger_count']}"
+                )
+
+            print(f"\nTotal: {len(rules)} rules")
+            print(f"Enabled: {len([r for r in rules if r['enabled']])}")
+
+            choice = input(f"\n{C.CYAN}Start automation engine? (y/n){C.END} ").strip().lower()
+            if choice == "y":
+                engine.start()
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    # DATABASE
+    # ============================================================
+
+    def run_database(self):
+        """Database Management"""
+        self.ui.header("🗄️ DATABASE MANAGEMENT")
+
+        print(f"""
+{C.BOLD}SQLite Persistence Layer:{C.END}
+
+  Store and retrieve:
+  • Conversations & Messages
+  • Memory (with TTL)
+  • Workflows & Runs
+  • Metrics History
+  • Audit Logs
+
+""")
+
+        try:
+            from neugi_database import Database, ConversationStore, MemoryStore, MetricsStore
+
+            db = Database()
+
+            print(f"{C.BOLD}Database Statistics:{C.END}\n")
+
+            import sqlite3
+
+            conn = sqlite3.connect(os.path.expanduser("~/neugi/neugi.db"))
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            for table in [
+                "conversations",
+                "messages",
+                "memory",
+                "workflows",
+                "metrics",
+                "audit_log",
+            ]:
+                cursor.execute(f"SELECT COUNT(*) FROM {table}")
+                count = cursor.fetchone()[0]
+                print(f"  {table}: {count} rows")
+
+            conn.close()
 
         except Exception as e:
             self.ui.error(f"Error: {e}")

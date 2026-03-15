@@ -27,7 +27,7 @@ from typing import Optional
 # CONFIG
 # ============================================================
 
-VERSION = "15.9.0"
+VERSION = "16.0.0"
 PORT = 19888
 NEUGI_DIR = os.path.expanduser("~/neugi")
 WORKSPACE_DIR = os.path.expanduser("~/neugi/workspace")

@@ -2,7 +2,7 @@
 
 > Complete development history and architecture documentation
 > Last Updated: March 15, 2026
-> Version: 15.9.0
+> Version: 16.0.0
 
 ---
 
@@ -15,6 +15,20 @@
 NEUGI is an autonomous, multi-agent swarm intelligence system designed to run on local infrastructure. It coordinates specialized agents to execute system-level tasks with absolute sovereignty.
 
 ## Version History
+
+### v16.0.0 (March 16, 2026) - VISUAL AUTOMATION
+
+#### New Features
+
+- **Visual Workflow Builder** (`neugi_workflow_builder.py`): Web-based drag-and-drop workflow editor with 8 node types (trigger, action, condition, HTTP, transform, delay, log, notification)
+- **Database Layer** (`neugi_database.py`): SQLite persistence for conversations, messages, memory, workflows, metrics, audit logs
+- **Automation Engine** (`neugi_automation.py`): Rule-based automation with schedule/webhook/keyword triggers, conditions, action chains
+
+#### New Menu Options (25-27)
+
+- 25. 🎨 Visual Workflow Builder - Web-based editor
+- 26. 🤖 Automation Engine - Rule-based automation
+- 27. 🗄️ Database Management - SQLite persistence
 
 ### v15.9.0 (March 15, 2026) - API & MONITORING
 
