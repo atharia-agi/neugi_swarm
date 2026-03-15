@@ -2,7 +2,7 @@
 
 > Complete development history and architecture documentation
 > Last Updated: March 15, 2026
-> Version: 17.0.0
+> Version: 18.0.0
 
 ---
 
@@ -15,6 +15,22 @@
 NEUGI is an autonomous, multi-agent swarm intelligence system designed to run on local infrastructure. It coordinates specialized agents to execute system-level tasks with absolute sovereignty.
 
 ## Version History
+
+### v18.0.0 (March 16, 2026) - OPERATIONS SUITE
+
+#### New Features
+
+- **SSH Manager** (`neugi_ssh.py`): SSH connection management, key generation, remote execution, SCP file transfer
+- **Cache Layer** (`neugi_cache.py`): In-memory cache with TTL, LRU eviction, rate limiting, Pub/Sub
+- **Log Aggregator** (`neugi_logs.py`): Centralized logging, search/filtering, multiple format parsing
+- **Backup System** (`neugi_backup.py`): Full/incremental backups, compression, retention policies, restore
+
+#### New Menu Options (33-36)
+
+- 33. 🔐 SSH Manager - Remote connections
+- 34. 🧠 Cache Layer - In-memory cache
+- 35. 📝 Logs - Log aggregator
+- 36. 💾 Backup - Backup & restore
 
 ### v17.0.0 (March 16, 2026) - DEVELOPER SUITE
 

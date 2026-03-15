@@ -558,6 +558,10 @@ I'm your AI assistant. I can help you with:
   💻  CODE       - Code Interpreter
   🛒  MARKET     - Plugin Marketplace
   🔒  ENCRYPT    - Encryption Tools
+  🔐  SSH        - SSH Manager
+  🧠  CACHE      - Cache Layer
+  📝  LOGS       - Log Aggregator
+  💾  BACKUP     - Backup System
   👋  EXIT       - Shutdown Wizard
 
 """)
@@ -597,6 +601,10 @@ I'm your AI assistant. I can help you with:
                     ("code", "💻 Code Interpreter"),
                     ("marketplace", "🛒 Plugin Marketplace"),
                     ("encryption", "🔒 Encryption Tools"),
+                    ("ssh", "🔐 SSH Manager"),
+                    ("cache", "🧠 Cache Layer"),
+                    ("logs", "📝 Log Aggregator"),
+                    ("backup", "💾 Backup System"),
                     ("quit", "👋 Exit"),
                 ],
                 "What would you like to do?",
@@ -666,7 +674,15 @@ I'm your AI assistant. I can help you with:
                 self.run_marketplace()
             elif choice == "32":
                 self.run_encryption()
-            elif choice == "33" or choice.lower() in ["quit", "exit", "q"]:
+            elif choice == "33":
+                self.run_ssh()
+            elif choice == "34":
+                self.run_cache()
+            elif choice == "35":
+                self.run_logs()
+            elif choice == "36":
+                self.run_backup()
+            elif choice == "37" or choice.lower() in ["quit", "exit", "q"]:
                 print(f"\n{C.CYAN}Happy to help! See you next time! 👋{C.END}\n")
                 break
             else:
@@ -1938,6 +1954,154 @@ Example Workflows:
             print(f"    --encrypt-file FILE")
             print(f"    --hash STRING")
             print(f"    --generate-key")
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    # SSH MANAGER
+    # ============================================================
+
+    def run_ssh(self):
+        """SSH Manager"""
+        self.ui.header("🔐 SSH MANAGER")
+
+        print(f"""
+{C.BOLD}SSH Connection Management:{C.END}
+
+  Features:
+  • Manage SSH connections
+  • Key generation
+  • Remote command execution
+  • File transfer (SCP)
+
+""")
+
+        try:
+            from neugi_ssh import SSHManager
+
+            manager = SSHManager()
+            connections = manager.list_connections()
+
+            print(f"{C.BOLD}SSH Connections:{C.END}\n")
+            for c in connections:
+                print(f"  {c['name']}: {c['user']}@{c['host']}:{c['port']}")
+
+            print(f"\nTotal: {len(connections)} connections")
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    # CACHE LAYER
+    # ============================================================
+
+    def run_cache(self):
+        """Cache Layer"""
+        self.ui.header("🧠 CACHE LAYER")
+
+        print(f"""
+{C.BOLD}In-Memory Cache:{C.END}
+
+  Features:
+  • Key-value store with TTL
+  • LRU eviction
+  • Rate limiting
+  • Pub/Sub messaging
+
+""")
+
+        try:
+            from neugi_cache import cache_manager
+
+            stats = cache_manager.cache.stats()
+
+            print(f"{C.BOLD}Cache Statistics:{C.END}\n")
+            print(f"  Size: {stats['size']}/{stats['max_size']}")
+            print(f"  Total Accesses: {stats['total_accesses']}")
+            print(f"  Keys: {', '.join(stats['keys'][:5])}")
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    # LOGS
+    # ============================================================
+
+    def run_logs(self):
+        """Log Aggregator"""
+        self.ui.header("📝 LOG AGGREGATOR")
+
+        print(f"""
+{C.BOLD}Centralized Logging:{C.END}
+
+  Features:
+  • Log collection
+  • Search & filtering
+  • Log parsing
+  • Statistics
+
+""")
+
+        try:
+            from neugi_logs import log_aggregator
+
+            stats = log_aggregator.get_stats()
+            logs = log_aggregator.get_logs(limit=10)
+
+            print(f"{C.BOLD}Statistics:{C.END}\n")
+            print(f"  Total: {stats['total']}")
+            print(f"  By Level: {stats['levels']}")
+
+            print(f"\n{C.BOLD}Recent Logs:{C.END}\n")
+            for l in logs:
+                print(f"  [{l['level']:<8}] {l['message'][:50]}")
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    # BACKUP
+    # ============================================================
+
+    def run_backup(self):
+        """Backup System"""
+        self.ui.header("💾 BACKUP SYSTEM")
+
+        print(f"""
+{C.BOLD}Backup & Restore:{C.END}
+
+  Features:
+  • Full backups
+  • Compression
+  • Retention policies
+  • Restore functionality
+
+""")
+
+        try:
+            from neugi_backup import BackupManager
+
+            manager = BackupManager()
+            jobs = manager.list_jobs()
+
+            print(f"{C.BOLD}Backup Jobs:{C.END}\n")
+            if jobs:
+                for job in jobs:
+                    status = (
+                        "✅"
+                        if job["last_status"] == "success"
+                        else "❌"
+                        if job["last_status"] == "failed"
+                        else "⏳"
+                    )
+                    print(f"  {status} {job['name']} - {job['runs']} runs")
+            else:
+                print("  No backup jobs configured")
 
         except Exception as e:
             self.ui.error(f"Error: {e}")
