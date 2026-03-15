@@ -3,6 +3,11 @@
 set "NEUGI_DIR=%USERPROFILE%\neugi"
 
 if "%1"=="start" (
+    netstat -ano | findstr :19888 >nul
+    if "%ERRORLEVEL%"=="0" (
+        echo [WARN] NEUGI is already running on port 19888.
+        exit /b
+    )
     echo [INFO] Starting NEUGI Swarm...
     cd /d "%NEUGI_DIR%"
     start /B python neugi_swarm.py > logs\neugi.log 2>&1

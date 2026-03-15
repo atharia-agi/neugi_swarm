@@ -10,6 +10,7 @@ Date: March 14, 2026
 import os
 import requests
 import subprocess
+import shutil
 from typing import Dict, Optional
 
 
@@ -115,8 +116,8 @@ class AutoUpdater:
             if backup and os.path.exists(neugi_dir):
                 print(f"📁 Backing up to {backup_dir}...")
                 if os.path.exists(backup_dir):
-                    subprocess.run(["rm", "-rf", backup_dir], check=True)
-                subprocess.run(["cp", "-r", neugi_dir, backup_dir], check=True)
+                    shutil.rmtree(backup_dir)
+                shutil.copytree(neugi_dir, backup_dir)
 
             # Download
             dl_result = self.download_update()

@@ -27,7 +27,7 @@ from typing import Optional
 # CONFIG
 # ============================================================
 
-VERSION = "15.2.0"
+VERSION = "15.6.0"
 PORT = 19888
 NEUGI_DIR = os.path.expanduser("~/neugi")
 WORKSPACE_DIR = os.path.expanduser("~/neugi/workspace")
@@ -60,7 +60,7 @@ class HealthMonitor:
         # Get system metrics
         cpu_usage = psutil.cpu_percent(interval=None)
         memory = psutil.virtual_memory()
-        
+
         return {
             "status": self.status,
             "version": VERSION,
@@ -73,8 +73,8 @@ class HealthMonitor:
                 "ram": memory.percent,
                 "ram_used": round(memory.used / (1024**3), 2),
                 "ram_total": round(memory.total / (1024**3), 2),
-                "load": os.getloadavg()[0] if hasattr(os, "getloadavg") else 0
-            }
+                "load": os.getloadavg()[0] if hasattr(os, "getloadavg") and os.name != "nt" else 0,
+            },
         }
 
 
@@ -93,8 +93,9 @@ class ErrorHandler:
     def detect_and_fix():
         """Detect issues using NEUGIWizard logic"""
         from neugi_wizard import SystemChecker
+
         diagnosis = SystemChecker.full_diagnosis()
-        
+
         issues = []
         if not diagnosis["ollama"]["running"]:
             issues.append("Ollama not running")
@@ -102,23 +103,24 @@ class ErrorHandler:
             issues.append("NEUGI configuration missing")
         if diagnosis["port_19888"]["in_use"]:
             issues.append("Port 19888 collision")
-            
+
         # Add granular issues from Wizard
         issues.extend(diagnosis.get("granular_issues", []))
-        
+
         return issues
 
     @staticmethod
     def auto_fix():
         """Trigger auto-repair via NEUGIWizard logic"""
         from neugi_wizard import Repair
+
         fixes = []
-        
+
         # Quick fix: Ollama
         ollama = Repair.start_ollama()
         if ollama["success"]:
             fixes.append("Ollama started by Wizard")
-            
+
         return fixes
 
 
@@ -147,6 +149,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self.serve_fix()
         elif path == "/technician":
             self.serve_technician()
+        elif path == "/api/logs":
+            self.serve_logs()
         elif path == "/api/swarm/nodes":
             self.serve_swarm_nodes()
         else:
@@ -241,16 +245,45 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.wfile.write(json.dumps({"fixes": fixes}).encode())
 
     def serve_technician(self):
-        """Serve Technician interface"""
-        html = self.get_technician_html()
+        """Serve Technician interface (Wizard Console)"""
+        wizard_path = os.path.join(NEUGI_DIR, "wizard.html")
+        try:
+            if os.path.exists(wizard_path):
+                with open(wizard_path, "r", encoding="utf-8") as f:
+                    html = f.read()
+            else:
+                html = self.get_technician_html()  # Fallback to embedded
+        except Exception:
+            html = self.get_technician_html()
+
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.end_headers()
         self.wfile.write(html.encode())
 
+    def serve_logs(self):
+        """Serve system logs"""
+        log_path = os.path.join(NEUGI_DIR, "logs", "neugi.log")
+        try:
+            if os.path.exists(log_path):
+                # Return last 100 lines
+                with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
+                    lines = f.readlines()[-100:]
+                    data = {"logs": "".join(lines), "path": log_path}
+            else:
+                data = {"logs": "Log file not found.", "path": log_path}
+        except Exception as e:
+            data = {"logs": f"Error reading logs: {e}", "path": log_path}
+
+        self.send_response(200)
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps(data).encode())
+
     def serve_swarm_nodes(self):
         """List all peer nodes"""
         from neugi_swarm_net import swarm_net
+
         data = swarm_net.get_online_nodes()
         self.send_response(200)
         self.send_header("Content-type", "application/json")
@@ -260,20 +293,23 @@ class DashboardHandler(BaseHTTPRequestHandler):
     def handle_swarm_join(self):
         """Register a peer node"""
         from neugi_swarm_net import swarm_net
+
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length)
         data = json.loads(body)
-        
+
         node_id = data.get("node_id")
         ip = self.client_address[0]
         port = data.get("port", 19888)
-        
+
         if node_id:
             swarm_net.register_node(node_id, ip, port)
             self.send_response(200)
             self.send_header("Content-type", "application/json")
             self.end_headers()
-            self.wfile.write(json.dumps({"status": "joined", "message": f"Node {node_id} accepted"}).encode())
+            self.wfile.write(
+                json.dumps({"status": "joined", "message": f"Node {node_id} accepted"}).encode()
+            )
         else:
             self.send_error(400, "Missing node_id")
 
@@ -282,11 +318,12 @@ class DashboardHandler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length)
         data = json.loads(body)
-        
+
         task = data.get("task", "")
-        
+
         try:
             from neugi_assistant import NeugiAssistant
+
             assistant = NeugiAssistant()
             response = assistant.chat(f"[REMOTE TASK] {task}")
             self.send_response(200)
@@ -736,6 +773,19 @@ class DashboardHandler(BaseHTTPRequestHandler):
                         <button class="btn btn-danger" onclick="autoFix()" style="flex:1; justify-content:center;">Auto Resolve</button>
                     </div>
                 </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" width="20" height="20"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                            Neural Logs
+                        </h2>
+                        <button class="btn" onclick="refreshLogs()" style="padding: 4px 8px; font-size: 10px;">Refresh</button>
+                    </div>
+                    <div id="logViewer" style="height: 200px; background: #000; border-radius: 8px; padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); overflow-y: auto; border: 1px solid var(--border);">
+                        Initializing log link...
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -832,10 +882,25 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     tList.innerHTML = data.tools.map(t => `<span class="tool-tag">${t.name}</span>`).join('');
                 }
                 
+                // Refresh logs too
+                refreshLogs();
+                
             } catch(e) {
                 document.getElementById('statusText').textContent = 'CONNECTION LOST';
                 document.getElementById('statusDot').className = 'status-dot error';
             }
+        }
+
+        async function refreshLogs() {
+            try {
+                const resp = await fetch('/api/logs');
+                const data = await resp.json();
+                const logEl = document.getElementById('logViewer');
+                if (data.logs) {
+                    logEl.textContent = data.logs;
+                    logEl.scrollTop = logEl.scrollHeight;
+                }
+            } catch(e) { console.error("Log sync failed"); }
         }
 
         async function autoFix() {

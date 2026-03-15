@@ -44,9 +44,7 @@ class TelegramGateway:
         self.bot_token = self.tg_config.get("bot_token")
         self.allowed_users = self.tg_config.get("allowed_users", [])
 
-        self.api_url = (
-            f"https://api.telegram.org/bot{self.bot_token}" if self.bot_token else None
-        )
+        self.api_url = f"https://api.telegram.org/bot{self.bot_token}" if self.bot_token else None
         self.last_update_id = 0
         self.running = False
 
@@ -97,9 +95,7 @@ class TelegramGateway:
                         updates = r.json().get("result", [])
                         if updates:
                             user_id = updates[-1]["message"]["from"]["id"]
-                            username = updates[-1]["message"]["from"].get(
-                                "username", "Unknown"
-                            )
+                            username = updates[-1]["message"]["from"].get("username", "Unknown")
 
                             self.allowed_users.append(user_id)
                             linked = True
@@ -164,9 +160,13 @@ class TelegramGateway:
             msg += "I am connected to your home base.\n"
             msg += "Just type what you want the swarm to do.\n\n"
             msg += "*Commands:*\n"
-            msg += "`/status` - Check swarm health\n"
-            msg += "`/agents` - List active agents\n"
-            msg += "`/ping` - Check connection latency\n"
+            msg += "`/status`   - Check swarm health\n"
+            msg += "`/agents`   - List active agents\n"
+            msg += "`/logs`     - View recent system logs\n"
+            msg += "`/topology` - View network nodes\n"
+            msg += "`/monitor`  - Check live system telemetry\n"
+            msg += "`/fix`      - Trigger auto-repair sequence\n"
+            msg += "`/ping`     - Check connection latency\n"
             self._send_message(chat_id, msg)
 
         elif text.startswith("/status"):
@@ -199,6 +199,63 @@ class TelegramGateway:
                     self._send_message(chat_id, msg)
             except Exception:
                 self._send_message(chat_id, "❌ Swarm unreachable.")
+
+        elif text.startswith("/logs"):
+            try:
+                r = requests.get("http://localhost:19888/api/logs", timeout=10)
+                if r.ok:
+                    logs = r.json().get("logs", "No logs found.")
+                    # Telegram has a 4KB limit, take last 2000 chars
+                    clean_logs = logs[-2000:] if len(logs) > 2000 else logs
+                    msg = "*📋 Recent System Logs:*\n\n"
+                    msg += f"```\n{clean_logs}\n```"
+                    self._send_message(chat_id, msg)
+            except Exception:
+                self._send_message(chat_id, "❌ Could not fetch logs.")
+
+        elif text.startswith("/topology"):
+            try:
+                r = requests.get("http://localhost:19888/api/swarm/nodes", timeout=10)
+                if r.ok:
+                    nodes = r.json()
+                    msg = f"*🌐 Network Topology ({len(nodes)} Nodes)*\n\n"
+                    msg += "`• localhost` (Primary Hub)\n"
+                    if isinstance(nodes, dict):
+                        for nid, info in nodes.items():
+                            msg += f"`• {nid}` @ {info.get('ip', 'unknown')}:{info.get('port', 'unknown')}\n"
+                    elif isinstance(nodes, list):
+                        for node in nodes:
+                            msg += f"`• {node}`\n"
+                    self._send_message(chat_id, msg)
+            except Exception:
+                self._send_message(chat_id, "❌ Topology unavailable.")
+
+        elif text.startswith("/monitor"):
+            try:
+                r = requests.get("http://localhost:19888/health", timeout=10)
+                if r.ok:
+                    tel = r.json().get("telemetry", {})
+                    msg = "*📈 Live Telemetry*\n\n"
+                    msg += f"CPU: `{tel.get('cpu')}%`\n"
+                    msg += f"RAM: `{tel.get('ram')}%` ({tel.get('ram_used')}GB / {tel.get('ram_total')}GB)\n"
+                    msg += f"Load: `{tel.get('load')}`\n"
+                    self._send_message(chat_id, msg)
+            except Exception:
+                self._send_message(chat_id, "❌ Telemetry failed.")
+
+        elif text.startswith("/fix"):
+            self._send_message(chat_id, "🔧 *Initiating Auto-Repair Sequence...*")
+            try:
+                r = requests.get("http://localhost:19888/api/fix", timeout=15)
+                if r.ok:
+                    fixes = r.json().get("fixes", [])
+                    if fixes:
+                        msg = "✅ *Repairs Executed:*\n" + "\n".join([f"• {f}" for f in fixes])
+                    else:
+                        msg = "👍 No immediate repairs needed. system is stable."
+                    self._send_message(chat_id, msg)
+            except Exception:
+                self._send_message(chat_id, "❌ Repair API failed.")
 
         elif text.startswith("/ping"):
             self._send_message(chat_id, "🏓 Pong! Link is active.")
@@ -239,9 +296,7 @@ class TelegramGateway:
 
                             # Security check
                             if self.allowed_users and user_id not in self.allowed_users:
-                                print(
-                                    f"⚠️ Unauthorized access attempt from user {user_id}"
-                                )
+                                print(f"⚠️ Unauthorized access attempt from user {user_id}")
                                 continue
 
                             print(f"[TG] Command received: {text}")

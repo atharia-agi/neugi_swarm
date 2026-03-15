@@ -129,6 +129,11 @@ class PluginManager:
         # Workspace plugins
         self._discover_native_plugins(WORKSPACE_PLUGIN_DIR)
 
+    def discover_plugins(self):
+        """Public method to discover and return plugins"""
+        self._discover_all_plugins()
+        return self.list_plugins()
+
     def _discover_native_plugins(self, plugin_dir: str):
         """Discover native plugins"""
         if not os.path.exists(plugin_dir):

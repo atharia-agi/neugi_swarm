@@ -17,10 +17,14 @@ Date: March 15, 2026
 
 import os
 import json
+import re
+import subprocess
+import sys
 import requests
 import webbrowser
 import psutil
 import platform
+
 try:
     import winreg
 except ImportError:
@@ -49,6 +53,7 @@ class C:
     GREEN = "\033[92m"
     YELLOW = "\033[93m"
     RED = "\033[91m"
+    WHITE = "\033[97m"
     BOLD = "\033[1m"
     END = "\033[0m"
 
@@ -80,23 +85,19 @@ Your role:
 
 Be helpful, clear, and concise. When asked to fix something, actually perform the action."""
 
-    def chat(self, message: str) -> str:
-        """Send message to AI and get response (non-streaming)"""
+    def nexus_chat(self, message: str):
+        """Send message to Sovereign Nexus (Engine API)"""
         try:
-            response = requests.post(
-                f"{self.url}/api/generate",
-                json={
-                    "model": self.model,
-                    "prompt": f"{self.system_prompt}\n\nUser: {message}\n\n{BRAND}:",
-                    "stream": False,
-                },
-                timeout=60,
+            r = requests.post(
+                "http://localhost:19888/api/chat",
+                json={"message": message},
+                timeout=120,
             )
-            if response.ok:
-                return response.json().get("response", "").strip()
+            if r.ok:
+                return r.json().get("response", "").strip()
+            return f"Nexus API Error: {r.status_code}"
         except Exception as e:
-            return f"Error: {e}"
-        return "Cannot connect to Ollama. Is it running?"
+            return f"Cannot link to Nexus: {e}"
 
     def chat_stream(self, message: str):
         """
@@ -130,11 +131,30 @@ Be helpful, clear, and concise. When asked to fix something, actually perform th
         except Exception as e:
             yield f"Error: {e}"
 
+    def chat(self, message: str) -> str:
+        """Send message to AI and get non-streaming response"""
+        try:
+            response = requests.post(
+                f"{self.url}/api/generate",
+                json={
+                    "model": self.model,
+                    "prompt": f"{self.system_prompt}\n\nUser: {message}\n\n{BRAND}:",
+                    "stream": False,
+                },
+                timeout=60,
+            )
+
+            if response.ok:
+                data = response.json()
+                return data.get("response", "").strip()
+            return f"Error: {response.status_code}"
+
+        except Exception as e:
+            return f"Error: {e}"
+
     def ask(self, question: str, context: str = "") -> str:
         """Ask AI with context"""
-        prompt = (
-            f"{context}\n\nQuestion: {question}\n\nAnswer:" if context else question
-        )
+        prompt = f"{context}\n\nQuestion: {question}\n\nAnswer:" if context else question
         return self.chat(prompt)
 
     def diagnose(self, issue_description: str) -> str:
@@ -158,16 +178,18 @@ FIX: [command or action to fix]
         """Execute a fix command"""
         result = {"command": fix_command, "success": False, "output": ""}
         import os
-        
+
         # Stability Check: High-Risk Commands
         high_risk_keywords = ["rm -rf /", "rm -rf *", "del /s", "format", "mkfs"]
         is_high_risk = any(keyword in fix_command.lower() for keyword in high_risk_keywords)
-        
+
         if is_high_risk:
             print(f"\n{C.RED}{C.BOLD}⚠️  EXTREME RISK DETECTED:{C.END}")
             print(f"  Command: {C.YELLOW}{fix_command}{C.END}")
             print(f"  {C.WHITE}Core Directives require manual confirmation for this action.{C.END}")
-            confirm = input(f"\n  {C.YELLOW}Are you absolutely sure? (type 'CONFIRM'): {C.END}").strip()
+            confirm = input(
+                f"\n  {C.YELLOW}Are you absolutely sure? (type 'CONFIRM'): {C.END}"
+            ).strip()
             if confirm != "CONFIRM":
                 result["output"] = "Action cancelled by user safety guard."
                 return result
@@ -185,7 +207,7 @@ FIX: [command or action to fix]
             result["output"] = proc.stdout or proc.stderr
         except Exception as e:
             result["output"] = str(e)
-            
+
         return result
 
 
@@ -251,7 +273,7 @@ class SystemChecker:
             "ollama": SystemChecker.check_ollama(),
             "neugi": SystemChecker.check_neugi(),
             "port_19888": SystemChecker.check_port(19888),
-            "granular_issues": []
+            "granular_issues": [],
         }
 
         # Migrated Granular Checks from legacy Technician
@@ -272,6 +294,7 @@ class SystemChecker:
             if os.path.exists(db_path):
                 try:
                     import sqlite3
+
                     conn = sqlite3.connect(db_path)
                     conn.execute("SELECT 1")
                     conn.close()
@@ -283,7 +306,9 @@ class SystemChecker:
         if os.path.exists(sessions_db):
             size = os.path.getsize(sessions_db)
             if size > 100 * 1024 * 1024:  # 100MB
-                diag["granular_issues"].append(f"Session database is large ({size / 1024 / 1024:.1f}MB)")
+                diag["granular_issues"].append(
+                    f"Session database is large ({size / 1024 / 1024:.1f}MB)"
+                )
 
         return diag
 
@@ -495,7 +520,11 @@ class NEUGIWizard:
 
     def run(self):
         """Main entry point"""
-        mode_text = f"{C.RED}{C.BOLD}[GOD MODE ACTIVE]{C.END} " if os.environ.get("NEUGI_GOD_MODE") == "1" else f"{C.GREEN}[FULL POWER ACTIVE]{C.END} "
+        mode_text = (
+            f"{C.RED}{C.BOLD}[GOD MODE ACTIVE]{C.END} "
+            if os.environ.get("NEUGI_GOD_MODE") == "1"
+            else f"{C.GREEN}[FULL POWER ACTIVE]{C.END} "
+        )
         self.ui.header(f"{BRAND} WIZARD v3.5 - {mode_text}")
 
         print(f"""
@@ -518,6 +547,10 @@ I'm your AI assistant. I can help you with:
             choice = self.ui.menu(
                 [
                     ("heartbeat", "💓 Sovereign Heartbeat"),
+                    ("topology", "🌐 Network Topology"),
+                    ("tools", "🛠️ Skill Registry"),
+                    ("monitor", "📊 Live Monitor"),
+                    ("logs", "📄 View System Logs"),
                     ("autoboot", "🔄 Toggle Auto-Boot (BETA)"),
                     ("setup", "🎯 Setup / First Time Install"),
                     ("repair", "🔧 Repair / Fix Problems"),
@@ -534,22 +567,30 @@ I'm your AI assistant. I can help you with:
             if choice == "1":
                 self.run_heartbeat()
             elif choice == "2":
-                self.run_autoboot()
+                self.run_topology()
             elif choice == "3":
-                self.run_setup()
+                self.run_tools()
             elif choice == "4":
-                self.run_repair()
+                self.run_monitor()
             elif choice == "5":
-                self.run_diagnose()
+                self.run_logs()
             elif choice == "6":
-                self.run_chat()
+                self.run_autoboot()
             elif choice == "7":
-                self.run_plugins()
+                self.run_setup()
             elif choice == "8":
-                self.run_update()
+                self.run_repair()
             elif choice == "9":
+                self.run_diagnose()
+            elif choice == "10":
+                self.run_chat()
+            elif choice == "11":
+                self.run_plugins()
+            elif choice == "12":
+                self.run_update()
+            elif choice == "13":
                 self.run_security()
-            elif choice == "10" or choice.lower() in ["quit", "exit", "q"]:
+            elif choice == "14" or choice.lower() in ["quit", "exit", "q"]:
                 print(f"\n{C.CYAN}Happy to help! See you next time! 👋{C.END}\n")
                 break
             else:
@@ -586,30 +627,32 @@ I'm your AI assistant. I can help you with:
     def run_heartbeat(self):
         """Quick Sovereign Health Check"""
         self.ui.header("💓 SOVEREIGN HEARTBEAT")
-        
+
         # CPU/RAM
         cpu = psutil.cpu_percent()
         ram = psutil.virtual_memory().percent
         self.ui.info(f"System Load: CPU {cpu}% | RAM {ram}%")
-        
+
         # Ollama
         ollama = SystemChecker.check_ollama()
         if ollama["running"]:
             self.ui.success(f"Ollama Status: ONLINE ({len(ollama['models'])} models mapped)")
         else:
             self.ui.error("Ollama Status: OFFLINE")
-            
+
         # Dashboard
         dashboard_url = "http://localhost:19888"
         try:
-            r = requests.get(f"{dashboard_url}/health", timeout=1)
+            r = requests.get(f"{dashboard_url}/api/status", timeout=1)
             if r.ok:
+                data = r.json()
                 self.ui.success(f"Sovereign Node: ACTIVE ({dashboard_url})")
+                self.ui.info(f"Agents: {len(data.get('neugi', {}).get('agents', []))} online")
             else:
                 self.ui.warning(f"Sovereign Node: IDLE ({dashboard_url})")
         except:
             self.ui.warning(f"Sovereign Node: OFFLINE ({dashboard_url})")
-            
+
         print(f"\n{C.GREEN}Everything seems in order. Sovereign Intelligence is stable.{C.END}")
         input(f"\n{C.CYAN}Press Enter to return to menu... {C.END}")
 
@@ -623,6 +666,7 @@ I'm your AI assistant. I can help you with:
         self.ui.header("🎯 SETUP WIZARD")
 
         import random
+
         NEUGI_SATIRE_QUOTES = [
             "We don't have any claw, but we have some real brain...",
             "Loading agents... faster than a bloated JSON yaml pipeline.",
@@ -669,7 +713,9 @@ I'm your AI assistant. I can help you with:
         # AI-powered use case detection
         print(f"\n  {C.PURPLE}🧠 Let AI help determine best setup...{C.END}\n")
 
-        question = f"Hi {name}! What do you want to use AI for? (coding, chatting, research, automation)"
+        question = (
+            f"Hi {name}! What do you want to use AI for? (coding, chatting, research, automation)"
+        )
         print(f"  {C.CYAN}💭 {question}{C.END}")
         use_case = input(f"  {C.GREEN}> {C.END}").strip().lower()
 
@@ -889,11 +935,25 @@ System status:
     # ============================================================
 
     def run_chat(self):
-        """Chat with AI - with streaming!"""
-        self.ui.header("💬 CHAT WITH AI (Streaming)")
+        """Enhanced Chat with Nexus Auto-Parity"""
+        self.ui.header("💬 SOVEREIGN CHAT INTERFACE")
 
-        print(f"{C.CYAN}Type 'exit' to go back.{C.END}")
-        print(f"{C.YELLOW}Responses stream in real-time!{C.END}\n")
+        # Detect Nexus
+        use_nexus = False
+        try:
+            r = requests.get("http://localhost:19888/health", timeout=1)
+            if r.ok:
+                self.ui.success("Sovereign Nexus detected! Link established.")
+                print(f"  {C.CYAN}Mode: SWARM INTELLIGENCE (Nexus API){C.END}\n")
+                use_nexus = True
+            else:
+                self.ui.warning("Nexus Offline. Falling back to direct model access.")
+                print(f"  {C.YELLOW}Mode: DIRECT AI (Ollama Local){C.END}\n")
+        except:
+            self.ui.warning("Nexus Offline. Falling back to direct model access.")
+            print(f"  {C.YELLOW}Mode: DIRECT AI (Ollama Local){C.END}\n")
+
+        print(f"{C.CYAN}Type 'exit' to go back.{C.END}\n")
 
         while True:
             message = input(f"{C.GREEN}> {C.END}").strip()
@@ -904,13 +964,15 @@ System status:
             if not message:
                 continue
 
-            print(f"\n{C.CYAN}", end="", flush=True)
-
-            # Stream response
-            for chunk in self.ai.chat_stream(message):
-                print(chunk, end="", flush=True)
-
-            print(f"{C.END}\n")
+            if use_nexus:
+                self.ui.info("Nexus processing swarm directive...")
+                response = self.ai.nexus_chat(message)
+                self.ui.ai_response(response)
+            else:
+                print(f"\n{C.CYAN}", end="", flush=True)
+                for chunk in self.ai.chat_stream(message):
+                    print(chunk, end="", flush=True)
+                print(f"{C.END}\n")
 
     # ============================================================
     # PLUGINS
@@ -1006,6 +1068,120 @@ System status:
         except Exception as e:
             self.ui.error(f"Error: {e}")
 
+    def run_topology(self):
+        """View Swarm Network Topology"""
+        self.ui.header("🌐 SWARM TOPOLOGY")
+        try:
+            r = requests.get("http://localhost:19888/api/status", timeout=2)
+            if not r.ok:
+                raise Exception("API Offline")
+            data = r.json().get("neugi", {})
+            agents = data.get("agents", [])
+
+            if not agents:
+                self.ui.warning("No active agents found in the swarm.")
+            else:
+                print(f"{C.BOLD}{'NAME':<12} {'ROLE':<15} {'STATUS':<10}{C.END}")
+                print(f"{C.CYAN}{'-' * 40}{C.END}")
+                for a in agents:
+                    status = a.get("status", "idle")
+                    color = (
+                        C.GREEN
+                        if status == "working"
+                        else (C.YELLOW if status == "thinking" else C.END)
+                    )
+                    print(f"{a['name']:<12} {a['role']:<15} {color}{status}{C.END}")
+
+            # Remote Nodes
+            r_nodes = requests.get("http://localhost:19888/api/swarm/nodes", timeout=2)
+            if r_nodes.ok:
+                nodes = r_nodes.json()
+                print(f"\n{C.BOLD}Remote Cluster Nodes:{C.END} {len(nodes)}")
+                for node in nodes:
+                    print(f"  🔗 {node}")
+
+        except Exception as e:
+            self.ui.error(f"Failed to fetch topology: {e}")
+            self.ui.info("Ensure the NEUGI engine is running (Option 9 -> Start).")
+
+        input(f"\n{C.CYAN}Press Enter to return to menu... {C.END}")
+
+    def run_tools(self):
+        """View Registered Skills/Tools"""
+        self.ui.header("🛠️ SKILL REGISTRY")
+        try:
+            r = requests.get("http://localhost:19888/api/status", timeout=2)
+            if not r.ok:
+                raise Exception("API Offline")
+            tools = r.json().get("neugi", {}).get("tools", [])
+
+            if not tools:
+                self.ui.warning("No registered tools found.")
+            else:
+                print(f"{C.BOLD}Available Capabilities:{C.END}\n")
+                for i, t in enumerate(tools, 1):
+                    name = t.get("name", "unknown")
+                    print(f"  {C.PURPLE}{i:02d}.{C.END} {C.CYAN}{name:<20}{C.END}")
+
+        except Exception as e:
+            self.ui.error(f"Failed to fetch tools: {e}")
+
+        input(f"\n{C.CYAN}Press Enter to return to menu... {C.END}")
+
+    def run_monitor(self):
+        """Live System Monitoring"""
+        self.ui.header("📊 LIVE MONITOR")
+        self.ui.info("Mode: Real-time Telemetry. Press Ctrl+C to stop.")
+
+        import time
+
+        try:
+            while True:
+                cpu = psutil.cpu_percent()
+                ram = psutil.virtual_memory().percent
+
+                # Try to get engine anomalies
+                anomalies = 0
+                try:
+                    r = requests.get("http://localhost:19888/api/status", timeout=0.5)
+                    if r.ok:
+                        anomalies = len(r.json().get("issues", []))
+                except:
+                    pass
+
+                status_line = f"[{datetime.now().strftime('%H:%M:%S')}] CPU: {cpu:>4}% | RAM: {ram:>4}% | Anomalies: {anomalies}"
+                print(
+                    f"\r  {C.GREEN if anomalies == 0 else C.RED}{status_line}{C.END}",
+                    end="",
+                    flush=True,
+                )
+                time.sleep(2)
+        except KeyboardInterrupt:
+            print(f"\n\n{C.YELLOW}Monitor suspended.{C.END}")
+
+    def run_logs(self):
+        """View System Logs"""
+        self.ui.header("📄 SYSTEM LOGS")
+        try:
+            r = requests.get("http://localhost:19888/api/logs", timeout=5)
+            if r.ok:
+                data = r.json()
+                logs = data.get("logs", "No logs found.")
+                log_path = data.get("path", "Unknown")
+
+                self.ui.info(f"Log file: {log_path}")
+                print(f"\n{C.BOLD}Last 50 lines:{C.END}\n")
+                lines = logs.split("\n")[-50:]
+                for line in lines:
+                    print(f"  {line}")
+            else:
+                self.ui.error("Failed to fetch logs. Is the engine running?")
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+            self.ui.info("Ensure NEUGI engine is running.")
+
+        input(f"\n{C.CYAN}Press Enter to return to menu... {C.END}")
+
     # ============================================================
     # AUTO-BOOT FLOW
     # ============================================================
@@ -1015,9 +1191,7 @@ System status:
         self.ui.header("🔄 SOVEREIGN AUTO-BOOT")
 
         if platform.system() != "Windows":
-            self.ui.warning(
-                "Auto-Boot persistence is currently only optimized for Windows."
-            )
+            self.ui.warning("Auto-Boot persistence is currently only optimized for Windows.")
             input("\nPress Enter to return...")
             return
 
@@ -1025,9 +1199,7 @@ System status:
         status = f"{C.GREEN}ENABLED{C.END}" if enabled else f"{C.RED}DISABLED{C.END}"
 
         print(f"  Current Status: {status}")
-        print(
-            f"\n  {C.YELLOW}The system will automatically start Ollama, the Swarm Engine,"
-        )
+        print(f"\n  {C.YELLOW}The system will automatically start Ollama, the Swarm Engine,")
         print(f"  and open the Dashboard upon device restart.{C.END}")
 
         choice = (
@@ -1048,9 +1220,7 @@ System status:
                 if PersistenceManager.enable():
                     self.ui.success("Auto-Boot enabled successfully!")
                 else:
-                    self.ui.error(
-                        "Failed to enable Auto-Boot. Ensure you have permissions."
-                    )
+                    self.ui.error("Failed to enable Auto-Boot. Ensure you have permissions.")
 
         input(f"\n{C.CYAN}Press Enter to return to menu... {C.END}")
 
@@ -1059,30 +1229,52 @@ System status:
     # ============================================================
 
     def start_neugi(self):
-        """Start NEUGI"""
-        self.ui.info("Starting NEUGI...")
+        """Start NEUGI with conflict protection"""
+        self.ui.info("Invoking Sovereign Engine...")
 
+        # Check if already running via port
+        try:
+            r = requests.get("http://localhost:19888/health", timeout=1)
+            if r.ok:
+                self.ui.warning("Engine is already active on port 19888.")
+                return
+        except:
+            pass
+
+        # Ensure script exists
         script_path = os.path.join(NEUGI_DIR, "neugi_swarm.py")
-
         if not os.path.exists(script_path):
             self.ui.warning(f"neugi_swarm.py not found in {NEUGI_DIR}")
             print(f"\n  {C.YELLOW}Download from GitHub? (y/n): {C.END}", end="")
             if input().strip().lower() == "y":
                 self.download_files()
 
-        # Start
+        # Start using the safe batch wrapper if available
         try:
-            subprocess.Popen(
-                [sys.executable, script_path],
-                cwd=NEUGI_DIR,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                start_new_session=True,
-            )
-            self.ui.success(f"{BRAND} started!")
-            self.ui.info("Open: http://localhost:19888")
+            bat_path = os.path.join(NEUGI_DIR, "neugi.bat")
+            if os.path.exists(bat_path):
+                subprocess.Popen(
+                    [bat_path, "start"],
+                    cwd=NEUGI_DIR,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    creationflags=subprocess.CREATE_NEW_CONSOLE
+                    if platform.system() == "Windows"
+                    else 0,
+                )
+            else:
+                subprocess.Popen(
+                    [sys.executable, script_path],
+                    cwd=NEUGI_DIR,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    start_new_session=True,
+                )
+
+            self.ui.success(f"{BRAND} deployment initiated!")
+            self.ui.info("Monitor: Option 4 | Console: http://localhost:19888")
         except Exception as e:
-            self.ui.error(f"Failed to start: {e}")
+            self.ui.error(f"Deployment failed: {e}")
 
     def download_files(self):
         """Download NEUGI files"""

@@ -15,6 +15,7 @@ Date: March 14, 2026
 import os
 import json
 import subprocess
+from datetime import datetime
 from typing import Dict, List
 from dataclasses import dataclass
 
@@ -69,9 +70,7 @@ class SecurityManager:
     """
 
     def __init__(self, config_path: str = None):
-        self.config_path = config_path or os.path.expanduser(
-            "~/neugi/data/security.json"
-        )
+        self.config_path = config_path or os.path.expanduser("~/neugi/data/security.json")
         self.config = self._load_config()
         self.audit_log = []
 
@@ -81,9 +80,7 @@ class SecurityManager:
             try:
                 with open(self.config_path) as f:
                     data = json.load(f)
-                return SecurityConfig(
-                    **{k: v for k, v in data.items() if k in DEFAULT_CONFIG}
-                )
+                return SecurityConfig(**{k: v for k, v in data.items() if k in DEFAULT_CONFIG})
             except Exception:
                 pass
         return SecurityConfig(**DEFAULT_CONFIG)
@@ -217,7 +214,7 @@ class SecurityManager:
         """Log security event"""
         if self.config.audit_enabled:
             entry = {
-                "timestamp": str(os.popen("date").read().strip()),
+                "timestamp": datetime.now().isoformat(),
                 "action": action,
                 "target": target[:100],  # Truncate long commands
                 "result": result[:100],
@@ -244,9 +241,7 @@ class SecurityManager:
             "allowed_commands": self.config.allowed_commands,
             "allowed_dirs": len(self.config.allowed_dirs),
             "audit_enabled": self.config.audit_enabled,
-            "security_level": "FULL ACCESS ⚠️"
-            if not self.config.sandbox_mode
-            else "SECURE 🔒",
+            "security_level": "FULL ACCESS ⚠️" if not self.config.sandbox_mode else "SECURE 🔒",
         }
 
 
