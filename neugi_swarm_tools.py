@@ -270,13 +270,53 @@ class ToolManager:
                 function=self._process_list,
             )
         )
-        
+
         # Swarm Specific Tools
-        self.register(Tool(id="delegate_task", name="Delegate Task", category="ai", description="Delegate a task to another agent", function=self._delegate_task))
-        self.register(Tool(id="search_memory", name="Search Memory", category="ai", description="Retrieve context from the codebase RAG", function=self._search_memory))
-        self.register(Tool(id="git_execute", name="Git Execute", category="system", description="Execute safe git commands", function=self._git_execute))
-        self.register(Tool(id="request_diagnostic", name="Request Diagnostic", category="system", description="Run system-wide health checks and auto-fix common issues", function=self._request_diagnostic))
-        self.register(Tool(id="self_heal", name="Self Heal", category="system", description="Attempt to fix a specific system error or friction", function=self._self_heal))
+        self.register(
+            Tool(
+                id="delegate_task",
+                name="Delegate Task",
+                category="ai",
+                description="Delegate a task to another agent",
+                function=self._delegate_task,
+            )
+        )
+        self.register(
+            Tool(
+                id="search_memory",
+                name="Search Memory",
+                category="ai",
+                description="Retrieve context from the codebase RAG",
+                function=self._search_memory,
+            )
+        )
+        self.register(
+            Tool(
+                id="git_execute",
+                name="Git Execute",
+                category="system",
+                description="Execute safe git commands",
+                function=self._git_execute,
+            )
+        )
+        self.register(
+            Tool(
+                id="request_diagnostic",
+                name="Request Diagnostic",
+                category="system",
+                description="Run system-wide health checks and auto-fix common issues",
+                function=self._request_diagnostic,
+            )
+        )
+        self.register(
+            Tool(
+                id="self_heal",
+                name="Self Heal",
+                category="system",
+                description="Attempt to fix a specific system error or friction",
+                function=self._self_heal,
+            )
+        )
 
     def register(self, tool: Tool):
         """Register a tool"""
@@ -340,12 +380,7 @@ class ToolManager:
         if not hasattr(self, "_browser"):
             self._browser = NativeWebBrowser()
         results = self._browser.search(query)
-        return {
-            "query": query,
-            "results": results,
-            "engine": "multi",
-            "count": len(results)
-        }
+        return {"query": query, "results": results, "engine": "multi", "count": len(results)}
 
     def _web_fetch(self, url: str, **kwargs) -> Dict:
         """Fetch webpage"""
@@ -438,16 +473,12 @@ class ToolManager:
 
         god_mode = os.environ.get("NEUGI_GOD_MODE") == "1"
         timeout_val = None if god_mode else 15
-        
+
         # God Mode: Unrestricted shell access (Native or WSL)
         if language.lower() in ["bash", "sh", "batch", "powershell", "ps1"] and god_mode:
             try:
                 result = subprocess.run(
-                    code,
-                    shell=True,
-                    capture_output=True,
-                    text=True,
-                    timeout=timeout_val
+                    code, shell=True, capture_output=True, text=True, timeout=timeout_val
                 )
                 output = result.stdout if result.returncode == 0 else result.stderr
                 return {
@@ -455,7 +486,7 @@ class ToolManager:
                     "success": result.returncode == 0,
                     "output": output,
                     "exit_code": result.returncode,
-                    "god_mode_active": True
+                    "god_mode_active": True,
                 }
             except Exception as e:
                 return {"error": str(e), "success": False, "god_mode_active": True}
@@ -464,33 +495,32 @@ class ToolManager:
             return {"error": "Only Python is supported normally. God Mode enables bash/powershell."}
 
         try:
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
                 f.write(code)
                 temp_path = f.name
-                
+
             result = subprocess.run(
-                ["python", temp_path],
-                capture_output=True,
-                text=True,
-                timeout=timeout_val
+                ["python", temp_path], capture_output=True, text=True, timeout=timeout_val
             )
-            
+
             os.unlink(temp_path)
-            
+
             output = result.stdout if result.returncode == 0 else result.stderr
             return {
-                "language": language, 
-                "success": result.returncode == 0, 
+                "language": language,
+                "success": result.returncode == 0,
                 "output": output,
                 "exit_code": result.returncode,
-                "god_mode_active": god_mode
+                "god_mode_active": god_mode,
             }
         except Exception as e:
             return {"error": str(e), "success": False, "god_mode_active": god_mode}
 
     def _code_debug(self, code: str, **kwargs) -> Dict:
         """Debug code"""
-        return self._llm_think(prompt=f"Review and debug the following code:\n\n{code}\n\nProvide a corrected version.")
+        return self._llm_think(
+            prompt=f"Review and debug the following code:\n\n{code}\n\nProvide a corrected version."
+        )
 
     def _llm_think(self, prompt: str, model: str = "auto", **kwargs) -> Dict:
         """Use LLM"""
@@ -525,20 +555,23 @@ class ToolManager:
                     "model": model_name,
                     "prompt": prompt,
                     "stream": False,
-                    "options": {"temperature": 0.2}
+                    "options": {"temperature": 0.2},
                 }
                 req = urllib.request.Request(
                     f"{ollama_url}/api/generate",
                     data=json.dumps(payload).encode("utf-8"),
-                    headers={"Content-Type": "application/json"}
+                    headers={"Content-Type": "application/json"},
                 )
                 with urllib.request.urlopen(req, timeout=45) as response:
                     data = json.loads(response.read().decode())
                     return {"success": True, "response": data.get("response", "").strip()}
             except Exception:
                 continue
-                
-        return {"success": False, "error": "LLM simulation fallback triggered: Local LLM failed to respond."}
+
+        return {
+            "success": False,
+            "error": "LLM simulation fallback triggered: Local LLM failed to respond.",
+        }
 
     def _embeddings(self, text: str, **kwargs) -> Dict:
         """Generate embeddings"""
@@ -591,6 +624,7 @@ class ToolManager:
         """Send email via ChannelManager"""
         from neugi_swarm_channels import ChannelManager
         import asyncio
+
         cm = ChannelManager()
         # Find first email channel or add one
         email_channels = cm.list("email")
@@ -602,6 +636,7 @@ class ToolManager:
         """Send Telegram via ChannelManager"""
         from neugi_swarm_channels import ChannelManager
         import asyncio
+
         cm = ChannelManager()
         tg_channels = cm.list("telegram")
         if not tg_channels:
@@ -612,6 +647,7 @@ class ToolManager:
         """Send Discord via ChannelManager"""
         from neugi_swarm_channels import ChannelManager
         import asyncio
+
         cm = ChannelManager()
         ds_channels = cm.list("discord")
         if not ds_channels:
@@ -630,12 +666,13 @@ class ToolManager:
     def _request_diagnostic(self, **kwargs) -> Dict:
         """Run system-wide health checks via NEUGIWizard"""
         from neugi_wizard import SystemChecker
+
         diagnosis = SystemChecker.full_diagnosis()
-        
+
         return {
             "status": "diagnostic_complete",
             "findings": diagnosis,
-            "summary": f"Detected {len(diagnosis.get('granular_issues', []))} granular issues."
+            "summary": f"Detected {len(diagnosis.get('granular_issues', []))} granular issues.",
         }
 
     def _self_heal(self, error_message: str, **kwargs) -> Dict:
@@ -643,24 +680,24 @@ class ToolManager:
         god_mode = os.environ.get("NEUGI_GOD_MODE") == "1"
         if not god_mode:
             return {"error": "Self-healing requires God Mode to perform system fixes."}
-            
+
         # 1. Think about the fix
         think_prompt = f"System Error encountered: '{error_message}'. Provide a specific shell command to fix this issue. Output ONLY the command, no talk."
         res = self._llm_think(prompt=think_prompt)
-        
+
         if not res.get("success"):
             return {"error": "Failed to generate healing command."}
-            
-        fix_cmd = res.get("response", "").strip().strip('`')
-        
+
+        fix_cmd = res.get("response", "").strip().strip("`")
+
         # 2. Execute the fix
         exec_res = self._code_execute(code=fix_cmd, language="bash")
-        
+
         return {
             "error_addressed": error_message,
             "proposed_fix": fix_cmd,
             "execution_result": exec_res,
-            "status": "healed" if exec_res.get("success") else "healing_failed"
+            "status": "healed" if exec_res.get("success") else "healing_failed",
         }
 
 
@@ -864,15 +901,24 @@ class NativeWebBrowser:
         return {"query": query, "results": self._rag_instance.search(query), "success": True}
 
     def _git_execute(self, command: str, **kwargs) -> Dict:
-        if not command.startswith("git "): command = "git " + command
+        if not command.startswith("git "):
+            command = "git " + command
         import subprocess
+
         try:
             result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=15)
-            return {"command": command, "output": result.stdout or result.stderr, "success": result.returncode == 0}
-        except Exception as e: return {"error": str(e)}
+            return {
+                "command": command,
+                "output": result.stdout or result.stderr,
+                "success": result.returncode == 0,
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
 
 class CodebaseRAG:
     """Ultra-lightweight Python RAG system for local codebases."""
+
     def __init__(self, root_dir="."):
         self.root = root_dir
         self.index = {}
@@ -880,28 +926,37 @@ class CodebaseRAG:
 
     def _build_index(self):
         for root, dirs, files in os.walk(self.root):
-            if any(x in root for x in ['.git', '__pycache__', 'node_modules', '.venv', 'assets']):
+            if any(x in root for x in [".git", "__pycache__", "node_modules", ".venv", "assets"]):
                 continue
             for f in files:
-                if f.endswith(('.py', '.html', '.css', '.js', '.md', '.json', '.txt')):
+                if f.endswith((".py", ".html", ".css", ".js", ".md", ".json", ".txt")):
                     try:
                         path = os.path.join(root, f)
-                        with open(path, 'r', encoding='utf-8') as file:
+                        with open(path, "r", encoding="utf-8") as file:
                             self.index[path] = file.read().lower()
-                    except: pass
+                    except Exception:
+                        pass
 
     def search(self, query: str, top_k: int = 3) -> List[Dict]:
         query = query.lower()
-        results = [{"path": p, "matches": c.count(query)} for p, c in self.index.items() if c.count(query) > 0]
+        results = [
+            {"path": p, "matches": c.count(query)}
+            for p, c in self.index.items()
+            if c.count(query) > 0
+        ]
         results.sort(key=lambda x: x["matches"], reverse=True)
-        
+
         snippets = []
         for res in results[:top_k]:
             try:
-                with open(res["path"], 'r', encoding='utf-8') as file:
-                    snippets.append({"path": res["path"], "content": "".join(file.readlines()[:100])})
-            except: pass
+                with open(res["path"], "r", encoding="utf-8") as file:
+                    snippets.append(
+                        {"path": res["path"], "content": "".join(file.readlines()[:100])}
+                    )
+            except Exception:
+                pass
         return snippets
+
 
 # Main
 if __name__ == "__main__":

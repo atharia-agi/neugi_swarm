@@ -650,7 +650,7 @@ I'm your AI assistant. I can help you with:
                 self.ui.info(f"Agents: {len(data.get('neugi', {}).get('agents', []))} online")
             else:
                 self.ui.warning(f"Sovereign Node: IDLE ({dashboard_url})")
-        except:
+        except Exception:
             self.ui.warning(f"Sovereign Node: OFFLINE ({dashboard_url})")
 
         print(f"\n{C.GREEN}Everything seems in order. Sovereign Intelligence is stable.{C.END}")
@@ -949,7 +949,7 @@ System status:
             else:
                 self.ui.warning("Nexus Offline. Falling back to direct model access.")
                 print(f"  {C.YELLOW}Mode: DIRECT AI (Ollama Local){C.END}\n")
-        except:
+        except Exception:
             self.ui.warning("Nexus Offline. Falling back to direct model access.")
             print(f"  {C.YELLOW}Mode: DIRECT AI (Ollama Local){C.END}\n")
 
@@ -1146,7 +1146,7 @@ System status:
                     r = requests.get("http://localhost:19888/api/status", timeout=0.5)
                     if r.ok:
                         anomalies = len(r.json().get("issues", []))
-                except:
+                except Exception:
                     pass
 
                 status_line = f"[{datetime.now().strftime('%H:%M:%S')}] CPU: {cpu:>4}% | RAM: {ram:>4}% | Anomalies: {anomalies}"
@@ -1238,7 +1238,7 @@ System status:
             if r.ok:
                 self.ui.warning("Engine is already active on port 19888.")
                 return
-        except:
+        except Exception:
             pass
 
         # Ensure script exists

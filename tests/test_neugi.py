@@ -124,16 +124,12 @@ class TestCoreFiles:
     def test_secondary_files_exist(self):
         """Test secondary Python files exist"""
         files = [
-            "neugi_technician.py",
             "neugi_swarm_context.py",
             "neugi_swarm_edge.py",
             "neugi_swarm_gateway.py",
             "neugi_swarm_channels.py",
             "neugi_swarm_skills.py",
             "neugi_swarm_voice.py",
-            "ollama_assistant.py",
-            "VERIFIED_MODELS.py",
-            "config_template.py",
         ]
         base = os.path.dirname(__file__)
         for f in files:

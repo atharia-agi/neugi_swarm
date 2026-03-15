@@ -884,6 +884,15 @@
             const original = btn.innerHTML;
             btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" class="feather" width="14" height="14" stroke="currentColor"><polyline points="20 6 9 17 4 12"></polyline></svg> Copied`;
             setTimeout(() => { btn.innerHTML = original; }, 2000);
+            showToast('Copied to clipboard!');
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#10b981;color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;z-index:9999;animation:fadeIn 0.3s ease';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.remove(); }, 3000);
         }
 
         function handleInquiry(e) {
