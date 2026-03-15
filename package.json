@@ -1,0 +1,12 @@
+{
+  "name": "neugi-swarm",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "echo 'Static site - no build needed'",
+    "dev": "npx serve ."
+  },
+  "dependencies": {
+    "@vercel/analytics": "^1.2.0"
+  }
+}
