@@ -574,6 +574,9 @@ I'm your AI assistant. I can help you with:
   ⚖️  LB         - Load Balancer
   🕸️  MESH       - Service Mesh
   🌐  CDN        - CDN Manager
+  📨  EVENT      - Event Bus
+  🤖  AGENTS     - Agents SDK
+  ⌘  CLI        - CLI Framework
   👋  EXIT       - Shutdown Wizard
 
 """)
@@ -629,6 +632,9 @@ I'm your AI assistant. I can help you with:
                     ("lb", "⚖️ Load Balancer"),
                     ("mesh", "🕸️ Service Mesh"),
                     ("cdn", "🌐 CDN Manager"),
+                    ("eventbus", "📨 Event Bus"),
+                    ("agents", "🤖 Agents SDK"),
+                    ("cli", "⌘ CLI Framework"),
                     ("quit", "👋 Exit"),
                 ],
                 "What would you like to do?",
@@ -730,7 +736,13 @@ I'm your AI assistant. I can help you with:
                 self.run_mesh()
             elif choice == "48":
                 self.run_cdn()
-            elif choice == "49" or choice.lower() in ["quit", "exit", "q"]:
+            elif choice == "49":
+                self.run_eventbus()
+            elif choice == "50":
+                self.run_agents()
+            elif choice == "51":
+                self.run_cli()
+            elif choice == "52" or choice.lower() in ["quit", "exit", "q"]:
                 print(f"\n{C.CYAN}Happy to help! See you next time! 👋{C.END}\n")
                 break
             else:
@@ -2415,6 +2427,18 @@ Example Workflows:
         self.ui.header("🌐 CDN MANAGER")
         print("CDN Manager loaded")
         input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_eventbus(self):
+        print("Event Bus loaded")
+        input()
+
+    def run_agents(self):
+        print("Agents SDK loaded")
+        input()
+
+    def run_cli(self):
+        print("CLI Framework loaded")
+        input()
 
     def run_topology(self):
         """View Swarm Network Topology"""

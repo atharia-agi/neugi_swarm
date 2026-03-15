@@ -2,7 +2,7 @@
 
 > Complete development history and architecture documentation
 > Last Updated: March 15, 2026
-> Version: 21.0.0
+> Version: 22.0.0
 
 ---
 
@@ -15,6 +15,20 @@
 NEUGI is an autonomous, multi-agent swarm intelligence system designed to run on local infrastructure. It coordinates specialized agents to execute system-level tasks with absolute sovereignty.
 
 ## Version History
+
+### v22.0.0 (March 16, 2026) - DEVELOPER TOOLS
+
+#### New Features
+
+- **Event Bus** (`neugi_eventbus.py`): Pub/Sub event system
+- **Agents SDK** (`neugi_agents_sdk.py`): Build AI agents with tools & memory
+- **CLI Framework** (`neugi_cli.py`): Build CLI applications
+
+#### New Menu Options (49-51)
+
+- 49. 📨 Event Bus - Pub/Sub
+- 50. 🤖 Agents - Agent SDK
+- 51. ⌘ CLI - CLI Framework
 
 ### v21.0.0 (March 16, 2026) - CLOUD PLATFORM
 
