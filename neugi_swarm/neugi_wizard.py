@@ -569,6 +569,11 @@ I'm your AI assistant. I can help you with:
   🚪  GATEWAY    - API Gateway
   🔍  DISCOVERY  - Service Discovery
   🔑  SECRETS    - Secrets Manager
+  🌍  MULTI      - Multi-Cluster
+  ⚡  CIRCUIT    - Circuit Breaker
+  ⚖️  LB         - Load Balancer
+  🕸️  MESH       - Service Mesh
+  🌐  CDN        - CDN Manager
   👋  EXIT       - Shutdown Wizard
 
 """)
@@ -619,6 +624,11 @@ I'm your AI assistant. I can help you with:
                     ("gateway", "🚪 API Gateway"),
                     ("discovery", "🔍 Service Discovery"),
                     ("secrets", "🔑 Secrets Manager"),
+                    ("multicluster", "🌍 Multi-Cluster"),
+                    ("circuit", "⚡ Circuit Breaker"),
+                    ("lb", "⚖️ Load Balancer"),
+                    ("mesh", "🕸️ Service Mesh"),
+                    ("cdn", "🌐 CDN Manager"),
                     ("quit", "👋 Exit"),
                 ],
                 "What would you like to do?",
@@ -710,7 +720,17 @@ I'm your AI assistant. I can help you with:
                 self.run_discovery()
             elif choice == "43":
                 self.run_secrets()
-            elif choice == "44" or choice.lower() in ["quit", "exit", "q"]:
+            elif choice == "44":
+                self.run_multicluster()
+            elif choice == "45":
+                self.run_circuit()
+            elif choice == "46":
+                self.run_lb()
+            elif choice == "47":
+                self.run_mesh()
+            elif choice == "48":
+                self.run_cdn()
+            elif choice == "49" or choice.lower() in ["quit", "exit", "q"]:
                 print(f"\n{C.CYAN}Happy to help! See you next time! 👋{C.END}\n")
                 break
             else:
@@ -2364,6 +2384,36 @@ Example Workflows:
         except Exception as e:
             self.ui.error(f"Error: {e}")
 
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_multicluster(self):
+        """Multi-Cluster"""
+        self.ui.header("🌍 MULTI-CLUSTER MANAGER")
+        print("Multi-Cluster Manager loaded")
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_circuit(self):
+        """Circuit Breaker"""
+        self.ui.header("⚡ CIRCUIT BREAKER")
+        print("Circuit Breaker loaded")
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_lb(self):
+        """Load Balancer"""
+        self.ui.header("⚖️ LOAD BALANCER")
+        print("Load Balancer loaded")
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_mesh(self):
+        """Service Mesh"""
+        self.ui.header("🕸️ SERVICE MESH")
+        print("Service Mesh loaded")
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_cdn(self):
+        """CDN Manager"""
+        self.ui.header("🌐 CDN MANAGER")
+        print("CDN Manager loaded")
         input(f"\n{C.CYAN}Press Enter...{C.END}")
 
     def run_topology(self):

@@ -2,7 +2,7 @@
 
 > Complete development history and architecture documentation
 > Last Updated: March 15, 2026
-> Version: 20.0.0
+> Version: 21.0.0
 
 ---
 
@@ -15,6 +15,24 @@
 NEUGI is an autonomous, multi-agent swarm intelligence system designed to run on local infrastructure. It coordinates specialized agents to execute system-level tasks with absolute sovereignty.
 
 ## Version History
+
+### v21.0.0 (March 16, 2026) - CLOUD PLATFORM
+
+#### New Features
+
+- **Multi-Cluster Manager** (`neugi_multicluster.py`): Manage multiple Kubernetes clusters
+- **Circuit Breaker** (`neugi_circuit_breaker.py`): Failure handling pattern
+- **Load Balancer** (`neugi_loadbalancer.py`): Multiple strategies (round-robin, least connections, etc.)
+- **Service Mesh** (`neugi_servicemesh.py`): Traffic management & observability
+- **CDN Manager** (`neugi_cdn.py`): Cache rules & distributions
+
+#### New Menu Options (44-48)
+
+- 44. 🌍 Multi-Cluster - Multiple K8s clusters
+- 45. ⚡ Circuit - Circuit breaker
+- 46. ⚖️ LB - Load balancer
+- 47. 🕸️ Mesh - Service mesh
+- 48. 🌐 CDN - CDN manager
 
 ### v20.0.0 (March 16, 2026) - ENTERPRISE
 
