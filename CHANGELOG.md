@@ -2,7 +2,7 @@
 
 > Complete development history and architecture documentation
 > Last Updated: March 15, 2026
-> Version: 15.7.0
+> Version: 15.8.0
 
 ---
 
@@ -15,6 +15,20 @@
 NEUGI is an autonomous, multi-agent swarm intelligence system designed to run on local infrastructure. It coordinates specialized agents to execute system-level tasks with absolute sovereignty.
 
 ## Version History
+
+### v15.8.0 (March 15, 2026) - EXTENDED ECOSYSTEM
+
+#### New Features
+
+- **App Integrations** (`neugi_app_integrations.py`): OAuth-based connections to 15+ apps (Gmail, Slack, GitHub, Linear, Notion, etc.)
+- **Workflow Engine** (`neugi_workflows.py`): JSON-based workflow automation with step dependencies, built-in actions
+- **Test Framework** (`neugi_test.py`): Built-in test runner for NEUGI components
+
+#### New Menu Options (19-21)
+
+- 19. 📱 App Integrations - OAuth connections
+- 20. 🔀 Workflow Automation - Create & run workflows  
+- 21. 🧪 Run Tests - Test suite
 
 ### v15.7.0 (March 15, 2026) - BROWSEROS INTEGRATION
 

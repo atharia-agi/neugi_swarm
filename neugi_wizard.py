@@ -544,6 +544,9 @@ I'm your AI assistant. I can help you with:
   📚  SKILLS     - Skills V2 (BrowserOS Style)
   ⏰  SCHEDULE   - Native Task Scheduler
   🌐  MCP        - MCP Server (Claude Code)
+  📱  APPS       - App Integrations (OAuth)
+  🔀  WORKFLOWS  - Workflow Automation
+  🧪  TESTS      - Run Test Suite
   👋  EXIT       - Shutdown Wizard
 
 """)
@@ -569,6 +572,9 @@ I'm your AI assistant. I can help you with:
                     ("skills", "📚 Skills V2"),
                     ("schedule", "⏰ Task Scheduler"),
                     ("mcp", "🌐 MCP Server"),
+                    ("apps", "📱 App Integrations"),
+                    ("workflows", "🔀 Workflow Automation"),
+                    ("tests", "🧪 Run Tests"),
                     ("quit", "👋 Exit"),
                 ],
                 "What would you like to do?",
@@ -610,7 +616,13 @@ I'm your AI assistant. I can help you with:
                 self.run_scheduler()
             elif choice == "18":
                 self.run_mcp()
-            elif choice == "19" or choice.lower() in ["quit", "exit", "q"]:
+            elif choice == "19":
+                self.run_apps()
+            elif choice == "20":
+                self.run_workflows()
+            elif choice == "21":
+                self.run_tests()
+            elif choice == "22" or choice.lower() in ["quit", "exit", "q"]:
                 print(f"\n{C.CYAN}Happy to help! See you next time! 👋{C.END}\n")
                 break
             else:
@@ -1325,6 +1337,138 @@ Integration:
                 start_server(port=19889, open_browser=False)
             except KeyboardInterrupt:
                 print("\n\nServer stopped.")
+
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    # ============================================================
+    # APP INTEGRATIONS
+    # ============================================================
+
+    def run_apps(self):
+        """App Integrations"""
+        self.ui.header("📱 APP INTEGRATIONS")
+
+        print(f"""
+{C.BOLD}OAuth App Integrations (BrowserOS Style):{C.END}
+
+  Connect external services:
+  • Email: Gmail, Outlook
+  • Calendar: Google Calendar, Outlook
+  • Communication: Slack, Discord
+  • Dev: GitHub, Vercel
+  • Project: Linear, Notion
+
+""")
+
+        try:
+            from neugi_app_integrations import AppIntegrationManager
+
+            manager = AppIntegrationManager()
+            apps = manager.list_apps()
+
+            print(f"{C.BOLD}Available Apps:{C.END}\n")
+            for app in apps:
+                status = "✅ Connected" if app["connected"] else "❌"
+                print(f"{app['icon']} {app['name']:<20} {status}")
+
+            print(f"\nTotal: {len(apps)} apps")
+            print(f"Connected: {len([a for a in apps if a['connected']])}")
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+        input(f"\n{C.YELLOW}Note: OAuth requires client configuration{C.END}")
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    # ============================================================
+    # WORKFLOWS
+    # ============================================================
+
+    def run_workflows(self):
+        """Workflow automation"""
+        self.ui.header("🔀 WORKFLOW AUTOMATION")
+
+        print(f"""
+{C.BOLD}Workflow Engine (BrowserOS Style):{C.END}
+
+  Create reusable automation workflows:
+  • JSON-based definition
+  • Step dependencies
+  • Parallel execution
+  • Built-in actions
+
+Example Workflows:
+  • daily-standup - Morning notification
+  • git-backup - Auto commit & push
+  • health-check - System monitoring
+
+""")
+
+        try:
+            from neugi_workflows import WorkflowEngine
+
+            engine = WorkflowEngine()
+            workflows = engine.list_workflows()
+
+            if not workflows:
+                print("No workflows created yet.")
+                print("\nExamples:")
+                print("  python neugi_workflows.py create --example daily-standup")
+                print("  python neugi_workflows.py create --example git-backup")
+            else:
+                print(f"{C.BOLD}Your Workflows:{C.END}\n")
+                for wf in workflows:
+                    print(f"📦 {wf['name']}")
+                    print(f"   {wf['description']}")
+                    print(f"   Steps: {wf['steps']}\n")
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    # ============================================================
+    # TESTS
+    # ============================================================
+
+    def run_tests(self):
+        """Run test suite"""
+        self.ui.header("🧪 TEST SUITE")
+
+        print(f"""
+{C.BOLD}NEUGI Test Framework:{C.END}
+
+  Run built-in tests:
+  • Memory system
+  • Soul system
+  • Skills
+  • Cowork
+  • Scheduler
+
+""")
+
+        choice = input(f"{C.CYAN}Run all tests? (y/n){C.END} ").strip().lower()
+
+        if choice == "y":
+            try:
+                from neugi_test import run_tests
+
+                print("\n🚀 Running tests...\n")
+                result = run_tests()
+
+                print(f"\n{C.BOLD}Results:{C.END}")
+                print(f"  Passed: {result['passed']}")
+                print(f"  Failed: {result['failed']}")
+                print(f"  Total: {result['total']}")
+                print(f"  Rate: {result['success_rate']:.1f}%")
+
+                if result["failed"] > 0:
+                    self.ui.error(f"{result['failed']} tests failed!")
+                else:
+                    print(f"\n{C.GREEN}All tests passed! ✅{C.END}")
+
+            except Exception as e:
+                self.ui.error(f"Error: {e}")
 
         input(f"\n{C.CYAN}Press Enter...{C.END}")
 
