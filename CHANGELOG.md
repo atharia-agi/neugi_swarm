@@ -2,7 +2,7 @@
 
 > Complete development history and architecture documentation
 > Last Updated: March 15, 2026
-> Version: 15.6.1
+> Version: 15.7.0
 
 ---
 
@@ -15,6 +15,26 @@
 NEUGI is an autonomous, multi-agent swarm intelligence system designed to run on local infrastructure. It coordinates specialized agents to execute system-level tasks with absolute sovereignty.
 
 ## Version History
+
+### v15.7.0 (March 15, 2026) - BROWSEROS INTEGRATION
+
+#### BrowserOS-Style Features Implemented
+
+- **Two-Tier Memory System** (`neugi_memory_v2.py`): Core + Daily memory with 30-day auto-expire, inspired by BrowserOS memory architecture
+- **Soul System** (`neugi_soul.py`): Personality management with 5 presets (default, assistant, senior_dev, debugger, security)
+- **Skills V2** (`neugi_skills_v2.py`): Full BrowserOS SKILL.md format with YAML frontmatter, scripts/, references/ support
+- **MCP Server** (`neugi_mcp_server.py`): 30+ tools exposed via MCP protocol - compatible with Claude Code, OpenClaw, Gemini CLI
+- **Native Scheduler** (`neugi_scheduler.py`): Daily/hourly/minute scheduling with background execution
+- **Cowork** (`neugi_cowork.py`): Filesystem sandbox with 7 tools (read, write, edit, bash, find, grep, ls)
+- **Wizard Integration**: All new features integrated into neugi_wizard.py menu (Options 14-18)
+
+#### New Menu Options
+
+- 14. 🧊 Memory System - Two-tier memory management
+- 15. 🎭 Soul - Personality/behavior configuration
+- 16. 📚 Skills V2 - BrowserOS-style skills
+- 17. ⏰ Task Scheduler - Native scheduled tasks
+- 18. 🌐 MCP Server - Start MCP server for Claude Code
 
 ### v15.6.1 (March 15, 2026) - DEEP AUDIT & BUGFIX
 

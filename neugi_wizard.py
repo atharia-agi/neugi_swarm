@@ -539,6 +539,11 @@ I'm your AI assistant. I can help you with:
   📦  PLUGINS    - Ecosystem Extensions
   🔄  UPDATE     - Neural Sync
   🔐  SECURITY   - System-Level Access Control
+  🧊  MEMORY     - Two-Tier Memory System
+  🎭  SOUL       - Personality System
+  📚  SKILLS     - Skills V2 (BrowserOS Style)
+  ⏰  SCHEDULE   - Native Task Scheduler
+  🌐  MCP        - MCP Server (Claude Code)
   👋  EXIT       - Shutdown Wizard
 
 """)
@@ -559,6 +564,11 @@ I'm your AI assistant. I can help you with:
                     ("plugins", "📦 Manage Plugins"),
                     ("update", "🔄 Check for Updates"),
                     ("security", "🔐 Security Settings"),
+                    ("memory", "🧊 Memory System"),
+                    ("soul", "🎭 Personality / Soul"),
+                    ("skills", "📚 Skills V2"),
+                    ("schedule", "⏰ Task Scheduler"),
+                    ("mcp", "🌐 MCP Server"),
                     ("quit", "👋 Exit"),
                 ],
                 "What would you like to do?",
@@ -590,7 +600,17 @@ I'm your AI assistant. I can help you with:
                 self.run_update()
             elif choice == "13":
                 self.run_security()
-            elif choice == "14" or choice.lower() in ["quit", "exit", "q"]:
+            elif choice == "14":
+                self.run_memory()
+            elif choice == "15":
+                self.run_soul()
+            elif choice == "16":
+                self.run_skills()
+            elif choice == "17":
+                self.run_scheduler()
+            elif choice == "18":
+                self.run_mcp()
+            elif choice == "19" or choice.lower() in ["quit", "exit", "q"]:
                 print(f"\n{C.CYAN}Happy to help! See you next time! 👋{C.END}\n")
                 break
             else:
@@ -1067,6 +1087,246 @@ System status:
             security_wizard()
         except Exception as e:
             self.ui.error(f"Error: {e}")
+
+    # ============================================================
+    # MEMORY SYSTEM (BrowserOS Style)
+    # ============================================================
+
+    def run_memory(self):
+        """Two-tier memory system"""
+        self.ui.header("🧊 MEMORY SYSTEM")
+
+        print(f"""
+{C.BOLD}Two-Tier Memory (BrowserOS Style):{C.END}
+
+  • CORE MEMORY   - Permanent facts (CORE.md)
+  • DAILY MEMORY - Session notes (auto-expire 30 days)
+
+Options:
+  1. 📖 Read Core Memory
+  2. 📝 Search Memory
+  3. ➕ Add Memory Fact
+  4. 📊 Memory Stats
+  5. 🧹 Cleanup Old Memory
+
+""")
+
+        choice = input(f"{C.CYAN}Choice>{C.END} ").strip()
+
+        try:
+            from neugi_memory_v2 import TwoTierMemory
+
+            memory = TwoTierMemory()
+
+            if choice == "1":
+                print(f"\n{C.BOLD}Core Memory:{C.END}\n")
+                print(memory.read_core())
+
+            elif choice == "2":
+                query = input("Search query: ")
+                results = memory.recall(query)
+                print(f"\n{C.BOLD}Results:{C.END}")
+                if results["core"]:
+                    print("\n🔶 Core Memory Matches:")
+                    for r in results["core"]:
+                        print(f"  {r}")
+                if results["daily"]:
+                    print("\n📝 Daily Memory Matches:")
+                    for r in results["daily"][:5]:
+                        print(f"  [{r['date']}] {r['content'][:100]}")
+
+            elif choice == "3":
+                fact = input("Fact to remember: ")
+                memory.auto_remember(fact)
+                print(f"\n✅ Remembered!")
+
+            elif choice == "4":
+                stats = memory.get_stats()
+                print(f"\n{C.BOLD}Memory Stats:{C.END}")
+                print(f"  Core: {stats['core_size_kb']} KB")
+                print(f"  Daily Files: {stats['daily_files_count']}")
+                print(f"  Total Size: {stats['daily_size_kb']} KB")
+
+            elif choice == "5":
+                memory.cleanup_old_daily(30)
+                print(f"\n✅ Cleaned up!")
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    # ============================================================
+    # SOUL SYSTEM (Personality)
+    # ============================================================
+
+    def run_soul(self):
+        """Personality system"""
+        self.ui.header("🎭 SOUL / PERSONALITY")
+
+        print(f"""
+{C.BOLD}Soul System (BrowserOS Style):{C.END}
+
+  Define how NEUGI behaves - tone, traits, boundaries
+
+Available Presets:
+  • default      - Helpful technical assistant
+  • assistant   - Friendly and explanatory
+  • senior_dev  - Production-focused developer
+  • debugger    - Analytical problem solver
+  • security    - Security-focused expert
+
+""")
+
+        choice = input(f"{C.CYAN}Choice (1=Show, 2=List, 3=Load preset){C.END} ").strip()
+
+        try:
+            from neugi_soul import SoulSystem
+
+            soul = SoulSystem()
+
+            if choice == "1":
+                soul.display()
+
+            elif choice == "2":
+                print("\nAvailable Presets:")
+                for p in soul.list_presets():
+                    print(f"  • {p}")
+
+            elif choice == "3":
+                preset = input("Preset name: ").strip()
+                if soul.load_preset(preset):
+                    print(f"\n✅ Loaded: {preset}")
+                    soul.display()
+                else:
+                    print(f"\n❌ Unknown preset")
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    # ============================================================
+    # SKILLS V2
+    # ============================================================
+
+    def run_skills(self):
+        """Skills V2 system"""
+        self.ui.header("📚 SKILLS V2")
+
+        print(f"""
+{C.BOLD}Skills V2 (BrowserOS SKILL.md Format):{C.END}
+
+  Create reusable skills with:
+  • YAML frontmatter metadata
+  • Markdown instructions
+  • Optional scripts/ directory
+  • Natural language triggers
+
+""")
+
+        try:
+            from neugi_skills_v2 import SkillManagerV2
+
+            manager = SkillManagerV2()
+            skills = manager.list_skills()
+
+            print(f"Total Skills: {len(skills)}\n")
+
+            for skill in skills:
+                status = "✅" if skill.status.value == "enabled" else "❌"
+                print(f"{status} {skill.name}")
+                print(f"   {skill.description}")
+                print()
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    # ============================================================
+    # SCHEDULER
+    # ============================================================
+
+    def run_scheduler(self):
+        """Task scheduler"""
+        self.ui.header("⏰ TASK SCHEDULER")
+
+        print(f"""
+{C.BOLD}Native Scheduler (BrowserOS Style):{C.END}
+
+  Schedule recurring tasks:
+  • DAILY   - At specific time (e.g., 08:00)
+  • HOURLY  - Every N hours
+  • MINUTES - Every N minutes
+
+""")
+
+        try:
+            from neugi_scheduler import NEUGIScheduler
+
+            scheduler = NEUGIScheduler()
+            tasks = scheduler.list_tasks()
+
+            if not tasks:
+                print("No scheduled tasks.")
+            else:
+                print(f"{C.BOLD}Scheduled Tasks:{C.END}\n")
+                for task in tasks:
+                    status = "✅" if task["enabled"] else "❌"
+                    print(f"{status} {task['name']}")
+                    print(f"   {task['schedule']}")
+                    print(f"   Next: {task['next_run']}")
+                    print()
+
+            print("\nTo manage tasks, run: python neugi_scheduler.py")
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    # ============================================================
+    # MCP SERVER
+    # ============================================================
+
+    def run_mcp(self):
+        """MCP Server"""
+        self.ui.header("🌐 MCP SERVER")
+
+        print(f"""
+{C.BOLD}MCP Server (Claude Code Compatible){C.END}
+
+  Exposes NEUGI as MCP Server with 30+ tools:
+  
+  • Filesystem (Cowork): 7 tools
+  • Memory: 3 tools
+  • Skills: 3 tools
+  • System: 4 tools
+  • Git: 4 tools
+  • Network: 3 tools
+  • Agent delegation: 2 tools
+
+Integration:
+  Claude Code: claude mcp add neugi http://127.0.0.1:19889/mcp --scope user
+  OpenClaw:   Add to openclaw.json
+
+""")
+
+        choice = input(f"{C.CYAN}Start MCP Server? (y/n){C.END} ").strip().lower()
+
+        if choice == "y":
+            print("\n🚀 Starting MCP Server on port 19889...")
+            print("Press Ctrl+C to stop\n")
+
+            try:
+                from neugi_mcp_server import start_server
+
+                start_server(port=19889, open_browser=False)
+            except KeyboardInterrupt:
+                print("\n\nServer stopped.")
+
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
 
     def run_topology(self):
         """View Swarm Network Topology"""
