@@ -562,6 +562,9 @@ I'm your AI assistant. I can help you with:
   🧠  CACHE      - Cache Layer
   📝  LOGS       - Log Aggregator
   💾  BACKUP     - Backup System
+  ☸️  K8S       - Kubernetes Connector
+  🔌  WS        - WebSocket Server
+  📊  GQL       - GraphQL API
   👋  EXIT       - Shutdown Wizard
 
 """)
@@ -605,6 +608,9 @@ I'm your AI assistant. I can help you with:
                     ("cache", "🧠 Cache Layer"),
                     ("logs", "📝 Log Aggregator"),
                     ("backup", "💾 Backup System"),
+                    ("k8s", "☸️ Kubernetes"),
+                    ("websocket", "🔌 WebSocket Server"),
+                    ("graphql", "📊 GraphQL API"),
                     ("quit", "👋 Exit"),
                 ],
                 "What would you like to do?",
@@ -682,7 +688,13 @@ I'm your AI assistant. I can help you with:
                 self.run_logs()
             elif choice == "36":
                 self.run_backup()
-            elif choice == "37" or choice.lower() in ["quit", "exit", "q"]:
+            elif choice == "37":
+                self.run_k8s()
+            elif choice == "38":
+                self.run_websocket()
+            elif choice == "39":
+                self.run_graphql()
+            elif choice == "40" or choice.lower() in ["quit", "exit", "q"]:
                 print(f"\n{C.CYAN}Happy to help! See you next time! 👋{C.END}\n")
                 break
             else:
@@ -2102,6 +2114,104 @@ Example Workflows:
                     print(f"  {status} {job['name']} - {job['runs']} runs")
             else:
                 print("  No backup jobs configured")
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    # KUBERNETES
+    # ============================================================
+
+    def run_k8s(self):
+        """Kubernetes Connector"""
+        self.ui.header("☸️ KUBERNETES CONNECTOR")
+
+        print(f"""
+{C.BOLD}Kubernetes Management:{C.END}
+
+  Features:
+  • Pod management
+  • Service management
+  • Deployment control
+  • Resource monitoring
+
+""")
+
+        try:
+            from neugi_k8s import KubernetesConnector
+
+            k8s = KubernetesConnector()
+            usage = k8s.get_resource_usage()
+
+            print(f"{C.BOLD}Cluster Resources:{C.END}\n")
+            print(f"  Nodes: {usage['nodes']}")
+            print(f"  Pods: {usage['pods']}")
+            print(f"  Services: {usage['services']}")
+            print(f"  Deployments: {usage['deployments']}")
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    # WEBSOCKET
+    # ============================================================
+
+    def run_websocket(self):
+        """WebSocket Server"""
+        self.ui.header("🔌 WEBSOCKET SERVER")
+
+        print(f"""
+{C.BOLD}Real-Time Communication:{C.END}
+
+  Features:
+  • WebSocket connections
+  • Event streaming
+  • Broadcasting
+  • Subscriptions
+
+  URL: ws://localhost:19920/ws/CLIENT_ID
+
+""")
+
+        try:
+            from neugi_websocket import ws_manager
+
+            print(f"{C.GREEN}Starting WebSocket server...{C.END}")
+            ws_manager.run()
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    # GRAPHQL
+    # ============================================================
+
+    def run_graphql(self):
+        """GraphQL API"""
+        self.ui.header("📊 GRAPHQL API")
+
+        print(f"""
+{C.BOLD}GraphQL Query Language:{C.END}
+
+  Features:
+  • Flexible data fetching
+  • Mutations
+  • Subscriptions
+  • Schema introspection
+
+  URL: http://localhost:19930/graphql
+
+""")
+
+        try:
+            from neugi_graphql import GraphQLServer
+
+            print(f"{C.GREEN}Starting GraphQL server...{C.END}")
+            server = GraphQLServer()
+            server.run()
 
         except Exception as e:
             self.ui.error(f"Error: {e}")

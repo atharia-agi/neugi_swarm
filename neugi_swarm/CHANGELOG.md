@@ -2,7 +2,7 @@
 
 > Complete development history and architecture documentation
 > Last Updated: March 15, 2026
-> Version: 18.0.0
+> Version: 19.0.0
 
 ---
 
@@ -15,6 +15,20 @@
 NEUGI is an autonomous, multi-agent swarm intelligence system designed to run on local infrastructure. It coordinates specialized agents to execute system-level tasks with absolute sovereignty.
 
 ## Version History
+
+### v19.0.0 (March 16, 2026) - CLOUD NATIVE
+
+#### New Features
+
+- **Kubernetes Connector** (`neugi_k8s.py`): Pod/service/deployment management, scaling, logs, resource usage
+- **WebSocket Server** (`neugi_websocket.py`): Real-time communication, event streaming, broadcasting
+- **GraphQL API** (`neugi_graphql.py`): Flexible query language, mutations, subscriptions
+
+#### New Menu Options (37-39)
+
+- 37. ☸️ Kubernetes - K8s connector
+- 38. 🔌 WebSocket - Real-time server
+- 39. 📊 GraphQL - Query API
 
 ### v18.0.0 (March 16, 2026) - OPERATIONS SUITE
 
