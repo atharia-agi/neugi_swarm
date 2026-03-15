@@ -2,7 +2,7 @@
 
 > Complete development history and architecture documentation
 > Last Updated: March 15, 2026
-> Version: 16.0.0
+> Version: 17.0.0
 
 ---
 
@@ -15,6 +15,24 @@
 NEUGI is an autonomous, multi-agent swarm intelligence system designed to run on local infrastructure. It coordinates specialized agents to execute system-level tasks with absolute sovereignty.
 
 ## Version History
+
+### v17.0.0 (March 16, 2026) - DEVELOPER SUITE
+
+#### New Features
+
+- **Command Palette** (`neugi_command_palette.py`): Ctrl+K quick access with fuzzy search, 30+ commands
+- **File Manager** (`neugi_file_manager.py`): Full-featured file manager - browse, copy, move, delete, search, hash
+- **Code Interpreter** (`neugi_code_interpreter.py`): Sandboxed Python/JavaScript/SQL execution
+- **Plugin Marketplace** (`neugi_marketplace.py`): Browse & install 12 official plugins
+- **Encryption Layer** (`neugi_encryption.py`): File encryption, password hashing, secure storage, key management
+
+#### New Menu Options (28-32)
+
+- 28. ⌨️ Command Palette - Quick command access
+- 29. 📁 File Manager - Full file operations
+- 30. 💻 Code Interpreter - Sandboxed execution
+- 31. 🛒 Plugin Marketplace - Browse & install plugins
+- 32. 🔒 Encryption Tools - Security utilities
 
 ### v16.0.0 (March 16, 2026) - VISUAL AUTOMATION
 

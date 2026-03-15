@@ -553,6 +553,11 @@ I'm your AI assistant. I can help you with:
   🎨  WORKFLOW   - Visual Workflow Builder
   🤖  AUTOMATION - Rule-based Automation
   🗄️  DATABASE   - SQLite Persistence
+  ⌨️  PALETTE    - Command Palette
+  📁  FILES      - File Manager
+  💻  CODE       - Code Interpreter
+  🛒  MARKET     - Plugin Marketplace
+  🔒  ENCRYPT    - Encryption Tools
   👋  EXIT       - Shutdown Wizard
 
 """)
@@ -587,6 +592,11 @@ I'm your AI assistant. I can help you with:
                     ("workflow_builder", "🎨 Visual Workflow Builder"),
                     ("automation", "🤖 Automation Engine"),
                     ("database", "🗄️ Database Management"),
+                    ("palette", "⌨️ Command Palette"),
+                    ("file_manager", "📁 File Manager"),
+                    ("code", "💻 Code Interpreter"),
+                    ("marketplace", "🛒 Plugin Marketplace"),
+                    ("encryption", "🔒 Encryption Tools"),
                     ("quit", "👋 Exit"),
                 ],
                 "What would you like to do?",
@@ -646,7 +656,17 @@ I'm your AI assistant. I can help you with:
                 self.run_automation()
             elif choice == "27":
                 self.run_database()
-            elif choice == "28" or choice.lower() in ["quit", "exit", "q"]:
+            elif choice == "28":
+                self.run_palette()
+            elif choice == "29":
+                self.run_file_manager()
+            elif choice == "30":
+                self.run_code_interpreter()
+            elif choice == "31":
+                self.run_marketplace()
+            elif choice == "32":
+                self.run_encryption()
+            elif choice == "33" or choice.lower() in ["quit", "exit", "q"]:
                 print(f"\n{C.CYAN}Happy to help! See you next time! 👋{C.END}\n")
                 break
             else:
@@ -1722,6 +1742,202 @@ Example Workflows:
                 print(f"  {table}: {count} rows")
 
             conn.close()
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    # COMMAND PALETTE
+    # ============================================================
+
+    def run_palette(self):
+        """Command Palette"""
+        self.ui.header("⌨️ COMMAND PALETTE")
+
+        print(f"""
+{C.BOLD}Quick Command Access:{C.END}
+
+  Features:
+  • Search all NEUGI commands
+  • Fuzzy search
+  • Keyboard navigation
+  • Recent commands
+
+""")
+
+        try:
+            from neugi_command_palette import CommandPalette
+
+            palette = CommandPalette()
+            categories = palette.get_by_category()
+
+            print(f"{C.BOLD}Available Commands:{C.END}\n")
+            for cat, commands in categories.items():
+                print(f"  📁 {cat}")
+                for cmd in commands[:3]:
+                    print(f"      {cmd['icon']} {cmd['label']} ({cmd['shortcut']})")
+                print()
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    # FILE MANAGER
+    # ============================================================
+
+    def run_file_manager(self):
+        """File Manager"""
+        self.ui.header("📁 FILE MANAGER")
+
+        print(f"""
+{C.BOLD}Full-Featured File Manager:{C.END}
+
+  Features:
+  • Browse directories
+  • Copy, move, delete files
+  • Search files
+  • File preview
+  • Hash generation
+
+""")
+
+        try:
+            from neugi_file_manager import FileManager
+
+            fm = FileManager()
+            items = fm.list(".")
+
+            print(f"{C.BOLD}Current Directory:{C.END} {os.getcwd()}\n")
+            print(f"{C.BOLD}{'NAME':<30} {'SIZE':<10} {'TYPE'}{C.END}")
+            print(f"{C.CYAN}{'-' * 50}{C.END}")
+
+            for item in items[:15]:
+                if "error" in item:
+                    continue
+                icon = "📁" if item["type"] == "directory" else "📄"
+                size = fm._format_size(item["size"]) if item["type"] != "directory" else "-"
+                print(f"{icon} {item['name']:<28} {size:<10} {item['type']}")
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    # CODE INTERPRETER
+    # ============================================================
+
+    def run_code_interpreter(self):
+        """Code Interpreter"""
+        self.ui.header("💻 CODE INTERPRETER")
+
+        print(f"""
+{C.BOLD}Sandboxed Code Execution:{C.END}
+
+  Features:
+  • Safe Python execution
+  • JavaScript execution (Node.js)
+  • Shell commands (restricted)
+  • SQL queries
+
+""")
+
+        try:
+            from neugi_code_interpreter import CodeInterpreter
+
+            interpreter = CodeInterpreter()
+
+            print(f"{C.GREEN}Enter Python code to execute (type 'exit' to quit):{C.END}\n")
+
+            while True:
+                code = input(f"{C.CYAN}>>> {C.END}").strip()
+                if code in ["exit", "quit"]:
+                    break
+
+                result = interpreter.execute_python(code)
+                if result["output"]:
+                    print(result["output"])
+                if result["error"]:
+                    print(f"{C.RED}Error: {result['error']}{C.END}")
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+    # MARKETPLACE
+    # ============================================================
+
+    def run_marketplace(self):
+        """Plugin Marketplace"""
+        self.ui.header("🛒 PLUGIN MARKETPLACE")
+
+        print(f"""
+{C.BOLD}Browse & Install Plugins:{C.END}
+
+  Categories:
+  • Integrations
+  • Automation
+  • Database
+  • AI & ML
+  • Developer Tools
+
+""")
+
+        try:
+            from neugi_marketplace import PluginMarketplace
+
+            marketplace = PluginMarketplace()
+            categories = marketplace.get_categories()
+
+            print(f"{C.BOLD}Categories:{C.END}\n")
+            for cat in categories:
+                print(f"  {cat['icon']} {cat['name']}")
+
+            plugins = marketplace.list_plugins()
+            installed = len([p for p in plugins if p.get("installed")])
+
+            print(f"\n{C.BOLD}Plugins: {len(plugins)} | Installed: {installed}{C.END}")
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    # ENCRYPTION
+    # ============================================================
+
+    def run_encryption(self):
+        """Encryption Tools"""
+        self.ui.header("🔒 ENCRYPTION TOOLS")
+
+        print(f"""
+{C.BOLD}Encryption & Security:{C.END}
+
+  Features:
+  • File encryption/decryption
+  • Password hashing
+  • Secure storage
+  • Key management
+
+""")
+
+        try:
+            from neugi_encryption import Encryption, KeyManager
+
+            km = KeyManager()
+            keys = km.list_keys()
+
+            print(f"{C.BOLD}Encryption Keys:{C.END}\n")
+            if keys:
+                for k in keys:
+                    print(f"  🔑 {k['name']} (created: {k['created']})")
+            else:
+                print("  No keys found")
+
+            print(f"\n  Options:")
+            print(f"    --encrypt-file FILE")
+            print(f"    --hash STRING")
+            print(f"    --generate-key")
 
         except Exception as e:
             self.ui.error(f"Error: {e}")
