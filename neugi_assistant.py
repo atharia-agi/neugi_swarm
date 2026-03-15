@@ -15,7 +15,7 @@ import requests
 import urllib.request
 import re
 from neugi_swarm_net import swarm_net
-from typing import Optional
+from typing import Optional, Dict
 
 try:
     from neugi_swarm_tools import ToolManager
