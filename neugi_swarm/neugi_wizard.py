@@ -565,6 +565,10 @@ I'm your AI assistant. I can help you with:
   ☸️  K8S       - Kubernetes Connector
   🔌  WS        - WebSocket Server
   📊  GQL       - GraphQL API
+  📈  PROMETHEUS - Prometheus Metrics
+  🚪  GATEWAY    - API Gateway
+  🔍  DISCOVERY  - Service Discovery
+  🔑  SECRETS    - Secrets Manager
   👋  EXIT       - Shutdown Wizard
 
 """)
@@ -611,6 +615,10 @@ I'm your AI assistant. I can help you with:
                     ("k8s", "☸️ Kubernetes"),
                     ("websocket", "🔌 WebSocket Server"),
                     ("graphql", "📊 GraphQL API"),
+                    ("prometheus", "📈 Prometheus Metrics"),
+                    ("gateway", "🚪 API Gateway"),
+                    ("discovery", "🔍 Service Discovery"),
+                    ("secrets", "🔑 Secrets Manager"),
                     ("quit", "👋 Exit"),
                 ],
                 "What would you like to do?",
@@ -694,7 +702,15 @@ I'm your AI assistant. I can help you with:
                 self.run_websocket()
             elif choice == "39":
                 self.run_graphql()
-            elif choice == "40" or choice.lower() in ["quit", "exit", "q"]:
+            elif choice == "40":
+                self.run_prometheus()
+            elif choice == "41":
+                self.run_gateway()
+            elif choice == "42":
+                self.run_discovery()
+            elif choice == "43":
+                self.run_secrets()
+            elif choice == "44" or choice.lower() in ["quit", "exit", "q"]:
                 print(f"\n{C.CYAN}Happy to help! See you next time! 👋{C.END}\n")
                 break
             else:
@@ -2212,6 +2228,138 @@ Example Workflows:
             print(f"{C.GREEN}Starting GraphQL server...{C.END}")
             server = GraphQLServer()
             server.run()
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    # PROMETHEUS
+    # ============================================================
+
+    def run_prometheus(self):
+        """Prometheus Metrics"""
+        self.ui.header("📈 PROMETHEUS METRICS")
+
+        print(f"""
+{C.BOLD}Prometheus Metrics Export:{C.END}
+
+  Features:
+  • Counter, Gauge, Histogram metrics
+  • System metrics collection
+  • Prometheus format export
+
+  URL: http://localhost:19940/metrics
+
+""")
+
+        try:
+            from neugi_prometheus import collector
+
+            print(f"{C.BOLD}Metrics:{C.END}\n")
+            print(collector.exporter.export())
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    # API GATEWAY
+    # ============================================================
+
+    def run_gateway(self):
+        """API Gateway"""
+        self.ui.header("🚪 API GATEWAY")
+
+        print(f"""
+{C.BOLD}API Gateway:{C.END}
+
+  Features:
+  • Request routing
+  • Rate limiting
+  • API key management
+  • Authentication
+
+""")
+
+        try:
+            from neugi_gateway import gateway
+
+            routes = gateway.list_routes()
+
+            print(f"{C.BOLD}Routes:{C.END}\n")
+            for r in routes:
+                print(f"  {r['method']:<6} {r['path']:<20} -> {r['backend']}")
+
+            keys = gateway.list_api_keys()
+            print(f"\n{C.BOLD}API Keys: {len(keys)}{C.END}")
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    # SERVICE DISCOVERY
+    # ============================================================
+
+    def run_discovery(self):
+        """Service Discovery"""
+        self.ui.header("🔍 SERVICE DISCOVERY")
+
+        print(f"""
+{C.BOLD}Service Registry:{C.END}
+
+  Features:
+  • Register services
+  • Health checks
+  • Round-robin load balancing
+
+""")
+
+        try:
+            from neugi_discovery import registry
+
+            services = registry.get_all()
+
+            print(f"{C.BOLD}Services:{C.END}\n")
+            for name, instances in services.items():
+                healthy = len([i for i in instances if i["status"] == "healthy"])
+                print(f"  {name}: {healthy}/{len(instances)} healthy")
+
+        except Exception as e:
+            self.ui.error(f"Error: {e}")
+
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    # SECRETS MANAGER
+    # ============================================================
+
+    def run_secrets(self):
+        """Secrets Manager"""
+        self.ui.header("🔑 SECRETS MANAGER")
+
+        print(f"""
+{C.BOLD}Secrets Management:{C.END}
+
+  Features:
+  • Encrypted storage
+  • Version control
+  • Rotation support
+  • Access control
+
+""")
+
+        try:
+            from neugi_secrets import secrets_manager
+
+            secrets = secrets_manager.list()
+
+            print(f"{C.BOLD}Secrets:{C.END}\n")
+            if secrets:
+                for s in secrets:
+                    print(f"  {s['name']} (v{s['versions']})")
+            else:
+                print("  No secrets stored")
 
         except Exception as e:
             self.ui.error(f"Error: {e}")

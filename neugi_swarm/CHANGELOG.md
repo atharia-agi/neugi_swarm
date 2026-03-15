@@ -2,7 +2,7 @@
 
 > Complete development history and architecture documentation
 > Last Updated: March 15, 2026
-> Version: 19.0.0
+> Version: 20.0.0
 
 ---
 
@@ -15,6 +15,22 @@
 NEUGI is an autonomous, multi-agent swarm intelligence system designed to run on local infrastructure. It coordinates specialized agents to execute system-level tasks with absolute sovereignty.
 
 ## Version History
+
+### v20.0.0 (March 16, 2026) - ENTERPRISE
+
+#### New Features
+
+- **Prometheus Metrics** (`neugi_prometheus.py`): Counter, Gauge, Histogram metrics, system monitoring, Prometheus format export
+- **API Gateway** (`neugi_gateway.py`): Request routing, rate limiting, API keys, authentication
+- **Service Discovery** (`neugi_discovery.py`): Service registry, health checks, round-robin load balancing
+- **Secrets Manager** (`neugi_secrets.py`): Encrypted secrets, version control, rotation support
+
+#### New Menu Options (40-43)
+
+- 40. 📈 Prometheus - Metrics export
+- 41. 🚪 Gateway - API Gateway
+- 42. 🔍 Discovery - Service Discovery
+- 43. 🔑 Secrets - Secrets Manager
 
 ### v19.0.0 (March 16, 2026) - CLOUD NATIVE
 
