@@ -124,6 +124,116 @@ async def status():
     }
 
 
+# ========== MENU SYSTEM ==========
+
+MENU_CATEGORIES = {
+    "system": {"icon": "⚙️", "color": "#6366f1"},
+    "ai": {"icon": "🧠", "color": "#8b5cf6"},
+    "automation": {"icon": "🤖", "color": "#10b981"},
+    "integrations": {"icon": "🔗", "color": "#f59e0b"},
+    "developer": {"icon": "👨‍💻", "color": "#3b82f6"},
+    "security": {"icon": "🔐", "color": "#ef4444"},
+    "cloud": {"icon": "☁️", "color": "#06b6d4"},
+    "operations": {"icon": "📊", "color": "#ec4899"},
+}
+
+MENU_ITEMS = [
+    {"id": 1, "name": "Sovereign Heartbeat", "category": "system", "icon": "💓"},
+    {"id": 2, "name": "Network Topology", "category": "system", "icon": "🌐"},
+    {"id": 3, "name": "Skill Registry", "category": "system", "icon": "🛠️"},
+    {"id": 4, "name": "Live Monitor", "category": "system", "icon": "📊"},
+    {"id": 5, "name": "View Logs", "category": "system", "icon": "📄"},
+    {"id": 6, "name": "Auto-Boot", "category": "system", "icon": "🔄"},
+    {"id": 7, "name": "Setup/Install", "category": "system", "icon": "🎯"},
+    {"id": 8, "name": "Repair System", "category": "system", "icon": "🔧"},
+    {"id": 9, "name": "Diagnose System", "category": "system", "icon": "🧠"},
+    {"id": 10, "name": "Chat with AI", "category": "ai", "icon": "💬"},
+    {"id": 11, "name": "Manage Plugins", "category": "ai", "icon": "📦"},
+    {"id": 12, "name": "Check Updates", "category": "system", "icon": "🔄"},
+    {"id": 13, "name": "Security Settings", "category": "security", "icon": "🔐"},
+    {"id": 14, "name": "Memory System", "category": "ai", "icon": "🧊"},
+    {"id": 15, "name": "Soul/Personality", "category": "ai", "icon": "🎭"},
+    {"id": 16, "name": "Skills V2", "category": "developer", "icon": "📚"},
+    {"id": 17, "name": "Task Scheduler", "category": "automation", "icon": "⏰"},
+    {"id": 18, "name": "MCP Server", "category": "integrations", "icon": "🌐"},
+    {"id": 19, "name": "App Integrations", "category": "integrations", "icon": "📱"},
+    {"id": 20, "name": "Workflow Automation", "category": "automation", "icon": "🔀"},
+    {"id": 21, "name": "Run Tests", "category": "developer", "icon": "🧪"},
+    {"id": 22, "name": "REST API Server", "category": "integrations", "icon": "🌍"},
+    {"id": 23, "name": "Docker Management", "category": "system", "icon": "🐳"},
+    {"id": 24, "name": "Advanced Monitoring", "category": "operations", "icon": "📈"},
+    {"id": 25, "name": "Visual Workflow Builder", "category": "automation", "icon": "🎨"},
+    {"id": 26, "name": "Automation Engine", "category": "automation", "icon": "🤖"},
+    {"id": 27, "name": "Database Management", "category": "system", "icon": "🗄️"},
+    {"id": 28, "name": "Command Palette", "category": "developer", "icon": "⌨️"},
+    {"id": 29, "name": "File Manager", "category": "developer", "icon": "📁"},
+    {"id": 30, "name": "Code Interpreter", "category": "developer", "icon": "💻"},
+    {"id": 31, "name": "Plugin Marketplace", "category": "integrations", "icon": "🛒"},
+    {"id": 32, "name": "Encryption Tools", "category": "security", "icon": "🔒"},
+    {"id": 33, "name": "SSH Manager", "category": "system", "icon": "🔐"},
+    {"id": 34, "name": "Cache Layer", "category": "operations", "icon": "🧠"},
+    {"id": 35, "name": "Log Aggregator", "category": "operations", "icon": "📝"},
+    {"id": 36, "name": "Backup System", "category": "system", "icon": "💾"},
+    {"id": 37, "name": "Kubernetes", "category": "cloud", "icon": "☸️"},
+    {"id": 38, "name": "WebSocket Server", "category": "integrations", "icon": "🔌"},
+    {"id": 39, "name": "GraphQL API", "category": "integrations", "icon": "📊"},
+    {"id": 40, "name": "Prometheus Metrics", "category": "operations", "icon": "📈"},
+    {"id": 41, "name": "API Gateway", "category": "integrations", "icon": "🚪"},
+    {"id": 42, "name": "Service Discovery", "category": "cloud", "icon": "🔍"},
+    {"id": 43, "name": "Secrets Manager", "category": "security", "icon": "🔑"},
+    {"id": 44, "name": "Multi-Cluster", "category": "cloud", "icon": "🌍"},
+    {"id": 45, "name": "Circuit Breaker", "category": "cloud", "icon": "⚡"},
+    {"id": 46, "name": "Load Balancer", "category": "cloud", "icon": "⚖️"},
+    {"id": 47, "name": "Service Mesh", "category": "cloud", "icon": "🕸️"},
+    {"id": 48, "name": "CDN Manager", "category": "cloud", "icon": "🌐"},
+    {"id": 49, "name": "Event Bus", "category": "operations", "icon": "📨"},
+    {"id": 50, "name": "Agents SDK", "category": "developer", "icon": "🤖"},
+    {"id": 51, "name": "CLI Framework", "category": "developer", "icon": "⌘"},
+    # v23.x NEW FEATURES
+    {"id": 52, "name": "ML Pipeline", "category": "ai", "icon": "🧠"},
+    {"id": 53, "name": "Data Pipeline", "category": "operations", "icon": "🔗"},
+    {"id": 54, "name": "Notification System", "category": "operations", "icon": "🔔"},
+    {"id": 55, "name": "Webhook Manager", "category": "integrations", "icon": "🪝"},
+    {"id": 56, "name": "Rate Limiter", "category": "operations", "icon": "🚦"},
+    {"id": 57, "name": "Config Manager", "category": "system", "icon": "⚙️"},
+    {"id": 58, "name": "Template Engine", "category": "developer", "icon": "📝"},
+    {"id": 59, "name": "Report Generator", "category": "operations", "icon": "📑"},
+    {"id": 60, "name": "Analytics Dashboard", "category": "operations", "icon": "📉"},
+    # v24.x NEW FEATURES
+    {"id": 61, "name": "API Versioning", "category": "developer", "icon": "📌"},
+    {"id": 62, "name": "API Docs UI", "category": "developer", "icon": "📖"},
+    {"id": 63, "name": "Request Validator", "category": "developer", "icon": "✅"},
+    {"id": 64, "name": "Response Cacher", "category": "operations", "icon": "💾"},
+    {"id": 65, "name": "Metrics Exporter", "category": "operations", "icon": "📊"},
+    {"id": 66, "name": "Health Checks", "category": "operations", "icon": "💚"},
+    {"id": 67, "name": "Circuit Dashboard", "category": "cloud", "icon": "⚡"},
+    {"id": 68, "name": "Service Registry", "category": "cloud", "icon": "📚"},
+    {"id": 69, "name": "Config Sync", "category": "cloud", "icon": "🔄"},
+    {"id": 70, "name": "Deployment Manager", "category": "cloud", "icon": "🚀"},
+]
+
+
+@app.get("/api/menu")
+async def get_menu():
+    """Get all menu items"""
+    return {"items": MENU_ITEMS, "categories": MENU_CATEGORIES, "total": len(MENU_ITEMS)}
+
+
+@app.get("/api/menu/{menu_id}")
+async def get_menu_item(menu_id: int):
+    """Get specific menu item"""
+    for item in MENU_ITEMS:
+        if item["id"] == menu_id:
+            return item
+    return {"error": "Not found"}
+
+
+@app.get("/api/categories")
+async def get_categories():
+    """Get menu categories"""
+    return MENU_CATEGORIES
+
+
 # ========== AGENTS ==========
 
 

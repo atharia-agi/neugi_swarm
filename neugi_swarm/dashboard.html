@@ -651,8 +651,26 @@
 
                 <div class="panel" style="margin-bottom: 24px;">
                     <div class="panel-header">
-                        <h2 class="panel-title">Active Integrations</h2>
+                        <h2 class="panel-title">Diagnostics</h2>
                     </div>
+                    <div id="issues">
+                        <div class="diagnostic-ok">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                            Core integrity verified.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel" style="margin-bottom: 24px;">
+                    <div class="panel-header">
+                        <h2 class="panel-title">🧩 Neugi Menu</h2>
+                        <button onclick="refreshMenu()" style="background:none;border:1px solid var(--border-subtle);color:var(--text-secondary);padding:4px 8px;border-radius:4px;font-size:11px;cursor:pointer;">⟳</button>
+                    </div>
+                    <div id="menuGrid" style="max-height: 300px; overflow-y: auto; padding: 12px;">
+                        <div style="font-size: 13px; color: var(--text-tertiary);">Loading menu from API...</div>
+                    </div>
+                </div>
+            </div>
                     <div class="tools-wrap" id="toolsList">
                         <div style="font-size: 13px; color: var(--text-tertiary);">Syncing tools...</div>
                     </div>
@@ -1033,6 +1051,70 @@
         
         setInterval(updateGraph, 5000);
         updateGraph();
+
+        // --- MENU API INTEGRATION ---
+        const categoryColors = {
+            "system": "#6366f1", "ai": "#8b5cf6", "automation": "#10b981",
+            "integrations": "#f59e0b", "developer": "#3b82f6", "security": "#ef4444",
+            "cloud": "#06b6d4", "operations": "#ec4899"
+        };
+
+        async function refreshMenu() {
+            const menuEl = document.getElementById('menuGrid');
+            try {
+                const resp = await fetch('/api/menu');
+                const data = await resp.json();
+                
+                if (data.items && data.items.length > 0) {
+                    const items = data.items;
+                    let html = '';
+                    
+                    // Group by category
+                    const grouped = {};
+                    items.forEach(item => {
+                        if (!grouped[item.category]) grouped[item.category] = [];
+                        grouped[item.category].push(item);
+                    });
+                    
+                    for (const [cat, catItems] of Object.entries(grouped)) {
+                        const color = categoryColors[cat] || '#666';
+                        const icon = data.categories?.[cat]?.icon || '📁';
+                        html += `<div style="margin-bottom:12px;">
+                            <div style="font-size:11px;font-weight:600;color:${color};margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;">${icon} ${cat}</div>
+                            <div style="display:flex;flex-wrap:wrap;gap:4px;">`;
+                        
+                        catItems.forEach(item => {
+                            html += `<div class="tool-pill" style="cursor:pointer;" onclick="executeMenuItem(${item.id}, '${item.name}')" title="${item.name}">${item.icon} ${item.name}</div>`;
+                        });
+                        
+                        html += `</div></div>`;
+                    }
+                    
+                    menuEl.innerHTML = html;
+                } else {
+                    menuEl.innerHTML = '<div style="font-size:13px;color:var(--text-tertiary);">No menu items available</div>';
+                }
+            } catch(e) {
+                menuEl.innerHTML = '<div style="font-size:13px;color:var(--status-red);">Menu API unavailable</div>';
+            }
+        }
+
+        function executeMenuItem(id, name) {
+            const box = document.getElementById('chatBox');
+            box.innerHTML += `
+                <div class="msg-row user-msg">
+                    <div class="msg-avatar" style="background:var(--text-primary);color:var(--bg-base);">U</div>
+                    <div class="msg-content">Execute: ${name}</div>
+                </div>
+                <div class="msg-row">
+                    <div class="msg-avatar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg></div>
+                    <div class="msg-content" style="color:var(--status-yellow);">Executing menu option #${id}...</div>
+                </div>`;
+            box.scrollTop = box.scrollHeight;
+        }
+
+        refreshMenu();
+        setInterval(refreshMenu, 30000);
 
         // Auto-focus chat
         window.onload = () => document.getElementById('chatInput').focus();

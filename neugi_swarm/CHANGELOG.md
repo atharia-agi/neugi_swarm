@@ -1,8 +1,8 @@
 # NEUGI SWARM - CHANGELOG
 
 > Complete development history and architecture documentation
-> Last Updated: March 15, 2026
-> Version: 22.0.0
+> Last Updated: March 16, 2026
+> Version: 24.0.0
 
 ---
 
@@ -15,6 +15,60 @@
 NEUGI is an autonomous, multi-agent swarm intelligence system designed to run on local infrastructure. It coordinates specialized agents to execute system-level tasks with absolute sovereignty.
 
 ## Version History
+
+### v24.0.0 (March 16, 2026) - API PLATFORM
+
+#### New Features
+
+- **API Versioning** (`neugi_api_versioning.py`): Manage multiple API versions
+- **API Docs UI** (`neugi_api_docs.py`): Swagger/ReDoc integration
+- **Request Validator** (`neugi_validator.py`): Schema validation middleware
+- **Response Cacher** (`neugi_cache.py`): HTTP response caching
+- **Metrics Exporter** (`neugi_metrics.py`): Prometheus-compatible exporter
+- **Health Checks** (`neugi_health.py`): Liveness/readiness probes
+- **Circuit Dashboard** (`neugi_circuit_ui.py`): Visual circuit breaker monitor
+- **Service Registry** (`neugi_registry.py`): Service discovery registry
+- **Config Sync** (`neugi_config_sync.py`): Distributed config synchronization
+- **Deployment Manager** (`neugi_deploy.py`): Deploy & rollback management
+
+#### New Menu Options (61-70)
+
+- 61. 📌 APIVERSION - API Versioning
+- 62. 📖 APIDOCS - API Docs UI
+- 63. ✅ VALIDATOR - Request Validator
+- 64. 💾 CACHE - Response Cacher
+- 65. 📊 METRICS - Metrics Exporter
+- 66. 💚 HEALTH - Health Checks
+- 67. ⚡ CIRCUITDASH - Circuit Dashboard
+- 68. 📚 REGISTRY - Service Registry
+- 69. 🔄 CONFIGSYNC - Config Sync
+- 70. 🚀 DEPLOY - Deployment Manager
+
+### v23.0.0 (March 16, 2026) - DATA & ANALYTICS
+
+#### New Features
+
+- **ML Pipeline** (`neugi_ml_pipeline.py`): Train & deploy ML models
+- **Data Pipeline** (`neugi_data_pipeline.py`): ETL and data processing
+- **Notification System** (`neugi_notifications.py`): Push, email, Slack alerts
+- **Webhook Manager** (`neugi_webhooks.py`): Register & manage webhooks
+- **Rate Limiter** (`neugi_rate_limiter.py`): API rate limiting
+- **Config Manager** (`neugi_config.py`): Centralized configuration
+- **Template Engine** (`neugi_templates.py`): Dynamic template rendering
+- **Report Generator** (`neugi_reports.py`): Auto-generate reports
+- **Analytics Dashboard** (`neugi_analytics.py`): Usage & performance analytics
+
+#### New Menu Options (52-60)
+
+- 52. 🧠 ML - ML Pipeline
+- 53. 🔗 DATAPIPE - Data Pipeline  
+- 54. 🔔 NOTIFY - Notification System
+- 55. 🪝 WEBHOOK - Webhook Manager
+- 56. 🚦 RATELIMIT - Rate Limiter
+- 57. ⚙️ CONFIG - Config Manager
+- 58. 📝 TEMPLATE - Template Engine
+- 59. 📑 REPORT - Report Generator
+- 60. 📉 ANALYTICS - Analytics Dashboard
 
 ### v22.0.0 (March 16, 2026) - DEVELOPER TOOLS
 

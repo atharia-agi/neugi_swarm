@@ -577,6 +577,25 @@ I'm your AI assistant. I can help you with:
   📨  EVENT      - Event Bus
   🤖  AGENTS     - Agents SDK
   ⌘  CLI        - CLI Framework
+  🧠  ML         - ML Pipeline
+  🔗  DATAPIPE   - Data Pipeline
+  🔔  NOTIFY     - Notification System
+  🪝  WEBHOOK    - Webhook Manager
+  🚦  RATELIMIT  - Rate Limiter
+  ⚙️  CONFIG     - Config Manager
+  📝  TEMPLATE   - Template Engine
+  📑  REPORT     - Report Generator
+  📉  ANALYTICS  - Analytics Dashboard
+  📌  APIVERSION - API Versioning
+  📖  APIDOCS    - API Docs UI
+  ✅  VALIDATOR  - Request Validator
+  💾  CACHE      - Response Cacher
+  📊  METRICS    - Metrics Exporter
+  💚  HEALTH     - Health Checks
+  ⚡  CIRCUITDASH - Circuit Dashboard
+  📚  REGISTRY   - Service Registry
+  🔄  CONFIGSYNC - Config Sync
+  🚀  DEPLOY     - Deployment Manager
   👋  EXIT       - Shutdown Wizard
 
 """)
@@ -635,6 +654,27 @@ I'm your AI assistant. I can help you with:
                     ("eventbus", "📨 Event Bus"),
                     ("agents", "🤖 Agents SDK"),
                     ("cli", "⌘ CLI Framework"),
+                    # v23.x NEW FEATURES
+                    ("ml", "🧠 ML Pipeline"),
+                    ("datapipe", "🔗 Data Pipeline"),
+                    ("notify", "🔔 Notification System"),
+                    ("webhook", "🪝 Webhook Manager"),
+                    ("ratelimit", "🚦 Rate Limiter"),
+                    ("config", "⚙️ Config Manager"),
+                    ("template", "📝 Template Engine"),
+                    ("report", "📑 Report Generator"),
+                    ("analytics", "📉 Analytics Dashboard"),
+                    # v24.x NEW FEATURES
+                    ("apiversion", "📌 API Versioning"),
+                    ("apidocs", "📖 API Docs UI"),
+                    ("validator", "✅ Request Validator"),
+                    ("cache", "💾 Response Cacher"),
+                    ("metrics", "📊 Metrics Exporter"),
+                    ("health", "💚 Health Checks"),
+                    ("circuitdash", "⚡ Circuit Dashboard"),
+                    ("registry", "📚 Service Registry"),
+                    ("configsync", "🔄 Config Sync"),
+                    ("deploy", "🚀 Deployment Manager"),
                     ("quit", "👋 Exit"),
                 ],
                 "What would you like to do?",
@@ -742,7 +782,45 @@ I'm your AI assistant. I can help you with:
                 self.run_agents()
             elif choice == "51":
                 self.run_cli()
-            elif choice == "52" or choice.lower() in ["quit", "exit", "q"]:
+            elif choice == "52":
+                self.run_ml_pipeline()
+            elif choice == "53":
+                self.run_data_pipeline()
+            elif choice == "54":
+                self.run_notification()
+            elif choice == "55":
+                self.run_webhook()
+            elif choice == "56":
+                self.run_rate_limiter()
+            elif choice == "57":
+                self.run_config_manager()
+            elif choice == "58":
+                self.run_template_engine()
+            elif choice == "59":
+                self.run_report_generator()
+            elif choice == "60":
+                self.run_analytics()
+            elif choice == "61":
+                self.run_api_versioning()
+            elif choice == "62":
+                self.run_api_docs()
+            elif choice == "63":
+                self.run_request_validator()
+            elif choice == "64":
+                self.run_response_cache()
+            elif choice == "65":
+                self.run_metrics_exporter()
+            elif choice == "66":
+                self.run_health_checks()
+            elif choice == "67":
+                self.run_circuit_dashboard()
+            elif choice == "68":
+                self.run_service_registry()
+            elif choice == "69":
+                self.run_config_sync()
+            elif choice == "70":
+                self.run_deployment_manager()
+            elif choice == "71" or choice.lower() in ["quit", "exit", "q"]:
                 print(f"\n{C.CYAN}Happy to help! See you next time! 👋{C.END}\n")
                 break
             else:
@@ -2439,6 +2517,215 @@ Example Workflows:
     def run_cli(self):
         print("CLI Framework loaded")
         input()
+
+    def run_ml_pipeline(self):
+        """ML Pipeline - Train and deploy ML models"""
+        self.ui.header("🧠 ML PIPELINE")
+        print("""
+  [1] Train Model      - Train a new ML model
+  [2] Inference        - Run predictions
+  [3] Model Registry   - Manage trained models
+  [4] Hyperparameter   - Tune model parameters
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_data_pipeline(self):
+        """Data Pipeline - ETL and data processing"""
+        self.ui.header("🔗 DATA PIPELINE")
+        print("""
+  [1] Create Pipeline  - Build new data pipeline
+  [2] Run Pipeline     - Execute data flow
+  [3] Schedule          - Set pipeline schedule
+  [4] Monitor          - Watch pipeline status
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_notification(self):
+        """Notification System"""
+        self.ui.header("🔔 NOTIFICATION SYSTEM")
+        print("""
+  [1] Send Alert       - Push notification
+  [2] Email Notify     - Send email alerts
+  [3] Slack/Discord    - Webhook notifications
+  [4] Templates        - Notification templates
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_webhook(self):
+        """Webhook Manager"""
+        self.ui.header("🪝 WEBHOOK MANAGER")
+        print("""
+  [1] Register Webhook - Add new webhook endpoint
+  [2] Test Webhook     - Send test payload
+  [3] Webhook Logs     - View delivery history
+  [4] Security         - Configure webhook auth
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_rate_limiter(self):
+        """Rate Limiter"""
+        self.ui.header("🚦 RATE LIMITER")
+        print("""
+  [1] Create Rule      - Define rate limit rule
+  [2] View Usage       - See current usage
+  [3] Blocked IPs      - View blocked requests
+  [4] Whitelist        - Configure exceptions
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_config_manager(self):
+        """Config Manager"""
+        self.ui.header("⚙️ CONFIG MANAGER")
+        print("""
+  [1] View Config      - Show current settings
+  [2] Edit Config      - Modify configuration
+  [3] Profiles         - Switch config profiles
+  [4] Validate         - Check config validity
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_template_engine(self):
+        """Template Engine"""
+        self.ui.header("📝 TEMPLATE ENGINE")
+        print("""
+  [1] Create Template  - New template file
+  [2] Render           - Fill template with data
+  [3] Template Library - View saved templates
+  [4] Variables        - Manage template vars
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_report_generator(self):
+        """Report Generator"""
+        self.ui.header("📑 REPORT GENERATOR")
+        print("""
+  [1] Generate Report  - Create new report
+  [2] Schedule Report  - Auto-generate reports
+  [3] Export           - PDF/HTML/CSV export
+  [4] Templates        - Report templates
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_analytics(self):
+        """Analytics Dashboard"""
+        self.ui.header("📉 ANALYTICS DASHBOARD")
+        print("""
+  [1] Overview        - System analytics
+  [2] Usage Stats     - User/API usage
+  [3] Performance     - Response times
+  [4] Trends          - Historical charts
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_api_versioning(self):
+        """API Versioning"""
+        self.ui.header("📌 API VERSIONING")
+        print("""
+  [1] List Versions   - Show API versions
+  [2] Create Version  - Add new API version
+  [3] Set Default     - Configure default version
+  [4] Deprecate       - Mark version as deprecated
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_api_docs(self):
+        """API Docs UI"""
+        self.ui.header("📖 API DOCS UI")
+        print("""
+  [1] Swagger UI      - OpenAPI documentation
+  [2] ReDoc           - Alternative docs view
+  [3] Export Spec     - Download OpenAPI spec
+  [4] Custom Docs     - Configure doc theme
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_request_validator(self):
+        """Request Validator"""
+        self.ui.header("✅ REQUEST VALIDATOR")
+        print("""
+  [1] Schema Editor   - Define validation schemas
+  [2] Test Request    - Validate sample request
+  [3] Validation Logs - View validation history
+  [4] Rules           - Manage validation rules
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_response_cache(self):
+        """Response Cacher"""
+        self.ui.header("💾 RESPONSE CACHER")
+        print("""
+  [1] Enable Cache    - Turn on response caching
+  [2] Cache Stats     - View cache hit/miss
+  [3] Clear Cache     - Purge cached responses
+  [4] Cache Rules    - Configure TTL per endpoint
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_metrics_exporter(self):
+        """Metrics Exporter"""
+        self.ui.header("📊 METRICS EXPORTER")
+        print("""
+  [1] Start Exporter - Run Prometheus exporter
+  [2] Metrics List    - View available metrics
+  [3] Export Format   - Configure output format
+  [4] Scrape Config   - Set scrape endpoint
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_health_checks(self):
+        """Health Checks"""
+        self.ui.header("💚 HEALTH CHECKS")
+        print("""
+  [1] Run Health     - Execute health check
+  [2] Configure      - Set endpoints to check
+  [3] Alerts         - Configure failure alerts
+  [4] History        - View health history
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_circuit_dashboard(self):
+        """Circuit Dashboard"""
+        self.ui.header("⚡ CIRCUIT DASHBOARD")
+        print("""
+  [1] View Circuits  - Show all circuit breakers
+  [2] Circuit Stats  - Failure/open/closed states
+  [3] Manual Reset   - Force reset a circuit
+  [4] Thresholds     - Configure failure thresholds
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_service_registry(self):
+        """Service Registry"""
+        self.ui.header("📚 SERVICE REGISTRY")
+        print("""
+  [1] List Services  - Show registered services
+  [2] Register       - Add new service
+  [3] Deregister    - Remove service
+  [4] Health         - Service health status
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_config_sync(self):
+        """Config Sync"""
+        self.ui.header("🔄 CONFIG SYNC")
+        print("""
+  [1] Sync Now       - Force config sync
+  [2] Sync Status    - View sync state
+  [3] Conflicts      - Resolve config conflicts
+  [4] History        - View sync history
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_deployment_manager(self):
+        """Deployment Manager"""
+        self.ui.header("🚀 DEPLOYMENT MANAGER")
+        print("""
+  [1] Deploy         - Start new deployment
+  [2] Rollback       - Revert to previous version
+  [3] Deploy History - View deployment logs
+  [4] Blue/Green     - Configure blue-green deploy
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
 
     def run_topology(self):
         """View Swarm Network Topology"""
