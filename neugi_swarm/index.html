@@ -643,7 +643,7 @@
                 </div>
                 <div class="install-body">
                     <div class="install-cmd" id="install-cmd-text">
-                        <span class="prompt">PS></span> irm neugi.sh/install | iex
+                        <span class="prompt">PS></span> irm neugi.com/install | iex
                     </div>
                     <button class="copy-btn" onclick="copyInstall()">
                         <svg viewBox="0 0 24 24" fill="none" class="feather" width="14" height="14" stroke="currentColor"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -861,9 +861,9 @@
 
     <script>
         const cmds = {
-            'windows': { prompt: 'PS>', cmd: 'irm neugi.sh/install | iex' },
-            'macos': { prompt: '$', cmd: 'curl -fsSL https://neugi.sh/install | bash' },
-            'linux': { prompt: '$', cmd: 'curl -fsSL https://neugi.sh/install | bash' }
+            'windows': { prompt: 'PS>', cmd: 'irm neugi.com/install | iex' },
+            'macos': { prompt: '$', cmd: 'curl -fsSL https://neugi.com/install | bash' },
+            'linux': { prompt: '$', cmd: 'curl -fsSL https://neugi.com/install | bash' }
         };
 
         let currentOs = 'windows';
