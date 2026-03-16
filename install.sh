@@ -115,13 +115,19 @@ main() {
     mkdir -p "$NEUGI_DIR"
     cd "$NEUGI_DIR"
     
-    log_info "Downloading NEUGI files..."
-    curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_swarm.py" -o neugi_swarm.py
-    curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_assistant.py" -o neugi_assistant.py 2>/dev/null || true
-    curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_assistant.py" -o neugi_assistant.py 2>/dev/null || true
-    curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/dashboard.html" -o dashboard.html 2>/dev/null || true
+    log_info "Downloading NEUGI repository..."
+    if [ -d "$NEUGI_DIR/.git" ]; then
+        log_info "Updating existing repository..."
+        cd "$NEUGI_DIR" && git pull origin main
+    else
+        git clone https://github.com/atharia-agi/neugi_swarm.git "$NEUGI_DIR"
+        cd "$NEUGI_DIR"
+    fi
     
-    chmod +x neugi_swarm.py
+    log_info "Installing python dependencies..."
+    pip3 install -r requirements.txt --break-system-packages 2>/dev/null || pip3 install -r requirements.txt
+    
+    chmod +x neugi_swarm/neugi_swarm.py 2>/dev/null || true
     
     # Create config
     cat > config.py << 'EOF'
@@ -181,7 +187,7 @@ EOF
     echo ""
     
     # Run wizard
-    python3 neugi_wizard.py
+    python3 neugi_swarm/neugi_wizard.py
     
     # ============================================================
     # STEP 7: START NEUGI + ACTIVITY LOG MODE
@@ -195,7 +201,7 @@ EOF
     
     # Start NEUGI in background
     log_info "Starting NEUGI Swarm..."
-    nohup python3 neugi_swarm.py > "$NEUGI_DIR/logs/neugi.log" 2>&1 &
+    nohup python3 neugi_swarm/neugi_swarm.py > "$NEUGI_DIR/logs/neugi.log" 2>&1 &
     NEUGI_PID=$!
     
     # Wait for startup

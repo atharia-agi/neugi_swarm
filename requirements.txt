@@ -10,10 +10,28 @@ lxml>=4.9.0
 # Database
 aiosqlite>=0.19.0
 
-# Optional - for specific features
-# flask>=3.0.0        # For web dashboard
-# flask-socketio>=5.3.0
-# python-telegram-bot>=20.0  # For Telegram gateway
+# Dashboard / API / Gateway
+flask>=3.0.0
+flask-socketio>=5.3.0
+fastapi>=0.100.0
+uvicorn>=0.23.0
+pydantic>=2.0.0
+
+# UI / CLI
+rich>=13.0.0
+prompt_toolkit>=3.0.0
+
+# Operations / OS
+psutil>=5.9.0
+cryptography>=41.0.0
+PyYAML>=6.0
+
+# Integrations (Optional but recommended)
+python-telegram-bot>=20.0
+gTTS>=2.3.0
+pyttsx3>=2.90
+elevenlabs>=0.3.0
+openai-whisper>=20231117
 
 # Development
 pytest>=7.4.0

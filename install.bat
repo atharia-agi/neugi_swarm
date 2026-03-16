@@ -38,14 +38,17 @@ if not exist "%NEUGI_DIR%" mkdir "%NEUGI_DIR%"
 cd /d "%NEUGI_DIR%"
 
 :: 4. Download files
-echo [INFO] Downloading NEUGI files...
-curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_swarm.py" -o neugi_swarm.py
-curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_wizard.py" -o neugi_wizard.py
-curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_assistant.py" -o neugi_assistant.py
-curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/dashboard.html" -o dashboard.html
+echo [INFO] Downloading NEUGI repository...
+if exist "%NEUGI_DIR%\.git" (
+    cd /d "%NEUGI_DIR%"
+    git pull origin main
+) else (
+    git clone https://github.com/atharia-agi/neugi_swarm.git "%NEUGI_DIR%"
+    cd /d "%NEUGI_DIR%"
+)
 
-:: Download neugi.bat CLI wrapper
-curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi.bat" -o neugi.bat 2>nul
+echo [INFO] Installing python dependencies...
+pip install -r requirements.txt
 
 :: 5. Create config.py
 echo # NEUGI SWARM CONFIG > config.py
@@ -66,12 +69,12 @@ echo.
 
 :: 6. Run Wizard
 echo [INFO] Running Setup Wizard...
-python neugi_wizard.py
+python neugi_swarm\neugi_wizard.py
 
 :: 7. Start NEUGI
 echo.
 echo [INFO] Starting NEUGI Swarm...
-start /B python neugi_swarm.py > logs\neugi.log 2>&1
+start /B python neugi_swarm\neugi_swarm.py > logs\neugi.log 2>&1
 
 echo.
 echo ===================================================

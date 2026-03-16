@@ -10,7 +10,7 @@ if "%1"=="start" (
     )
     echo [INFO] Starting NEUGI Swarm...
     cd /d "%NEUGI_DIR%"
-    start /B python neugi_swarm.py > logs\neugi.log 2>&1
+    start /B python neugi_swarm\neugi_swarm.py > logs\neugi.log 2>&1
     echo NEUGI started.
     exit /b
 )
@@ -34,7 +34,7 @@ if "%1"=="dashboard" (
 
 if "%1"=="help" (
     cd /d "%NEUGI_DIR%"
-    python neugi_assistant.py %*
+    python neugi_swarm\neugi_assistant.py %*
     exit /b
 )
 

@@ -33,7 +33,7 @@ import urllib.request
 
 # Config
 NEUGI_DIR = os.path.expanduser("~/neugi")
-NEUGI_SCRIPT = os.path.join(NEUGI_DIR, "neugi_swarm.py")
+NEUGI_SCRIPT = os.path.join(NEUGI_DIR, "neugi_swarm", "neugi_swarm.py")
 NEUGI_LOG = os.path.join(NEUGI_DIR, "logs", "neugi.log")
 PID_FILE = os.path.join(NEUGI_DIR, "neugi.pid")
 PORT = 19888
