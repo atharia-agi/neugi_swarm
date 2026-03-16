@@ -1,7 +1,9 @@
 {
-  "outputDirectory": ".",
-  "framework": null,
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+  "redirects": [
+    {
+      "source": "/install",
+      "destination": "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/install.sh",
+      "permanent": false
+    }
   ]
 }
