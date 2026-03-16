@@ -16,6 +16,28 @@ NEUGI is an autonomous, multi-agent swarm intelligence system designed to run on
 
 ## Version History
 
+### v25.1.0 (March 16, 2026) - PROFESSIONAL INSTALLATION & REPO OVERHAUL
+
+#### Installation Overhaul
+- **Unified Repository Setup**: Installer now clones the full GitHub repository instead of downloading partial, isolated files, ensuring all dependencies and modules are present.
+- **Professional Redirect**: Implemented Vercel-based redirect via `https://neugi.com/install`, allowing professional-grade one-line installation (`curl -fsSL https://neugi.com/install | bash`).
+- **Cross-Platform Compatibility**: Fixed `install.sh` and `install.bat` logic for robust WSL, Linux, and Windows execution.
+- **Dependency Resolution**: Comprehensive update to `requirements.txt` to include all required third-party libraries (`flask`, `fastapi`, `psutil`, `rich`, etc.) and automated installation flow.
+
+#### Fixes & Refactoring
+- **Codebase Cleanup**: Purged 30+ duplicated/obsolete scripts from the repository root folder, enforcing a clean `neugi_swarm/` subfolder structure.
+- **Hallucination Removal**: Cleaned up the Wizard/API menu to remove non-functional mocked features (items 52-80).
+- **Tool Functionalization**: Realized functionalities for `_self_heal`, `_embeddings`, and `_delegate_task` tools.
+- **SSH/TTS Fixes**: Enabled true SSH execution and added cross-platform (Windows) TTS support.
+
+### v25.0.0 (March 16, 2026) - OPERATIONS SUITE (80 MENU OPTIONS)
+
+#### New Features
+- Full Operations Suite implementation (80 menu options).
+- Audit documentation system.
+
+---
+
 ### v15.8.0 (March 15, 2026) - EXTENDED ECOSYSTEM
 
 #### New Features

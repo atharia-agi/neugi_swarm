@@ -19,20 +19,16 @@
 
 ## 🚀 Quick Start
 
-### One-Command Installation
-
+### One-Command Installation (Professional)
 ```bash
-curl -fsSL https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/install.sh | bash
+curl -fsSL https://neugi.com/install | bash
 ```
 
 **Done!** NEUGI will:
-1. Install Ollama (latest)
-2. Start Ollama Server
-3. Download AI Model
-4. Install NEUGI Files
-5. Install NEUGI CLI
-6. **Run Setup Wizard** ← Your input here!
-7. Start NEUGI + Activity Log
+1. Clone the repository and install all dependencies.
+2. Initialize Ollama.
+3. **Run Setup Wizard**
+4. Start NEUGI + Activity Log
 
 ---
 
