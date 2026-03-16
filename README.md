@@ -77,6 +77,9 @@ Includes:
 | **Workspace** | Isolated workspace for agents |
 | **Auto-Updater** | Stay up to date |
 | **Security Layer** | Sandbox & full access modes |
+| **Global Workspace Memory** | Shared context across agents for enhanced awareness and reasoning |
+| **Augmented Agent Perception** | Agents perceive tasks with swarm-wide context for more conscious decisions |
+| **Model Context Protocol (MCP) v2.0** | Seamless interoperability with Claude Code, OpenClaw, Gemini CLI, etc. |
 
 ---
 

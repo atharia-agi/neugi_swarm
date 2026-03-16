@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 🤖 NEUGI SWARM - MEMORY
-========================
+=======================
 
 Memory system - long-term and short-term memory
 
@@ -35,6 +35,7 @@ class MemoryType(Enum):
     KNOWLEDGE = "knowledge"
     AGENT = "agent"
     SKILL = "skill"
+    GLOBAL_WORKSPACE = "global_workspace"
 
 
 class MemoryPriority(Enum):
@@ -75,9 +76,9 @@ class MemoryManager:
         if db_path is None:
             db_path = os.path.expanduser("~/neugi/data/memory.db")
         self.db_path = db_path
-        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
 
-        self.conn = sqlite3.connect(db_path, check_same_thread=False)
+        self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
         self.short_term = []  # In-memory cache
 
         self._init_tables()
@@ -119,12 +120,8 @@ class MemoryManager:
 
         # Indexes
         c.execute("CREATE INDEX IF NOT EXISTS idx_memories_type ON memories(type)")
-        c.execute(
-            "CREATE INDEX IF NOT EXISTS idx_memories_importance ON memories(importance)"
-        )
-        c.execute(
-            "CREATE INDEX IF NOT EXISTS idx_knowledge_entity ON knowledge(entity)"
-        )
+        c.execute("CREATE INDEX IF NOT EXISTS idx_memories_importance ON memories(importance)")
+        c.execute("CREATE INDEX IF NOT EXISTS idx_knowledge_entity ON knowledge(entity)")
 
         self.conn.commit()
 
@@ -137,9 +134,7 @@ class MemoryManager:
         metadata: Optional[Dict] = None,
     ) -> str:
         """Store a memory"""
-        memory_id = hashlib.md5(
-            f"{content}{datetime.now().isoformat()}".encode()
-        ).hexdigest()[:16]
+        memory_id = hashlib.md5(f"{content}{datetime.now().isoformat()}".encode()).hexdigest()[:16]
 
         now = datetime.now().isoformat()
 
@@ -177,6 +172,18 @@ class MemoryManager:
             self.short_term = self.short_term[-100:]
 
         return memory_id
+
+    def add_to_global_workspace(self, content: str, importance: int = 8) -> str:
+        """Add content to the global workspace (shared across swarm)"""
+        return self.remember("global_workspace", content, importance=importance, tags=["global"])
+
+    def recall_from_global_workspace(
+        self, query: Optional[str] = None, limit: int = 5
+    ) -> List[Dict]:
+        """Recall from the global workspace"""
+        return self.recall(
+            query=query, memory_type="global_workspace", min_importance=0, limit=limit
+        )
 
     def recall(
         self,
@@ -239,7 +246,7 @@ class MemoryManager:
         # Find duplicate/similar memories and merge
         c = self.conn.cursor()
         c.execute("""SELECT content, COUNT(*) as cnt FROM memories 
-                    GROUP BY content HAVING cnt > 1""")
+                     GROUP BY content HAVING cnt > 1""")
 
         duplicates = c.fetchall()
 
@@ -274,22 +281,18 @@ class MemoryManager:
         c = self.conn.cursor()
         c.execute(
             """SELECT * FROM conversations WHERE session_id = ? 
-                    ORDER BY timestamp DESC LIMIT ?""",
+                     ORDER BY timestamp DESC LIMIT ?""",
             (session_id, limit),
         )
 
         messages = []
         for row in c.fetchall():
-            messages.append(
-                {"id": row[0], "role": row[2], "content": row[3], "timestamp": row[4]}
-            )
+            messages.append({"id": row[0], "role": row[2], "content": row[3], "timestamp": row[4]})
 
         return list(reversed(messages))
 
     # Knowledge graph
-    def add_knowledge(
-        self, entity: str, relation: str, target: str, confidence: float = 1.0
-    ):
+    def add_knowledge(self, entity: str, relation: str, target: str, confidence: float = 1.0):
         """Add knowledge fact"""
         kg_id = hashlib.md5(f"{entity}{relation}{target}".encode()).hexdigest()[:16]
 
@@ -366,9 +369,7 @@ if __name__ == "__main__":
 
     # Test
     memory.remember("fact", "Neugi is an AI agent", importance=10, tags=["ai", "neugi"])
-    memory.remember(
-        "preference", "User likes coffee", importance=8, tags=["preference"]
-    )
+    memory.remember("preference", "User likes coffee", importance=8, tags=["preference"])
     memory.add_knowledge("Neugi", "is_a", "AGI System", confidence=0.9)
 
     print("🤖 Neugi Swarm Memory")
