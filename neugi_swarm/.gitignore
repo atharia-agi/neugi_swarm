@@ -64,4 +64,4 @@ htmlcov/
 # Research & Reverse Engineering (Local Only)
 research/
 git_files_browser.py
-AUDIT_README.md
+# Note: AUDIT_README.md should be committed for external audit
