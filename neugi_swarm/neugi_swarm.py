@@ -9,7 +9,7 @@ Features:
 - Health monitoring
 - Dashboard
 
-Version: 14.1.0
+Version: 25.0.0
 Date: March 13, 2026
 """
 

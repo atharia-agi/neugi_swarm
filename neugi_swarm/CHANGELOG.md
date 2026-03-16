@@ -2,7 +2,7 @@
 
 > Complete development history and architecture documentation
 > Last Updated: March 16, 2026
-> Version: 24.0.0
+> Version: 25.0.0
 
 ---
 
@@ -15,6 +15,48 @@
 NEUGI is an autonomous, multi-agent swarm intelligence system designed to run on local infrastructure. It coordinates specialized agents to execute system-level tasks with absolute sovereignty.
 
 ## Version History
+
+### v24.1.0 (March 16, 2026) - RESEARCH TOOLS
+
+#### New Features
+
+- **Git Files Browser** (`git_files_browser.py`): Research & reverse engineering tool for Git repository analysis
+  - Browse local and remote Git repositories
+  - File history, commit analysis, search
+  - Export repository tree to JSON
+  - GitHub API integration
+  
+#### Internal Updates
+
+- Updated `.gitignore` to exclude research tools from version control
+
+### v25.0.0 (March 16, 2026) - OPERATIONS SUITE
+
+#### New Features
+
+- **Serverless Functions** (`neugi_serverless.py`): Deploy & manage Lambda-style functions
+- **Edge Computing** (`neugi_edge.py`): Deploy to edge locations worldwide
+- **Message Queue** (`neugi_mq.py`): Pub/sub message queue system
+- **Stream Processor** (`neugi_stream.py`): Real-time data stream processing
+- **Batch Jobs** (`neugi_batch.py`): Scheduled batch job execution
+- **APM Dashboard** (`neugi_apm.py`): Application performance monitoring
+- **Log Analyzer** (`neugi_log_analyzer.py`): Log search & pattern detection
+- **Alert Manager** (`neugi_alerts.py`): Alert routing & management
+- **Incident Response** (`neugi_incident.py`): Incident management & runbooks
+- **Cost Optimizer** (`neugi_cost.py`): Cloud cost analysis & recommendations
+
+#### New Menu Options (71-80)
+
+- 71. λ SERVERLESS - Serverless Functions
+- 72. 🌐 EDGE - Edge Computing
+- 73. 📬 MQ - Message Queue
+- 74. 🌊 STREAM - Stream Processor
+- 75. 📦 BATCH - Batch Jobs
+- 76. 📈 APM - APM Dashboard
+- 77. 🔍 LOGANALYZER - Log Analyzer
+- 78. 🚨 ALERT - Alert Manager
+- 79. 🆘 INCIDENT - Incident Response
+- 80. 💰 COST - Cost Optimizer
 
 ### v24.0.0 (March 16, 2026) - API PLATFORM
 

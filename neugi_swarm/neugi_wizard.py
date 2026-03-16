@@ -596,6 +596,16 @@ I'm your AI assistant. I can help you with:
   📚  REGISTRY   - Service Registry
   🔄  CONFIGSYNC - Config Sync
   🚀  DEPLOY     - Deployment Manager
+  λ   SERVERLESS - Serverless Functions
+  🌐  EDGE       - Edge Computing
+  📬  MQ         - Message Queue
+  🌊  STREAM     - Stream Processor
+  📦  BATCH      - Batch Jobs
+  📈  APM        - APM Dashboard
+  🔍  LOGANALYZER - Log Analyzer
+  🚨  ALERT      - Alert Manager
+  🆘  INCIDENT   - Incident Response
+  💰  COST       - Cost Optimizer
   👋  EXIT       - Shutdown Wizard
 
 """)
@@ -675,6 +685,17 @@ I'm your AI assistant. I can help you with:
                     ("registry", "📚 Service Registry"),
                     ("configsync", "🔄 Config Sync"),
                     ("deploy", "🚀 Deployment Manager"),
+                    # v25.x NEW FEATURES
+                    ("serverless", "λ Serverless Functions"),
+                    ("edge", "🌐 Edge Computing"),
+                    ("mq", "📬 Message Queue"),
+                    ("stream", "🌊 Stream Processor"),
+                    ("batch", "📦 Batch Jobs"),
+                    ("apm", "📈 APM Dashboard"),
+                    ("loganalyzer", "🔍 Log Analyzer"),
+                    ("alert", "🚨 Alert Manager"),
+                    ("incident", "🆘 Incident Response"),
+                    ("cost", "💰 Cost Optimizer"),
                     ("quit", "👋 Exit"),
                 ],
                 "What would you like to do?",
@@ -820,7 +841,27 @@ I'm your AI assistant. I can help you with:
                 self.run_config_sync()
             elif choice == "70":
                 self.run_deployment_manager()
-            elif choice == "71" or choice.lower() in ["quit", "exit", "q"]:
+            elif choice == "71":
+                self.run_serverless()
+            elif choice == "72":
+                self.run_edge_computing()
+            elif choice == "73":
+                self.run_message_queue()
+            elif choice == "74":
+                self.run_stream_processor()
+            elif choice == "75":
+                self.run_batch_jobs()
+            elif choice == "76":
+                self.run_apm_dashboard()
+            elif choice == "77":
+                self.run_log_analyzer()
+            elif choice == "78":
+                self.run_alert_manager()
+            elif choice == "79":
+                self.run_incident_response()
+            elif choice == "80":
+                self.run_cost_optimizer()
+            elif choice == "81" or choice.lower() in ["quit", "exit", "q"]:
                 print(f"\n{C.CYAN}Happy to help! See you next time! 👋{C.END}\n")
                 break
             else:
@@ -2724,6 +2765,116 @@ Example Workflows:
   [2] Rollback       - Revert to previous version
   [3] Deploy History - View deployment logs
   [4] Blue/Green     - Configure blue-green deploy
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_serverless(self):
+        """Serverless Functions"""
+        self.ui.header("λ SERVERLESS FUNCTIONS")
+        print("""
+  [1] Create Function - Deploy new function
+  [2] List Functions  - View all functions
+  [3] Invoke          - Test function
+  [4] Logs            - View function logs
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_edge_computing(self):
+        """Edge Computing"""
+        self.ui.header("🌐 EDGE COMPUTING")
+        print("""
+  [1] Deploy Edge     - Deploy to edge nodes
+  [2] Edge Nodes      - Manage edge locations
+  [3] Sync Data       - Sync data to edges
+  [4] Monitor         - Edge performance
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_message_queue(self):
+        """Message Queue"""
+        self.ui.header("📬 MESSAGE QUEUE")
+        print("""
+  [1] Create Queue   - New message queue
+  [2] Publish        - Send message
+  [3] Consume        - Receive messages
+  [4] Queue Stats    - View queue metrics
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_stream_processor(self):
+        """Stream Processor"""
+        self.ui.header("🌊 STREAM PROCESSOR")
+        print("""
+  [1] Create Stream  - New stream pipeline
+  [2] Process        - Process stream data
+  [3] Analytics      - Real-time analytics
+  [4] Backpressure   - Configure flow control
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_batch_jobs(self):
+        """Batch Jobs"""
+        self.ui.header("📦 BATCH JOBS")
+        print("""
+  [1] Submit Job     - Run batch job
+  [2] Job History    - View past jobs
+  [3] Schedule       - Schedule recurring jobs
+  [4] Resources      - Configure job resources
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_apm_dashboard(self):
+        """APM Dashboard"""
+        self.ui.header("📈 APM DASHBOARD")
+        print("""
+  [1] Overview       - Application performance
+  [2] Traces         - Distributed tracing
+  [3] Metrics        - Custom metrics
+  [4] Alerts         - Performance alerts
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_log_analyzer(self):
+        """Log Analyzer"""
+        self.ui.header("🔍 LOG ANALYZER")
+        print("""
+  [1] Search Logs    - Query logs
+  [2] Patterns       - Detect patterns
+  [3] Anomalies      - Find anomalies
+  [4] Export         - Export logs
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_alert_manager(self):
+        """Alert Manager"""
+        self.ui.header("🚨 ALERT MANAGER")
+        print("""
+  [1] Create Alert   - Define alert rule
+  [2] Active Alerts  - View firing alerts
+  [3] Silence        - Silence notifications
+  [4] Routes         - Configure routing
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_incident_response(self):
+        """Incident Response"""
+        self.ui.header("🆘 INCIDENT RESPONSE")
+        print("""
+  [1] Create Incident - Report new incident
+  [2] Runbook        - Execute runbook
+  [3] Timeline       - Incident timeline
+  [4] Postmortem     - Write postmortem
+        """)
+        input(f"\n{C.CYAN}Press Enter...{C.END}")
+
+    def run_cost_optimizer(self):
+        """Cost Optimizer"""
+        self.ui.header("💰 COST OPTIMIZER")
+        print("""
+  [1] Cost Report    - View spending
+  [2] Recommendations - Cost savings tips
+  [3] Budget         - Set budgets
+  [4] Forecast       - Predict costs
         """)
         input(f"\n{C.CYAN}Press Enter...{C.END}")
 

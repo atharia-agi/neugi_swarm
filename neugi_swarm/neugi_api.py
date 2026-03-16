@@ -210,6 +210,17 @@ MENU_ITEMS = [
     {"id": 68, "name": "Service Registry", "category": "cloud", "icon": "📚"},
     {"id": 69, "name": "Config Sync", "category": "cloud", "icon": "🔄"},
     {"id": 70, "name": "Deployment Manager", "category": "cloud", "icon": "🚀"},
+    # v25.x NEW FEATURES
+    {"id": 71, "name": "Serverless Functions", "category": "cloud", "icon": "λ"},
+    {"id": 72, "name": "Edge Computing", "category": "cloud", "icon": "🌐"},
+    {"id": 73, "name": "Message Queue", "category": "operations", "icon": "📬"},
+    {"id": 74, "name": "Stream Processor", "category": "operations", "icon": "🌊"},
+    {"id": 75, "name": "Batch Jobs", "category": "operations", "icon": "📦"},
+    {"id": 76, "name": "APM Dashboard", "category": "operations", "icon": "📈"},
+    {"id": 77, "name": "Log Analyzer", "category": "operations", "icon": "🔍"},
+    {"id": 78, "name": "Alert Manager", "category": "operations", "icon": "🚨"},
+    {"id": 79, "name": "Incident Response", "category": "operations", "icon": "🆘"},
+    {"id": 80, "name": "Cost Optimizer", "category": "operations", "icon": "💰"},
 ]
 
 

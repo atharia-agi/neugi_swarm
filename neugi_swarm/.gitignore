@@ -60,3 +60,8 @@ node_modules/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Research & Reverse Engineering (Local Only)
+research/
+git_files_browser.py
+AUDIT_README.md
