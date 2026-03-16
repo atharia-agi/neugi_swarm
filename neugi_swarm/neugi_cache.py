@@ -16,12 +16,9 @@ Date: March 16, 2026
 import os
 import time
 import json
-import uuid
 import threading
 from typing import Dict, List, Optional, Any
-from datetime import datetime, timedelta
 from collections import OrderedDict
-from pathlib import Path
 
 NEUGI_DIR = os.path.expanduser("~/neugi")
 CACHE_DIR = os.path.join(NEUGI_DIR, "cache")
@@ -329,7 +326,7 @@ def main():
 
     elif args.stats:
         stats = cache.stats()
-        print(f"\n📊 Cache Stats:")
+        print("\n📊 Cache Stats:")
         print(f"   Size: {stats['size']}/{stats['max_size']}")
         print(f"   Total Accesses: {stats['total_accesses']}")
         print(f"   Keys: {stats['keys']}")

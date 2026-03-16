@@ -17,7 +17,7 @@ import json
 import threading
 import time
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Callable
+from typing import Dict, List, Optional
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -341,13 +341,13 @@ def main():
         if scheduler.add_task(args.name, args.prompt, args.type, args.time, args.interval):
             print(f"✓ Added task: {args.name}")
         else:
-            print(f"✗ Failed to add task")
+            print("✗ Failed to add task")
 
     elif args.action == "remove":
         if scheduler.remove_task(args.name):
             print(f"✓ Removed task: {args.name}")
         else:
-            print(f"✗ Task not found")
+            print("✗ Task not found")
 
     elif args.action == "enable":
         if scheduler.enable_task(args.name):

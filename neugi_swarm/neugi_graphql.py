@@ -14,9 +14,8 @@ Date: March 16, 2026
 
 import os
 import json
-from typing import Dict, List, Any, Optional
+from typing import Dict
 from datetime import datetime
-from pathlib import Path
 
 NEUGI_DIR = os.path.expanduser("~/neugi")
 
@@ -243,7 +242,7 @@ class GraphQLExecutor:
             try:
                 result = resolver(None, **args)
                 data[field_name] = result
-            except Exception as e:
+            except Exception:
                 data[field_name] = None
 
         return {"data": data}
@@ -263,7 +262,7 @@ class GraphQLExecutor:
             try:
                 result = resolver(None, **args)
                 data[field_name] = result
-            except Exception as e:
+            except Exception:
                 data[field_name] = None
 
         return {"data": data}

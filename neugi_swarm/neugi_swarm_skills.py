@@ -610,8 +610,23 @@ class SkillManager:
         if not skill:
             return {"error": f"Skill {skill_id} not found"}
 
-        # Add skill to agent config (would persist to agent config)
-        return {"status": "success", "message": f"Skill {skill_id} registered for agent {agent_id}"}
+        try:
+            from neugi_swarm_agents import AgentManager
+
+            manager = AgentManager()
+            agent = manager.get(agent_id)
+            if agent:
+                agent.tools.append(skill_id)
+                agent.tools = list(set(agent.tools))
+                manager._save_agent(agent)
+                return {
+                    "status": "success",
+                    "message": f"Skill {skill_id} registered for agent {agent_id}",
+                }
+            else:
+                return {"status": "failed", "error": f"Agent {agent_id} not found"}
+        except ImportError:
+            return {"status": "failed", "error": "AgentManager unavailable"}
 
     def _export_neugi(self, skill: Skill) -> str:
         """Export as NEUGI skill format"""
@@ -663,17 +678,37 @@ class GitHubSkill:
     @staticmethod
     def handle_issue(action: str, **kwargs):
         """Handle issue commands"""
-        return {"action": "issue", "subaction": action, **kwargs}
+        import subprocess
+
+        try:
+            res = subprocess.run(
+                ["gh", "issue", action], capture_output=True, text=True, timeout=10
+            )
+            return {"action": "issue", "output": res.stdout or res.stderr}
+        except Exception as e:
+            return {"action": "issue", "error": str(e)}
 
     @staticmethod
     def handle_pr(action: str, **kwargs):
         """Handle PR commands"""
-        return {"action": "pr", "subaction": action, **kwargs}
+        import subprocess
+
+        try:
+            res = subprocess.run(["gh", "pr", action], capture_output=True, text=True, timeout=10)
+            return {"action": "pr", "output": res.stdout or res.stderr}
+        except Exception as e:
+            return {"action": "pr", "error": str(e)}
 
     @staticmethod
     def handle_repo(action: str, **kwargs):
         """Handle repo commands"""
-        return {"action": "repo", "subaction": action, **kwargs}
+        import subprocess
+
+        try:
+            res = subprocess.run(["gh", "repo", action], capture_output=True, text=True, timeout=10)
+            return {"action": "repo", "output": res.stdout or res.stderr}
+        except Exception as e:
+            return {"action": "repo", "error": str(e)}
 
 
 class WeatherSkill:
@@ -682,12 +717,30 @@ class WeatherSkill:
     @staticmethod
     def get_weather(location: str = "auto", **kwargs):
         """Get weather for location"""
-        return {"location": location, "provider": "wttr.in"}
+        try:
+            import urllib.request
+
+            req = urllib.request.Request(
+                f"https://wttr.in/{location}?format=3", headers={"User-Agent": "curl"}
+            )
+            with urllib.request.urlopen(req, timeout=5) as response:
+                return {"location": location, "weather": response.read().decode().strip()}
+        except Exception as e:
+            return {"error": str(e)}
 
     @staticmethod
     def get_forecast(location: str = "auto", days: int = 3, **kwargs):
         """Get forecast"""
-        return {"location": location, "days": days}
+        try:
+            import urllib.request
+
+            req = urllib.request.Request(
+                f"https://wttr.in/{location}?format=1", headers={"User-Agent": "curl"}
+            )
+            with urllib.request.urlopen(req, timeout=5) as response:
+                return {"location": location, "forecast": response.read().decode().strip()}
+        except Exception as e:
+            return {"error": str(e)}
 
 
 class CodingSkill:
@@ -696,7 +749,14 @@ class CodingSkill:
     @staticmethod
     def delegate_task(task: str, **kwargs):
         """Delegate coding task"""
-        return {"task": task, "agent": "codex"}
+        try:
+            from neugi_swarm_agents import AgentManager
+
+            manager = AgentManager()
+            res = manager.run("cipher", task)
+            return {"task": task, "agent": "cipher", "response": res}
+        except Exception as e:
+            return {"error": str(e)}
 
 
 # Main

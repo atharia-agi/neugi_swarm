@@ -14,8 +14,12 @@ import json
 import requests
 import urllib.request
 import re
-from neugi_swarm_net import swarm_net
 from typing import Optional, Dict
+
+try:
+    from neugi_swarm_net import swarm_net
+except ImportError:
+    swarm_net = None
 
 try:
     from neugi_swarm_tools import ToolManager

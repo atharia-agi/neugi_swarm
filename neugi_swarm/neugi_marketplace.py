@@ -15,9 +15,7 @@ Date: March 16, 2026
 
 import os
 import json
-import urllib.request
 from typing import List, Dict, Optional
-from datetime import datetime
 
 NEUGI_DIR = os.path.expanduser("~/neugi")
 MARKETPLACE_CACHE = os.path.join(NEUGI_DIR, "marketplace_cache.json")

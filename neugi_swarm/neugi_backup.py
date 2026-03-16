@@ -20,10 +20,8 @@ import shutil
 import hashlib
 import uuid
 import tarfile
-import gzip
-from typing import Dict, List, Optional, Any
-from datetime import datetime, timedelta
-from pathlib import Path
+from typing import Dict, List, Optional
+from datetime import datetime
 
 NEUGI_DIR = os.path.expanduser("~/neugi")
 BACKUP_DIR = os.path.join(NEUGI_DIR, "backups")

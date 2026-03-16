@@ -24,9 +24,7 @@ import hashlib
 import threading
 import subprocess
 from typing import Dict, List, Optional, Any, Callable
-from datetime import datetime, timedelta
-from pathlib import Path
-import asyncio
+from datetime import datetime
 
 NEUGI_DIR = os.path.expanduser("~/neugi")
 AUTOMATION_DIR = os.path.join(NEUGI_DIR, "automation")
@@ -544,7 +542,7 @@ def main():
 
     if args.status:
         status = engine.get_status()
-        print(f"\n⚙️  Automation Engine Status")
+        print("\n⚙️  Automation Engine Status")
         print(f"   Running: {status['running']}")
         print(f"   Total Rules: {status['total_rules']}")
         print(f"   Enabled: {status['enabled_rules']}")

@@ -13,11 +13,9 @@ Date: March 15, 2026
 """
 
 import os
-import re
 import subprocess
 import glob as glob_module
-from typing import Dict, List, Optional, Any
-from pathlib import Path
+from typing import Dict, Any
 
 
 class CoworkSession:

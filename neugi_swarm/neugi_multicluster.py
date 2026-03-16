@@ -15,7 +15,7 @@ Date: March 16, 2026
 import os
 import json
 import uuid
-from typing import Dict, List, Any
+from typing import Dict, List
 from datetime import datetime
 
 NEUGI_DIR = os.path.expanduser("~/neugi")
@@ -66,6 +66,7 @@ class MultiClusterManager:
             }
             for c in self.clusters.values()
         ]
+        os.makedirs(NEUGI_DIR, exist_ok=True)
         with open(CLUSTERS_FILE, "w") as f:
             json.dump(data, f, indent=2)
 

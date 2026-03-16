@@ -575,7 +575,23 @@ class ToolManager:
 
     def _embeddings(self, text: str, **kwargs) -> Dict:
         """Generate embeddings"""
-        return {"text": text[:50], "embedding": "would_generate"}
+        try:
+            import urllib.request, json
+
+            req = urllib.request.Request(
+                "http://localhost:11434/api/embeddings",
+                data=json.dumps({"model": "qwen2.5:14b", "prompt": text}).encode(),
+                headers={"Content-Type": "application/json"},
+            )
+            with urllib.request.urlopen(req, timeout=10) as r:
+                data = json.loads(r.read())
+                return {
+                    "success": True,
+                    "embedding": data.get("embedding", [])[:10],
+                    "truncated": True,
+                }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
 
     def _file_read(self, path: str, **kwargs) -> Dict:
         """Read file"""
@@ -690,6 +706,10 @@ class ToolManager:
 
         fix_cmd = res.get("response", "").strip().strip("`")
 
+        safe_prefixes = ["npm", "pip", "git", "python", "echo", "ls", "cat", "chmod"]
+        if not any(fix_cmd.startswith(p) for p in safe_prefixes):
+            return {"error": f"Security policy blocked command: {fix_cmd}"}
+
         # 2. Execute the fix
         exec_res = self._code_execute(code=fix_cmd, language="bash")
 
@@ -699,6 +719,48 @@ class ToolManager:
             "execution_result": exec_res,
             "status": "healed" if exec_res.get("success") else "healing_failed",
         }
+
+    # --- SWARM EXTENSION TOOLS ---
+    def _delegate_task(self, target_agent: str, task: str, **kwargs) -> Dict:
+        try:
+            from neugi_swarm_agents import AgentManager
+
+            manager = AgentManager()
+            if target_agent in manager.agents:
+                response = manager.run(target_agent, task)
+                return {
+                    "action": "delegate",
+                    "target": target_agent,
+                    "response": response,
+                    "status": "success",
+                }
+            return {
+                "action": "delegate",
+                "error": f"Agent {target_agent} not found",
+                "status": "failed",
+            }
+        except Exception as e:
+            return {"action": "delegate", "error": str(e), "status": "failed"}
+
+    def _search_memory(self, query: str, **kwargs) -> Dict:
+        if not hasattr(self, "_rag_instance"):
+            self._rag_instance = CodebaseRAG()
+        return {"query": query, "results": self._rag_instance.search(query), "success": True}
+
+    def _git_execute(self, command: str, **kwargs) -> Dict:
+        if not command.startswith("git "):
+            command = "git " + command
+        import subprocess
+
+        try:
+            result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=15)
+            return {
+                "command": command,
+                "output": result.stdout or result.stderr,
+                "success": result.returncode == 0,
+            }
+        except Exception as e:
+            return {"error": str(e)}
 
 
 class NativeWebBrowser:
@@ -890,30 +952,6 @@ class NativeWebBrowser:
             result["confidence"] = min(60 + len(result["sources"]) * 10, 85)
 
         return result
-
-    # --- SWARM EXTENSION TOOLS ---
-    def _delegate_task(self, target_agent: str, task: str, **kwargs) -> Dict:
-        return {"action": "delegate", "target": target_agent, "task": task, "status": "delegated"}
-
-    def _search_memory(self, query: str, **kwargs) -> Dict:
-        if not hasattr(self, "_rag_instance"):
-            self._rag_instance = CodebaseRAG()
-        return {"query": query, "results": self._rag_instance.search(query), "success": True}
-
-    def _git_execute(self, command: str, **kwargs) -> Dict:
-        if not command.startswith("git "):
-            command = "git " + command
-        import subprocess
-
-        try:
-            result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=15)
-            return {
-                "command": command,
-                "output": result.stdout or result.stderr,
-                "success": result.returncode == 0,
-            }
-        except Exception as e:
-            return {"error": str(e)}
 
 
 class CodebaseRAG:

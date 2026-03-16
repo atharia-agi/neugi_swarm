@@ -15,10 +15,7 @@ Date: March 16, 2026
 
 import os
 import json
-import subprocess
-from typing import List, Dict, Optional, Any
-from datetime import datetime
-from pathlib import Path
+from typing import List, Dict, Any
 
 NEUGI_DIR = os.path.expanduser("~/neugi")
 HISTORY_FILE = os.path.join(NEUGI_DIR, "command_palette_history.json")

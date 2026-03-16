@@ -13,7 +13,7 @@ Date: March 15, 2026
 
 import os
 import yaml
-from typing import Dict, List, Optional
+from typing import Dict, List
 from dataclasses import dataclass, field
 
 
@@ -351,7 +351,7 @@ class SoulSystem:
             print(f"   {i}. {boundary}")
 
         if self.soul.instructions:
-            print(f"\n📋 Custom Instructions:")
+            print("\n📋 Custom Instructions:")
             print(f"   {self.soul.instructions[:200]}...")
 
         print(f"\n📁 File: {self.soul_file}")

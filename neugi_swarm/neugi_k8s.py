@@ -16,10 +16,7 @@ Date: March 16, 2026
 import os
 import json
 import subprocess
-import uuid
-from typing import Dict, List, Optional, Any
-from datetime import datetime
-from pathlib import Path
+from typing import Dict, List
 
 NEUGI_DIR = os.path.expanduser("~/neugi")
 K8S_CONFIG = os.path.join(NEUGI_DIR, "kubernetes", "config.json")
@@ -168,7 +165,7 @@ class KubernetesConnector:
 
     def get_dashboard_url(self) -> str:
         """Get Kubernetes dashboard URL"""
-        result = self._run_kubectl(["cluster-info", "kubernetes-dashboard"])
+        result = self._run_kubectl(["cluster-info"])
         if result.get("success"):
             for line in result["output"].split("\n"):
                 if "kubernetes-dashboard" in line:
@@ -216,7 +213,7 @@ def main():
 
     if args.clusters:
         clusters = k8s.get_clusters()
-        print(f"\n🔗 Clusters:\n")
+        print("\n🔗 Clusters:\n")
         for c in clusters:
             print(f"  {c['context-name']} -> {c['cluster']}")
 
@@ -243,13 +240,13 @@ def main():
 
     elif args.nodes:
         nodes = k8s.get_nodes()
-        print(f"\n🖥️  Nodes:\n")
+        print("\n🖥️  Nodes:\n")
         for n in nodes:
             print(f"  {n['metadata']['name']}")
 
     elif args.namespaces:
         nss = k8s.get_namespaces()
-        print(f"\n📁 Namespaces:\n")
+        print("\n📁 Namespaces:\n")
         for ns in nss:
             print(f"  {ns}")
 
@@ -265,7 +262,7 @@ def main():
 
     elif args.usage:
         usage = k8s.get_resource_usage()
-        print(f"\n📊 Cluster Usage:\n")
+        print("\n📊 Cluster Usage:\n")
         print(f"  Nodes: {usage['nodes']}")
         print(f"  Pods: {usage['pods']}")
         print(f"  Services: {usage['services']}")

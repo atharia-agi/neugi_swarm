@@ -190,37 +190,6 @@ MENU_ITEMS = [
     {"id": 50, "name": "Agents SDK", "category": "developer", "icon": "🤖"},
     {"id": 51, "name": "CLI Framework", "category": "developer", "icon": "⌘"},
     # v23.x NEW FEATURES
-    {"id": 52, "name": "ML Pipeline", "category": "ai", "icon": "🧠"},
-    {"id": 53, "name": "Data Pipeline", "category": "operations", "icon": "🔗"},
-    {"id": 54, "name": "Notification System", "category": "operations", "icon": "🔔"},
-    {"id": 55, "name": "Webhook Manager", "category": "integrations", "icon": "🪝"},
-    {"id": 56, "name": "Rate Limiter", "category": "operations", "icon": "🚦"},
-    {"id": 57, "name": "Config Manager", "category": "system", "icon": "⚙️"},
-    {"id": 58, "name": "Template Engine", "category": "developer", "icon": "📝"},
-    {"id": 59, "name": "Report Generator", "category": "operations", "icon": "📑"},
-    {"id": 60, "name": "Analytics Dashboard", "category": "operations", "icon": "📉"},
-    # v24.x NEW FEATURES
-    {"id": 61, "name": "API Versioning", "category": "developer", "icon": "📌"},
-    {"id": 62, "name": "API Docs UI", "category": "developer", "icon": "📖"},
-    {"id": 63, "name": "Request Validator", "category": "developer", "icon": "✅"},
-    {"id": 64, "name": "Response Cacher", "category": "operations", "icon": "💾"},
-    {"id": 65, "name": "Metrics Exporter", "category": "operations", "icon": "📊"},
-    {"id": 66, "name": "Health Checks", "category": "operations", "icon": "💚"},
-    {"id": 67, "name": "Circuit Dashboard", "category": "cloud", "icon": "⚡"},
-    {"id": 68, "name": "Service Registry", "category": "cloud", "icon": "📚"},
-    {"id": 69, "name": "Config Sync", "category": "cloud", "icon": "🔄"},
-    {"id": 70, "name": "Deployment Manager", "category": "cloud", "icon": "🚀"},
-    # v25.x NEW FEATURES
-    {"id": 71, "name": "Serverless Functions", "category": "cloud", "icon": "λ"},
-    {"id": 72, "name": "Edge Computing", "category": "cloud", "icon": "🌐"},
-    {"id": 73, "name": "Message Queue", "category": "operations", "icon": "📬"},
-    {"id": 74, "name": "Stream Processor", "category": "operations", "icon": "🌊"},
-    {"id": 75, "name": "Batch Jobs", "category": "operations", "icon": "📦"},
-    {"id": 76, "name": "APM Dashboard", "category": "operations", "icon": "📈"},
-    {"id": 77, "name": "Log Analyzer", "category": "operations", "icon": "🔍"},
-    {"id": 78, "name": "Alert Manager", "category": "operations", "icon": "🚨"},
-    {"id": 79, "name": "Incident Response", "category": "operations", "icon": "🆘"},
-    {"id": 80, "name": "Cost Optimizer", "category": "operations", "icon": "💰"},
 ]
 
 

@@ -18,8 +18,7 @@ import os
 import shutil
 import hashlib
 import mimetypes
-from typing import List, Dict, Optional, Any
-from pathlib import Path
+from typing import List, Dict, Optional
 from datetime import datetime
 
 NEUGI_DIR = os.path.expanduser("~/neugi")
@@ -331,7 +330,7 @@ def main():
 
     elif args.disk:
         usage = fm.get_disk_usage()
-        print(f"\n💾 Disk Usage:")
+        print("\n💾 Disk Usage:")
         print(f"   Total: {fm._format_size(usage['total'])}")
         print(f"   Used:  {fm._format_size(usage['used'])}")
         print(f"   Free:  {fm._format_size(usage['free'])}")

@@ -154,7 +154,14 @@ class VoiceManager:
             tts.save(output_file)
 
             # Play
-            os.system(f"mpg123 -q {output_file} 2>/dev/null || afplay {output_file} 2>/dev/null")
+            import platform
+
+            if platform.system() == "Windows":
+                os.system(f"start {output_file}")
+            elif platform.system() == "Darwin":
+                os.system(f"afplay {output_file} 2>/dev/null")
+            else:
+                os.system(f"mpg123 -q {output_file} 2>/dev/null")
 
             return {"status": "success", "provider": "gtts", "file": output_file}
         except Exception as e:

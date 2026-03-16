@@ -15,11 +15,10 @@ Date: March 15, 2026
 
 import os
 import time
-import json
 import threading
-from typing import Dict, List, Optional
+from typing import Dict, List
 from datetime import datetime
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
@@ -275,7 +274,7 @@ def main():
 
     if args.action == "metrics":
         m = monitor.get_metrics()
-        print(f"\n📊 System Metrics")
+        print("\n📊 System Metrics")
         print("=" * 40)
         print(f"CPU: {m.cpu_percent:.1f}%")
         print(
@@ -294,7 +293,7 @@ def main():
 
     elif args.action == "alerts":
         alerts = monitor.get_alerts()
-        print(f"\n⚠️ Alerts")
+        print("\n⚠️ Alerts")
         for a in alerts:
             status = "🔴 TRIGGERED" if a["triggered"] else "🟢 OK"
             print(f"  {status} {a['name']} ({a['metric']} {a['operator']} {a['threshold']}%)")
@@ -304,19 +303,19 @@ def main():
 
     elif args.action == "top":
         processes = monitor.get_top_processes(args.limit)
-        print(f"\n🔝 Top Processes")
+        print("\n🔝 Top Processes")
         print(f"{'PID':<8} {'Name':<20} {'CPU':<10} {'Memory':<10}")
         for p in processes:
             print(f"{p['pid']:<8} {p['name'][:20]:<20} {p['cpu']:<10.1f} {p['memory']:<10.1f}")
 
     elif args.action == "info":
         info = monitor.get_system_info()
-        print(f"\n💻 System Info")
+        print("\n💻 System Info")
         for k, v in info.items():
             print(f"  {k}: {v}")
 
     elif args.action == "monitor":
-        print(f"\n🔄 Monitoring (Ctrl+C to stop)...")
+        print("\n🔄 Monitoring (Ctrl+C to stop)...")
         monitor.start_monitoring(args.interval)
         try:
             while True:

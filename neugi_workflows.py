@@ -17,12 +17,10 @@ import os
 import json
 import time
 import uuid
-import asyncio
 from typing import Dict, List, Any, Optional, Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 NEUGI_DIR = os.path.expanduser("~/neugi")
@@ -608,7 +606,7 @@ def main():
 
         if run:
             print(f"Status: {run.status}")
-            print(f"Steps:")
+            print("Steps:")
             for step_id, result in run.step_results.items():
                 status = result.get("status", "unknown")
                 print(f"  {step_id}: {status}")

@@ -282,9 +282,12 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
     def serve_swarm_nodes(self):
         """List all peer nodes"""
-        from neugi_swarm_net import swarm_net
+        try:
+            from neugi_swarm_net import swarm_net
 
-        data = swarm_net.get_online_nodes()
+            data = swarm_net.get_online_nodes()
+        except ImportError:
+            data = {"status": "offline", "nodes": []}
         self.send_response(200)
         self.send_header("Content-type", "application/json")
         self.end_headers()
@@ -292,7 +295,11 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
     def handle_swarm_join(self):
         """Register a peer node"""
-        from neugi_swarm_net import swarm_net
+        try:
+            from neugi_swarm_net import swarm_net
+        except ImportError:
+            self.send_error(501, "Swarm net not available")
+            return
 
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length)
@@ -958,7 +965,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
                                 const parsed = JSON.parse(data);
                                 if (parsed.chunk) {
                                     assistantMessage += parsed.chunk;
-                                    msgEl.innerHTML = assistantMessage.replace(/\\n/g, '<br>');
+                                    msgEl.innerHTML = assistantMessage.replace(/\n/g, '<br>');
                                     box.scrollTop = box.scrollHeight;
                                 }
                             } catch(e) {}

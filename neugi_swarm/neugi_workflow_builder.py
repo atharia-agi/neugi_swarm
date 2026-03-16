@@ -18,7 +18,6 @@ import json
 import uuid
 from typing import Dict, List, Optional, Any
 from datetime import datetime
-from pathlib import Path
 
 NEUGI_DIR = os.path.expanduser("~/neugi")
 WORKFLOWS_DIR = os.path.join(NEUGI_DIR, "workflows")
@@ -765,7 +764,7 @@ def main():
             return {"error": "Not found"}, 404
         return workflow.execute()
 
-    print(f"🎯 NEUGI Workflow Builder")
+    print("🎯 NEUGI Workflow Builder")
     print(f"   URL: http://localhost:{args.port}")
     print(f"   API: http://localhost:{args.port}/api")
 

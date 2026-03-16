@@ -84,8 +84,7 @@ class Gateway:
 
     def _init_simple(self):
         """Initialize simple HTTP server"""
-        # Would use http.server
-        pass
+        self.server = SimpleHTTPServer(port=self.config.port)
 
     def _register_routes(self):
         """Register API routes"""
@@ -163,9 +162,7 @@ class Gateway:
             else:
                 response = f"[Simulation] Received: {message[:50]}..."
 
-            return jsonify(
-                {"response": response, "timestamp": datetime.now().isoformat()}
-            )
+            return jsonify({"response": response, "timestamp": datetime.now().isoformat()})
 
         @self.app.route("/api/execute", methods=["POST"])
         def execute():
@@ -225,7 +222,9 @@ class Gateway:
                     debug=self.config.debug,
                 )
         else:
-            print("⚠️ No HTTP server available")
+            print("⚠️ Falling back to SimpleHTTPServer")
+            if hasattr(self, "server"):
+                self.server.start()
 
     def stop(self):
         """Stop the gateway"""

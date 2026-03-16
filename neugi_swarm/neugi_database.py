@@ -21,7 +21,6 @@ import uuid
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 from contextlib import contextmanager
-from pathlib import Path
 
 NEUGI_DIR = os.path.expanduser("~/neugi")
 DB_PATH = os.path.join(NEUGI_DIR, "neugi.db")

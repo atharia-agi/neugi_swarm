@@ -18,9 +18,7 @@ import json
 import uuid
 import time
 import socket
-from typing import Dict, List, Optional, Any
-from datetime import datetime
-from pathlib import Path
+from typing import Dict, List, Optional
 
 NEUGI_DIR = os.path.expanduser("~/neugi")
 REGISTRY_FILE = os.path.join(NEUGI_DIR, "service_discovery.json")

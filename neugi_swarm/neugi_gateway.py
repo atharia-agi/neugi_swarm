@@ -14,13 +14,11 @@ Date: March 16, 2026
 """
 
 import os
-import json
 import uuid
 import time
 import hashlib
-from typing import Dict, List, Optional, Any, Callable
+from typing import Dict, List, Optional
 from datetime import datetime
-from pathlib import Path
 
 NEUGI_DIR = os.path.expanduser("~/neugi")
 
@@ -101,6 +99,13 @@ class APIGateway:
         api_key = self.api_keys[key]
 
         if api_key.rate_limit:
+            if api_key.last_used:
+                try:
+                    last_used_dt = datetime.fromisoformat(api_key.last_used)
+                    if (datetime.now() - last_used_dt).total_seconds() > 3600:
+                        api_key.requests = 0
+                except ValueError:
+                    pass
             if api_key.requests >= api_key.rate_limit:
                 return False
 
@@ -142,6 +147,37 @@ class APIGateway:
             for k in self.api_keys.values()
         ]
 
+    def serve(self, port: int = 8080):
+        """Start the API Gateway server"""
+        import http.server
+        import socketserver
+
+        class GatewayHandler(http.server.SimpleHTTPRequestHandler):
+            def do_GET(self):
+                api_key = self.headers.get("X-API-Key")
+                if not api_key or not self.server.gateway.validate_api_key(api_key):
+                    self.send_response(401)
+                    self.end_headers()
+                    self.wfile.write(b"Unauthorized or Rate Limited")
+                    return
+                route = self.server.gateway.find_route(self.path, "GET")
+                if not route:
+                    self.send_response(404)
+                    self.end_headers()
+                    self.wfile.write(b"Route Not Found")
+                    return
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(f"Proxying to {route.backend}".encode())
+
+        with socketserver.TCPServer(("", port), GatewayHandler) as httpd:
+            httpd.gateway = self
+            print(f"🚀 API Gateway running on port {port}")
+            try:
+                httpd.serve_forever()
+            except KeyboardInterrupt:
+                print("\nShutting down gateway...")
+
 
 gateway = APIGateway()
 
@@ -153,10 +189,14 @@ def main():
     parser.add_argument("--list-routes", action="store_true", help="List routes")
     parser.add_argument("--add-key", type=str, help="Add API key")
     parser.add_argument("--list-keys", action="store_true", help="List API keys")
+    parser.add_argument("--serve", type=int, help="Start gateway server on port")
 
     args = parser.parse_args()
 
-    if args.list_routes:
+    if args.serve:
+        gateway.serve(args.serve)
+
+    elif args.list_routes:
         routes = gateway.list_routes()
         print(f"\n🌐 Routes ({len(routes)}):\n")
         for r in routes:

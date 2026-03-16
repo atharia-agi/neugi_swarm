@@ -29,7 +29,6 @@ class SearchEngine:
     SEARXNG_INSTANCES = [
         "https://searx.be",
         "https://searx.org",
-        "https://search.bus-hit.me",
     ]
 
     def __init__(self):

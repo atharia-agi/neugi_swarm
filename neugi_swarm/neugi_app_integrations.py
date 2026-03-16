@@ -15,13 +15,11 @@ Date: March 15, 2026
 import os
 import json
 import time
-import hashlib
 import secrets
 import urllib.parse
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, field
+from typing import Dict, List, Optional
+from dataclasses import dataclass
 from datetime import datetime
-from base64 import b64encode, b64decode
 
 
 NEUGI_DIR = os.path.expanduser("~/neugi")

@@ -1150,7 +1150,7 @@ Options:
             elif choice == "3":
                 fact = input("Fact to remember: ")
                 memory.auto_remember(fact)
-                print(f"\n✅ Remembered!")
+                print("\n✅ Remembered!")
 
             elif choice == "4":
                 stats = memory.get_stats()
@@ -1161,7 +1161,7 @@ Options:
 
             elif choice == "5":
                 memory.cleanup_old_daily(30)
-                print(f"\n✅ Cleaned up!")
+                print("\n✅ Cleaned up!")
 
         except Exception as e:
             self.ui.error(f"Error: {e}")
@@ -1211,7 +1211,7 @@ Available Presets:
                     print(f"\n✅ Loaded: {preset}")
                     soul.display()
                 else:
-                    print(f"\n❌ Unknown preset")
+                    print("\n❌ Unknown preset")
 
         except Exception as e:
             self.ui.error(f"Error: {e}")

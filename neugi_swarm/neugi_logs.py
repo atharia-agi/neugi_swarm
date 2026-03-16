@@ -19,9 +19,8 @@ import json
 import time
 import uuid
 import threading
-from typing import Dict, List, Optional, Any
-from datetime import datetime, timedelta
-from pathlib import Path
+from typing import Dict, List, Optional
+from datetime import datetime
 from collections import defaultdict, deque
 
 NEUGI_DIR = os.path.expanduser("~/neugi")
@@ -316,7 +315,7 @@ def main():
 
     elif args.stats:
         stats = log_aggregator.get_stats()
-        print(f"\n📊 Log Statistics:")
+        print("\n📊 Log Statistics:")
         print(f"   Total: {stats['total']}")
         print(f"   By Level: {stats['levels']}")
         print(f"   By Source: {stats['sources']}")

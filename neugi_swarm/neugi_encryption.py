@@ -20,7 +20,6 @@ import json
 import secrets
 from typing import Optional, Tuple
 from datetime import datetime
-from pathlib import Path
 
 try:
     from cryptography.fernet import Fernet
