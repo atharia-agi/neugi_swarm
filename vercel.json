@@ -5,5 +5,14 @@
       "destination": "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/install.sh",
       "permanent": false
     }
+  ],
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": ""
+      }
+    }
   ]
 }
