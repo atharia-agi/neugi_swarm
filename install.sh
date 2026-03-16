@@ -150,17 +150,17 @@ EOF
     log_step "INSTALLING NEUGI CLI"
     
     # Download CLI
-    curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi" -o "$NEUGI_DIR/neugi"
+    curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi" -o "$NEUGI_DIR/neugi"
     chmod +x "$NEUGI_DIR/neugi"
     
     # Download Assistant
-    curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_assistant.py" -o "$NEUGI_DIR/neugi_assistant.py" 2>/dev/null || true
+    curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_assistant.py" -o "$NEUGI_DIR/neugi_assistant.py" 2>/dev/null || true
     
     # Download Dashboard
-    curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/dashboard.html" -o "$NEUGI_DIR/dashboard.html" 2>/dev/null || true
+    curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/dashboard.html" -o "$NEUGI_DIR/dashboard.html" 2>/dev/null || true
     
     # Download Systemd Service (for auto-start)
-    curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi.service" -o "$NEUGI_DIR/neugi.service" 2>/dev/null || true
+    curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi.service" -o "$NEUGI_DIR/neugi.service" 2>/dev/null || true
     
     # Add to PATH in .bashrc
     if ! grep -q "neugi" ~/.bashrc 2>/dev/null; then
