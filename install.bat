@@ -41,7 +41,7 @@ cd /d "%NEUGI_DIR%"
 echo [INFO] Downloading NEUGI repository...
 if exist "%NEUGI_DIR%\.git" (
     cd /d "%NEUGI_DIR%"
-    git pull origin main
+    git pull origin master
 ) else (
     git clone https://github.com/atharia-agi/neugi_swarm.git "%NEUGI_DIR%"
     cd /d "%NEUGI_DIR%"
