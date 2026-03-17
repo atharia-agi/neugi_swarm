@@ -116,9 +116,9 @@ class TestCoreFiles:
             "neugi_swarm_memory.py",
             "neugi_swarm_tools.py",
         ]
-        base = os.path.dirname(__file__)
+        base = os.path.join(os.path.dirname(__file__), "..", "neugi_swarm")
         for f in files:
-            path = os.path.join(base, "..", f)
+            path = os.path.join(base, f)
             assert os.path.exists(path), f"Missing: {f}"
 
     def test_secondary_files_exist(self):
@@ -131,9 +131,9 @@ class TestCoreFiles:
             "neugi_swarm_skills.py",
             "neugi_swarm_voice.py",
         ]
-        base = os.path.dirname(__file__)
+        base = os.path.join(os.path.dirname(__file__), "..", "neugi_swarm")
         for f in files:
-            path = os.path.join(base, "..", f)
+            path = os.path.join(base, f)
             assert os.path.exists(path), f"Missing: {f}"
 
 
@@ -142,19 +142,19 @@ class TestBrowserAgent:
 
     def test_browser_file_exists(self):
         """Test browser file exists"""
-        path = os.path.join(os.path.dirname(__file__), "..", "neugi_swarm_browser.py")
+        path = os.path.join(os.path.dirname(__file__), "..", "neugi_swarm", "neugi_swarm_browser.py")
         assert os.path.exists(path)
 
     def test_has_duckduckgo(self):
         """Test DuckDuckGo is in browser"""
-        path = os.path.join(os.path.dirname(__file__), "..", "neugi_swarm_browser.py")
+        path = os.path.join(os.path.dirname(__file__), "..", "neugi_swarm", "neugi_swarm_browser.py")
         with open(path, "r") as f:
             content = f.read()
         assert "duckduckgo" in content.lower() or "DuckDuckGo" in content
 
     def test_has_searxng(self):
         """Test SearXNG is in browser"""
-        path = os.path.join(os.path.dirname(__file__), "..", "neugi_swarm_browser.py")
+        path = os.path.join(os.path.dirname(__file__), "..", "neugi_swarm", "neugi_swarm_browser.py")
         with open(path, "r") as f:
             content = f.read()
         assert "searxng" in content.lower() or "searx" in content.lower()
@@ -181,10 +181,10 @@ class TestCodeQuality:
         """Test all Python files have valid syntax"""
         import py_compile
 
-        base = os.path.dirname(__file__)
+        base = os.path.join(os.path.dirname(__file__), "..", "neugi_swarm")
         py_files = []
-        for root, dirs, files in os.walk(os.path.join(base, "..")):
-            if ".git" in root or "tests" in root:
+        for root, dirs, files in os.walk(base):
+            if ".git" in root:
                 continue
             for f in files:
                 if f.endswith(".py"):
@@ -198,11 +198,11 @@ class TestCodeQuality:
 
     def test_no_debug_print_in_production(self):
         """Test no debug print statements left behind"""
-        base = os.path.dirname(__file__)
+        base = os.path.join(os.path.dirname(__file__), "..", "neugi_swarm")
         files_to_check = ["neugi_swarm.py", "neugi_wizard.py", "neugi_assistant.py"]
 
         for f in files_to_check:
-            path = os.path.join(base, "..", f)
+            path = os.path.join(base, f)
             if os.path.exists(path):
                 with open(path, "r") as file:
                     for i, line in enumerate(file, 1):
