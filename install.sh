@@ -38,29 +38,26 @@ main() {
     echo -e "${YELLOW}  NEUGI is an autonomous AI system. By installing, you give the"
     echo -e "  AI permission to execute system-level commands on this machine.${NC}"
     echo ""
-    echo -e "${CYAN}  ➜ Auto-proceeding with installation...${NC}"
+    log_step "QUICK INSTALL NEUGI"
     echo ""
     
     # Add PATH
     export PATH="$HOME/.local/bin:$PATH"
     
     # ============================================================
-    # STEP 1: Install Ollama
+    # STEP 1: Install Ollama (SIMPLIFIED - use binary if exists)
     # ============================================================
     
-    log_step "INSTALLING OLLAMA"
+    log_step "CHECKING & INSTALLING OLLAMA"
     
     if command -v ollama &> /dev/null; then
-        log_success "Ollama already installed"
-        log_info "Updating to latest version..."
-        curl -fsSL https://ollama.ai/install.sh | sh >> /tmp/neugi_install.log 2>&1 || true
+        log_success "✓ Ollama already installed"
     else
-        log_info "Installing Ollama (this may take a minute)..."
-        curl -fsSL https://ollama.ai/install.sh | sh >> /tmp/neugi_install.log 2>&1
-    fi
-    
-    if command -v ollama &> /dev/null; then
-        log_success "Ollama ready"
+        log_info "Downloading Ollama binary..."
+        curl -L https://ollama.ai/download/ollama-linux-amd64 -o /tmp/ollama
+        chmod +x /tmp/ollama
+        sudo mv /tmp/ollama /usr/local/bin/ollama
+        log_success "✓ Ollama installed!"
     fi
     
     # ============================================================
