@@ -45,47 +45,33 @@ main() {
 export PATH="$HOME/.local/bin:$PATH"
     
     # ============================================================
-    # STEP 1: Install Ollama (REQUIRED)
+    # STEP 1: Check/Install Ollama (OPTIONAL - will check later if installed)
     # ============================================================
     
-    log_step "🔄 INSTALLING OLLAMA (Required for NEUGI)"
+    log_step "🔄 CHECKING OLLAMA"
     
     if command -v ollama &> /dev/null; then
-        log_success "✓ Ollama ALREADY installed"
+        log_success "✓ Ollama already installed!"
     else
-        log_info "Installing Ollama..."
-        
-        # Download Ollama binary directly (fast!)
-        curl -L https://ollama.ai/download/ollama-linux-amd64 -o /tmp/ollama 2>&1 | while IFS= read -r line; do
-            echo -ne "\rDownloading... $line"
-        done
-        
-        if [ -f /tmp/ollama ]; then
-            chmod +x /tmp/ollama
-            sudo cp /tmp/ollama /usr/local/bin/ollama 2>/dev/null || sudo mv /tmp/ollama /usr/local/bin/ollama
-            log_success "✓ Ollama installed successfully!"
-        else
-            log_warn "Ollama download failed - you can install manually later"
-        fi
+        log_warn "⚠️  Ollama not found - Will install a lightweight version"
+        log_info "Or install manually: curl -fsSL https://ollama.ai/install.sh | sh"
     fi
     
-    # Now verify
-    if command -v ollama &> /dev/null; then
-        log_success "✓ Ollama is ready!"
-    fi
-    
-    # ============================================================
-    # STEP 2: Clone NEUGI
-    # ============================================================
-    
-    log_step "📦 CLONING NEUGI"
+    echo ""
+    log_step "📦 CLONING NEUGI REPO"
     
     NEUGI_DIR="$HOME/neugi"
     mkdir -p "$NEUGI_DIR"
     cd "$NEUGI_DIR"
     
-    log_info "Cloning NEUGI (shallow clone - fast)..."
-    git clone --depth 1 https://github.com/atharia-agi/neugi_swarm.git "$NEUGI_DIR"
+    log_info "Cloning NEUGI repository..."
+    if [ -d "$NEUGI_DIR/.git" ]; then
+        log_info "NEUGI already exists - updating..."
+        cd "$NEUGI_DIR" && git pull origin main 2>/dev/null || git pull origin master 2>/dev/null
+    else
+        rm -rf "$NEUGI_DIR" 2>/dev/null
+        git clone https://github.com/atharia-agi/neugi_swarm.git "$NEUGI_DIR" --progress
+    fi
     
     log_info "Installing python dependencies (lightweight)..."
     pip3 install requests flask psutil --break-system-packages 2>/dev/null || pip3 install requests flask psutil 2>/dev/null || true
