@@ -38,11 +38,7 @@ main() {
     echo -e "${YELLOW}  NEUGI is an autonomous AI system. By installing, you give the"
     echo -e "  AI permission to execute system-level commands on this machine.${NC}"
     echo ""
-    read -p "  Do you wish to proceed with installation? (y/n): " confirm
-    if [[ ! $confirm =~ ^[Yy]$ ]]; then
-        log_error "Installation aborted by user."
-        exit 1
-    fi
+    echo -e "${CYAN}  ➜ Auto-proceeding with installation...${NC}"
     echo ""
     
     # Add PATH
