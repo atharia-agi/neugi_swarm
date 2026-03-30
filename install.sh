@@ -117,46 +117,27 @@ EOF
     fi
     
     echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "  To start NEUGI Wizard:"
-    echo "  ➜ cd ~/neugi"
-    echo "  ➜ python neugi_swarm/neugi_wizard.py"
-    echo ""
-    echo "  Or use: python neugi_swarm/neugi_swarm.py"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    
-    # ============================================================
-    # STEP 5: Install NEUGI CLI (like openclaw!)
-    # ============================================================
-    
-    log_step "INSTALLING NEUGI CLI"
-    
-    # Download CLI
-    curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi" -o "$NEUGI_DIR/neugi"
-    chmod +x "$NEUGI_DIR/neugi"
-    
-    # Download Assistant
-    curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_assistant.py" -o "$NEUGI_DIR/neugi_assistant.py" 2>/dev/null || true
-    
-    # Download Dashboard
-    curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/dashboard.html" -o "$NEUGI_DIR/dashboard.html" 2>/dev/null || true
-    
-    # Download Systemd Service (for auto-start)
-    curl -sSL "https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi.service" -o "$NEUGI_DIR/neugi.service" 2>/dev/null || true
-    
-    # Add to PATH in .bashrc
-    if ! grep -q "neugi" ~/.bashrc 2>/dev/null; then
-        echo "" >> ~/.bashrc
-        echo "# NEUGI CLI" >> ~/.bashrc
-        echo "export PATH=\"\$HOME/neugi:\$PATH\"" >> ~/.bashrc
-    fi
-    
-    # Create symlink for global access
-    sudo ln -sf "$NEUGI_DIR/neugi" /usr/local/bin/neugi 2>/dev/null || \
-        ln -sf "$NEUGI_DIR/neugi" "$HOME/.local/bin/neugi" 2>/dev/null || true
-    
-    log_success "NEUGI CLI ready!"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  To start NEUGI Wizard:
+  ➜ cd ~/neugi
+  ➜ python neugi_swarm/neugi_wizard.py
+
+  OR
+
+  ➜ python neugi_swarm/neugi_swarm.py
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+echo ""
+
+log_step "✅ INSTALL COMPLETE!"
+
+echo "
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🎉 CONGRATULATIONS!
+  NEUGI is ready to use!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"
+
+exit 0
     log_info "   Usage: neugi [command]"
     
     # ============================================================
