@@ -448,12 +448,12 @@ class Repair:
 
 
 # ============================================================
-# WIZARD UI
+# ENHANCED WIZARD UI - Maximized for Power Users
 # ============================================================
 
 
 class WizardUI:
-    """Beautiful CLI UI"""
+    """Beautiful CLI UI - Enhanced Edition"""
 
     @staticmethod
     def header(title: str):
@@ -462,13 +462,66 @@ class WizardUI:
         print(f"{'═' * 60}{C.END}\n")
 
     @staticmethod
+    def quick_status():
+        """Show quick system status"""
+        import requests
+
+        try:
+            r = requests.get("http://localhost:11434", timeout=2)
+            ollama = "✅ Running" if r.status_code == 200 else "❌ Error"
+        except:
+            ollama = "❌ Not Running"
+
+        print(f"""
+{C.CYAN}╔═══════════════════════════════════════════════════════════════╗
+║                    🚀 NEUGI QUICK STATUS                             ║
+╠═══════════════════════════════════════════════════════════════════════╣
+║  Ollama:    {ollama:<50}║
+║  Port:      ✅ 19888 (Dashboard) | 19889 (MCP)                      ║
+╚═══════════════════════════════════════════════════════════════════════╝
+{Colors.END}
+        """)
+
+    @staticmethod
+    def search_menu(options: List[tuple], search_prompt: str = None) -> Optional[str]:
+        """Searchable menu - type to filter"""
+        if search_prompt:
+            query = input(f"{C.YELLOW}Search (or Enter for menu): {C.END}").strip().lower()
+            if query:
+                filtered = [(k, d) for k, d in options if query in d.lower() or query in k.lower()]
+                if filtered:
+                    print(f"\n{C.CYAN}Results for '{query}':{C.END}")
+                    for i, (key, desc) in enumerate(filtered, 1):
+                        print(f"  {C.GREEN}{i}{C.END}. {desc}")
+
+                    choice = input(f"\n{C.CYAN}> {C.END}").strip()
+                    if choice.isdigit() and 1 <= int(choice) <= len(filtered):
+                        return filtered[int(choice) - 1][0]
+                    return choice
+
+        return None
+
+    @staticmethod
     def menu(options: List[tuple], title: str = "Choose an option:") -> str:
-        """Show menu and get choice"""
         print(f"{C.BOLD}{title}{C.END}\n")
+
+        # Group options by category
+        categories = {}
+        for key, desc in options:
+            cat = desc.split()[0] if desc else "Other"
+            if cat not in categories:
+                categories[cat] = []
+            categories[cat].append((key, desc))
+
+        # Display with keyboard shortcuts
         for i, (key, desc) in enumerate(options, 1):
-            print(f"  {C.GREEN}{i}{C.END}. {desc}")
-        print()
-        choice = input(f"{C.CYAN}> {C.END}").strip()
+            shortcut = ""
+            if i <= 9:
+                shortcut = f" [{i}]"
+            print(f"  {C.GREEN}{i}{shortcut}{C.END}. {desc}")
+
+        print(f"\n  {C.YELLOW}💡 Tip: Type a number or search{C.END}")
+        choice = input(f"\n{C.CYAN}> {C.END}").strip()
         return choice
 
     @staticmethod
@@ -489,10 +542,8 @@ class WizardUI:
 
     @staticmethod
     def ai_response(response: str):
-        """Display AI response beautifully"""
         print(f"\n{C.PURPLE}🧠 AI Response:{C.END}")
         print(f"{C.CYAN}{'─' * 50}{C.END}")
-        # Word wrap
         words = response.split()
         line = ""
         for word in words:
@@ -504,6 +555,22 @@ class WizardUI:
         if line:
             print(f"  {line}")
         print(f"{C.CYAN}{'─' * 50}{C.END}\n")
+
+    @staticmethod
+    def print_hotkeys():
+        """Display keyboard shortcuts"""
+        print(f"""
+{C.YELLOW}╔═══════════════════════════════════════╗
+║          ⌨️  KEYBOARD SHORTCUTS               ║
+╠═══════════════════════════════════════════════╣
+║  [1-9]          Quick select option 1-9      ║
+║  [ Enter ]      Confirm / Next step          ║
+║  [ Ctrl+C ]     Exit / Cancel                ║
+║  [ / ]          Search menu                  ║
+║  [ ? ]          Show help                    ║
+╚═══════════════════════════════════════════════╝
+{C.END}
+        """)
 
 
 # ============================================================
@@ -519,63 +586,41 @@ class NEUGIWizard:
         self.ui = WizardUI()
 
     def run(self):
-        """Main entry point"""
+        """Main entry point - Enhanced with Quick Status"""
+
+        # Quick status on start
+        self.ui.quick_status()
+
         mode_text = (
             f"{C.RED}{C.BOLD}[GOD MODE ACTIVE]{C.END} "
             if os.environ.get("NEUGI_GOD_MODE") == "1"
             else f"{C.GREEN}[FULL POWER ACTIVE]{C.END} "
         )
-        self.ui.header(f"{BRAND} WIZARD v3.5 - {mode_text}")
+        self.ui.header(f"{BRAND} WIZARD v4.0 - MAXIMUM POWER - {mode_text}")
 
         print(f"""
-{C.BOLD}Welcome to {BRAND}!{C.END}
+{C.BOLD}Welcome to {BRAND}! The Ultimate Agent Platform{C.END}
 
-I'm your AI assistant. I can help you with:
+▸ 9 Built-in Agents (Aurora, Cipher, Nova, etc.)
+▸ 50+ Tools (Web, Code, AI, Data, Comm)
+▸ MCP Compatible (Claude Code, OpenClaw)
+▸ Auto-Learning System (Unique!)
+▸ Agent Studio (Create your own agents)
+▸ Natural Language CLI (No commands to memorize!)
 
-  🎯  SETUP      - Full System Provisioning
-  🔧  REPAIR     - Unrestricted Auto-Fixing
-  🧠  DIAGNOSE   - Deep Architecture Audit
-  💬  CHAT       - Technical Intelligence Interface
-  📦  PLUGINS    - Ecosystem Extensions
-  🔄  UPDATE     - Neural Sync
-  🔐  SECURITY   - System-Level Access Control
-  🧊  MEMORY     - Two-Tier Memory System
-  🎭  SOUL       - Personality System
-  📚  SKILLS     - Skills V2 (BrowserOS Style)
-  ⏰  SCHEDULE   - Native Task Scheduler
-  🌐  MCP        - MCP Server (Claude Code)
-  📱  APPS       - App Integrations (OAuth)
-  🔀  WORKFLOWS  - Workflow Automation
-  🧪  TESTS      - Run Test Suite
-  🌍  API        - REST API Server
-  🐳  DOCKER     - Docker Management
-  📈  MONITORING - Advanced Monitoring
-  🎨  WORKFLOW   - Visual Workflow Builder
-  🤖  AUTOMATION - Rule-based Automation
-  🗄️  DATABASE   - SQLite Persistence
-  ⌨️  PALETTE    - Command Palette
-  📁  FILES      - File Manager
-  💻  CODE       - Code Interpreter
-  🛒  MARKET     - Plugin Marketplace
-  🔒  ENCRYPT    - Encryption Tools
-  🔐  SSH        - SSH Manager
-  🧠  CACHE      - Cache Layer
-  📝  LOGS       - Log Aggregator
-  💾  BACKUP     - Backup System
-  ☸️  K8S       - Kubernetes Connector
-  🔌  WS        - WebSocket Server
-  📊  GQL       - GraphQL API
-  📈  PROMETHEUS - Prometheus Metrics
-  🚪  GATEWAY    - API Gateway
-  🔍  DISCOVERY  - Service Discovery
-  🔑  SECRETS    - Secrets Manager
-  🌍  MULTI      - Multi-Cluster
-  ⚡  CIRCUIT    - Circuit Breaker
-  ⚖️  LB         - Load Balancer
-  🕸️  MESH       - Service Mesh
-  🌐  CDN        - CDN Manager
-  📨  EVENT      - Event Bus
-  🤖  AGENTS     - Agents SDK
+Quick Actions (just type the number):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  [1] 🎯 QUICK START    - Start using NEUGI immediately
+  [2] 🤖 AGENT STUDIO   - Create your custom agents
+  [3] 💬 CHAT           - Chat with AI
+  [4] 🎨 WORKFLOWS     - Visual workflow builder
+  [5] 🔍 DIAGNOSE      - System health check
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Or choose from the full menu below:
+        """)
+
+        print("""  🤖  AGENTS     - Agents SDK
   ⌘  CLI        - CLI Framework
   🧠  ML         - ML Pipeline
   🔗  DATAPIPE   - Data Pipeline
@@ -607,8 +652,97 @@ I'm your AI assistant. I can help you with:
   🆘  INCIDENT   - Incident Response
   💰  COST       - Cost Optimizer
   👋  EXIT       - Shutdown Wizard
+        """)
 
-""")
+        choice = self.ui.menu(
+            [
+                ("1", "🎯 QUICK START"),
+                ("2", "🤖 AGENT STUDIO"),
+                ("3", "💬 CHAT"),
+                ("4", "🎨 WORKFLOWS"),
+                ("5", "🔍 DIAGNOSE/HEALTH"),
+                ("rescue", "🆘 WIZARD RESCUE"),
+                ("setup", "🎯 SETUP"),
+                ("repair", "🔧 REPAIR"),
+                ("diagnose", "🧠 DIAGNOSE"),
+                ("chat", "💬 CHAT"),
+                ("plugins", "📦 PLUGINS"),
+                ("update", "🔄 UPDATE"),
+                ("security", "🔐 SECURITY"),
+                ("memory", "🧊 MEMORY"),
+                ("soul", "🎭 SOUL"),
+                ("skills", "📚 SKILLS"),
+                ("schedule", "⏰ SCHEDULE"),
+                ("mcp", "🌐 MCP"),
+                ("apps", "📱 APPS"),
+                ("workflows", "🔀 WORKFLOWS"),
+                ("tests", "🧪 TESTS"),
+                ("api", "🌍 API"),
+                ("docker", "🐳 DOCKER"),
+                ("monitoring_v2", "📈 MONITORING"),
+                ("workflow_builder", "🎨 WORKFLOW BUILDER"),
+                ("automation", "🤖 AUTOMATION"),
+                ("database", "🗄️ DATABASE"),
+                ("palette", "⌨️ PALETTE"),
+                ("file_manager", "📁 FILES"),
+                ("code", "💻 CODE"),
+                ("marketplace", "🛒 MARKET"),
+                ("encryption", "🔒 ENCRYPT"),
+                ("ssh", "🔐 SSH"),
+                ("cache", "🧠 CACHE"),
+                ("logs", "📝 LOGS"),
+                ("backup", "💾 BACKUP"),
+                ("k8s", "☸️ K8S"),
+                ("websocket", "🔌 WS"),
+                ("graphql", "📊 GQL"),
+                ("prometheus", "📈 PROMETHEUS"),
+                ("gateway", "🚪 GATEWAY"),
+                ("discovery", "🔍 DISCOVERY"),
+                ("secrets", "🔑 SECRETS"),
+                ("multicluster", "🌍 MULTI"),
+                ("circuit", "⚡ CIRCUIT"),
+                ("lb", "⚖️ LB"),
+                ("mesh", "🕸️ MESH"),
+                ("cdn", "🌐 CDN"),
+                ("eventbus", "📨 EVENT"),
+                ("agents", "🤖 AGENTS"),
+                ("agentstudio", "🎨 AGENT STUDIO"),
+                ("rescue", "🆘 WIZARD RESCUE"),
+                ("learner", "🧠 AUTO-LEARNER"),
+                ("cli", "⌘ CLI"),
+                ("ml", "🧠 ML"),
+                ("datapipe", "🔗 DATAPIPE"),
+                ("notify", "🔔 NOTIFY"),
+                ("webhook", "🪝 WEBHOOK"),
+                ("ratelimit", "🚦 RATELIMIT"),
+                ("config", "⚙️ CONFIG"),
+                ("template", "📝 TEMPLATE"),
+                ("report", "📑 REPORT"),
+                ("analytics", "📉 ANALYTICS"),
+                ("apiversion", "📌 APIVERSION"),
+                ("apidocs", "📖 APIDOCS"),
+                ("validator", "✅ VALIDATOR"),
+                ("cache", "💾 CACHE"),
+                ("metrics", "📊 METRICS"),
+                ("health", "💚 HEALTH"),
+                ("circuitdash", "⚡ CIRCUITDASH"),
+                ("registry", "📚 REGISTRY"),
+                ("configsync", "🔄 CONFIGSYNC"),
+                ("deploy", "🚀 DEPLOY"),
+                ("serverless", "λ SERVERLESS"),
+                ("edge", "🌐 EDGE"),
+                ("mq", "📬 MQ"),
+                ("stream", "🌊 STREAM"),
+                ("batch", "📦 BATCH"),
+                ("apm", "📈 APM"),
+                ("loganalyzer", "🔍 LOGANALYZER"),
+                ("alert", "🚨 ALERT"),
+                ("incident", "🆘 INCIDENT"),
+                ("cost", "💰 COST"),
+                ("quit", "👋 EXIT"),
+            ],
+            "What would you like to do?",
+        )
 
         while True:
             choice = self.ui.menu(
@@ -665,6 +799,7 @@ I'm your AI assistant. I can help you with:
                     ("agents", "🤖 Agents SDK"),
                     ("agentstudio", "🎨 Agent Studio"),
                     ("learner", "🧠 Auto-Learner"),
+                    ("rescue", "🆘 WIZARD RESCUE - Fix Any Problem!"),
                     ("cli", "⌘ CLI Framework"),
                     # v23.x NEW FEATURES
                     ("ml", "🧠 ML Pipeline"),
@@ -805,9 +940,11 @@ I'm your AI assistant. I can help you with:
                 self.run_agents()
             elif choice == "51" or choice == "agentstudio":
                 self.run_agent_studio()
-            elif choice == "52":
-                self.run_learner()
+            elif choice == "52" or choice == "rescue":
+                self.run_rescue()
             elif choice == "53":
+                self.run_learner()
+            elif choice == "54":
                 self.run_cli()
             elif choice == "52":
                 self.run_ml_pipeline()
@@ -2641,6 +2778,71 @@ Example Workflows:
                     print("No task provided!")
         else:
             return
+
+        input(f"\n{C.CYAN}Press Enter to continue...{C.END}")
+
+    def run_rescue(self):
+        """🆘 WIZARD RESCUE - Auto troubleshoot any problem"""
+        from neugi_wizard_rescue import WizardRescue
+
+        self.ui.header("🆘 WIZARD RESCUE - TROUBLESHOOTING")
+
+        print("""
+  💡 STUCK? CONFUSED? NOT WORKING?
+  
+  Don't panic! Wizard Rescue is here to help!
+  
+  🎯 What can I fix:
+  • Ollama tidak jalan
+  • Port conflict (19888/19889)
+  • API/Connection issues
+  • Permission problems
+  • Database errors
+  • Memory/RAM penuh
+  • Model tidak ditemukan
+  • Docker problems
+  • Dan 40+ masalah lainnya!
+  
+  Saya akan otomatis cek semua dan coba perbaiki!
+        """)
+
+        choice = self.ui.menu(
+            [
+                ("auto", "🔍 AUTO-DIAGNOSE & FIX - Check everything now!"),
+                ("select", "🎯 Pilih Masalah Spesifik"),
+                ("back", "🔙 Kembali / Back"),
+            ]
+        )
+
+        rescue = WizardRescue()
+
+        if choice == "auto" or choice == "1":
+            rescue.diagnose()
+        elif choice == "select" or choice == "2":
+            print("\n📋 Common Issues:")
+            print("  1. Ollama not running")
+            print("  2. Port 19888 conflict")
+            print("  3. Permission denied")
+            print("  4. Model not found")
+            print("  5. No internet")
+            print("  6. Database error")
+
+            issue_choice = input("\nPilih nomor: ").strip()
+
+            issue_map = {
+                "1": "ollama_not_running",
+                "2": "port_19888_conflict",
+                "3": "permission_denied",
+                "4": "model_not_found",
+                "5": "no_internet",
+                "6": "db_corrupted",
+            }
+
+            if issue_choice in issue_map:
+                result = rescue.quick_fix(issue_map[issue_choice])
+                print(f"\n{Colors.GREEN}{result.get('message', 'Done!')}{Colors.END}")
+                for step in result.get("steps", []):
+                    print(f"  {step}")
 
         input(f"\n{C.CYAN}Press Enter to continue...{C.END}")
 
