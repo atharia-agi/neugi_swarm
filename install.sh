@@ -45,22 +45,40 @@ main() {
 export PATH="$HOME/.local/bin:$PATH"
     
     # ============================================================
-    # STEP 1: Check Ollama (if not found, skip for now)
+    # STEP 1: Install Ollama (REQUIRED)
     # ============================================================
     
+    log_step "🔄 INSTALLING OLLAMA (Required for NEUGI)"
+    
     if command -v ollama &> /dev/null; then
-        log_step "OLLAMA ALREADY INSTALLED"
-        log_success "✓ Ollama found!"
+        log_success "✓ Ollama ALREADY installed"
     else
-        log_step "OLLAMA NOT FOUND - SKIPPING"
-        log_info "You can install Ollama later: curl -fsSL https://ollama.ai/install.sh | sh"
+        log_info "Installing Ollama..."
+        
+        # Download Ollama binary directly (fast!)
+        curl -L https://ollama.ai/download/ollama-linux-amd64 -o /tmp/ollama 2>&1 | while IFS= read -r line; do
+            echo -ne "\rDownloading... $line"
+        done
+        
+        if [ -f /tmp/ollama ]; then
+            chmod +x /tmp/ollama
+            sudo cp /tmp/ollama /usr/local/bin/ollama 2>/dev/null || sudo mv /tmp/ollama /usr/local/bin/ollama
+            log_success "✓ Ollama installed successfully!"
+        else
+            log_warn "Ollama download failed - you can install manually later"
+        fi
+    fi
+    
+    # Now verify
+    if command -v ollama &> /dev/null; then
+        log_success "✓ Ollama is ready!"
     fi
     
     # ============================================================
-    # STEP 2: Clone/Update NEUGI
+    # STEP 2: Clone NEUGI
     # ============================================================
     
-    log_step "INSTALLING NEUGI"
+    log_step "📦 CLONING NEUGI"
     
     NEUGI_DIR="$HOME/neugi"
     mkdir -p "$NEUGI_DIR"
@@ -88,7 +106,39 @@ MASTER_KEY="neugi123"
 EOF
     
     mkdir -p data models logs workspace
-    log_success "NEUGI installed to: $NEUGI_DIR"
+    log_success "✓ NEUGI installed to: $NEUGI_DIR"
+    
+    # ============================================================
+    # START EVERYTHING UP!
+    # ============================================================
+    
+    log_step "🚀 STARTING NEUGI..."
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  🎉 NEUGI READY! Starting now..."
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    
+    # Start Ollama in background
+    nohup ollama serve > /tmp/ollama.log 2>&1 &
+    sleep 2
+    
+    # Check if running
+    if curl -s http://localhost:11434/api/tags >/dev/null 2>&1; then
+        log_success "✓ Ollama server running on port 11434"
+    else
+        log_info "Ollama may take a moment to start..."
+    fi
+    
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  To start NEUGI Wizard:"
+    echo "  ➜ cd ~/neugi"
+    echo "  ➜ python neugi_swarm/neugi_wizard.py"
+    echo ""
+    echo "  Or use: python neugi_swarm/neugi_swarm.py"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
     
     # ============================================================
     # STEP 5: Install NEUGI CLI (like openclaw!)
