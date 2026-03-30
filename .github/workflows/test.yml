@@ -51,6 +51,6 @@ jobs:
       
       - name: Check Python syntax
         run: |
-          python3 -m py_compile neugi_swarm.py
-          python3 -m py_compile neugi_wizard.py
-          python3 -m py_compile neugi_assistant.py
+          python3 -m py_compile neugi_swarm/neugi_swarm.py
+          python3 -m py_compile neugi_swarm/neugi_wizard.py
+          python3 -m py_compile neugi_swarm/neugi_assistant.py
