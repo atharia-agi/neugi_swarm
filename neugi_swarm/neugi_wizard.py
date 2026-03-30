@@ -29,7 +29,7 @@ try:
     import winreg
 except ImportError:
     winreg = None
-from typing import Dict, List
+from typing import Dict, List, Optional
 from datetime import datetime
 
 # ============================================================
@@ -1532,7 +1532,7 @@ Options:
             elif choice == "3":
                 fact = input("Fact to remember: ")
                 memory.auto_remember(fact)
-                print(f"\n✅ Remembered!")
+                print("\n✅ Remembered!")
 
             elif choice == "4":
                 stats = memory.get_stats()
@@ -1543,7 +1543,7 @@ Options:
 
             elif choice == "5":
                 memory.cleanup_old_daily(30)
-                print(f"\n✅ Cleaned up!")
+                print("\n✅ Cleaned up!")
 
         except Exception as e:
             self.ui.error(f"Error: {e}")
@@ -1593,7 +1593,7 @@ Available Presets:
                     print(f"\n✅ Loaded: {preset}")
                     soul.display()
                 else:
-                    print(f"\n❌ Unknown preset")
+                    print("\n❌ Unknown preset")
 
         except Exception as e:
             self.ui.error(f"Error: {e}")
@@ -1876,8 +1876,8 @@ Example Workflows:
             from neugi_api import main as api_main
 
             print(f"{C.GREEN}Starting REST API server...{C.END}")
-            print(f"  URL: http://localhost:19890")
-            print(f"  Docs: http://localhost:19890/docs\n")
+            print("  URL: http://localhost:19890")
+            print("  Docs: http://localhost:19890/docs\n")
 
             api_main()
 
@@ -1952,7 +1952,7 @@ Example Workflows:
             print(f"  Disk: {metrics.disk_percent:.1f}%")
             print(f"  Network Sent: {metrics.network_sent / 1024 / 1024:.1f} MB")
             print(f"  Network Recv: {metrics.network_recv / 1024 / 1024:.1f} MB")
-            print(f"\n  Prometheus metrics available at /metrics endpoint")
+            print("\n  Prometheus metrics available at /metrics endpoint")
 
         except Exception as e:
             self.ui.error(f"Error: {e}")
@@ -1981,7 +1981,7 @@ Example Workflows:
             from neugi_workflow_builder import main as builder_main
 
             print(f"{C.GREEN}Starting Workflow Builder...{C.END}")
-            print(f"  URL: http://localhost:19900\n")
+            print("  URL: http://localhost:19900\n")
 
             builder_main()
 
@@ -2055,7 +2055,7 @@ Example Workflows:
 """)
 
         try:
-            from neugi_database import Database, ConversationStore, MemoryStore, MetricsStore
+            from neugi_database import Database
 
             db = Database()
 
@@ -2260,7 +2260,7 @@ Example Workflows:
 """)
 
         try:
-            from neugi_encryption import Encryption, KeyManager
+            from neugi_encryption import KeyManager
 
             km = KeyManager()
             keys = km.list_keys()
@@ -2272,10 +2272,10 @@ Example Workflows:
             else:
                 print("  No keys found")
 
-            print(f"\n  Options:")
-            print(f"    --encrypt-file FILE")
-            print(f"    --hash STRING")
-            print(f"    --generate-key")
+            print("\n  Options:")
+            print("    --encrypt-file FILE")
+            print("    --hash STRING")
+            print("    --generate-key")
 
         except Exception as e:
             self.ui.error(f"Error: {e}")
