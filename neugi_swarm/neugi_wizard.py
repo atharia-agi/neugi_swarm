@@ -663,6 +663,8 @@ I'm your AI assistant. I can help you with:
                     ("cdn", "🌐 CDN Manager"),
                     ("eventbus", "📨 Event Bus"),
                     ("agents", "🤖 Agents SDK"),
+                    ("agentstudio", "🎨 Agent Studio"),
+                    ("learner", "🧠 Auto-Learner"),
                     ("cli", "⌘ CLI Framework"),
                     # v23.x NEW FEATURES
                     ("ml", "🧠 ML Pipeline"),
@@ -801,7 +803,11 @@ I'm your AI assistant. I can help you with:
                 self.run_eventbus()
             elif choice == "50":
                 self.run_agents()
-            elif choice == "51":
+            elif choice == "51" or choice == "agentstudio":
+                self.run_agent_studio()
+            elif choice == "52":
+                self.run_learner()
+            elif choice == "53":
                 self.run_cli()
             elif choice == "52":
                 self.run_ml_pipeline()
@@ -2554,6 +2560,141 @@ Example Workflows:
     def run_agents(self):
         print("Agents SDK loaded")
         input()
+
+    def run_agent_studio(self):
+        """Agent Studio - Create custom user agents"""
+        from neugi_agent_studio import AgentStudio, TEMPLATES
+
+        self.ui.header("🤖 AGENT STUDIO - Create Your Own Agent")
+        print("""
+  Platform provides TEMPLATES - You create & customize your own agents!
+  Your agent will work ALONGSIDE the 9 built-in agents!
+        """)
+
+        studio = AgentStudio()
+
+        print("\n📋 AVAILABLE TEMPLATES:")
+        print("-" * 50)
+        for tid, tpl in TEMPLATES.items():
+            print(f"  [{tid:12}] {tpl['name']}")
+            print(f"               {tpl['description']}")
+
+        print("\n" + "=" * 50)
+        print("🛠️  TOOLS YOU CAN CHOOSE FROM:")
+        print("-" * 50)
+        print("""
+  • web_search, web_fetch, web_browse
+  • code_execute, code_debug, file_read, file_write
+  • llm_think, llm_generate
+  • json_parse, csv_analyze, db_query
+  • send_telegram, send_discord, send_email
+  • image_generate, audio_speak
+  • shell_execute
+        """)
+
+        print("\n" + "=" * 50)
+        print("👥 EXISTING AGENTS (you can work with them!):")
+        print("-" * 50)
+        print("""
+  • aurora  - Researcher (web search/fetch)
+  • cipher  - Coder (code execute/debug)
+  • nova    - Creator (image generation)
+  • pulse   - Analyst (data analysis)
+  • quark   - Strategist (planning)
+  • shield  - Security (audit/scan)
+  • spark   - Social (telegram/discord)
+  • ink     - Writer (documentation)
+  • nexus   - Manager (delegate/coordinate)
+        """)
+
+        print("\n" + "=" * 50)
+        choice = self.ui.menu(
+            [
+                ("create", "🎨 Create New Agent"),
+                ("list", "📋 List My Agents"),
+                ("run", "▶️  Run an Agent"),
+                ("back", "🔙 Back to Main Menu"),
+            ]
+        )
+
+        if choice == "create" or choice == "1":
+            studio.create_agent_interactive()
+        elif choice == "list" or choice == "2":
+            studio.show_dashboard()
+        elif choice == "run" or choice == "3":
+            print("\n📋 YOUR AGENTS:")
+            agents = studio.list_user_agents()
+            if not agents:
+                print("  No agents yet. Create one first!")
+            else:
+                for a in agents:
+                    print(f"  • {a['name']} ({a['role']})")
+
+            agent_name = input("\nAgent name to run: ").strip()
+            if agent_name:
+                task = input("Task: ").strip()
+                if task:
+                    print(f"\n🚀 Running '{agent_name}' on task: {task}")
+                    result = studio.run_user_agent(agent_name, task)
+                    print(f"\n📦 Result: {result}")
+                else:
+                    print("No task provided!")
+        else:
+            return
+
+        input(f"\n{C.CYAN}Press Enter to continue...{C.END}")
+
+    def run_learner(self):
+        """Auto-Learner - NEUGI's Self-Improving System"""
+        from neugi_auto_learner import AutoLearner
+
+        self.ui.header("🧠 AUTO-LEARNER")
+        print("""
+  NEUGI learns from EVERY interaction!
+  Automatically creates new skills from successful task completions.
+  
+  This is what makes NEUGI different from OpenClaw, Hermes, Claude Code:
+  - It gets SMARTER the longer you use it!
+  - Auto-creates reusable skills
+  - Personalized to YOUR workflow
+        """)
+
+        learner = AutoLearner()
+        learner.show_learning_dashboard()
+
+        print("\n" + "=" * 50)
+        choice = self.ui.menu(
+            [
+                ("stats", "📊 Show Learning Stats"),
+                ("analyze", "⚡ Analyze & Create Skills"),
+                ("suggest", "💡 Get Skill Suggestions"),
+                ("back", "🔙 Back"),
+            ]
+        )
+
+        if choice == "stats":
+            learner.show_learning_dashboard()
+        elif choice == "analyze":
+            print("\n🔄 Analyzing patterns...")
+            new_skills = learner.analyze_and_create_skill()
+            if new_skills:
+                print(f"\n✅ Created {len(new_skills)} new skills:")
+                for s in new_skills:
+                    print(f"   • {s['name']}")
+            else:
+                print("\n📝 No new skills to create yet.")
+        elif choice == "suggest":
+            user_input = input("What are you trying to do? ").strip()
+            if user_input:
+                suggestions = learner.suggest_skills(user_input)
+                if suggestions:
+                    print("\n💡 Skills that can help:")
+                    for s in suggestions:
+                        print(f"   • {s['name']} ({s['confidence']:.0%} match)")
+                else:
+                    print("\n📝 No matching skills found.")
+
+        input(f"\n{C.CYAN}Press Enter to continue...{C.END}")
 
     def run_cli(self):
         print("CLI Framework loaded")
