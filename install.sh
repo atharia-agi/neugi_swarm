@@ -42,64 +42,22 @@ main() {
     echo ""
     
     # Add PATH
-    export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
     
     # ============================================================
-    # STEP 1: Install Ollama (SIMPLIFIED - use binary if exists)
+    # STEP 1: Check Ollama (if not found, skip for now)
     # ============================================================
-    
-    log_step "CHECKING & INSTALLING OLLAMA"
     
     if command -v ollama &> /dev/null; then
-        log_success "✓ Ollama already installed"
+        log_step "OLLAMA ALREADY INSTALLED"
+        log_success "✓ Ollama found!"
     else
-        log_info "Downloading Ollama binary..."
-        curl -L https://ollama.ai/download/ollama-linux-amd64 -o /tmp/ollama
-        chmod +x /tmp/ollama
-        sudo mv /tmp/ollama /usr/local/bin/ollama
-        log_success "✓ Ollama installed!"
+        log_step "OLLAMA NOT FOUND - SKIPPING"
+        log_info "You can install Ollama later: curl -fsSL https://ollama.ai/install.sh | sh"
     fi
     
     # ============================================================
-    # STEP 2: Start Ollama Server
-    # ============================================================
-    
-    log_step "STARTING OLLAMA SERVER"
-    
-    export PATH="$HOME/.local/bin:$PATH"
-    
-    if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
-        log_success "Ollama is already running"
-    else
-        log_info "Starting Ollama server..."
-        nohup ollama serve > /tmp/ollama.log 2>&1 &
-        
-        for i in {1..15}; do
-            sleep 1
-            if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
-                log_success "Ollama server started"
-                break
-            fi
-            if [ $i -eq 15 ]; then
-                log_warn "Ollama starting in background..."
-            fi
-        done
-    fi
-    
-    # ============================================================
-    # STEP 3: Pull Models
-    # ============================================================
-    
-    log_step "DOWNLOADING AI MODELS"
-    
-    export PATH="$HOME/.local/bin:$PATH"
-    
-    log_info "Pulling qwen3.5:cloud model..."
-    ollama pull qwen3.5:cloud >> /tmp/neugi_install.log 2>&1 || true
-    log_success "Model ready"
-    
-    # ============================================================
-    # STEP 4: Install NEUGI
+    # STEP 2: Clone/Update NEUGI
     # ============================================================
     
     log_step "INSTALLING NEUGI"
@@ -108,17 +66,13 @@ main() {
     mkdir -p "$NEUGI_DIR"
     cd "$NEUGI_DIR"
     
-    log_info "Downloading NEUGI repository..."
-    if [ -d "$NEUGI_DIR/.git" ]; then
-        log_info "Updating existing repository..."
-        cd "$NEUGI_DIR" && git pull origin main
-    else
-        git clone https://github.com/atharia-agi/neugi_swarm.git "$NEUGI_DIR"
-        cd "$NEUGI_DIR"
-    fi
+    log_info "Cloning NEUGI (shallow clone - fast)..."
+    git clone --depth 1 https://github.com/atharia-agi/neugi_swarm.git "$NEUGI_DIR"
     
-    log_info "Installing python dependencies..."
-    pip3 install -r requirements.txt --break-system-packages 2>/dev/null || pip3 install -r requirements.txt
+    log_info "Installing python dependencies (lightweight)..."
+    pip3 install requests flask psutil --break-system-packages 2>/dev/null || pip3 install requests flask psutil 2>/dev/null || true
+    
+    log_success "✓ Dependencies ready"
     
     chmod +x neugi_swarm/neugi_swarm.py 2>/dev/null || true
     
