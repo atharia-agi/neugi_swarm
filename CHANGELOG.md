@@ -1,8 +1,8 @@
 # NEUGI SWARM - CHANGELOG
 
 > Complete development history and architecture documentation
-> Last Updated: March 17, 2026
-> Version: 26.0.0
+> Last Updated: March 30, 2026
+> Version: 29.0.0
 
 ---
 
@@ -15,6 +15,50 @@
 NEUGI is an autonomous, multi-agent swarm intelligence system designed to run on local infrastructure. It coordinates specialized agents to execute system-level tasks with absolute sovereignty.
 
 ## Version History
+
+### v29.0.0 (March 30, 2026) - THE ULTIMATE AGENT PLATFORM
+
+#### Ultimate Beginner-Friendly Features
+- **Wizard Rescue System**: Auto-troubleshoot 50+ common issues (Ollama not running, port conflicts, permission problems, etc.)
+- **One-Click Project Templates**: Create Flask, React, FastAPI, Docker, ML projects instantly
+- **Global Onboarding**: Step-by-step guided experience in 6 languages (English, Indonesian, Spanish, Chinese, Japanese, Korean)
+- **Natural Language CLI**: No commands to memorize - just type what you need!
+
+#### Advanced Agent Features
+- **Agent Studio**: Create custom AI agents with templates, tool selection, and personalit
+- **Auto-Learner**: NEUGI learns from every interaction and auto-creates reusable skills
+- **Voice Control**: Hands-free operation with speech recognition (pip install SpeechRecognition)
+- **Team Collaboration**: Multi-user support, team workspaces, task assignment, activity tracking
+
+#### Cloud & Deployment
+- **One-Click Cloud Deploy**: Deploy to Vercel, Railway, Render, Fly.io, DigitalOcean with single command
+- **Quick Deploy**: Auto-detect project type and deploy to best platform
+
+#### Enhanced Wizard
+- **Quick Status on Start**: Shows Ollama and system status immediately
+- **Keyboard Shortcuts**: 1-9 for quick selection
+- **Search Menu**: Type to filter options
+
+---
+
+### v27.0.0 (March 24, 2026) - WIZARD ENHANCEMENTS & AUTO-LEARNING
+
+#### Agent Studio Integration
+- **Agent Studio Module**: User-friendly agent creation with templates
+- **Template System**: Pre-built templates (blank, developer, researcher, designer, analyst, writer, guardian, helper)
+- **Interactive Wizard**: Step-by-step agent customization
+
+#### Auto-Learning System
+- **neugi_auto_learner.py**: AI learns from task patterns
+- **Auto-Skill Creation**: Generates skills from successful task completions
+- **Learning Dashboard**: Track learning progress and efficiency
+
+#### Natural Language CLI
+- **neugi_nlcli.py**: Parse natural language commands
+- **Intent Detection**: Automatically detects user intent (create, search, check, fix, etc.)
+- **Multi-language Support**: Indonesian and English
+
+---
 
 ### v26.0.0 (March 17, 2026) - COGNITIVE ENHANCEMENTS & MCP v2.0 INTEGRATION
 
