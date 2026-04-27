@@ -1,27 +1,676 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=https://github.com/atharia-agi/neugi_swarm#readme">
-    <title>NEUGI Documentation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation — Neugi v2.1.1</title>
+    <meta name="description" content="Complete documentation for NEUGI Swarm v2.1.1. 25 subsystems, 108+ modules, installation, CLI, API, and architecture guides.">
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        body {
-            background: #000;
-            color: #fff;
-            font-family: 'Inter', sans-serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            text-align: center;
+        :root {
+            --bg-base: #000000;
+            --bg-elevated: #0a0a0a;
+            --bg-layer: rgba(255,255,255,0.03);
+            --bg-code: #0d0d0d;
+            --text-primary: #ffffff;
+            --text-secondary: #a1a1aa;
+            --text-tertiary: #71717a;
+            --border-subtle: rgba(255,255,255,0.1);
+            --border-hover: rgba(255,255,255,0.2);
+            --accent: #6366f1;
+            --accent-glow: rgba(99,102,241,0.15);
+            --font-sans: 'Inter', -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
         }
-        a { color: #6366f1; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        html { scroll-behavior:smooth; background:var(--bg-base); color:var(--text-primary); }
+        body { font-family:var(--font-sans); line-height:1.7; font-size:15px; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width:6px; }
+        ::-webkit-scrollbar-track { background:transparent; }
+        ::-webkit-scrollbar-thumb { background:var(--border-subtle); border-radius:3px; }
+
+        /* Nav */
+        nav {
+            position:fixed; top:0; left:0; right:0; height:56px;
+            background:rgba(0,0,0,0.8); backdrop-filter:blur(12px);
+            border-bottom:1px solid var(--border-subtle); z-index:100;
+            display:flex; align-items:center;
+        }
+        .nav-inner {
+            max-width:1200px; width:100%; margin:0 auto; padding:0 24px;
+            display:flex; justify-content:space-between; align-items:center;
+        }
+        .brand { display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--text-primary); font-weight:600; font-size:15px; }
+        .brand img { width:26px; height:26px; }
+        .nav-links { display:flex; gap:28px; }
+        .nav-links a { color:var(--text-secondary); text-decoration:none; font-size:13px; font-weight:500; transition:color 0.2s; }
+        .nav-links a:hover { color:var(--text-primary); }
+
+        /* Layout */
+        .docs-layout {
+            display:grid; grid-template-columns:260px 1fr;
+            max-width:1200px; margin:0 auto; padding-top:72px; min-height:100vh;
+        }
+
+        /* Sidebar */
+        aside {
+            position:sticky; top:72px; height:calc(100vh - 72px);
+            overflow-y:auto; padding:0 16px 40px 24px; border-right:1px solid var(--border-subtle);
+        }
+        .search-box {
+            position:relative; margin-bottom:20px;
+        }
+        .search-box input {
+            width:100%; background:var(--bg-layer); border:1px solid var(--border-subtle);
+            border-radius:8px; padding:8px 12px; color:var(--text-primary); font-size:13px;
+            font-family:var(--font-sans); outline:none;
+        }
+        .search-box input::placeholder { color:var(--text-tertiary); }
+        .search-box input:focus { border-color:var(--border-hover); }
+
+        .nav-group { margin-bottom:20px; }
+        .nav-group-title {
+            font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em;
+            color:var(--text-tertiary); margin-bottom:8px; padding-left:8px;
+        }
+        .nav-item {
+            display:block; padding:6px 8px; border-radius:6px;
+            color:var(--text-secondary); text-decoration:none; font-size:13px;
+            transition:all 0.15s; cursor:pointer; border:none; background:none; width:100%; text-align:left;
+        }
+        .nav-item:hover, .nav-item.active {
+            background:var(--bg-layer); color:var(--text-primary);
+        }
+
+        /* Main Content */
+        main { padding:8px 48px 80px; max-width:780px; }
+        .page-section { display:none; }
+        .page-section.active { display:block; animation:fadeIn 0.3s ease; }
+        @keyframes fadeIn { from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+        h1 { font-size:38px; font-weight:600; letter-spacing:-0.03em; margin-bottom:12px; line-height:1.2; }
+        h2 { font-size:24px; font-weight:600; letter-spacing:-0.02em; margin:40px 0 16px; padding-bottom:8px; border-bottom:1px solid var(--border-subtle); }
+        h3 { font-size:18px; font-weight:600; margin:28px 0 12px; }
+        p { color:var(--text-secondary); margin-bottom:14px; }
+        a { color:var(--accent); text-decoration:none; }
+        a:hover { text-decoration:underline; }
+
+        .badge {
+            display:inline-flex; align-items:center; gap:6px; padding:4px 10px;
+            border-radius:100px; background:var(--bg-layer); border:1px solid var(--border-subtle);
+            color:var(--text-secondary); font-size:12px; font-weight:500; margin-bottom:20px;
+        }
+
+        code {
+            font-family:var(--font-mono); font-size:13px; background:var(--bg-layer);
+            padding:2px 6px; border-radius:4px; color:var(--text-primary);
+            border:1px solid var(--border-subtle);
+        }
+        pre {
+            background:var(--bg-code); border:1px solid var(--border-subtle); border-radius:10px;
+            padding:16px 20px; overflow-x:auto; margin:16px 0;
+        }
+        pre code { background:none; border:none; padding:0; font-size:13px; line-height:1.6; color:var(--text-secondary); }
+
+        .cmd-block {
+            position:relative; background:var(--bg-code); border:1px solid var(--border-subtle);
+            border-radius:10px; padding:16px 20px; margin:16px 0; overflow-x:auto;
+        }
+        .cmd-block code { background:none; border:none; padding:0; font-size:13px; color:var(--text-secondary); }
+        .copy-btn {
+            position:absolute; top:12px; right:12px; background:var(--bg-layer);
+            border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-tertiary);
+            padding:4px 10px; font-size:12px; cursor:pointer; transition:all 0.2s;
+        }
+        .copy-btn:hover { color:var(--text-primary); border-color:var(--border-hover); }
+
+        table {
+            width:100%; border-collapse:collapse; margin:16px 0; font-size:14px;
+        }
+        th, td {
+            padding:10px 14px; text-align:left; border-bottom:1px solid var(--border-subtle);
+        }
+        th { color:var(--text-tertiary); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.05em; }
+        td { color:var(--text-secondary); }
+        tr:hover td { background:var(--bg-layer); }
+
+        .tip {
+            background:rgba(16,185,129,0.05); border:1px solid rgba(16,185,129,0.15);
+            border-radius:10px; padding:16px 20px; margin:20px 0;
+        }
+        .tip-title { color:#10b981; font-weight:600; font-size:13px; margin-bottom:6px; }
+        .warning {
+            background:rgba(245,158,11,0.05); border:1px solid rgba(245,158,11,0.15);
+            border-radius:10px; padding:16px 20px; margin:20px 0;
+        }
+        .warning-title { color:#f59e0b; font-weight:600; font-size:13px; margin-bottom:6px; }
+
+        .agent-grid {
+            display:grid; grid-template-columns:repeat(2, 1fr); gap:12px; margin:16px 0;
+        }
+        .agent-card {
+            background:var(--bg-elevated); border:1px solid var(--border-subtle);
+            border-radius:10px; padding:16px;
+        }
+        .agent-card h4 { font-size:14px; font-weight:600; margin-bottom:4px; }
+        .agent-card p { font-size:13px; color:var(--text-tertiary); margin:0; }
+
+        footer.docs-footer {
+            border-top:1px solid var(--border-subtle); padding:40px 48px;
+            margin-top:60px; display:flex; justify-content:space-between; align-items:center;
+            font-size:13px; color:var(--text-tertiary);
+        }
+
+        @media (max-width:900px) {
+            .docs-layout { grid-template-columns:1fr; }
+            aside { display:none; }
+            main { padding:8px 24px 60px; }
+        }
     </style>
 </head>
 <body>
-    <div>
-        <p>Redirecting to <a href="https://github.com/atharia-agi/neugi_swarm#readme">GitHub Documentation</a>...</p>
+    <nav>
+        <div class="nav-inner">
+            <a href="index.html" class="brand">
+                <img src="assets/icon_mascot.png" alt="Neugi">
+                Neugi
+            </a>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="dashboard.html">Dashboard</a>
+                <a href="https://github.com/atharia-agi/neugi_swarm" target="_blank">GitHub</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="docs-layout">
+        <aside>
+            <div class="search-box">
+                <input type="text" id="doc-search" placeholder="Search docs..." oninput="searchDocs(this.value)">
+            </div>
+
+            <div class="nav-group">
+                <div class="nav-group-title">Getting Started</div>
+                <button class="nav-item active" onclick="showPage('intro')">Introduction</button>
+                <button class="nav-item" onclick="showPage('install')">Installation</button>
+                <button class="nav-item" onclick="showPage('quickstart')">Quickstart</button>
+            </div>
+
+            <div class="nav-group">
+                <div class="nav-group-title">Architecture</div>
+                <button class="nav-item" onclick="showPage('architecture')">Core Concepts</button>
+                <button class="nav-item" onclick="showPage('agents')">Agent Archetypes</button>
+                <button class="nav-item" onclick="showPage('memory')">Context Memory</button>
+                <button class="nav-item" onclick="showPage('skills')">6-Tier Skills</button>
+            </div>
+
+            <div class="nav-group">
+                <div class="nav-group-title">Control</div>
+                <button class="nav-item" onclick="showPage('cli')">CLI Reference</button>
+                <button class="nav-item" onclick="showPage('api')">REST API</button>
+                <button class="nav-item" onclick="showPage('telegram')">Telegram Bot</button>
+            </div>
+
+            <div class="nav-group">
+                <div class="nav-group-title">Advanced</div>
+                <button class="nav-item" onclick="showPage('rescue')">Rescue & Wizard</button>
+                <button class="nav-item" onclick="showPage('ecosystem')">Ecosystem</button>
+            </div>
+        </aside>
+
+        <main>
+            <!-- INTRODUCTION -->
+            <section id="intro" class="page-section active">
+                <div class="badge">v2.1.1 — 25 Subsystems — 122 Tests Passing</div>
+                <h1>Neugi Documentation</h1>
+                <p>Deploy, manage, and scale a multi-agent neural swarm acting autonomously on your infrastructure. NEUGI v2.1.1 is the most advanced open-source agentic AI framework ever built — 25 subsystems, 108+ modules, 60,000+ lines of deterministic multi-agent state machine.</p>
+
+                <p>Welcome to the Neugi documentation. Here you will find everything you need to know about setting up and running a local fleet of specialized, deterministic AI agents capable of code generation, browser automation, web search, and raw operating system execution.</p>
+
+                <div class="tip">
+                    <div class="tip-title">Lightweight by Design</div>
+                    <p style="margin:0; color:var(--text-secondary);">Neugi is specifically optimized for small, lightweight models (1B–7B LLMs) like Qwen 2.5, Llama 3.2, and DeepSeek running locally via Ollama. It can scale gracefully to larger cloud models (GPT-4, Claude, Gemini) when configured.</p>
+                </div>
+
+                <h2>What is Neugi?</h2>
+                <p>NEUGI (Neural General Intelligence) is a deterministic multi-agent state machine designed for production-grade reliability at scale. Unlike monolithic chatbots, Neugi decomposes every task into specialized agent workflows orchestrated by a central director.</p>
+
+                <p>Key differentiators:</p>
+                <ul style="color:var(--text-secondary); margin-left:20px; margin-bottom:20px;">
+                    <li><strong>Deterministic orchestration</strong> — Tasks are routed to specialized agents with guaranteed execution paths</li>
+                    <li><strong>Hierarchical memory</strong> — Karpathy-style dreaming memory with episodic, semantic, and procedural scopes</li>
+                    <li><strong>Auto-learning</strong> — Pattern tracking and automatic skill generation from every successful task</li>
+                    <li><strong>6-tier skill system</strong> — From global shared skills to ephemeral session-level tools</li>
+                    <li><strong>Built-in web search & browser</strong> — Jina Reader, DuckDuckGo, Playwright, and stealth browser automation</li>
+                    <li><strong>Multi-modal vision</strong> — Screenshot analysis, computer use, and image understanding</li>
+                    <li><strong>Agent mesh (A2A)</strong> — Agents can discover and communicate with each other via protocol</li>
+                </ul>
+            </section>
+
+            <!-- INSTALLATION -->
+            <section id="install" class="page-section">
+                <div class="badge">Prerequisites</div>
+                <h1>Installation</h1>
+                <p>Neugi requires <strong>Python 3.10+</strong> and <strong>Ollama</strong> (recommended for local models). The entire framework installs in under 30 seconds.</p>
+
+                <h3>Prerequisites</h3>
+                <table>
+                    <tr><th>Component</th><th>Minimum</th><th>Recommended</th></tr>
+                    <tr><td>Python</td><td>3.10</td><td>3.12</td></tr>
+                    <tr><td>RAM</td><td>4 GB</td><td>8 GB</td></tr>
+                    <tr><td>Disk</td><td>2 GB</td><td>5 GB</td></tr>
+                    <tr><td>GPU</td><td>Optional</td><td>8 GB VRAM for local LLMs</td></tr>
+                </table>
+
+                <h3>One-Liner Install</h3>
+                <p><strong>macOS / Linux:</strong></p>
+                <div class="cmd-block">
+                    <code>curl -fsSL https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm_v2/install.sh | bash</code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+
+                <p><strong>Windows (PowerShell):</strong></p>
+                <div class="cmd-block">
+                    <code>irm https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm_v2/install.bat | iex</code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+
+                <h3>Manual Install</h3>
+                <div class="cmd-block">
+                    <code>git clone https://github.com/atharia-agi/neugi_swarm.git
+cd neugi_swarm/neugi_swarm_v2
+pip install -e ".[dev]"</code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+
+                <div class="tip">
+                    <div class="tip-title">Post-Install</div>
+                    <p style="margin:0; color:var(--text-secondary);">After installation, run <code>neugi wizard</code> for interactive first-time setup, or <code>neugi rescue</code> if you encounter any issues.</p>
+                </div>
+            </section>
+
+            <!-- QUICKSTART -->
+            <section id="quickstart" class="page-section">
+                <div class="badge">5 Minutes to Swarm</div>
+                <h1>Quickstart</h1>
+                <p>Get a fully functional Neugi swarm running in under 5 minutes.</p>
+
+                <h3>Step 1: Start Ollama</h3>
+                <div class="cmd-block">
+                    <code>ollama run qwen2.5-coder:7b</code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+
+                <h3>Step 2: Run the Wizard</h3>
+                <p>The interactive wizard walks you through provider selection, model choice, and feature enablement — no config files to memorize.</p>
+                <div class="cmd-block">
+                    <code>neugi wizard</code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+
+                <h3>Step 3: Start Chatting</h3>
+                <div class="cmd-block">
+                    <code>neugi chat</code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+
+                <h3>Step 4: Launch Dashboard (Optional)</h3>
+                <div class="cmd-block">
+                    <code>neugi start</code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+                <p>Then open <a href="dashboard.html">http://localhost:8080</a> for the web dashboard.</p>
+
+                <div class="warning">
+                    <div class="warning-title">First-Time Users</div>
+                    <p style="margin:0; color:var(--text-secondary);">If <code>neugi</code> command is not found, ensure your Python scripts directory is in PATH. The wizard can fix this automatically with <code>neugi rescue --fix</code>.</p>
+                </div>
+            </section>
+
+            <!-- ARCHITECTURE -->
+            <section id="architecture" class="page-section">
+                <div class="badge">25 Subsystems</div>
+                <h1>Architecture</h1>
+                <p>Neugi v2 isn't a chatbot loop. It's a deterministic multi-agent state machine with 25 subsystems designed for production-grade reliability at scale.</p>
+
+                <h2>Core Subsystems</h2>
+                <table>
+                    <tr><th>Subsystem</th><th>Function</th></tr>
+                    <tr><td><strong>Memory</strong></td><td>Karpathy dreaming, hierarchical scopes, SQLite FTS5, vector embeddings (MiniLM/Ollama/TF-IDF)</td></tr>
+                    <tr><td><strong>Skills</strong></td><td>6-tier loading (global → ephemeral), SKILL.md v3, gating, token budgets</td></tr>
+                    <tr><td><strong>Agents</strong></td><td>6 deterministic archetypes with typed LLM wiring and tool schema injection</td></tr>
+                    <tr><td><strong>Session</strong></td><td>4 isolation modes, compaction, steering, write locks</td></tr>
+                    <tr><td><strong>Context</strong></td><td>10-section prompt assembly, token budget, KV cache</td></tr>
+                    <tr><td><strong>MCP Server</strong></td><td>Full Model Context Protocol (stdio + HTTP transports)</td></tr>
+                    <tr><td><strong>Governance</strong></td><td>Budget tracking, approval gates, immutable audit logs</td></tr>
+                    <tr><td><strong>Plugins</strong></td><td>SDK, manifest discovery, topological deps, 8 lifecycle hooks</td></tr>
+                    <tr><td><strong>Workflows</strong></td><td>StateGraph, durable checkpoints, human-in-the-loop</td></tr>
+                    <tr><td><strong>Learning</strong></td><td>Pattern tracking, auto skill generation, feedback loops</td></tr>
+                    <tr><td><strong>Gateway</strong></td><td>WebSocket RPC, device pairing, cron, heartbeat</td></tr>
+                    <tr><td><strong>Planning</strong></td><td>Tree of Thoughts, Chain of Verification, goal decomposition</td></tr>
+                    <tr><td><strong>Tools</strong></td><td>61 builtins across 10 categories, composition, dynamic generation</td></tr>
+                    <tr><td><strong>Channels</strong></td><td>Unified Telegram, Discord, Slack, WhatsApp manager</td></tr>
+                    <tr><td><strong>Security</strong></td><td>7-layer sandbox, neuro-symbolic validation, AES-256 secrets</td></tr>
+                    <tr><td><strong>CLI + Wizard</strong></td><td>17 commands, interactive chat, rescue mode, setup wizard</td></tr>
+                    <tr><td><strong>Dashboard</strong></td><td>Glass-morphism HTML, 20 REST endpoints, WebSocket events</td></tr>
+                    <tr><td><strong>Evals</strong></td><td>Benchmark harness, regression detection, skill scoring</td></tr>
+                    <tr><td><strong>Multimodal</strong></td><td>Vision input, screenshot analysis, computer use</td></tr>
+                    <tr><td><strong>A2A Protocol</strong></td><td>Agent-to-agent mesh, capability discovery, heartbeat</td></tr>
+                    <tr><td><strong>Web Search</strong></td><td>Jina Reader + DuckDuckGo fallback with intelligent caching</td></tr>
+                    <tr><td><strong>Browser</strong></td><td>3-tier automation: requests → Playwright → stealth browser</td></tr>
+                    <tr><td><strong>Vector Memory</strong></td><td>all-MiniLM-L6-v2 embeddings with TF-IDF fallback</td></tr>
+                    <tr><td><strong>WebSocket</strong></td><td>RFC 6455 stdlib server, real-time event streaming</td></tr>
+                    <tr><td><strong>Computer Use</strong></td><td>Vision-guided browser automation with multimodal LLM</td></tr>
+                </table>
+            </section>
+
+            <!-- AGENTS -->
+            <section id="agents" class="page-section">
+                <div class="badge">6 Archetypes</div>
+                <h1>Agent Archetypes</h1>
+                <p>Neugi uses six deterministic agent archetypes working in orchestrated harmony. Each is locked to a specific role, capable of routing to specialized sub-modules without human intervention.</p>
+
+                <div class="agent-grid">
+                    <div class="agent-card">
+                        <h4>Builder</h4>
+                        <p>Code generation, file manipulation, system execution, and software architecture</p>
+                    </div>
+                    <div class="agent-card">
+                        <h4>Planner</h4>
+                        <p>Goal decomposition, Tree of Thoughts, Chain of Verification, strategy</p>
+                    </div>
+                    <div class="agent-card">
+                        <h4>Analyst</h4>
+                        <p>Data parsing, pattern detection, web search, research synthesis</p>
+                    </div>
+                    <div class="agent-card">
+                        <h4>Evaluator</h4>
+                        <p>Quality assurance, code review, output scoring, safety checks</p>
+                    </div>
+                    <div class="agent-card">
+                        <h4>Memory</h4>
+                        <p>Recall, context injection, memory consolidation (dreaming), embedding search</p>
+                    </div>
+                    <div class="agent-card">
+                        <h4>Communicator</h4>
+                        <p>Multi-channel routing, Telegram/Discord/Slack, message formatting</p>
+                    </div>
+                </div>
+
+                <h2>Typed Agent LLM Wiring</h2>
+                <p>Every agent is strongly typed with auto-generated tool schemas from Python type hints. The <code>TypedAgent</code> class injects tool definitions directly into the LLM prompt, enabling structured function calling across Ollama, OpenAI, and Anthropic providers.</p>
+                <pre><code>from neugi_swarm_v2.agents.typed import TypedAgent, agent_tool
+
+class MyAgent(TypedAgent):
+    @agent_tool(description="Search the web")
+    def search(self, query: str, max_results: int = 5) -> dict:
+        ...</code></pre>
+            </section>
+
+            <!-- MEMORY -->
+            <section id="memory" class="page-section">
+                <div class="badge">Karpathy Dreaming + Vector</div>
+                <h1>Context Memory</h1>
+                <p>Neugi utilizes a built-in hierarchical memory system bridging the gap between small context windows and massive operational history. It reads and writes deterministically without heavy dependencies.</p>
+
+                <h2>Memory Scopes</h2>
+                <table>
+                    <tr><th>Scope</th><th>Lifetime</th><th>Use Case</th></tr>
+                    <tr><td>Episodic</td><td>Session</td><td>Current conversation turns</td></tr>
+                    <tr><td>Semantic</td><td>Daily TTL (30d)</td><td>Facts, concepts, entities</td></tr>
+                    <tr><td>Procedural</td><td>Persistent</td><td>Skills, workflows, patterns</td></tr>
+                </table>
+
+                <h2>Vector Memory (v2.1.1)</h2>
+                <p>Neugi now includes vector embeddings with three-tier fallback:</p>
+                <ol style="color:var(--text-secondary); margin-left:20px; margin-bottom:20px;">
+                    <li><strong>sentence-transformers</strong> (all-MiniLM-L6-v2, 384-dim, ~80MB)</li>
+                    <li><strong>Ollama embeddings</strong> (nomic-embed-text via local API)</li>
+                    <li><strong>TF-IDF</strong> (pure Python, zero dependencies)</li>
+                </ol>
+                <p>Hybrid recall blends TF-IDF scoring (0.7) with vector similarity (0.3) for maximum accuracy.</p>
+
+                <h2>Dreaming</h2>
+                <p>The Memory agent triggers sleep-cycle consolidation ("dreaming") during idle periods. This compresses ephemeral memories into semantic summaries and prunes stale entries automatically.</p>
+            </section>
+
+            <!-- SKILLS -->
+            <section id="skills" class="page-section">
+                <div class="badge">6 Tiers</div>
+                <h1>Skill System</h1>
+                <p>Neugi's skill system is the most advanced of any open-source agent framework. Skills are loaded in 6 tiers with automatic promotion/demotion based on usage frequency and relevance.</p>
+
+                <table>
+                    <tr><th>Tier</th><th>Scope</th><th>Priority</th></tr>
+                    <tr><td>Global</td><td>All sessions, all users</td><td>Highest</td></tr>
+                    <tr><td>Project</td><td>Current project/workspace</td><td>High</td></tr>
+                    <tr><td>Agent</td><td>Specific agent instance</td><td>Medium-High</td></tr>
+                    <tr><td>Session</td><td>Current session only</td><td>Medium</td></tr>
+                    <tr><td>User</td><td>Current user profile</td><td>Medium-Low</td></tr>
+                    <tr><td>Ephemeral</td><td>Single task completion</td><td>Low</td></tr>
+                </table>
+
+                <p>Skills are defined via <code>SKILL.md</code> v3 specification with gating, token budgets, and automatic schema validation.</p>
+            </section>
+
+            <!-- CLI -->
+            <section id="cli" class="page-section">
+                <div class="badge">17 Commands</div>
+                <h1>CLI Reference</h1>
+                <p>Neugi provides a robust CLI for full swarm management, interactive chat, diagnostics, and configuration.</p>
+
+                <table>
+                    <tr><th>Command</th><th>Description</th></tr>
+                    <tr><td><code>neugi start</code></td><td>Start gateway and all subsystems</td></tr>
+                    <tr><td><code>neugi stop</code></td><td>Gracefully shutdown all agents</td></tr>
+                    <tr><td><code>neugi status</code></td><td>Health, agents, sessions, channels</td></tr>
+                    <tr><td><code>neugi chat</code></td><td>Interactive chat mode</td></tr>
+                    <tr><td><code>neugi wizard</code></td><td>Interactive first-time setup</td></tr>
+                    <tr><td><code>neugi rescue</code></td><td>Diagnose and fix common issues</td></tr>
+                    <tr><td><code>neugi doctor</code></td><td>System diagnostics with auto-fix</td></tr>
+                    <tr><td><code>neugi update</code></td><td>Check for updates</td></tr>
+                    <tr><td><code>neugi agents list</code></td><td>List all active agents</td></tr>
+                    <tr><td><code>neugi skills list</code></td><td>List installed skills</td></tr>
+                    <tr><td><code>neugi memory recall &lt;query&gt;</code></td><td>Search memory</td></tr>
+                    <tr><td><code>neugi memory dream</code></td><td>Trigger consolidation</td></tr>
+                    <tr><td><code>neugi sessions list</code></td><td>List active sessions</td></tr>
+                    <tr><td><code>neugi channels list</code></td><td>List messaging channels</td></tr>
+                    <tr><td><code>neugi config view</code></td><td>View current configuration</td></tr>
+                    <tr><td><code>neugi backup</code></td><td>Backup all NEUGI data</td></tr>
+                    <tr><td><code>neugi restore</code></td><td>Restore from backup</td></tr>
+                </table>
+
+                <div class="tip">
+                    <div class="tip-title">Rescue Wizard</div>
+                    <p style="margin:0; color:var(--text-secondary);">New in v2.1.1: <code>neugi rescue</code> runs an interactive rescue mode that detects and fixes common issues like missing directories, broken configs, permission errors, and missing dependencies.</p>
+                </div>
+            </section>
+
+            <!-- API -->
+            <section id="api" class="page-section">
+                <div class="badge">REST + WebSocket</div>
+                <h1>REST API</h1>
+                <p>The Neugi gateway exposes REST API endpoints on the configured dashboard port (default 8080).</p>
+
+                <h3>Agent Operations</h3>
+                <table>
+                    <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+                    <tr><td>POST</td><td><code>/api/v2/agents</code></td><td>Create an agent</td></tr>
+                    <tr><td>GET</td><td><code>/api/v2/agents</code></td><td>List all agents</td></tr>
+                    <tr><td>GET</td><td><code>/api/v2/agents/{id}</code></td><td>Get agent details</td></tr>
+                    <tr><td>PUT</td><td><code>/api/v2/agents/{id}</code></td><td>Update agent config</td></tr>
+                    <tr><td>DELETE</td><td><code>/api/v2/agents/{id}</code></td><td>Remove an agent</td></tr>
+                </table>
+
+                <h3>Chat & Memory</h3>
+                <table>
+                    <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+                    <tr><td>POST</td><td><code>/api/v2/chat</code></td><td>Stream agent response</td></tr>
+                    <tr><td>POST</td><td><code>/api/v2/memory/recall</code></td><td>Recall memories</td></tr>
+                    <tr><td>POST</td><td><code>/api/v2/memory/write</code></td><td>Write memory entry</td></tr>
+                    <tr><td>GET</td><td><code>/api/v2/memory/search</code></td><td>Vector similarity search</td></tr>
+                </table>
+
+                <h3>WebSocket Events</h3>
+                <p>Connect to <code>ws://localhost:8080/ws</code> for real-time events:</p>
+                <ul style="color:var(--text-secondary); margin-left:20px; margin-bottom:20px;">
+                    <li><code>agent_status</code> — Agent state changes</li>
+                    <li><code>memory_event</code> — Memory writes/recalls</li>
+                    <li><code>tool_execution</code> — Tool call results</li>
+                    <li><code>system_alert</code> — Errors and warnings</li>
+                </ul>
+            </section>
+
+            <!-- TELEGRAM -->
+            <section id="telegram" class="page-section">
+                <div class="badge">Multi-Channel</div>
+                <h1>Telegram Bot</h1>
+                <p>Command your swarm remotely via a secure Telegram bridge. The bot provides full parity with the CLI interface and supports image uploads with vision model fallback.</p>
+
+                <h3>Available Commands</h3>
+                <table>
+                    <tr><th>Command</th><th>Description</th></tr>
+                    <tr><td><code>/start</code></td><td>Welcome message and setup help</td></tr>
+                    <tr><td><code>/help</code></td><td>List all available commands</td></tr>
+                    <tr><td><code>/reset</code></td><td>Reset conversation context</td></tr>
+                    <tr><td><code>/status</code></td><td>Show bot status and model info</td></tr>
+                </table>
+
+                <h3>Configuration</h3>
+                <pre><code># In config.json or via neugi wizard
+"channels": {
+    "enabled": true,
+    "telegram": {
+        "token": "YOUR_BOT_TOKEN",
+        "mode": "polling"
+    }
+}</code></pre>
+
+                <div class="tip">
+                    <div class="tip-title">Image Support</div>
+                    <p style="margin:0; color:var(--text-secondary);">With vision-enabled models (e.g., llava via Ollama), the bot can analyze images directly. With text-only models, it auto-generates image descriptions before processing.</p>
+                </div>
+            </section>
+
+            <!-- RESCUE -->
+            <section id="rescue" class="page-section">
+                <div class="badge">Troubleshooting</div>
+                <h1>Rescue & Wizard</h1>
+                <p>Neugi v2.1.1 includes a comprehensive Rescue Wizard designed to help users when things go wrong — no terminal expertise required.</p>
+
+                <h2>Setup Wizard</h2>
+                <p>First-time users can run <code>neugi wizard</code> for guided setup:</p>
+                <ol style="color:var(--text-secondary); margin-left:20px; margin-bottom:20px;">
+                    <li>Directory creation and permission checks</li>
+                    <li>Provider selection (Ollama / OpenAI / Anthropic)</li>
+                    <li>Model selection with compatibility hints</li>
+                    <li>Feature enablement (memory, skills, channels, dashboard)</li>
+                    <li>Connection test before finishing</li>
+                </ol>
+
+                <h2>Rescue Mode</h2>
+                <p>When something breaks, run <code>neugi rescue</code> to auto-detect and fix:</p>
+                <table>
+                    <tr><th>Category</th><th>Issues Detected</th></tr>
+                    <tr><td>Configuration</td><td>Missing config, corrupted JSON, invalid provider settings</td></tr>
+                    <tr><td>Ollama</td><td>Not running, unreachable, wrong port</td></tr>
+                    <tr><td>Directories</td><td>Missing required folders (skills, memory, sessions)</td></tr>
+                    <tr><td>Permissions</td><td>No write access to NEUGI directory</td></tr>
+                    <tr><td>Dependencies</td><td>Missing Python packages</td></tr>
+                    <tr><td>Database</td><td>SQLite corruption, integrity check failures</td></tr>
+                    <tr><td>Ports</td><td>Conflicts on dashboard or Ollama ports</td></tr>
+                </table>
+
+                <h2>Corruption Repair</h2>
+                <p><code>neugi rescue --repair</code> detects and fixes corrupted files:</p>
+                <ul style="color:var(--text-secondary); margin-left:20px; margin-bottom:20px;">
+                    <li>Invalid JSON configs are restored from defaults</li>
+                    <li>SQLite databases are integrity-checked and repaired</li>
+                    <li>Session files are validated and pruned if corrupted</li>
+                </ul>
+
+                <h2>Provider Switching</h2>
+                <p><code>neugi rescue --switch-provider</code> guides you through changing LLM providers without breaking existing configuration:</p>
+                <div class="cmd-block">
+                    <code>neugi rescue --switch-provider
+# Interactive wizard:
+# 1. Choose new provider
+# 2. Select model
+# 3. Test connection
+# 4. Keep old config as fallback</code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+            </section>
+
+            <!-- ECOSYSTEM -->
+            <section id="ecosystem" class="page-section">
+                <div class="badge">Neural Bridge</div>
+                <h1>Ecosystem & Partnership</h1>
+                <p>Neugi is designed as a Neural Bridge — a unifying layer that connects the reliability of local core engines with the raw reasoning power of frontier SOTA models.</p>
+
+                <h2>Ecosystem Vision 2026</h2>
+                <ol style="color:var(--text-secondary); margin-left:20px; margin-bottom:20px;">
+                    <li><strong>Local Foundation</strong> — Built with Ollama for zero-config privacy and offline operation</li>
+                    <li><strong>Global Reach</strong> — Native integration for OpenAI GPT-4, Anthropic Claude, Google Gemini</li>
+                    <li><strong>Cost Efficiency</strong> — Native scaling for DeepSeek, Alibaba Qwen, and local clusters</li>
+                    <li><strong>Hardware Agnostic</strong> — Runs on CPU, GPU, or Apple Silicon with automatic backend selection</li>
+                </ol>
+
+                <h2>Collaboration & Grants</h2>
+                <p>We are actively seeking partnerships with AI hardware and software providers to expand the boundaries of autonomous swarm intelligence. If you are a model provider or research organization, we invite you to connect for grants and integration opportunities.</p>
+
+                <p>Contact: <a href="mailto:atharia.agi@gmail.com">atharia.agi@gmail.com</a> • <a href="https://twitter.com/Atharia_AGI" target="_blank">@Atharia_AGI</a></p>
+
+                <div style="margin-top:40px; padding:24px; background:var(--bg-elevated); border:1px solid var(--border-subtle); border-radius:12px;">
+                    <p style="margin:0; color:var(--text-tertiary); font-size:13px;">Last updated April 27, 2026. Documentation version matches NEUGI v2.1.1.</p>
+                </div>
+            </section>
+
+            <footer class="docs-footer">
+                <span>NEUGI Swarm v2.1.1 Documentation</span>
+                <span><a href="https://github.com/atharia-agi/neugi_swarm">GitHub</a> • <a href="https://twitter.com/Atharia_AGI">Twitter</a></span>
+            </footer>
+        </main>
     </div>
+
+    <script>
+        function showPage(id) {
+            document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            event.target.classList.add('active');
+            window.scrollTo(0,0);
+        }
+
+        function copyCode(btn) {
+            const code = btn.parentElement.querySelector('code').innerText;
+            navigator.clipboard.writeText(code);
+            const orig = btn.innerText;
+            btn.innerText = 'Copied!';
+            setTimeout(() => btn.innerText = orig, 2000);
+        }
+
+        function searchDocs(query) {
+            query = query.toLowerCase();
+            const sections = document.querySelectorAll('.page-section');
+            const items = document.querySelectorAll('.nav-item');
+            
+            if (!query) {
+                items.forEach(i => i.style.display = 'block');
+                return;
+            }
+            
+            items.forEach((item, idx) => {
+                const text = item.innerText.toLowerCase();
+                item.style.display = text.includes(query) ? 'block' : 'none';
+            });
+        }
+    </script>
 </body>
 </html>
