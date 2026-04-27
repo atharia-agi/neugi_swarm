@@ -47,36 +47,46 @@ from neugi_swarm_v2.llm_provider import (
 class NeugiAssistantV2:
     """Upgraded NEUGI Assistant with full agentic capabilities."""
 
-    def __init__(self, config: Optional[NeugiConfig] = None, session_id: str = "default"):
+    def __init__(
+        self,
+        config: Optional[NeugiConfig] = None,
+        session_id: str = "default",
+        llm: Optional[LLMProvider] = None,
+        memory: Optional[MemorySystem] = None,
+        skills: Optional[SkillManager] = None,
+        sessions: Optional[SessionManager] = None,
+        prompt_assembler: Optional[PromptAssembler] = None,
+        token_budget: Optional[TokenBudget] = None,
+    ):
         self.config = config or NeugiConfig()
         self.session_id = session_id
 
-        # Initialize subsystems
-        self.memory = MemorySystem(
+        # Initialize subsystems (injectable for shared instances)
+        self.memory = memory or MemorySystem(
             memory_dir=self.config.memory_dir,
             data_dir=self.config.data_dir,
         )
-        self.skills = SkillManager(
+        self.skills = skills or SkillManager(
             skills_dirs=self.config.skill_dirs,
             max_skills_in_prompt=self.config.max_skills_in_prompt,
         )
         self.agents = AgentManager(
             db_path=self.config.agent_db_path,
         )
-        self.sessions = SessionManager(
+        self.sessions = sessions or SessionManager(
             sessions_dir=self.config.sessions_dir,
             daily_reset_hour=self.config.session_daily_reset_hour,
             idle_timeout_minutes=self.config.session_idle_timeout,
         )
-        self.prompt_assembler = PromptAssembler(
+        self.prompt_assembler = prompt_assembler or PromptAssembler(
             max_tokens=self.config.context_max_tokens,
         )
-        self.token_budget = TokenBudget(
+        self.token_budget = token_budget or TokenBudget(
             max_tokens=self.config.context_max_tokens,
         )
 
         # Initialize LLM provider with failover
-        self.llm = self._create_llm_provider()
+        self.llm = llm or self._create_llm_provider()
         self.fallback_llm = self._create_fallback_llm_provider()
 
         # Session management
@@ -98,34 +108,68 @@ class NeugiAssistantV2:
         self._steering_enabled = False
 
     def _create_llm_provider(self) -> LLMProvider:
-        """Create the primary LLM provider."""
-        llm_config = self.config.llm
-        provider_type = llm_config.get("provider", "ollama")
+        """Create the primary LLM provider from config."""
+        cfg = self.config.llm
+        
+        # Handle both dict and dataclass access
+        def get_attr(obj, key, default=None):
+            if isinstance(obj, dict):
+                return obj.get(key, default)
+            return getattr(obj, key, default)
+        
+        provider_type = get_attr(cfg, "provider", "ollama")
+        
+        # Normalize provider names (wizard uses "openai"/"anthropic", provider uses "openai_compatible")
+        provider_map = {
+            "ollama": ProviderType.OLLAMA,
+            "openai": ProviderType.OPENAI_COMPATIBLE,
+            "openai_compatible": ProviderType.OPENAI_COMPATIBLE,
+            "anthropic": ProviderType.ANTHROPIC_COMPATIBLE,
+            "anthropic_compatible": ProviderType.ANTHROPIC_COMPATIBLE,
+        }
+        pt = provider_map.get(provider_type, ProviderType.OLLAMA)
+        
+        # Resolve base_url per provider
+        base_url = get_attr(cfg, "base_url", "")
+        ollama_url = get_attr(cfg, "ollama_url", "http://localhost:11434")
+        if pt == ProviderType.OLLAMA:
+            base_url = ollama_url or base_url or "http://localhost:11434"
+        elif pt == ProviderType.OPENAI_COMPATIBLE and not base_url:
+            base_url = "https://api.openai.com/v1"
+        elif pt == ProviderType.ANTHROPIC_COMPATIBLE and not base_url:
+            base_url = "https://api.anthropic.com"
 
         config = ProviderConfig(
-            provider_type=ProviderType(provider_type),
-            base_url=llm_config.get("base_url", "http://localhost:11434"),
-            api_key=llm_config.get("api_key", ""),
-            default_model=llm_config.get("default_model", "qwen3.5:cloud"),
-            fallback_model=llm_config.get("fallback_model", "nemotron-3-super:cloud"),
-            timeout=llm_config.get("timeout", 60),
-            max_retries=llm_config.get("max_retries", 3),
+            provider_type=pt,
+            base_url=base_url,
+            api_key=get_attr(cfg, "api_key", ""),
+            default_model=get_attr(cfg, "model", "qwen2.5-coder:7b"),
+            fallback_model=get_attr(cfg, "fallback_model", "llama3.2:3b"),
+            timeout=get_attr(cfg, "timeout_seconds", 60),
+            max_retries=get_attr(cfg, "max_retries", 3),
         )
 
-        if provider_type == "ollama":
+        if pt == ProviderType.OLLAMA:
             return OllamaProvider(config)
-        elif provider_type == "openai_compatible":
+        elif pt == ProviderType.OPENAI_COMPATIBLE:
             return OpenAICompatibleProvider(config)
-        elif provider_type == "anthropic_compatible":
+        elif pt == ProviderType.ANTHROPIC_COMPATIBLE:
             return AnthropicCompatibleProvider(config)
         else:
             return OllamaProvider(config)
 
     def _create_fallback_llm_provider(self) -> Optional[LLMProvider]:
         """Create fallback LLM provider."""
-        llm_config = self.config.llm
-        fallback_model = llm_config.get("fallback_model", "")
-        if not fallback_model or fallback_model == llm_config.get("default_model"):
+        cfg = self.config.llm
+        
+        def get_attr(obj, key, default=None):
+            if isinstance(obj, dict):
+                return obj.get(key, default)
+            return getattr(obj, key, default)
+        
+        fallback_model = get_attr(cfg, "fallback_model", "")
+        default_model = get_attr(cfg, "model", "")
+        if not fallback_model or fallback_model == default_model:
             return None
 
         config = ProviderConfig(

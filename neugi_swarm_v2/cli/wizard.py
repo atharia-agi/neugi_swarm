@@ -18,6 +18,8 @@ from __future__ import annotations
 import json
 import os
 import platform
+
+from neugi_swarm_v2 import __version__
 import sys
 import time
 from dataclasses import dataclass, field
@@ -593,7 +595,7 @@ class SetupWizard:
 
         console.print(Panel(
             f"[primary]{self._t('welcome_desc')}[/primary]\n\n"
-            f"[dim]v2.0.0 | {platform.system()} | Python {platform.python_version()}[/dim]",
+            f"[dim]v{__version__} | {platform.system()} | Python {platform.python_version()}[/dim]",
             title=self._t("welcome_title"),
             border_style="cyan",
         ))

@@ -878,7 +878,10 @@ class InteractiveChat:
 
     def _cmd_clear(self, args: str) -> str:
         """Clear the screen."""
-        os.system("cls" if platform.system() == "Windows" else "clear")
+        import shutil
+        clear_cmd = "cls" if platform.system() == "Windows" else "clear"
+        if shutil.which(clear_cmd):
+            subprocess.run([clear_cmd], shell=False, check=False)
         return ""
 
     def _cmd_quit(self, args: str) -> str:

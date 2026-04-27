@@ -157,6 +157,14 @@ class CheckpointStorage:
         """
         raise NotImplementedError
 
+    def list_workflow_ids(self) -> List[str]:
+        """List all workflow IDs that have checkpoints.
+
+        Returns:
+            List of unique workflow IDs.
+        """
+        raise NotImplementedError
+
 
 class SQLiteCheckpointStorage(CheckpointStorage):
     """SQLite-based checkpoint storage.
@@ -326,6 +334,18 @@ class SQLiteCheckpointStorage(CheckpointStorage):
                 (workflow_id,),
             )
             return cursor.rowcount
+
+    def list_workflow_ids(self) -> List[str]:
+        """List all workflow IDs that have checkpoints.
+
+        Returns:
+            List of unique workflow IDs.
+        """
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute(
+                "SELECT DISTINCT workflow_id FROM checkpoints ORDER BY workflow_id"
+            )
+            return [row[0] for row in cursor.fetchall()]
 
     def cleanup_old_checkpoints(self, max_age_seconds: float) -> int:
         """Delete checkpoints older than a specified age.
@@ -609,9 +629,11 @@ class CheckpointManager:
         Returns:
             List of unique workflow IDs.
         """
-        # This requires a query that the storage doesn't expose
-        # For now, return empty list - would need to add to storage interface
-        return []
+        try:
+            return self.storage.list_workflow_ids()
+        except (AttributeError, NotImplementedError):
+            # Fallback for storage backends that don't support listing
+            return list(self._checkpoint_counter.keys())
 
     def get_checkpoint_history(
         self,

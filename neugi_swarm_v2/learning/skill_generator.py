@@ -711,7 +711,26 @@ class SkillGenerator:
 
         for i, step in enumerate(skill.steps, 1):
             lines.append(f"    # Step {i}: {step}")
-            lines.append(f"    pass  # TODO: implement step {i}")
+            # Generate a meaningful implementation hint based on step keywords
+            step_lower = step.lower()
+            if any(kw in step_lower for kw in ["read", "load", "fetch", "get", "download"]):
+                lines.append(f"    # Implementation: Read/load data from source")
+                lines.append(f"    data_{i} = None  # Replace with actual data loading")
+            elif any(kw in step_lower for kw in ["write", "save", "store", "export"]):
+                lines.append(f"    # Implementation: Write/save output to destination")
+                lines.append(f"    # save_output(result, destination)")
+            elif any(kw in step_lower for kw in ["process", "transform", "convert", "parse"]):
+                lines.append(f"    # Implementation: Process/transform the data")
+                lines.append(f"    processed_{i} = data  # Replace with actual processing logic")
+            elif any(kw in step_lower for kw in ["check", "validate", "verify", "test"]):
+                lines.append(f"    # Implementation: Validate inputs/outputs")
+                lines.append(f"    # assert condition, 'Validation failed'")
+            elif any(kw in step_lower for kw in ["send", "notify", "call", "request"]):
+                lines.append(f"    # Implementation: Send/notify/call external service")
+                lines.append(f"    # response = send_request(payload)")
+            else:
+                lines.append(f"    # Implementation: {step}")
+                lines.append(f"    # Add your implementation here")
             lines.append("")
 
         lines.extend([

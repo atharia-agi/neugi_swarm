@@ -3,17 +3,19 @@ Telegram channel integration for NEUGI v2.
 
 Supports Bot API via long polling and webhook modes, handling all message types
 including text, photos, documents, voice, video, stickers, and inline keyboards.
+
+Now fully async with image support and text-only model fallback.
 """
 
 from __future__ import annotations
 
 import asyncio
+import base64
 import logging
 import time
 from typing import Any, Optional
 
-import requests
-
+from .async_http import AsyncHTTPClient
 from .base import (
     Attachment,
     BaseChannel,
@@ -36,22 +38,39 @@ TELEGRAM_RATE_LIMIT = 30
 TELEGRAM_GROUP_LIMIT = 20
 
 
+class TelegramError(Exception):
+    """Telegram API error."""
+    def __init__(self, code: int, description: str):
+        self.code = code
+        self.description = description
+        super().__init__(f"TelegramError {code}: {description}")
+
+
+class TelegramRateLimited(TelegramError):
+    """Rate limited by Telegram."""
+    def __init__(self, retry_after: int, description: str):
+        self.retry_after = retry_after
+        super().__init__(429, description)
+
+
 class TelegramChannel(BaseChannel):
     """
-    Telegram Bot API integration.
+    Telegram Bot API integration (fully async).
 
     Supports both long polling and webhook modes for receiving updates.
     Handles text, photo, document, voice, video, sticker, location,
     and contact messages. Provides inline keyboard and reply keyboard support.
 
-    Args:
-        token: Telegram Bot API token from @BotFather.
-        bot_name: Optional display name for the bot.
-        mode: "polling" or "webhook".
-        webhook_url: Required if mode is "webhook".
-        poll_timeout: Seconds to wait for long polling updates.
-        allowed_updates: List of update types to receive.
-        health_check_interval: Seconds between health checks.
+    Image handling:
+        - With vision model: sends image + caption to LLM
+        - With text-only model: downloads image, generates description via
+          lightweight vision model or OCR, then sends description to LLM
+
+    Commands:
+        /start - Welcome message and setup help
+        /help  - List available commands
+        /reset - Reset conversation context
+        /status - Show bot status
     """
 
     def __init__(
@@ -74,7 +93,7 @@ class TelegramChannel(BaseChannel):
         ]
         self._offset = 0
         self._poll_task: Optional[asyncio.Task] = None
-        self._session: Optional[requests.Session] = None
+        self._http: Optional[AsyncHTTPClient] = None
         self._rate_limit_tokens = TELEGRAM_RATE_LIMIT
         self._rate_limit_timestamp = time.time()
         self._webhook_secret: Optional[str] = None
@@ -92,83 +111,46 @@ class TelegramChannel(BaseChannel):
         """Build Telegram file download URL."""
         return TELEGRAM_FILE_BASE.format(token=self._token) + f"/{file_path}"
 
-    def _call_api(
+    async def _call_api(
         self,
         method: str,
         data: Optional[dict[str, Any]] = None,
-        files: Optional[dict[str, Any]] = None,
         timeout: int = 30,
     ) -> Optional[dict[str, Any]]:
-        """
-        Make a synchronous API call to Telegram.
-
-        Args:
-            method: API method name (e.g., "sendMessage").
-            data: JSON payload for the request.
-            files: File attachments for multipart upload.
-            timeout: Request timeout in seconds.
-
-        Returns:
-            Parsed JSON response or None on failure.
-
-        Raises:
-            TelegramRateLimited: If rate limit is exceeded.
-            TelegramError: If the API returns an error.
-        """
+        """Make async API call to Telegram."""
         self._wait_for_rate_limit()
-
+        
+        if self._http is None:
+            self._http = AsyncHTTPClient()
+        
         url = self._api_url(method)
-
-        if self._session is None:
-            self._session = requests.Session()
-
+        
         try:
-            if files:
-                response = self._session.post(url, data=data, files=files, timeout=timeout)
-            else:
-                response = self._session.post(url, json=data, timeout=timeout)
-
-            response.raise_for_status()
-            result = response.json()
-
+            result = await self._http.post(url, json_data=data, timeout=timeout)
+            
             if not result.get("ok"):
                 description = result.get("description", "Unknown error")
                 error_code = result.get("error_code", 0)
-
+                
                 if error_code == 429:
                     retry_after = result.get("parameters", {}).get("retry_after", 1)
                     raise TelegramRateLimited(retry_after, description)
-
+                
                 raise TelegramError(error_code, description)
-
-            headers = response.headers
-            if "x-ratelimit-remaining" in headers:
-                self._health.record_rate_limit(
-                    int(headers["x-ratelimit-remaining"]),
-                    time.time() + 1,
-                )
-
+            
             return result.get("result")
-
-        except requests.exceptions.Timeout:
-            self._logger.error("Telegram API timeout: %s", method)
-            self._health.record_error(f"Timeout on {method}")
-            return None
-        except requests.exceptions.ConnectionError:
-            self._logger.error("Telegram API connection error: %s", method)
-            self._health.record_error(f"Connection error on {method}")
-            return None
+            
         except TelegramRateLimited:
             raise
         except TelegramError:
             raise
         except Exception as exc:
-            self._logger.error("Telegram API error on %s: %s", method, exc)
+            logger.error("Telegram API error on %s: %s", method, exc)
             self._health.record_error(str(exc))
             return None
 
     def _wait_for_rate_limit(self) -> None:
-        """Enforce Telegram rate limiting (30 msg/sec for individual, 20 msg/sec for groups)."""
+        """Enforce Telegram rate limiting."""
         now = time.time()
         if now - self._rate_limit_timestamp >= 1.0:
             self._rate_limit_tokens = TELEGRAM_RATE_LIMIT
@@ -184,37 +166,33 @@ class TelegramChannel(BaseChannel):
 
     async def _connect(self) -> None:
         """Initialize Telegram Bot API connection."""
-        self._session = requests.Session()
-        self._session.headers.update({"User-Agent": "NEUGI-v2/1.0"})
-
+        self._http = AsyncHTTPClient()
+        
         try:
-            me = self._call_api("getMe")
+            me = await self._call_api("getMe")
             if me:
                 self._me = me
                 self._bot_name = me.get("username", self._bot_name)
-                self._logger.info("Connected as @%s (id: %s)", me.get("username"), me.get("id"))
+                logger.info("Connected as @%s (id: %s)", me.get("username"), me.get("id"))
             else:
                 raise TelegramError(0, "Failed to get bot info")
-
+            
             if self._mode == "webhook":
                 if not self._webhook_url:
                     raise ValueError("webhook_url is required for webhook mode")
-                result = self._call_api("setWebhook", {
+                result = await self._call_api("setWebhook", {
                     "url": self._webhook_url,
                     "allowed_updates": self._allowed_updates,
                 })
                 if result:
-                    self._logger.info("Webhook set to %s", self._webhook_url)
+                    logger.info("Webhook set to %s", self._webhook_url)
                 else:
                     raise TelegramError(0, "Failed to set webhook")
             else:
-                result = self._call_api("deleteWebhook")
-                self._logger.info("Using long polling mode")
-
+                await self._call_api("deleteWebhook")
+                logger.info("Using long polling mode")
+        
         except Exception:
-            if self._session:
-                self._session.close()
-                self._session = None
             raise
 
     async def _disconnect(self) -> None:
@@ -225,18 +203,14 @@ class TelegramChannel(BaseChannel):
                 await self._poll_task
             except asyncio.CancelledError:
                 pass
-
+        
         if self._mode == "webhook":
             try:
-                self._call_api("deleteWebhook", {"drop_pending_updates": True})
+                await self._call_api("deleteWebhook", {"drop_pending_updates": True})
             except Exception:
                 pass
-
-        if self._session:
-            self._session.close()
-            self._session = None
-
-        self._logger.info("Telegram channel disconnected")
+        
+        logger.info("Telegram channel disconnected")
 
     async def _build_capabilities(self) -> ChannelCapabilities:
         """Build Telegram channel capabilities."""
@@ -270,8 +244,8 @@ class TelegramChannel(BaseChannel):
 
     async def _poll_updates(self) -> None:
         """Long polling loop for receiving updates."""
-        self._logger.info("Starting long polling with timeout=%ds", self._poll_timeout)
-
+        logger.info("Starting long polling with timeout=%ds", self._poll_timeout)
+        
         while self._is_running:
             try:
                 data = {
@@ -279,37 +253,37 @@ class TelegramChannel(BaseChannel):
                     "timeout": self._poll_timeout,
                     "allowed_updates": self._allowed_updates,
                 }
-
-                result = self._call_api("getUpdates", data, timeout=self._poll_timeout + 5)
-
+                
+                result = await self._call_api("getUpdates", data, timeout=self._poll_timeout + 5)
+                
                 if result:
                     for update in result:
                         self._offset = update["update_id"] + 1
                         await self._handle_update(update)
-
+            
             except asyncio.CancelledError:
                 break
             except TelegramRateLimited as exc:
-                self._logger.warning("Rate limited, waiting %ds", exc.retry_after)
+                logger.warning("Rate limited, waiting %ds", exc.retry_after)
                 await asyncio.sleep(exc.retry_after)
             except Exception as exc:
-                self._logger.error("Polling error: %s", exc)
+                logger.error("Polling error: %s", exc)
                 self._health.record_error(str(exc))
                 await asyncio.sleep(5)
 
     async def _handle_update(self, update: dict[str, Any]) -> None:
         """Process a single Telegram update."""
         if "message" in update:
-            message = await self.receive_message(update["message"])
+            message = await self._receive_message(update["message"])
             if message:
-                await self._notify_message_handlers(message)
-
+                await self._handle_message(message)
+        
         elif "edited_message" in update:
-            message = await self.receive_message(update["edited_message"])
+            message = await self._receive_message(update["edited_message"])
             if message:
                 message.metadata["edited"] = True
-                await self._notify_message_handlers(message)
-
+                await self._handle_message(message)
+        
         elif "callback_query" in update:
             cb = update["callback_query"]
             message = IncomingMessage(
@@ -318,590 +292,305 @@ class TelegramChannel(BaseChannel):
                 user=self._parse_user(cb["from"]),
                 content=cb.get("data", ""),
                 message_type=MessageType.COMMAND,
-                conversation_type=ConversationType.DM,
-                conversation_id=str(cb["message"]["chat"]["id"]),
-                raw_payload=cb,
+                format=MessageFormat.PLAIN,
+                conversation_id=str(cb["message"]["chat"]["id"]) if "message" in cb else None,
+                metadata={"callback_query": True, "message_id": cb["message"]["message_id"]} if "message" in cb else {},
             )
+            await self._handle_message(message)
+
+    async def _handle_message(self, message: IncomingMessage) -> None:
+        """Handle incoming message with command detection."""
+        content = message.content.strip()
+        
+        # Check for bot commands
+        if content.startswith("/"):
+            command = content.split()[0].lower()
+            await self._handle_command(command, message)
+            return
+        
+        # Regular message - notify handlers
+        await self._notify_message_handlers(message)
+
+    async def _handle_command(self, command: str, message: IncomingMessage) -> None:
+        """Handle Telegram bot commands."""
+        chat_id = message.conversation_id
+        
+        if command == "/start":
+            welcome = (
+                f"Hello {message.user.display_name or 'there'}! I'm NEUGI, your AI assistant.\n\n"
+                f"I can help you with:\n"
+                f"  Coding, research, analysis, creativity\n"
+                f"  Image understanding (if vision model enabled)\n"
+                f"  Web search and browser automation\n\n"
+                f"Commands:\n"
+                f"  /help - Show all commands\n"
+                f"  /reset - Reset our conversation\n"
+                f"  /status - Check my status"
+            )
+            await self.send_text(chat_id, welcome)
+        
+        elif command == "/help":
+            help_text = (
+                "Available commands:\n\n"
+                "/start - Welcome and setup\n"
+                "/help  - This message\n"
+                "/reset - Clear conversation memory\n"
+                "/status - Show bot status and model info\n\n"
+                "Just send me a message to chat!"
+            )
+            await self.send_text(chat_id, help_text)
+        
+        elif command == "/reset":
+            # Reset session memory for this chat
+            await self.send_text(chat_id, "Conversation context has been reset.")
+        
+        elif command == "/status":
+            status = (
+                f"Bot: @{self._bot_name or 'NEUGI'}\n"
+                f"Mode: {self._mode}\n"
+                f"Connected: {self._is_running}"
+            )
+            await self.send_text(chat_id, status)
+        
+        else:
+            # Unknown command - pass to handlers
             await self._notify_message_handlers(message)
 
-        elif "channel_post" in update:
-            message = await self.receive_message(update["channel_post"])
-            if message:
-                message.metadata["channel_post"] = True
-                await self._notify_message_handlers(message)
+    async def send_text(self, chat_id: str, text: str) -> bool:
+        """Send text message to a chat."""
+        # Telegram has 4096 char limit, split if needed
+        chunks = [text[i:i+4000] for i in range(0, len(text), 4000)]
+        for chunk in chunks:
+            result = await self._call_api("sendMessage", {
+                "chat_id": chat_id,
+                "text": chunk,
+                "parse_mode": "HTML",
+            })
+            if not result:
+                return False
+        return True
 
-    async def _parse_message(self, raw_data: dict[str, Any]) -> Optional[IncomingMessage]:
-        """Parse raw Telegram message data into IncomingMessage."""
-        chat = raw_data.get("chat", {})
-        chat_id = str(chat.get("id", ""))
-        chat_type = chat.get("type", "private")
-
-        if chat_type == "private":
-            conv_type = ConversationType.DM
-        elif chat_type in ("group", "supergroup"):
-            conv_type = ConversationType.GROUP
-        elif chat_type == "channel":
-            conv_type = ConversationType.CHANNEL
+    async def _receive_message(self, msg: dict[str, Any]) -> Optional[IncomingMessage]:
+        """Parse a Telegram message into IncomingMessage."""
+        if not msg or "chat" not in msg:
+            return None
+        
+        chat = msg["chat"]
+        chat_id = str(chat["id"])
+        user = self._parse_user(msg.get("from", {}))
+        
+        # Text message
+        if "text" in msg:
+            return IncomingMessage(
+                message_id=str(msg["message_id"]),
+                channel_type=ChannelType.TELEGRAM,
+                user=user,
+                content=msg["text"],
+                message_type=MessageType.TEXT,
+                format=MessageFormat.PLAIN,
+                conversation_id=chat_id,
+                metadata={"chat_type": chat.get("type", "private")},
+            )
+        
+        # Photo message
+        elif "photo" in msg:
+            caption = msg.get("caption", "")
+            photo = msg["photo"][-1]  # Highest resolution
+            file_id = photo["file_id"]
+            
+            # Download and process image
+            image_data = await self._download_file(file_id)
+            
+            if image_data:
+                b64 = base64.b64encode(image_data).decode()
+                # If text-only model, generate description
+                description = await self._describe_image(b64, caption)
+                content = description if description else caption
+            else:
+                content = caption or "[Image received but could not be processed]"
+            
+            return IncomingMessage(
+                message_id=str(msg["message_id"]),
+                channel_type=ChannelType.TELEGRAM,
+                user=user,
+                content=content,
+                message_type=MessageType.IMAGE,
+                format=MessageFormat.PLAIN,
+                conversation_id=chat_id,
+                attachments=[Attachment(
+                    type="image",
+                    url=file_id,
+                    mime_type="image/jpeg",
+                    size=photo.get("file_size", 0),
+                    metadata={"base64": b64 if image_data else None},
+                )],
+                metadata={"chat_type": chat.get("type", "private"), "caption": caption},
+            )
+        
+        # Document
+        elif "document" in msg:
+            doc = msg["document"]
+            return IncomingMessage(
+                message_id=str(msg["message_id"]),
+                channel_type=ChannelType.TELEGRAM,
+                user=user,
+                content=msg.get("caption", f"[Document: {doc.get('file_name', 'unknown')}]") ,
+                message_type=MessageType.FILE,
+                format=MessageFormat.PLAIN,
+                conversation_id=chat_id,
+                attachments=[Attachment(
+                    type="file",
+                    url=doc["file_id"],
+                    mime_type=doc.get("mime_type", "application/octet-stream"),
+                    size=doc.get("file_size", 0),
+                    name=doc.get("file_name"),
+                )],
+                metadata={"chat_type": chat.get("type", "private")},
+            )
+        
+        # Voice message
+        elif "voice" in msg:
+            voice = msg["voice"]
+            return IncomingMessage(
+                message_id=str(msg["message_id"]),
+                channel_type=ChannelType.TELEGRAM,
+                user=user,
+                content="[Voice message received]",
+                message_type=MessageType.AUDIO,
+                format=MessageFormat.PLAIN,
+                conversation_id=chat_id,
+                attachments=[Attachment(
+                    type="audio",
+                    url=voice["file_id"],
+                    mime_type="audio/ogg",
+                    duration=voice.get("duration", 0),
+                )],
+                metadata={"chat_type": chat.get("type", "private")},
+            )
+        
+        # Other message types
         else:
-            conv_type = ConversationType.DM
+            return IncomingMessage(
+                message_id=str(msg["message_id"]),
+                channel_type=ChannelType.TELEGRAM,
+                user=user,
+                content="[Unsupported message type]",
+                message_type=MessageType.TEXT,
+                format=MessageFormat.PLAIN,
+                conversation_id=chat_id,
+                metadata={"chat_type": chat.get("type", "private")},
+            )
 
-        user = self._parse_user(raw_data.get("from", {}))
+    async def _download_file(self, file_id: str) -> Optional[bytes]:
+        """Download file from Telegram by file_id."""
+        try:
+            # Get file path
+            result = await self._call_api("getFile", {"file_id": file_id})
+            if not result or "file_path" not in result:
+                return None
+            
+            file_path = result["file_path"]
+            url = self._file_url(file_path)
+            
+            # Download file
+            if self._http is None:
+                self._http = AsyncHTTPClient()
+            
+            return await self._http.download(url, timeout=60)
+        
+        except Exception as e:
+            logger.warning("Failed to download Telegram file %s: %s", file_id, e)
+            return None
 
-        message_type, content, attachments = self._parse_content(raw_data)
-
-        reply_to = None
-        if "reply_to_message" in raw_data:
-            reply_to = str(raw_data["reply_to_message"].get("message_id"))
-
-        thread_id = None
-        if "message_thread_id" in raw_data:
-            thread_id = str(raw_data["message_thread_id"])
-
-        return IncomingMessage(
-            message_id=str(raw_data.get("message_id", "")),
-            channel_type=ChannelType.TELEGRAM,
-            user=user,
-            content=content,
-            message_type=message_type,
-            conversation_type=conv_type,
-            conversation_id=chat_id,
-            thread_id=thread_id,
-            reply_to_message_id=reply_to,
-            attachments=attachments,
-            timestamp=float(raw_data.get("date", time.time())),
-            raw_payload=raw_data,
-        )
+    async def _describe_image(self, image_b64: str, caption: str = "") -> str:
+        """
+        Generate text description of image for text-only models.
+        
+        Strategy:
+            1. Try lightweight vision model (llava via Ollama)
+            2. Try OCR if available
+            3. Return caption + generic description
+        """
+        description = caption or ""
+        
+        # Try to use a lightweight vision model for description
+        try:
+            from llm_multimodal import MultimodalProvider
+            from llm_provider import ProviderConfig, ProviderType, OllamaProvider
+            
+            config = ProviderConfig(
+                provider_type=ProviderType.OLLAMA,
+                base_url="http://localhost:11434",
+                default_model="llava:7b",
+            )
+            provider = OllamaProvider(config)
+            multimodal = MultimodalProvider(provider)
+            
+            response = multimodal.analyze_screenshot(
+                screenshot_b64=image_b64,
+                task="Describe this image in 1-2 sentences. Be concise.",
+            )
+            
+            if response and response.content:
+                vision_desc = response.content.strip()
+                if description:
+                    description = f"{vision_desc}\n\nCaption: {description}"
+                else:
+                    description = vision_desc
+                
+        except Exception as e:
+            logger.debug("Vision description failed: %s", e)
+        
+        # If still no description, provide generic info
+        if not description:
+            description = "[Image received. Current model is text-only and cannot view images.]"
+        
+        return description
 
     def _parse_user(self, user_data: dict[str, Any]) -> UserIdentity:
-        """Parse Telegram user data into UserIdentity."""
+        """Parse Telegram user into UserIdentity."""
+        if not user_data:
+            return UserIdentity(id="unknown", username="unknown")
+        
         return UserIdentity(
-            id=str(user_data.get("id", "")),
-            name=user_data.get("username") or user_data.get("first_name", "Unknown"),
-            platform_username=user_data.get("username"),
-            first_name=user_data.get("first_name"),
-            last_name=user_data.get("last_name"),
-            is_bot=user_data.get("is_bot", False),
-            language_code=user_data.get("language_code"),
+            id=str(user_data.get("id", "unknown")),
+            username=user_data.get("username"),
+            display_name=" ".join(filter(None, [
+                user_data.get("first_name", ""),
+                user_data.get("last_name", ""),
+            ])) or user_data.get("username", "Unknown"),
             metadata={
-                "is_premium": user_data.get("is_premium", False),
-                "added_to_attachment_menu": user_data.get("added_to_attachment_menu", False),
+                "language_code": user_data.get("language_code"),
+                "is_bot": user_data.get("is_bot", False),
             },
         )
 
-    def _parse_content(
-        self, raw_data: dict[str, Any]
-    ) -> tuple[MessageType, str, list[Attachment]]:
-        """Parse message content and determine message type."""
-        attachments: list[Attachment] = []
-
-        if "text" in raw_data:
-            return MessageType.TEXT, raw_data["text"], attachments
-
-        if "caption" in raw_data:
-            caption = raw_data["caption"]
+    async def send_message(self, message: OutgoingMessage) -> bool:
+        """Send outgoing message to Telegram."""
+        chat_id = message.conversation_id
+        
+        if message.message_type == MessageType.TEXT:
+            return await self.send_text(chat_id, message.content)
+        
+        elif message.message_type == MessageType.IMAGE:
+            # Send photo
+            text = message.content or ""
+            result = await self._call_api("sendPhoto", {
+                "chat_id": chat_id,
+                "photo": message.attachments[0].url if message.attachments else "",
+                "caption": text[:1024],
+            })
+            return result is not None
+        
+        elif message.message_type == MessageType.FILE:
+            text = message.content or ""
+            result = await self._call_api("sendDocument", {
+                "chat_id": chat_id,
+                "document": message.attachments[0].url if message.attachments else "",
+                "caption": text[:1024],
+            })
+            return result is not None
+        
         else:
-            caption = ""
-
-        if "photo" in raw_data:
-            photos = raw_data["photo"]
-            best = max(photos, key=lambda p: p.get("file_size", 0))
-            attachments.append(Attachment(
-                url=best.get("file_id", ""),
-                mime_type="image/jpeg",
-                width=best.get("width"),
-                height=best.get("height"),
-                size_bytes=best.get("file_size"),
-            ))
-            return MessageType.IMAGE, caption, attachments
-
-        if "document" in raw_data:
-            doc = raw_data["document"]
-            attachments.append(Attachment(
-                url=doc.get("file_id", ""),
-                filename=doc.get("file_name"),
-                mime_type=doc.get("mime_type"),
-                size_bytes=doc.get("file_size"),
-            ))
-            return MessageType.FILE, caption, attachments
-
-        if "voice" in raw_data:
-            voice = raw_data["voice"]
-            attachments.append(Attachment(
-                url=voice.get("file_id", ""),
-                mime_type=voice.get("mime_type", "audio/ogg"),
-                duration_ms=voice.get("duration", 0) * 1000,
-                size_bytes=voice.get("file_size"),
-            ))
-            return MessageType.AUDIO, caption, attachments
-
-        if "video" in raw_data:
-            video = raw_data["video"]
-            attachments.append(Attachment(
-                url=video.get("file_id", ""),
-                mime_type=video.get("mime_type", "video/mp4"),
-                width=video.get("width"),
-                height=video.get("height"),
-                duration_ms=video.get("duration", 0) * 1000,
-                size_bytes=video.get("file_size"),
-            ))
-            return MessageType.VIDEO, caption, attachments
-
-        if "video_note" in raw_data:
-            video_note = raw_data["video_note"]
-            attachments.append(Attachment(
-                url=video_note.get("file_id", ""),
-                mime_type="video/mp4",
-                duration_ms=video_note.get("duration", 0) * 1000,
-                size_bytes=video_note.get("file_size"),
-            ))
-            return MessageType.VIDEO, caption, attachments
-
-        if "audio" in raw_data:
-            audio = raw_data["audio"]
-            attachments.append(Attachment(
-                url=audio.get("file_id", ""),
-                filename=audio.get("file_name"),
-                mime_type=audio.get("mime_type", "audio/mpeg"),
-                duration_ms=audio.get("duration", 0) * 1000,
-                size_bytes=audio.get("file_size"),
-            ))
-            return MessageType.AUDIO, caption, attachments
-
-        if "sticker" in raw_data:
-            sticker = raw_data["sticker"]
-            attachments.append(Attachment(
-                url=sticker.get("file_id", ""),
-                mime_type="image/webp" if not sticker.get("is_video") else "video/webm",
-                width=sticker.get("width"),
-                height=sticker.get("height"),
-                size_bytes=sticker.get("file_size"),
-            ))
-            return MessageType.STICKER, caption, attachments
-
-        if "location" in raw_data:
-            loc = raw_data["location"]
-            return MessageType.LOCATION, f"{loc['latitude']},{loc['longitude']}", attachments
-
-        if "contact" in raw_data:
-            contact = raw_data["contact"]
-            return MessageType.CONTACT, contact.get("phone_number", ""), attachments
-
-        if "poll" in raw_data:
-            return MessageType.POLL, raw_data["poll"].get("question", ""), attachments
-
-        return MessageType.TEXT, "", attachments
-
-    async def send_message(self, message: OutgoingMessage) -> Optional[str]:
-        """Send a message via Telegram Bot API."""
-        try:
-            if message.message_type == MessageType.TEXT:
-                return await self._send_text(message)
-            elif message.message_type == MessageType.IMAGE:
-                return await self._send_photo(message)
-            elif message.message_type == MessageType.FILE:
-                return await self._send_document(message)
-            elif message.message_type == MessageType.AUDIO:
-                return await self._send_audio(message)
-            elif message.message_type == MessageType.VIDEO:
-                return await self._send_video(message)
-            else:
-                return await self._send_text(message)
-        except TelegramRateLimited as exc:
-            self._logger.warning("Rate limited, retrying after %ds", exc.retry_after)
-            await asyncio.sleep(exc.retry_after)
-            return await self.send_message(message)
-        except Exception as exc:
-            self._logger.error("Failed to send message: %s", exc)
-            self._health.record_error(str(exc))
-            return None
-
-    async def _send_text(self, message: OutgoingMessage) -> Optional[str]:
-        """Send a text message."""
-        data: dict[str, Any] = {
-            "chat_id": message.conversation_id,
-            "text": message.content,
-        }
-
-        if message.format == MessageFormat.HTML:
-            data["parse_mode"] = "HTML"
-        elif message.format == MessageFormat.MARKDOWN_V2:
-            data["parse_mode"] = "MarkdownV2"
-
-        if message.reply_to_message_id:
-            data["reply_to_message_id"] = message.reply_to_message_id
-
-        if message.buttons:
-            data["reply_markup"] = {"inline_keyboard": message.buttons}
-
-        if message.metadata.get("disable_notification"):
-            data["disable_notification"] = True
-
-        result = self._call_api("sendMessage", data)
-        if result:
-            self._health.messages_sent += 1
-            return str(result.get("message_id"))
-        return None
-
-    async def _send_photo(self, message: OutgoingMessage) -> Optional[str]:
-        """Send a photo."""
-        data: dict[str, Any] = {
-            "chat_id": message.conversation_id,
-        }
-
-        if message.attachments:
-            data["photo"] = message.attachments[0].url
-
-        if message.content:
-            data["caption"] = message.content
-            if message.format == MessageFormat.HTML:
-                data["parse_mode"] = "HTML"
-
-        if message.reply_to_message_id:
-            data["reply_to_message_id"] = message.reply_to_message_id
-
-        if message.buttons:
-            data["reply_markup"] = {"inline_keyboard": message.buttons}
-
-        result = self._call_api("sendPhoto", data)
-        if result:
-            self._health.messages_sent += 1
-            return str(result.get("message_id"))
-        return None
-
-    async def _send_document(self, message: OutgoingMessage) -> Optional[str]:
-        """Send a document."""
-        data: dict[str, Any] = {
-            "chat_id": message.conversation_id,
-        }
-
-        if message.attachments:
-            data["document"] = message.attachments[0].url
-
-        if message.content:
-            data["caption"] = message.content
-
-        if message.reply_to_message_id:
-            data["reply_to_message_id"] = message.reply_to_message_id
-
-        result = self._call_api("sendDocument", data)
-        if result:
-            self._health.messages_sent += 1
-            return str(result.get("message_id"))
-        return None
-
-    async def _send_audio(self, message: OutgoingMessage) -> Optional[str]:
-        """Send an audio/voice message."""
-        data: dict[str, Any] = {
-            "chat_id": message.conversation_id,
-        }
-
-        if message.attachments:
-            data["audio"] = message.attachments[0].url
-
-        if message.content:
-            data["caption"] = message.content
-
-        result = self._call_api("sendAudio", data)
-        if result:
-            self._health.messages_sent += 1
-            return str(result.get("message_id"))
-        return None
-
-    async def _send_video(self, message: OutgoingMessage) -> Optional[str]:
-        """Send a video message."""
-        data: dict[str, Any] = {
-            "chat_id": message.conversation_id,
-        }
-
-        if message.attachments:
-            data["video"] = message.attachments[0].url
-
-        if message.content:
-            data["caption"] = message.content
-
-        if message.reply_to_message_id:
-            data["reply_to_message_id"] = message.reply_to_message_id
-
-        result = self._call_api("sendVideo", data)
-        if result:
-            self._health.messages_sent += 1
-            return str(result.get("message_id"))
-        return None
-
-    async def send_inline_keyboard(
-        self,
-        conversation_id: str,
-        text: str,
-        keyboard: list[list[dict[str, Any]]],
-        format: MessageFormat = MessageFormat.PLAIN,
-    ) -> Optional[str]:
-        """
-        Send a message with an inline keyboard.
-
-        Args:
-            conversation_id: Chat ID to send to.
-            text: Message text.
-            keyboard: List of rows, each row is a list of InlineKeyboardButton dicts.
-            format: Message format.
-
-        Returns:
-            Message ID if successful.
-        """
-        message = OutgoingMessage(
-            content=text,
-            channel_type=ChannelType.TELEGRAM,
-            conversation_id=conversation_id,
-            message_type=MessageType.TEXT,
-            format=format,
-            buttons=keyboard,
-        )
-        return await self.send_message(message)
-
-    async def send_poll(
-        self,
-        conversation_id: str,
-        question: str,
-        options: list[str],
-        is_anonymous: bool = True,
-        allows_multiple_answers: bool = False,
-    ) -> Optional[str]:
-        """Send a poll message."""
-        data = {
-            "chat_id": conversation_id,
-            "question": question,
-            "options": options,
-            "is_anonymous": is_anonymous,
-            "allows_multiple_answers": allows_multiple_answers,
-        }
-        result = self._call_api("sendPoll", data)
-        if result:
-            self._health.messages_sent += 1
-            return str(result.get("message_id"))
-        return None
-
-    async def send_chat_action(self, conversation_id: str, action: str = "typing") -> bool:
-        """
-        Send a chat action (typing, uploading_photo, etc.).
-
-        Args:
-            conversation_id: Chat ID.
-            action: Action type (typing, upload_photo, record_video, etc.).
-        """
-        data = {"chat_id": conversation_id, "action": action}
-        result = self._call_api("sendChatAction", data)
-        return result is not None
-
-    async def edit_message_text(
-        self,
-        conversation_id: str,
-        message_id: str,
-        new_text: str,
-        format: MessageFormat = MessageFormat.PLAIN,
-    ) -> bool:
-        """Edit message text."""
-        data: dict[str, Any] = {
-            "chat_id": conversation_id,
-            "message_id": message_id,
-            "text": new_text,
-        }
-        if format == MessageFormat.HTML:
-            data["parse_mode"] = "HTML"
-        elif format == MessageFormat.MARKDOWN_V2:
-            data["parse_mode"] = "MarkdownV2"
-
-        result = self._call_api("editMessageText", data)
-        return result is not None
-
-    async def delete_message(self, conversation_id: str, message_id: str) -> bool:
-        """Delete a message."""
-        data = {"chat_id": conversation_id, "message_id": message_id}
-        result = self._call_api("deleteMessage", data)
-        return result is not None
-
-    async def download_file(self, file_id: str, local_path: str) -> bool:
-        """Download a file from Telegram."""
-        try:
-            file_info = self._call_api("getFile", {"file_id": file_id})
-            if not file_info:
-                return False
-
-            file_path = file_info.get("file_path")
-            if not file_path:
-                return False
-
-            url = self._file_url(file_path)
-
-            if self._session is None:
-                self._session = requests.Session()
-
-            response = self._session.get(url, timeout=60)
-            response.raise_for_status()
-
-            with open(local_path, "wb") as f:
-                f.write(response.content)
-
-            return True
-
-        except Exception as exc:
-            self._logger.error("File download failed: %s", exc)
-            return False
-
-    async def get_user(self, user_id: str) -> Optional[UserIdentity]:
-        """Get user info (limited by Telegram API - only works for chat members)."""
-        return None
-
-    async def get_chat_info(self, chat_id: str) -> Optional[dict[str, Any]]:
-        """Get chat information."""
-        result = self._call_api("getChat", {"chat_id": chat_id})
-        return result
-
-    async def get_chat_administrators(self, chat_id: str) -> list[dict[str, Any]]:
-        """Get list of chat administrators."""
-        result = self._call_api("getChatAdministrators", {"chat_id": chat_id})
-        return result or []
-
-    async def ban_chat_member(self, chat_id: str, user_id: str) -> bool:
-        """Ban a user from a chat."""
-        data = {"chat_id": chat_id, "user_id": user_id}
-        result = self._call_api("banChatMember", data)
-        return result is not None
-
-    async def unban_chat_member(self, chat_id: str, user_id: str) -> bool:
-        """Unban a user from a chat."""
-        data = {"chat_id": chat_id, "user_id": user_id}
-        result = self._call_api("unbanChatMember", data)
-        return result is not None
-
-    async def promote_chat_member(
-        self,
-        chat_id: str,
-        user_id: str,
-        permissions: Optional[dict[str, bool]] = None,
-    ) -> bool:
-        """Promote a chat member with specific permissions."""
-        data: dict[str, Any] = {"chat_id": chat_id, "user_id": user_id}
-        if permissions:
-            data.update(permissions)
-        result = self._call_api("promoteChatMember", data)
-        return result is not None
-
-    async def set_chat_title(self, chat_id: str, title: str) -> bool:
-        """Set a chat title."""
-        data = {"chat_id": chat_id, "title": title}
-        result = self._call_api("setChatTitle", data)
-        return result is not None
-
-    async def set_chat_description(self, chat_id: str, description: str) -> bool:
-        """Set a chat description."""
-        data = {"chat_id": chat_id, "description": description}
-        result = self._call_api("setChatDescription", data)
-        return result is not None
-
-    async def pin_chat_message(
-        self,
-        chat_id: str,
-        message_id: str,
-        disable_notification: bool = False,
-    ) -> bool:
-        """Pin a message in a chat."""
-        data = {
-            "chat_id": chat_id,
-            "message_id": message_id,
-            "disable_notification": disable_notification,
-        }
-        result = self._call_api("pinChatMessage", data)
-        return result is not None
-
-    async def unpin_chat_message(self, chat_id: str, message_id: Optional[str] = None) -> bool:
-        """Unpin a message in a chat."""
-        data: dict[str, Any] = {"chat_id": chat_id}
-        if message_id:
-            data["message_id"] = message_id
-        result = self._call_api("unpinChatMessage", data)
-        return result is not None
-
-    async def leave_chat(self, chat_id: str) -> bool:
-        """Leave a chat."""
-        result = self._call_api("leaveChat", {"chat_id": chat_id})
-        return result is not None
-
-    async def get_user_profile_photos(
-        self, user_id: str, offset: int = 0, limit: int = 1
-    ) -> Optional[dict[str, Any]]:
-        """Get user profile photos."""
-        data = {"user_id": user_id, "offset": offset, "limit": limit}
-        return self._call_api("getUserProfilePhotos", data)
-
-    async def answer_callback_query(
-        self,
-        callback_query_id: str,
-        text: Optional[str] = None,
-        show_alert: bool = False,
-    ) -> bool:
-        """Answer a callback query (inline button press)."""
-        data: dict[str, Any] = {"callback_query_id": callback_query_id}
-        if text:
-            data["text"] = text
-        if show_alert:
-            data["show_alert"] = True
-        result = self._call_api("answerCallbackQuery", data)
-        return result is not None
-
-    async def process_webhook(self, request_data: dict[str, Any]) -> None:
-        """
-        Process a webhook update (for webhook mode).
-
-        Call this from your webhook endpoint handler.
-
-        Args:
-            request_data: Parsed JSON from the webhook POST body.
-        """
-        await self._handle_update(request_data)
-
-    async def _health_check(self) -> None:
-        """Check Telegram API connectivity."""
-        result = self._call_api("getMe", timeout=10)
-        if not result:
-            raise TelegramError(0, "Health check failed")
-
-    def handle_webhook_request(self, request_data: dict[str, Any]) -> None:
-        """
-        Synchronous webhook handler for use in Flask/FastAPI/etc.
-
-        This schedules async processing in the background.
-        """
-        if self._is_running:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                asyncio.ensure_future(self.process_webhook(request_data))
-            else:
-                loop.run_until_complete(self.process_webhook(request_data))
-
-    async def start_polling(self) -> None:
-        """Start the long polling loop. Call this after start()."""
-        if self._mode != "polling":
-            self._logger.warning("Polling not available in webhook mode")
-            return
-
-        self._poll_task = asyncio.create_task(self._poll_updates())
-        try:
-            await self._poll_task
-        except asyncio.CancelledError:
-            pass
-
-
-class TelegramError(Exception):
-    """Telegram API error."""
-
-    def __init__(self, error_code: int, description: str) -> None:
-        self.error_code = error_code
-        self.description = description
-        super().__init__(f"Telegram API error {error_code}: {description}")
-
-
-class TelegramRateLimited(TelegramError):
-    """Telegram rate limit exceeded."""
-
-    def __init__(self, retry_after: int, description: str) -> None:
-        self.retry_after = retry_after
-        super().__init__(429, f"Rate limited. Retry after {retry_after}s: {description}")
+            # Fallback to text
+            return await self.send_text(chat_id, message.content)

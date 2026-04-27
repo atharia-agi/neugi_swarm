@@ -144,7 +144,7 @@ class SessionTokenManager:
 
 # -- WebSocket Server (RFC 6455 stdlib implementation) ----------------------
 
-from dashboard.websocket import WebSocketServer, WebSocketHandler
+from .websocket import WebSocketServer, WebSocketHandler
 
 
 # -- Dashboard Server --------------------------------------------------------

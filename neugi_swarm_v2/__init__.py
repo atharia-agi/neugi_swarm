@@ -20,7 +20,7 @@ Usage:
 
 from __future__ import annotations
 
-__version__ = "2.0.0"
+__version__ = "2.1.1"
 __author__ = "NEUGI Team"
 
 # -- Core Systems ------------------------------------------------------------
@@ -186,6 +186,15 @@ from neugi_swarm_v2.tools import (
 # -- Assistant ---------------------------------------------------------------
 
 from neugi_swarm_v2.assistant import NeugiAssistantV2
+from neugi_swarm_v2.response_format import (
+    CodeBlock,
+    Citation,
+    ResponseFormatter,
+    ResponseMetadata,
+    ResponseSection,
+    StructuredResponse,
+    ThinkingBlock,
+)
 from neugi_swarm_v2.llm_provider import (
     LLMProvider,
     LLMResponse,
@@ -218,6 +227,10 @@ from neugi_swarm_v2.a2a import (
     AgentNotFoundError,
     AgentRegistration,
     MessageExpiredError,
+)
+from neugi_swarm_v2.cli.rescue_wizard import (
+    RescueWizard,
+    WizardError,
 )
 from neugi_swarm_v2.config import (
     NeugiConfig,
@@ -398,7 +411,14 @@ class NeugiSwarmV2:
 
     def _setup_compaction(self) -> None:
         """Configure compaction engine with memory flush hooks."""
-        pass
+        # Register compaction callback to sync memory before session reset
+        try:
+            if hasattr(self.session_manager, 'register_pre_compact_hook'):
+                self.session_manager.register_pre_compact_hook(
+                    lambda: self.memory.sync() if hasattr(self.memory, 'sync') else None
+                )
+        except Exception as e:
+            logger.debug("Compaction setup skipped: %s", e)
 
     def __enter__(self) -> "NeugiSwarmV2":
         return self
@@ -587,4 +607,15 @@ __all__ = [
     "WebSocketError",
     "WebSocketHandler",
     "WebSocketServer",
+    # Assistant Response Format
+    "CodeBlock",
+    "Citation",
+    "ResponseFormatter",
+    "ResponseMetadata",
+    "ResponseSection",
+    "StructuredResponse",
+    "ThinkingBlock",
+    # Rescue Wizard
+    "RescueWizard",
+    "WizardError",
 ]

@@ -29,6 +29,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Optional
 
+from neugi_swarm_v2 import __version__
+
 try:
     from rich.console import Console
     from rich.table import Table
@@ -791,13 +793,13 @@ class NeugiCLI:
         banner.append("  ██║ ╚████║███████╗██╔╝ ██╗╚██████╔╝███████║\n", style="bold cyan")
         banner.append("  ╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝\n", style="bold cyan")
         banner.append("\n", style="cyan")
-        banner.append("  Autonomous Multi-Agent Framework v2.0.0\n", style="dim")
+        banner.append(f"  Autonomous Multi-Agent Framework v{__version__}\n", style="dim")
         console.print(banner)
 
     def _show_version(self) -> None:
         """Display version information."""
         console.print(Panel(
-            f"[primary]NEUGI Swarm v2.0.0[/primary]\n"
+            f"[primary]NEUGI Swarm v{__version__}[/primary]\n"
             f"[dim]Python {platform.python_version()} | {platform.system()} {platform.release()}[/dim]",
             title="Version",
             border_style="cyan",
@@ -1567,7 +1569,8 @@ class NeugiCLI:
 
         editor = os.environ.get("EDITOR", "notepad" if platform.system() == "Windows" else "nano")
         if self.config_mgr.config_path.exists():
-            os.system(f"{editor} {self.config_mgr.config_path}")
+            import subprocess
+            subprocess.run([editor, str(self.config_mgr.config_path)], shell=False, check=False)
             self.config_mgr.load()
 
         return CommandResult(status=CommandStatus.SUCCESS, message="Configuration edited")
@@ -1698,6 +1701,22 @@ class NeugiCLI:
 
         return CommandResult(status=CommandStatus.ERROR, message="Restore cancelled")
 
+    def _check_latest_version(self) -> Optional[str]:
+        """Check PyPI for latest version."""
+        try:
+            import urllib.request
+            import json
+            req = urllib.request.Request(
+                "https://pypi.org/pypi/neugi-swarm/json",
+                headers={"Accept": "application/json", "User-Agent": f"neugi-swarm/{__version__}"},
+                method="GET",
+            )
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read().decode())
+                return data.get("info", {}).get("version", "")
+        except Exception:
+            return None
+
     def _cmd_update(self, args: list[str]) -> CommandResult:
         """Check and apply updates."""
         console.print("[info]Checking for updates...[/info]")
@@ -1721,7 +1740,14 @@ class NeugiCLI:
             time.sleep(0.2)
             progress.advance(task)
 
-        console.print("[success]NEUGI is up to date (v2.0.0)[/success]")
+        # Check for actual updates via git or PyPI
+        latest = self._check_latest_version()
+        if latest and latest != __version__:
+            console.print(f"[warning]New version available: v{latest} (current: v{__version__})[/warning]")
+            console.print(f"[dim]Run 'pip install --upgrade neugi-swarm' or 'git pull' to update[/dim]")
+            return CommandResult(status=CommandStatus.SUCCESS, message=f"Update available: v{latest}")
+        
+        console.print(f"[success]NEUGI is up to date (v{__version__})[/success]")
         return CommandResult(status=CommandStatus.SUCCESS, message="No updates available")
 
     def _cmd_doctor(self, args: list[str]) -> CommandResult:

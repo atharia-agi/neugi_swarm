@@ -497,7 +497,9 @@ class SkillBenchmark(Benchmark):
         self.mgr = SkillManager()
     
     def teardown(self) -> None:
-        pass
+        # Cleanup any temporary skill manager resources
+        if hasattr(self.mgr, 'close'):
+            self.mgr.close()
     
     def get_tasks(self) -> List[Dict[str, Any]]:
         return [
