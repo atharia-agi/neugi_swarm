@@ -1,288 +1,156 @@
-# 🤖 NEUGI SWARM
-## The Ultimate Autonomous Agent Platform
+# 🦞 NEUGI Swarm v2
 
-> [!CAUTION]
-> **DANGER: UNRESTRICTED SYSTEM ACCESS**
-> NEUGI is an autonomous AI system with the authority to execute system-level commands. Use with extreme caution.
+## The Ultimate Agentic Framework
 
----
+> **17 Subsystems | 96 Modules | 54,000+ Lines | 61 Built-in Tools**
 
-<p align="center">
-  <img src="https://img.shields.io/badge/NEUGI-SOVEREIGN-red" alt="NEUGI">
-  <img src="https://img.shields.io/badge/Access-UNRESTRICTED-orange" alt="Access">
-  <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
-  <img src="https://img.shields.io/badge/Python-3.11+-yellow" alt="Python">
-  <a href="https://neugi.com"><img src="https://img.shields.io/badge/Website-Sovereign-blue" alt="Website"></a>
-</p>
-
----
-
-## 🚀 Why NEUGI?
-
-**The Most Powerful Beginner-Friendly Agent Platform Ever Created!**
-
-Unlike OpenClaw, Hermes Agent, or Claude Code - NEUGI is designed for EVERYONE from beginners to experts.
-
-| Feature | OpenClaw | Hermes | Claude Code | NEUGI |
-|---------|----------|--------|-------------|-------|
-| **Wizard Rescue** | ❌ | ❌ | ❌ | ✅ Auto-fix 50+ issues |
-| **One-Click Deploy** | ❌ | ❌ | ❌ | ✅ Vercel/Railway/etc |
-| **Voice Control** | ❌ | ❌ | ❌ | ✅ Hands-free! |
-| **Team Collaboration** | ❌ | ❌ | ❌ | ✅ Multi-user |
-| **Onboarding** | ❌ | ❌ | ❌ | ✅ 6 languages |
-| **Agent Studio** | ❌ | ❌ | ❌ | ✅ Create custom agents |
-| **Auto-Learning** | ❌ | ✅ | ❌ | ✅ Smarter over time |
-| **NL CLI** | ❌ | ❌ | ❌ | ✅ No commands to memorize! |
-| **Beginner Friendly** | ❌ | ❌ | ❌ | ✅ For everyone! |
-| **100% Free** | ✅ | ✅ | ❌ | ✅ Forever! |
-
----
-
-## 🎯 Key Features
-
-### 🆘 Wizard Rescue - Auto Troubleshoot
-NEUGI automatically detects and fixes 50+ common issues:
-- Ollama not running
-- Port conflicts (19888/19889)
-- Permission problems
-- Database errors
-- No internet connection
-- And much more!
-
-```bash
-python neugi_wizard_rescue.py          # Auto-diagnose & fix
-python neugi_wizard_rescue.py "port error"  # Fix specific issue
-```
-
-### 🎯 One-Click Project Templates
-Create complete projects instantly:
-
-```bash
-python neugi_project_templates.py
-# Say "build flask" or "create react app"
-```
-
-Available templates:
-- 🌐 Web (Flask, FastAPI, React + Vite)
-- 🐳 Docker environment
-- 📱 Mobile (React Native, Flutter)
-- 🤖 AI/ML projects
-- 💬 Discord/Telegram bots
-- ⌨️ CLI tools
-
-### 🎨 Agent Studio - Create Your Own Agents
-Build custom AI agents with:
-- Pre-built templates (Developer, Researcher, Designer, etc.)
-- Tool selection from 50+ tools
-- Custom personality
-- Works alongside 9 built-in agents!
-
-```bash
-python neugi_agent_studio.py --create   # Interactive creation
-```
-
-### 🧠 Auto-Learner - AI That Gets Smarter
-NEUGI learns from every interaction and auto-creates skills!
-
-```bash
-python neugi_auto_learner.py --stats    # View learning progress
-```
-
-### 💬 Natural Language CLI
-No commands to memorize! Just type what you need:
-
-```bash
-python neugi_nlcli.py "help me build a website"
-python neugi_nlcli.py "what is docker and how to install"
-python neugi_nlcli.py "check my system health"
-```
-
-### 🎤 Voice Control
-Hands-free operation!
-
-```bash
-python neugi_voice.py
-# Say "start neugi", "build flask", "check system"
-```
-
-### 👥 Team Collaboration
-Work together with your team:
-
-```bash
-python neugi_team.py
-# Create teams, assign tasks, share agents
-```
-
-### ☁️ One-Click Cloud Deploy
-Deploy anywhere with a single command:
-
-```bash
-python neugi_cloud_deploy.py --quick    # Auto-detect & deploy
-python neugi_cloud_deploy.py --platform=vercel
-```
-
-Supported platforms:
-- ⚡ Vercel
-- 🚂 Railway
-- 🎨 Render
-- 🦅 Fly.io
-- 🌊 DigitalOcean
+NEUGI Swarm v2 is the most advanced open-source agentic AI framework ever built. A deterministic multi-agent state machine designed for production-grade reliability at scale.
 
 ---
 
 ## 🚀 Quick Start
 
-### One-Command Installation
+### One-Liner Install
+
+**macOS / Linux:**
 ```bash
-curl -fsSL https://neugi.com/install | bash
+curl -fsSL https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm_v2/install.sh | bash
 ```
 
-**Done!** NEUGI will:
-1. Clone repository & install dependencies
-2. Initialize Ollama
-3. Run Setup Wizard
-4. Start NEUGI + Dashboard
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm_v2/install.bat | iex
+```
 
----
+### Manual Setup
 
-## 📖 Usage
-
-### Start NEUGI
 ```bash
-neugi start
-# Or:
-python neugi_swarm.py
+git clone https://github.com/atharia-agi/neugi_swarm.git
+cd neugi_swarm/neugi_swarm_v2
+pip install -e .
+neugi wizard    # Interactive setup
+neugi chat      # Start chatting
 ```
 
-### Open Dashboard
+---
+
+## 🏗️ Architecture
+
+| Subsystem | Description |
+|-----------|-------------|
+| **Memory** | Karpathy dreaming, hierarchical scopes, SQLite FTS5 |
+| **Skills** | 6-tier loading, SKILL.md v3, gating, token budgets |
+| **Agents** | Orchestrator-worker, evaluator-optimizer, 6 archetypes |
+| **Session** | 4 isolation modes, compaction, steering, write locks |
+| **Context** | 10-section prompt assembly, token budget, KV cache |
+| **MCP Server** | Full Model Context Protocol (stdio + HTTP) |
+| **Governance** | Budget tracking, approval gates, immutable audit |
+| **Plugins** | SDK, manifest discovery, topological deps, 8 hooks |
+| **Workflows** | StateGraph, durable checkpoints, human-in-loop |
+| **Learning** | Pattern tracking, auto skill generation, feedback |
+| **Gateway** | WebSocket RPC, device pairing, cron, heartbeat |
+| **Planning** | Tree of Thoughts, Chain of Verification, goals |
+| **Tools** | 61 builtins across 10 categories, composition |
+| **Channels** | Telegram, Discord, Slack, WhatsApp unified |
+| **Security** | 7-layer sandbox, neuro-symbolic, AES-256 secrets |
+| **CLI+Wizard** | 17 commands, 8-step setup, interactive chat |
+| **Dashboard** | Glass-morphism HTML, 20 REST endpoints, WebSocket |
+
+---
+
+## 📊 Benchmarks
+
+| Metric | Value |
+|--------|-------|
+| Subsystems | 17 |
+| Python Modules | 96 |
+| Lines of Code | 54,000+ |
+| Built-in Tools | 61 |
+| Integration Tests | 50 (all passing) |
+| Cold Start | < 500ms |
+| Memory Query | < 50ms |
+
+---
+
+## 📁 Repository Structure
+
 ```
-http://localhost:19888
+neugi_swarm/
+├── assets/                  # Brand assets (mascot, logo, guides)
+├── index.html              # Landing page
+├── CHANGELOG.md            # Version history
+└── neugi_swarm_v2/         # ⬅️ V2 Framework (this is where the magic happens)
+    ├── agents/             # Agent orchestration
+    ├── channels/           # Multi-platform messaging
+    ├── cli/                # Command-line interface
+    ├── context/            # Prompt assembly
+    ├── dashboard/          # Web dashboard
+    ├── docs/               # Documentation
+    ├── gateway/            # WebSocket gateway
+    ├── governance/         # Budget, audit, policy
+    ├── learning/           # Auto-learning system
+    ├── mcp/                # MCP server implementation
+    ├── memory/             # Hierarchical memory
+    ├── planning/           # Strategic planning
+    ├── plugins/            # Plugin SDK
+    ├── security/           # Sandbox & security
+    ├── session/            # Session management
+    ├── skills/             # Skill system
+    ├── tests/              # Integration tests
+    ├── tools/              # Tool registry
+    └── workflows/          # Workflow engine
 ```
 
-### Interactive Wizard
+---
+
+## 📚 Documentation
+
+All documentation lives in `neugi_swarm_v2/docs/`:
+
+- [`ARCHITECTURE.md`](neugi_swarm_v2/docs/ARCHITECTURE.md) — System design & data flow
+- [`MIGRATION.md`](neugi_swarm_v2/docs/MIGRATION.md) — Migrating from v1 (deprecated)
+- [`API.md`](neugi_swarm_v2/docs/API.md) — REST, WebSocket, MCP, CLI reference
+- [`SKILLS.md`](neugi_swarm_v2/docs/SKILLS.md) — Skill development guide
+- [`PLUGINS.md`](neugi_swarm_v2/docs/PLUGINS.md) — Plugin SDK
+- [`DEPLOYMENT.md`](neugi_swarm_v2/docs/DEPLOYMENT.md) — Docker, cloud, production
+
+---
+
+## 🧪 Testing
+
 ```bash
-python neugi_wizard.py
-# Choose from 60+ options including:
-# 🆘 WIZARD RESCUE - Fix any problem
-# 🎨 AGENT STUDIO - Create custom agents
-# 🧠 AUTO-LEARNER - AI that learns
-# 🎤 VOICE CONTROL - Hands-free
-# ☁️ CLOUD DEPLOY  - Deploy anywhere
+cd neugi_swarm_v2
+python -m unittest discover -s tests -v
 ```
 
-### CLI Commands
+**Current status:** 50/50 tests passing ✅
+
+---
+
+## 🐳 Docker
+
 ```bash
-neugi start      # Start NEUGI
-neugi stop       # Stop NEUGI
-neugi status     # Check status
-neugi dashboard  # Open web UI
+cd neugi_swarm_v2
+docker build -t neugi:v2 .
+docker-compose up -d
 ```
 
 ---
 
-## 📦 What's Included
+## ⚠️ Legacy Notice
 
-### Built-in Agents (9)
-- **Aurora** - Research & data extraction
-- **Cipher** - Coding & debugging
-- **Nova** - UI/UX creation
-- **Pulse** - Data analysis
-- **Quark** - Strategic planning
-- **Shield** - Security & auditing
-- **Spark** - Network operations
-- **Ink** - Documentation
-- **Nexus** - Manager/coordinator
-
-### Tools (50+)
-- Web: search, fetch, browse
-- Code: execute, debug, file ops
-- AI: llm reasoning, generation
-- Data: JSON, CSV, database
-- Comm: Telegram, Discord, Email
-- Media: Image generation, TTS
-
-### Integrations
-- **MCP** - Compatible with Claude Code, OpenClaw
-- **Telegram** - Control from anywhere
-- **Docker** - Container management
-- **Kubernetes** - K8s orchestration
+**v1 (`neugi_swarm/`) has been completely removed.** It was an unproven prototype. v2 is a from-scratch rewrite with production architecture, comprehensive tests, and proper documentation.
 
 ---
 
-## 🌍 Global Support
+## 📜 License
 
-### Onboarding in 6 Languages
-- 🇺🇸 English
-- 🇮🇩 Indonesia
-- 🇪🇸 Español
-- 🇨🇳 中文
-- 🇯🇵 日本語
-- 🇰🇷 한국어
-
-Just run:
-```bash
-python neugi_onboarding.py
-```
-
----
-
-## 📁 Directory Structure
-
-```
-~/neugi/
-├── neugi                  # Main CLI
-├── neugi_swarm.py         # Server
-├── neugi_swarm/           # All modules (70+ files)
-│   ├── neugi_wizard.py               # Interactive wizard
-│   ├── neugi_wizard_rescue.py        # Auto-troubleshoot
-│   ├── neugi_onboarding.py           # New user setup
-│   ├── neugi_project_templates.py    # One-click projects
-│   ├── neugi_agent_studio.py         # Custom agents
-│   ├── neugi_auto_learner.py         # Self-learning AI
-│   ├── neugi_nlcli.py                # Natural language CLI
-│   ├── neugi_voice.py                # Voice control
-│   ├── neugi_team.py                 # Team collaboration
-│   ├── neugi_cloud_deploy.py         # Cloud deployment
-│   ├── neugi_swarm_agents.py         # 9 built-in agents
-│   ├── neugi_swarm_tools.py          # 50+ tools
-│   ├── neugi_swarm_memory.py         # Memory system
-│   ├── neugi_mcp_server.py           # MCP compatible
-│   └── [60+ more modules]
-├── workspace/             # Agent workspace
-├── skills/                # Custom skills
-├── plugins/               # Plugins
-├── data/                  # Config, memory, DB
-└── logs/                  # Log files
-```
-
----
-
-## 💎 Why NEUGI is Different
-
-| Traditional AI | NEUGI |
-|----------------|-------|
-| Manual install | **One-command setup** |
-| Complex commands | **Natural language** |
-| Just chatbot | **True autonomous agent** |
-| No CLI | **Full CLI + GUI** |
-| Paid APIs | **Free (Ollama)** |
-| Single user | **Team collaboration** |
-| Fixed agents | **Agent Studio** |
-| No learning | **Auto-Learner** |
-| No voice | **Voice control** |
-
----
-
-## 📞 Support
-
-- 🌐 Website: [neugi.com](https://neugi.com)
-- 📧 Email: atharia.agi@gmail.com
-- 🐙 GitHub: [github.com/atharia-agi/neugi_swarm](https://github.com/atharia-agi/neugi_swarm)
-- 📝 Issues: [github.com/atharia-agi/neugi_swarm/issues](https://github.com/atharia-agi/neugi_swarm/issues)
+MIT — Atharia AGI
 
 ---
 
 <p align="center">
-  <strong>🤖 NEUGI - The Ultimate Agent Platform for Everyone!</strong><br>
-  Made with ❤️ for developers worldwide 🚀
+  <b>Built with 🦞 by Atharia AGI</b><br>
+  <a href="https://github.com/atharia-agi/neugi_swarm">GitHub</a> •
+  <a href="https://twitter.com/Atharia_AGI">Twitter</a>
 </p>

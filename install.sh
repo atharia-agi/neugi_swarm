@@ -1,225 +1,27 @@
-#!/bin/bash
-# 🤖 NEUGI SWARM - ONE-LINE INSTALLER
-# =====================================
-# Corporate: NEUGI
-# 100% AUTOMATED - User just runs ONE command!
+#!/usr/bin/env bash
+# NEUGI Swarm v2 — Root Install Wrapper
+# Delegates to neugi_swarm_v2/install.sh
 
 set -e
 
-# ============================================================
-# COLORS
-# ============================================================
+REPO_URL="https://github.com/atharia-agi/neugi_swarm.git"
+INSTALL_DIR="${HOME}/neugi_swarm"
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
-CYAN='\033[0;36m'
-NC='\033[0m'
-
-# ============================================================
-# FUNCTIONS
-# ============================================================
-
-log_info() { echo -e "${BLUE}➜${NC} $*"; }
-log_success() { echo -e "${GREEN}✓${NC} $*"; }
-log_warn() { echo -e "${YELLOW}⚠${NC} $*"; }
-log_error() { echo -e "${RED}✗${NC} $*"; }
-log_step() { echo -e "${PURPLE}━━━${NC} $* ${PURPLE}━━━"; }
-
-# ============================================================
-# MAIN INSTALLER
-# ============================================================
-
-main() {
-    echo ""
-    echo -e "${RED}${BOLD}  ⚠️  DANGER: UNRESTRICTED SYSTEM ACCESS${NC}"
-    echo -e "${YELLOW}  NEUGI is an autonomous AI system. By installing, you give the"
-    echo -e "  AI permission to execute system-level commands on this machine.${NC}"
-    echo ""
-    log_step "QUICK INSTALL NEUGI"
-    echo ""
-    
-    # Add PATH
-export PATH="$HOME/.local/bin:$PATH"
-    
-    # ============================================================
-    # STEP 1: Check/Install Ollama (OPTIONAL - will check later if installed)
-    # ============================================================
-    
-    log_step "🔄 CHECKING OLLAMA"
-    
-    if command -v ollama &> /dev/null; then
-        log_success "✓ Ollama already installed!"
-    else
-        log_warn "⚠️  Ollama not found - Will install a lightweight version"
-        log_info "Or install manually: curl -fsSL https://ollama.ai/install.sh | sh"
-    fi
-    
-    echo ""
-    log_step "📦 CLONING NEUGI REPO"
-    
-    NEUGI_DIR="$HOME/neugi"
-    mkdir -p "$NEUGI_DIR"
-    cd "$NEUGI_DIR"
-    
-    log_info "Cloning NEUGI repository..."
-    if [ -d "$NEUGI_DIR/.git" ]; then
-        log_info "NEUGI already exists - updating..."
-        cd "$NEUGI_DIR" && git pull origin main 2>/dev/null || git pull origin master 2>/dev/null
-    else
-        rm -rf "$NEUGI_DIR" 2>/dev/null
-        git clone https://github.com/atharia-agi/neugi_swarm.git "$NEUGI_DIR" --progress
-    fi
-    
-    log_info "Installing python dependencies (lightweight)..."
-    pip3 install requests flask psutil --break-system-packages 2>/dev/null || pip3 install requests flask psutil 2>/dev/null || true
-    
-    log_success "✓ Dependencies ready"
-    
-    chmod +x neugi_swarm/neugi_swarm.py 2>/dev/null || true
-    
-    # Create config
-    cat > config.py << 'EOF'
-# 🤖 NEUGI SWARM CONFIG
-USE_OLLAMA=true
-OLLAMA_URL="http://localhost:11434"
-OLLAMA_MODEL="qwen3.5:cloud"
-MODEL="auto"
-CONTEXT_WINDOW=2048
-MASTER_KEY="neugi123"
-EOF
-    
-    mkdir -p data models logs workspace
-    log_success "✓ NEUGI installed to: $NEUGI_DIR"
-    
-    # ============================================================
-    # START EVERYTHING UP!
-    # ============================================================
-    
-    log_step "🚀 STARTING NEUGI..."
-    echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "  🎉 NEUGI READY! Starting now..."
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    
-    # Start Ollama in background
-    nohup ollama serve > /tmp/ollama.log 2>&1 &
-    sleep 2
-    
-    # Check if running
-    if curl -s http://localhost:11434/api/tags >/dev/null 2>&1; then
-        log_success "✓ Ollama server running on port 11434"
-    else
-        log_info "Ollama may take a moment to start..."
-    fi
-    
-    echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  To start NEUGI Wizard:
-  ➜ cd ~/neugi
-  ➜ python neugi_swarm/neugi_wizard.py
-
-  OR
-
-  ➜ python neugi_swarm/neugi_swarm.py
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+echo "🦞 NEUGI Swarm v2 Installer"
+echo "============================"
 echo ""
 
-log_step "✅ INSTALL COMPLETE!"
+# Clone or update
+if [ -d "$INSTALL_DIR" ]; then
+    echo "📁 Updating existing installation..."
+    cd "$INSTALL_DIR"
+    git pull origin master
+else
+    echo "📥 Cloning repository..."
+    git clone "$REPO_URL" "$INSTALL_DIR"
+    cd "$INSTALL_DIR"
+fi
 
-echo "
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  🎉 CONGRATULATIONS!
-  NEUGI is ready to use!
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-"
-
-exit 0
-    log_info "   Usage: neugi [command]"
-    
-    # ============================================================
-    # STEP 6: RUN WIZARD AUTOMATICALLY
-    # ============================================================
-    
-    log_step "RUNNING SETUP WIZARD"
-    
-    echo ""
-    log_info "Starting setup wizard..."
-    echo ""
-    
-    # Run wizard
-    python3 neugi_swarm/neugi_wizard.py
-    
-    # ============================================================
-    # STEP 7: START NEUGI + ACTIVITY LOG MODE
-    # ============================================================
-    
-    log_step "STARTING NEUGI"
-    
-    echo ""
-    log_success "Wizard complete!"
-    echo ""
-    
-    # Start NEUGI in background
-    log_info "Starting NEUGI Swarm..."
-    nohup python3 neugi_swarm/neugi_swarm.py > "$NEUGI_DIR/logs/neugi.log" 2>&1 &
-    NEUGI_PID=$!
-    
-    # Wait for startup
-    sleep 3
-    
-    # ============================================================
-    # ACTIVITY LOG MODE
-    # ============================================================
-    
-    echo ""
-    echo "╔═══════════════════════════════════════════════════╗"
-    echo "║         🚀 NEUGI IS RUNNING!                      ║"
-    echo "╚═══════════════════════════════════════════════════╝"
-    echo ""
-    echo "📖 Dashboard: http://localhost:19888"
-    echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "         📊 ACTIVITY LOG MODE"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    echo "💡 QUICK COMMANDS (after restart):"
-    echo "   neugi start       - Start NEUGI"
-    echo "   neugi stop        - Stop NEUGI"  
-    echo "   neugi status      - Check status"
-    echo "   neugi logs        - View logs"
-    echo "   neugi dashboard   - Open dashboard"
-    echo "   neugi help        - Ask NEUGI Assistant"
-    echo ""
-    echo "💡 AUTO-START AFTER REBOOT (optional):"
-    echo "   cp ~/neugi/neugi.service ~/.config/systemd/user/"
-    echo "   systemctl --user enable neugi"
-    echo "   systemctl --user start neugi"
-    echo ""
-    
-    # Show live logs
-    log_info "Press Ctrl+C to stop"
-    echo ""
-    
-    # Tail logs
-    tail -f "$NEUGI_DIR/logs/neugi.log" 2>/dev/null || (
-        echo "📋 Initial Activity Log:"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo "• NEUGI Swarm started successfully"
-        echo "• Ollama connected: http://localhost:11434"
-        echo "• Model loaded: qwen3.5:cloud"
-        echo "• Dashboard ready: http://localhost:19888"
-        echo "• Waiting for commands..."
-        echo ""
-        echo "💡 Use dashboard or send messages to interact!"
-    )
-}
-
-# ============================================================
-# RUN
-# ============================================================
-
-main "$@"
+# Delegate to v2 installer
+echo "🚀 Running v2 installer..."
+bash neugi_swarm_v2/install.sh
