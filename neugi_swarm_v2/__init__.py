@@ -166,6 +166,11 @@ from neugi_swarm_v2.evals import (
     WebSearchBenchmark,
 )
 
+from neugi_swarm_v2.memory.embeddings import (
+    EmbeddingEngine,
+    VectorMemoryIndex,
+)
+
 from neugi_swarm_v2.tools import (
     WebSearch,
     WebSearchConfig,
@@ -224,6 +229,11 @@ from neugi_swarm_v2.config import (
     ContextConfig,
     load_config,
 )
+from neugi_swarm_v2.dashboard.websocket import (
+    WebSocketError,
+    WebSocketHandler,
+    WebSocketServer,
+)
 
 # -- Unified Entry Point -----------------------------------------------------
 
@@ -265,6 +275,7 @@ class NeugiSwarmV2:
         self.memory = MemorySystem(
             base_dir=str(self.config.memory_dir),
             daily_ttl_days=self.config.memory.daily_ttl_days,
+            enable_vec=True,
         )
 
         self.skill_manager = SkillManager(
@@ -569,4 +580,11 @@ __all__ = [
     "AgentNotFoundError",
     "AgentRegistration",
     "MessageExpiredError",
+    # Vector Memory
+    "EmbeddingEngine",
+    "VectorMemoryIndex",
+    # WebSocket
+    "WebSocketError",
+    "WebSocketHandler",
+    "WebSocketServer",
 ]

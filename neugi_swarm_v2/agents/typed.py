@@ -44,6 +44,8 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Generic, List, Optional, Type, TypeVar, Union, get_type_hints
 
+logger = logging.getLogger(__name__)
+
 try:
     from pydantic import BaseModel, ValidationError
     HAS_PYDANTIC = True
@@ -133,13 +135,15 @@ class TypedAgent(Generic[DepsT, OutputT]):
         instructions: str = "",
         output_type: Optional[Type[OutputT]] = None,
         deps_type: Optional[Type[DepsT]] = None,
-        retries: int = 2
+        retries: int = 2,
+        llm_provider: Optional[Any] = None,
     ):
         self.model = model
         self.instructions = instructions
         self.output_type = output_type
         self.deps_type = deps_type
         self.retries = retries
+        self._llm = llm_provider
         self._tools: Dict[str, ToolDef] = {}
         self._instructions_func: Optional[Callable] = None
         self._approval_gate: Optional[Callable[[str, Dict], bool]] = None
@@ -330,13 +334,41 @@ class TypedAgent(Generic[DepsT, OutputT]):
         messages: List[Dict[str, str]]
     ) -> Dict[str, Any]:
         """Call LLM provider."""
-        # This integrates with neugi_swarm_v2.llm_provider
-        # For now, return a simple pass-through
-        # TODO: Full integration with LLM provider
+        # Use real LLM provider if available
+        if self._llm is not None:
+            try:
+                # Add system message if present
+                all_messages = messages.copy()
+                if system:
+                    all_messages.insert(0, {"role": "system", "content": system})
+                
+                # Get tools schema for function calling
+                tools = self.get_tools_schema()
+                
+                # Call provider
+                response = self._llm.chat(
+                    messages=all_messages,
+                    model=self.model.split(":")[-1] if ":" in self.model else self.model,
+                    tools=tools if tools else None,
+                )
+                
+                # Convert to dict format
+                result = {"content": response.content, "tool_calls": []}
+                for tc in response.tool_calls:
+                    result["tool_calls"].append({
+                        "id": tc.id,
+                        "function": {
+                            "name": tc.name,
+                            "arguments": tc.arguments,
+                        }
+                    })
+                return result
+                
+            except Exception as e:
+                logger.warning("LLM provider call failed, using fallback: %s", e)
         
-        # Simulated response for testing
+        # Simulated fallback response for testing
         last_message = messages[-1]["content"] if messages else ""
-        
         return {
             "content": f"Processed: {last_message[:50]}...",
             "tool_calls": []

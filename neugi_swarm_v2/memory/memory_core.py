@@ -38,6 +38,7 @@ from typing import Any, Callable, Optional
 
 from memory.scopes import ScopePath, MemoryScope, MemorySlice, ScopeAccessError, ScopeError
 from memory.scoring import ScoringEngine, ScoreComponents, ScoreConfig
+from memory.embeddings import EmbeddingEngine, VectorMemoryIndex
 
 logger = logging.getLogger(__name__)
 
@@ -283,10 +284,29 @@ class MemorySystem:
         self._enable_fts = enable_fts
         self._enable_vec = enable_vec
 
+        # Embedding engine (lazy-loaded)
+        self._embedding: Optional[EmbeddingEngine] = None
+        self._vector_index: Optional[VectorMemoryIndex] = None
+
         # Initialize
         self._init_db()
         self._load_from_disk()
         self._start_background_saver()
+
+    def _get_embedding(self) -> Optional[EmbeddingEngine]:
+        """Lazy-load embedding engine."""
+        if self._embedding is None and self._enable_vec:
+            try:
+                self._embedding = EmbeddingEngine()
+                self._vector_index = VectorMemoryIndex(
+                    embedding=self._embedding,
+                    db_conn=self._conn,
+                )
+                logger.info("Vector memory enabled with backend: %s", self._embedding.backend_name)
+            except Exception as e:
+                logger.warning("Failed to initialize embeddings: %s", e)
+                self._enable_vec = False
+        return self._embedding
 
     # -- Database initialization ---------------------------------------------
 
@@ -558,6 +578,15 @@ class MemorySystem:
         # Update scoring index
         self.scoring.index(entry.id, entry.content, entry.importance, entry.created_at)
 
+        # Update vector index (async-friendly, non-blocking)
+        if self._enable_vec:
+            try:
+                embed = self._get_embedding()
+                if embed and self._vector_index:
+                    self._vector_index.add(entry.id, entry.content)
+            except Exception as e:
+                logger.debug("Vector indexing skipped: %s", e)
+
         # Queue background save
         self._queue_save(entry)
 
@@ -626,6 +655,16 @@ class MemorySystem:
             candidates = [e for e in candidates if e.scope.can_read(agent_id)]
             candidates = [e for e in candidates if not e.is_private or e.source == agent_id]
 
+        # Vector similarity boost (if available)
+        vector_scores: dict[str, float] = {}
+        if self._enable_vec and self._vector_index:
+            try:
+                vec_results = self._vector_index.search(query, top_k=limit * 3)
+                for mid, sim in vec_results:
+                    vector_scores[mid] = sim
+            except Exception as e:
+                logger.debug("Vector search failed: %s", e)
+
         # Score and rank
         scored = self.scoring.score_all(query, [e.id for e in candidates])
         results: list[tuple[MemoryEntry, float, ScoreComponents]] = []
@@ -634,7 +673,21 @@ class MemorySystem:
             if entry is not None:
                 entry.touch()
                 self.scoring.record_access(mid)
+                # Boost with vector similarity if available
+                if mid in vector_scores:
+                    composite = composite * 0.7 + vector_scores[mid] * 0.3
                 results.append((entry, composite, components))
+
+        # Also include high-similarity vector results that scoring missed
+        if vector_scores:
+            existing_ids = {r[0].id for r in results}
+            for mid, sim in vector_scores.items():
+                if mid not in existing_ids and mid in self._store:
+                    entry = self._store[mid]
+                    if entry not in candidates:
+                        continue
+                    entry.touch()
+                    results.append((entry, sim * 0.5, ScoreComponents()))
 
         results.sort(key=lambda x: x[1], reverse=True)
         return results[:limit]

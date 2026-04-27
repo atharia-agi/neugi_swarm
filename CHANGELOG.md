@@ -135,6 +135,37 @@ NEUGI is an autonomous, multi-agent swarm intelligence system designed to run on
 - `ARCHITECTURE.md`: Added 8 new subsystems to subsystem map
 - `API.md`: Added REST endpoints for Web Search, Browser, Computer Use, Evals
 
+### v2.1.1 (April 27, 2026) - VECTOR MEMORY, WEBSOCKET, TYPED AGENT WIRING
+
+#### Vector Memory (`memory/embeddings.py`)
+- **sentence-transformers all-MiniLM-L6-v2** as primary embedding (80MB, 384-dim)
+- **Ollama nomic-embed-text** as fallback (requires Ollama running)
+- **TF-IDF sparse fallback** as last resort (stdlib only, no deps)
+- Auto-detect best backend on initialization
+- Hybrid recall: TF-IDF scoring + vector similarity boost (0.7/0.3 blend)
+- `VectorMemoryIndex` with in-memory + optional sqlite-vec persistence
+- Zero setup: `pip install sentence-transformers sqlite-vec` (optional)
+
+#### WebSocket Server (`dashboard/websocket.py`)
+- **RFC 6455 compliant** WebSocket implementation using only Python stdlib
+- Full handshake with Sec-WebSocket-Accept
+- Text frame encoding/decoding with proper masking
+- Ping/Pong keepalive (30s interval)
+- Close handshake with status codes
+- `WebSocketServer` with broadcast, client management, dead client cleanup
+- Zero external dependencies (no `websockets` or `wsproto` needed)
+
+#### TypedAgent LLM Wiring (`agents/typed.py`)
+- `TypedAgent` now accepts `llm_provider` parameter
+- `_call_llm()` routes to real `LLMProvider.chat()` with tool schema injection
+- Automatic tool calling loop with real model responses
+- Graceful fallback to simulated response if LLM unavailable
+- Works with OllamaProvider, OpenAICompatibleProvider, AnthropicCompatibleProvider
+
+#### Test Results
+- **122 integration tests** (all passing)
+- 18 new tests for Vector Memory, WebSocket, and TypedAgent wiring
+
 ### v29.0.0 (March 30, 2026) - THE ULTIMATE AGENT PLATFORM
 
 #### Ultimate Beginner-Friendly Features

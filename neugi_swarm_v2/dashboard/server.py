@@ -142,40 +142,9 @@ class SessionTokenManager:
         return len(expired)
 
 
-# -- WebSocket Broadcaster ---------------------------------------------------
+# -- WebSocket Server (RFC 6455 stdlib implementation) ----------------------
 
-class WebSocketBroadcaster:
-    """Broadcast real-time updates to connected WebSocket clients."""
-
-    def __init__(self):
-        self._clients: list[Any] = []
-        self._lock = threading.Lock()
-
-    def add_client(self, client: Any) -> None:
-        with self._lock:
-            self._clients.append(client)
-
-    def remove_client(self, client: Any) -> None:
-        with self._lock:
-            if client in self._clients:
-                self._clients.remove(client)
-
-    def broadcast(self, message: dict[str, Any]) -> None:
-        data = json.dumps(message)
-        with self._lock:
-            dead_clients = []
-            for client in self._clients:
-                try:
-                    client.send(data)
-                except Exception:
-                    dead_clients.append(client)
-            for client in dead_clients:
-                self._clients.remove(client)
-
-    @property
-    def client_count(self) -> int:
-        with self._lock:
-            return len(self._clients)
+from dashboard.websocket import WebSocketServer, WebSocketHandler
 
 
 # -- Dashboard Server --------------------------------------------------------
@@ -204,7 +173,7 @@ class DashboardServer:
             self.config.rate_limit_window,
         )
         self.session_manager = SessionTokenManager(self.config.session_token_ttl)
-        self.broadcaster = WebSocketBroadcaster()
+        self.broadcaster = WebSocketServer()
         self._server: Optional[HTTPServer] = None
         self._thread: Optional[threading.Thread] = None
         self._running = False
@@ -509,10 +478,59 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         self._send_json_response(404, {"error": "Not found"})
 
     def _handle_websocket_upgrade(self) -> None:
-        self._send_json_response(200, {
-            "status": "websocket_upgrade_required",
-            "message": "Use a WebSocket client to connect to /ws",
-        })
+        """Handle WebSocket upgrade request."""
+        ws = WebSocketHandler(self)
+        if not ws.handshake():
+            return
+        
+        # Register with broadcaster
+        self.server_instance.broadcaster.add_client(ws)
+        
+        try:
+            # Send initial connection acknowledgment
+            ws.send_text(json.dumps({
+                "type": "connected",
+                "message": "WebSocket connected to NEUGI v2",
+                "timestamp": time.time(),
+            }))
+            
+            # Listen for messages
+            for message in ws.receive_messages(timeout=1.0):
+                try:
+                    data = json.loads(message)
+                    msg_type = data.get("type", "")
+                    
+                    if msg_type == "subscribe":
+                        channel = data.get("channel", "all")
+                        ws.send_text(json.dumps({
+                            "type": "subscribed",
+                            "channel": channel,
+                        }))
+                    
+                    elif msg_type == "ping":
+                        ws.send_text(json.dumps({"type": "pong"}))
+                    
+                    elif msg_type == "chat":
+                        # Handle chat messages via REST API
+                        pass
+                    
+                    else:
+                        ws.send_text(json.dumps({
+                            "type": "error",
+                            "message": f"Unknown message type: {msg_type}",
+                        }))
+                        
+                except json.JSONDecodeError:
+                    ws.send_text(json.dumps({
+                        "type": "error",
+                        "message": "Invalid JSON",
+                    }))
+                    
+        except Exception as e:
+            logger.debug("WebSocket handler error: %s", e)
+        finally:
+            self.server_instance.broadcaster.remove_client(ws)
+            ws.close()
 
     def do_GET(self) -> None:
         self._route_request("GET")
