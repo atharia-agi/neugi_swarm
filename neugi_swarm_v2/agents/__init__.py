@@ -41,8 +41,20 @@ from .message_bus import (
     MessagePriority,
     DeadLetterQueue,
 )
+from .typed import (
+    Agent,
+    AgentResult,
+    DepsT,
+    OutputT,
+    RunContext,
+    ToolDef,
+    ToolResult,
+    TypedAgent,
+    TypedAgentError,
+)
 
 __all__ = [
+    # Core Agent System
     "Agent",
     "AgentRole",
     "AgentStatus",
@@ -67,4 +79,13 @@ __all__ = [
     "MessageType",
     "MessagePriority",
     "DeadLetterQueue",
+    # Typed Agent (Pydantic AI-inspired)
+    "AgentResult",
+    "DepsT",
+    "OutputT",
+    "RunContext",
+    "ToolDef",
+    "ToolResult",
+    "TypedAgent",
+    "TypedAgentError",
 ]

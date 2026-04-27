@@ -73,6 +73,19 @@ from tools.builtins import (
     DockerTools,
     SecurityTools,
 )
+from tools.web_search import (
+    WebSearch,
+    WebSearchConfig,
+    SearchResult,
+    WebSearchError,
+)
+from tools.browser import (
+    BrowserTool,
+    BrowserConfig,
+    BrowserAction,
+    DOMElement,
+    BrowserToolError,
+)
 
 __all__ = [
     # Registry
@@ -124,6 +137,17 @@ __all__ = [
     "GitTools",
     "DockerTools",
     "SecurityTools",
+    # Web Search
+    "WebSearch",
+    "WebSearchConfig",
+    "SearchResult",
+    "WebSearchError",
+    # Browser
+    "BrowserTool",
+    "BrowserConfig",
+    "BrowserAction",
+    "DOMElement",
+    "BrowserToolError",
 ]
 
 __version__ = "2.0.0"

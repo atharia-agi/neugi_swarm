@@ -67,6 +67,47 @@ NEUGI is an autonomous, multi-agent swarm intelligence system designed to run on
 - Integrated brand assets: icon_mascot, hero_logo_mascot, logo_text_neugi
 - v2 feature highlights and metrics
 
+### v2.1.0 (April 27, 2026) - POWER CAPABILITIES EXPANSION
+
+#### Web Search Tool (`tools/web_search.py`)
+- Multi-tier search: Jina AI Reader (primary) → DuckDuckGo Search (fallback)
+- No API key required for basic usage
+- URL reading with LLM-friendly markdown conversion
+- Image captioning and PDF reading support
+- Built-in caching with TTL
+
+#### Browser Tool (`tools/browser.py`)
+- 3-tier automation: Jina Reader → Playwright headless → Browser-Use cloud
+- DOM state extraction for Computer Use integration
+- Screenshot → base64 for vision models
+- Action history and replay
+- Cross-browser support (Chromium, Firefox, WebKit)
+
+#### Computer Use (`computer_use/`)
+- Vision-guided automation inspired by Claude Computer Use
+- Screenshot → Vision Model → Action Loop
+- DOM state grounding for precise element interaction
+- Safety guards for destructive actions
+- Task decomposition for complex workflows
+
+#### Typed Agent (`agents/typed.py`)
+- Pydantic AI-inspired dependency injection: `RunContext[Deps]`
+- Structured output validation with auto-retry
+- Type-safe tool registration with schema extraction
+- Human-in-the-loop approval gates per tool
+- OpenAI-compatible function schema generation
+
+#### Evals System (`evals/`)
+- Benchmark harness with pluggable test suites
+- Regression detection against baseline results
+- Built-in benchmarks: WebSearch, Browser, Skills
+- Human-readable markdown reports with deltas
+- 78 integration tests (all passing)
+
+#### Documentation Updates
+- `ARCHITECTURE.md`: Added 5 new subsystems to subsystem map
+- `API.md`: Added REST endpoints for Web Search, Browser, Computer Use, Evals
+
 ### v29.0.0 (March 30, 2026) - THE ULTIMATE AGENT PLATFORM
 
 #### Ultimate Beginner-Friendly Features

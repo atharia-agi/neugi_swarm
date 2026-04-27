@@ -135,23 +135,67 @@ from neugi_swarm_v2.agents import (
     MessageType,
     MessagePriority,
     DeadLetterQueue,
+    AgentResult,
+    DepsT,
+    OutputT,
+    RunContext,
+    ToolDef,
+    ToolResult,
+    TypedAgent,
+    TypedAgentError,
+)
+
+from neugi_swarm_v2.computer_use import (
+    ActionType,
+    ComputerAction,
+    ComputerUseConfig,
+    ComputerUseController,
+    SafetyChecker,
+    StepResult,
+    TaskResult,
+)
+
+from neugi_swarm_v2.evals import (
+    Benchmark,
+    BenchmarkResult,
+    BrowserBenchmark,
+    EvalHarness,
+    EvalResult,
+    RegressionReport,
+    SkillBenchmark,
+    WebSearchBenchmark,
+)
+
+from neugi_swarm_v2.tools import (
+    WebSearch,
+    WebSearchConfig,
+    SearchResult,
+    WebSearchError,
+    BrowserTool,
+    BrowserConfig,
+    BrowserAction,
+    DOMElement,
+    BrowserToolError,
 )
 
 # -- Assistant ---------------------------------------------------------------
 
-from neugi_swarm_v2.assistant import NeugiAssistant, AssistantResponse, ToolCall
+from neugi_swarm_v2.assistant import NeugiAssistantV2
 from neugi_swarm_v2.llm_provider import (
     LLMProvider,
     LLMResponse,
-    LLMError,
+    ToolCall,
     OllamaProvider,
     OpenAICompatibleProvider,
     AnthropicCompatibleProvider,
+    ProviderConfig,
+    ProviderType,
+    ErrorType,
 )
 from neugi_swarm_v2.config import (
     NeugiConfig,
     LLMConfig,
-    SessionConfig as NeugiSessionConfig,
+    NeugiSessionConfig,
     MemoryConfig,
     SkillConfig,
     AgentConfig,
@@ -252,9 +296,9 @@ class NeugiSwarmV2:
         Returns:
             AssistantResponse with text, tool calls, and metadata.
         """
-        from neugi_swarm_v2.assistant import NeugiAssistant
+        from neugi_swarm_v2.assistant import NeugiAssistantV2
 
-        assistant = NeugiAssistant(
+        assistant = NeugiAssistantV2(
             config=self.config,
             llm=self.llm,
             memory=self.memory,
@@ -333,8 +377,7 @@ class NeugiSwarmV2:
 __all__ = [
     "__version__",
     "NeugiSwarmV2",
-    "NeugiAssistant",
-    "AssistantResponse",
+    "NeugiAssistantV2",
     "ToolCall",
     "NeugiConfig",
     "LLMConfig",
@@ -346,10 +389,13 @@ __all__ = [
     "load_config",
     "LLMProvider",
     "LLMResponse",
-    "LLMError",
+    "ToolCall",
     "OllamaProvider",
     "OpenAICompatibleProvider",
     "AnthropicCompatibleProvider",
+    "ProviderConfig",
+    "ProviderType",
+    "ErrorType",
     "MemorySystem",
     "MemoryEntry",
     "MemoryTier",
@@ -446,4 +492,40 @@ __all__ = [
     "MessageType",
     "MessagePriority",
     "DeadLetterQueue",
+    # Typed Agent
+    "AgentResult",
+    "DepsT",
+    "OutputT",
+    "RunContext",
+    "ToolDef",
+    "ToolResult",
+    "TypedAgent",
+    "TypedAgentError",
+    # Computer Use
+    "ActionType",
+    "ComputerAction",
+    "ComputerUseConfig",
+    "ComputerUseController",
+    "SafetyChecker",
+    "StepResult",
+    "TaskResult",
+    # Evals
+    "Benchmark",
+    "BenchmarkResult",
+    "BrowserBenchmark",
+    "EvalHarness",
+    "EvalResult",
+    "RegressionReport",
+    "SkillBenchmark",
+    "WebSearchBenchmark",
+    # Tools (new)
+    "WebSearch",
+    "WebSearchConfig",
+    "SearchResult",
+    "WebSearchError",
+    "BrowserTool",
+    "BrowserConfig",
+    "BrowserAction",
+    "DOMElement",
+    "BrowserToolError",
 ]

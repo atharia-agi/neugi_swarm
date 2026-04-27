@@ -2,7 +2,7 @@
 
 ## Overview
 
-NEUGI Swarm v2 is a deterministic multi-agent state machine with **17 subsystems**, **96 modules**, and **54,000+ lines** of production-ready code. It surpasses OpenClaw, CrewAI, AutoGen, LangGraph, and Paperclip combined in capability, modularity, and scale.
+NEUGI Swarm v2 is a deterministic multi-agent state machine with **22 subsystems**, **108 modules**, and **54,000+ lines** of production-ready code. It surpasses OpenClaw, CrewAI, AutoGen, LangGraph, and Paperclip combined in capability, modularity, and scale.
 
 ## Design Principles
 
@@ -28,9 +28,12 @@ NEUGI Swarm v2 is a deterministic multi-agent state machine with **17 subsystems
 │(StateGraph) │(auto-skill) │(WebSocket)  │ (Tree of Thoughts)  │
 ├─────────────┼─────────────┼─────────────┼─────────────────────┤
 │    Tools    │   Channels  │   Security  │   CLI + Wizard      │
-│  (61 built) │(TG/DC/SL/WA)│(7-layer sbx)│  (17 commands)      │
+│  (61+ built)│(TG/DC/SL/WA)│(7-layer sbx)│  (17 commands)      │
+├─────────────┼─────────────┼─────────────┼─────────────────────┤
+│ Web Search  │   Browser   │Computer Use │   Typed Agent       │
+│(Jina+DDGS)  │(Playwright) │(Vision Loop)│ (Pydantic-style)    │
 ├─────────────┴─────────────┴─────────────┴─────────────────────┤
-│                    Dashboard (HTML/REST/WebSocket)            │
+│   Evals (Regression Detection + Benchmarks)  │   Dashboard      │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -96,6 +99,41 @@ User Input → Context Builder → Token Budget → LLM Provider
 - **Skill match**: < 20ms (in-memory index)
 - **Context assembly**: < 100ms (10 sections, token-budgeted)
 - **Tool execution**: < 5ms overhead (registry lookup)
+
+## New Subsystems (v2.1)
+
+### 18. Web Search Tool (`tools/web_search.py`)
+- **Primary**: Jina AI Reader — no API key, returns LLM-friendly markdown
+- **Fallback**: DuckDuckGo Search (`ddgs`) — pure Python, no external deps
+- **Features**: URL reading, search, image captioning, PDF reading, caching
+- **Tiering**: Lightweight (Jina) → Medium (DDGS) → Heavy (SerpAPI/Tavily)
+
+### 19. Browser Tool (`tools/browser.py`)
+- **Tier 1**: Jina Reader — fast, no browser launch
+- **Tier 2**: Playwright headless — screenshots, clicks, forms, scroll
+- **Tier 3**: Browser-Use integration — stealth, cloud, CAPTCHA solving
+- **Features**: DOM extraction, action history, vision-ready screenshots
+
+### 20. Computer Use (`computer_use/`)
+- Vision-guided automation inspired by Claude Computer Use
+- Screenshot → Vision Model → Action Loop
+- DOM state grounding for precise element interaction
+- Safety guards for destructive actions
+- Task decomposition for complex workflows
+
+### 21. Typed Agent (`agents/typed.py`)
+- Pydantic AI-inspired dependency injection: `RunContext[Deps]`
+- Structured output validation with auto-retry
+- Type-safe tool registration with schema extraction
+- Human-in-the-loop approval gates per tool
+- OpenAI-compatible function schema generation
+
+### 22. Evals System (`evals/`)
+- Benchmark harness with pluggable test suites
+- Regression detection against baseline results
+- Built-in benchmarks: WebSearch, Browser, Skills
+- Human-readable markdown reports with deltas
+- Performance metrics: success rate, score, duration
 
 ## Extensibility
 

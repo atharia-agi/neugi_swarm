@@ -57,6 +57,40 @@ Base URL: `http://localhost:8080/api/v2`
 | GET | `/governance/audit` | Audit log |
 | POST | `/governance/approve` | Approve request |
 
+### Web Search
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/search?q={query}` | Search web |
+| GET | `/read?url={url}` | Read URL as markdown |
+| DELETE | `/search/cache` | Clear search cache |
+
+### Browser
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/browser/navigate` | Navigate to URL |
+| POST | `/browser/click` | Click element |
+| POST | `/browser/fill` | Fill form field |
+| GET | `/browser/screenshot` | Take screenshot |
+| GET | `/browser/dom` | Get DOM state |
+
+### Computer Use
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/computer/use` | Execute vision-guided task |
+| GET | `/computer/history` | Get action history |
+| POST | `/computer/reset` | Reset controller |
+
+### Evals
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/evals/run` | Run benchmarks |
+| GET | `/evals/results` | Get latest results |
+| GET | `/evals/compare` | Compare to baseline |
+
 ### System
 
 | Method | Endpoint | Description |
