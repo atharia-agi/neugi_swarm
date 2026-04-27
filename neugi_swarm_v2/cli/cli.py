@@ -764,6 +764,11 @@ class NeugiCLI:
                 description="Diagnose issues and auto-fix",
                 handler=self._cmd_doctor,
             ),
+            "rescue": CLICommand(
+                name="rescue",
+                description="Interactive rescue and troubleshooting wizard",
+                handler=self._cmd_rescue,
+            ),
             "wizard": CLICommand(
                 name="wizard",
                 description="Run interactive setup wizard",
@@ -883,19 +888,19 @@ class NeugiCLI:
             progress.advance(task)
 
             progress.update(task, description="Loading memory system...")
-            time.sleep(0.3)
+            time.sleep(0.05)
             progress.advance(task)
 
             progress.update(task, description="Loading skills...")
-            time.sleep(0.3)
+            time.sleep(0.05)
             progress.advance(task)
 
             progress.update(task, description="Starting agents...")
-            time.sleep(0.3)
+            time.sleep(0.05)
             progress.advance(task)
 
             progress.update(task, description="Gateway ready!")
-            time.sleep(0.2)
+            time.sleep(0.05)
             progress.advance(task)
 
         self.health.write_pid(os.getpid())
@@ -1266,19 +1271,19 @@ class NeugiCLI:
             task = progress.add_task("Dreaming...", total=4)
 
             progress.update(task, description="Phase 1: Collecting daily memories...")
-            time.sleep(0.5)
+            time.sleep(0.05)
             progress.advance(task)
 
             progress.update(task, description="Phase 2: Finding patterns...")
-            time.sleep(0.5)
+            time.sleep(0.05)
             progress.advance(task)
 
             progress.update(task, description="Phase 3: Consolidating...")
-            time.sleep(0.5)
+            time.sleep(0.05)
             progress.advance(task)
 
             progress.update(task, description="Phase 4: Storing consolidated memories...")
-            time.sleep(0.3)
+            time.sleep(0.05)
             progress.advance(task)
 
         console.print("[success]Dreaming complete! Memories consolidated.[/success]")
@@ -1729,15 +1734,15 @@ class NeugiCLI:
             task = progress.add_task("Checking version...", total=3)
 
             progress.update(task, description="Checking current version...")
-            time.sleep(0.3)
+            time.sleep(0.05)
             progress.advance(task)
 
             progress.update(task, description="Checking for updates...")
-            time.sleep(0.5)
+            time.sleep(0.05)
             progress.advance(task)
 
             progress.update(task, description="No updates available.")
-            time.sleep(0.2)
+            time.sleep(0.05)
             progress.advance(task)
 
         # Check for actual updates via git or PyPI
@@ -1767,27 +1772,27 @@ class NeugiCLI:
             task = progress.add_task("Running diagnostics...", total=6)
 
             progress.update(task, description="Checking directories...")
-            time.sleep(0.2)
+            time.sleep(0.05)
             progress.advance(task)
 
             progress.update(task, description="Checking configuration...")
-            time.sleep(0.2)
+            time.sleep(0.05)
             progress.advance(task)
 
             progress.update(task, description="Checking LLM provider...")
-            time.sleep(0.3)
+            time.sleep(0.05)
             progress.advance(task)
 
             progress.update(task, description="Checking memory system...")
-            time.sleep(0.2)
+            time.sleep(0.05)
             progress.advance(task)
 
             progress.update(task, description="Checking permissions...")
-            time.sleep(0.2)
+            time.sleep(0.05)
             progress.advance(task)
 
             progress.update(task, description="Checking disk space...")
-            time.sleep(0.2)
+            time.sleep(0.05)
             progress.advance(task)
 
         report = self.doctor.diagnose(auto_fix=auto_fix)
@@ -1839,14 +1844,40 @@ class NeugiCLI:
             data=report,
         )
 
+    def _cmd_rescue(self, args: list[str]) -> CommandResult:
+        """Run interactive rescue and troubleshooting wizard."""
+        from neugi_swarm_v2.cli.rescue_wizard import RescueWizard
+
+        wizard = RescueWizard(base_dir=str(self.base_dir))
+
+        if "--repair" in args:
+            wizard.repair_corruption()
+        elif "--switch-provider" in args:
+            wizard.switch_provider()
+        elif "--setup" in args:
+            wizard.run_setup()
+        else:
+            # Default: full rescue mode
+            success = wizard.run_rescue()
+            if not success:
+                return CommandResult(
+                    status=CommandStatus.WARNING,
+                    message="Some issues require manual fixing. See output above.",
+                )
+
+        return CommandResult(status=CommandStatus.SUCCESS, message="Rescue complete")
+
     def _cmd_wizard(self, args: list[str]) -> CommandResult:
         """Run interactive setup wizard."""
-        from neugi_swarm_v2.cli.wizard import SetupWizard
+        from neugi_swarm_v2.cli.rescue_wizard import RescueWizard
 
-        wizard = SetupWizard(base_dir=self.base_dir)
-        wizard.run()
+        wizard = RescueWizard(base_dir=str(self.base_dir))
+        success = wizard.run_setup()
 
-        return CommandResult(status=CommandStatus.SUCCESS, message="Wizard complete")
+        return CommandResult(
+            status=CommandStatus.SUCCESS if success else CommandStatus.WARNING,
+            message="Setup complete" if success else "Setup completed with warnings",
+        )
 
 
 # -- Helpers -----------------------------------------------------------------

@@ -225,7 +225,10 @@ class WebSearch:
 
     def _search_ddgs(self, query: str, max_results: int) -> List[SearchResult]:
         """Search using DuckDuckGo Search."""
-        from duckduckgo_search import DDGS
+        try:
+            from ddgs import DDGS
+        except ImportError:
+            from duckduckgo_search import DDGS
         
         results = []
         with DDGS() as ddgs:

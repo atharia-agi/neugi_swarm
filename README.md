@@ -161,10 +161,10 @@ docker-compose up -d
 ## Brand Assets
 
 <p align="center">
-  <img src="assets/brand_guide_neugi_2.png" width="300" alt="Brand Guide 2">
-  <img src="assets/brand_guide_neugi_3.png" width="300" alt="Brand Guide 3">
-  <img src="assets/brand_guide_neugi_4.png" width="300" alt="Brand Guide 4">
-  <img src="assets/brand_guide_neugi_5.png" width="300" alt="Brand Guide 5">
+  <img src="assets/brand_guide_neugi_2.jpg" width="300" alt="Brand Guide 2">
+  <img src="assets/brand_guide_neugi_3.jpg" width="300" alt="Brand Guide 3">
+  <img src="assets/brand_guide_neugi_4.jpg" width="300" alt="Brand Guide 4">
+  <img src="assets/brand_guide_neugi_5.jpg" width="300" alt="Brand Guide 5">
 </p>
 
 ---
