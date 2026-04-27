@@ -1,0 +1,1950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEUGI v2 Dashboard</title>
+<style>
+/* -- CSS Custom Properties ------------------------------------------------ */
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #12121a;
+  --bg-tertiary: #1a1a2e;
+  --bg-card: rgba(26, 26, 46, 0.6);
+  --bg-card-hover: rgba(36, 36, 56, 0.7);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-glow: rgba(99, 102, 241, 0.3);
+  --text-primary: #f0f0f5;
+  --text-secondary: #a0a0b8;
+  --text-muted: #6b6b80;
+  --accent-primary: #6366f1;
+  --accent-secondary: #8b5cf6;
+  --accent-tertiary: #06b6d4;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --info: #3b82f6;
+  --gradient-primary: linear-gradient(135deg, #6366f1, #8b5cf6);
+  --gradient-secondary: linear-gradient(135deg, #06b6d4, #3b82f6);
+  --gradient-success: linear-gradient(135deg, #10b981, #059669);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.2);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow: 400ms ease;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+/* -- Reset & Base --------------------------------------------------------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(139, 92, 246, 0.05) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* -- Scrollbar ------------------------------------------------------------ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* -- Glass Card ----------------------------------------------------------- */
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  transition: all var(--transition-normal);
+}
+.glass-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-glow);
+  box-shadow: var(--shadow-glow);
+}
+
+/* -- Layout --------------------------------------------------------------- */
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* -- Header --------------------------------------------------------------- */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background: rgba(10, 10, 15, 0.8);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-logo {
+  width: 40px;
+  height: 40px;
+  background: var(--gradient-primary);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+  box-shadow: var(--shadow-glow);
+}
+
+.header-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header-version {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  background: var(--bg-tertiary);
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  animation: pulse 2s infinite;
+}
+.status-dot.offline {
+  background: var(--error);
+}
+.status-dot.connecting {
+  background: var(--warning);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-family: var(--font-sans);
+}
+.btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-primary);
+}
+.btn-primary {
+  background: var(--gradient-primary);
+  border: none;
+}
+.btn-primary:hover {
+  opacity: 0.9;
+  box-shadow: var(--shadow-glow);
+}
+.btn-sm {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+}
+.btn-icon {
+  padding: 0.5rem;
+  width: 36px;
+  height: 36px;
+}
+
+/* -- Metrics Bar ---------------------------------------------------------- */
+.metrics-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+}
+
+.metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.metric-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.metric-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+.metric-value.success { color: var(--success); }
+.metric-value.warning { color: var(--warning); }
+.metric-value.error { color: var(--error); }
+.metric-value.info { color: var(--info); }
+
+.metric-change {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* -- Main Content --------------------------------------------------------- */
+.main-content {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 1rem;
+  padding: 0 1.5rem 1.5rem;
+  flex: 1;
+}
+
+@media (max-width: 1024px) {
+  .main-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* -- Left Column ---------------------------------------------------------- */
+.left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* -- Section Header ------------------------------------------------------- */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.section-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.section-title .icon {
+  font-size: 1.1rem;
+}
+
+.section-badge {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* -- Agent Grid ----------------------------------------------------------- */
+.agent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.agent-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  cursor: pointer;
+}
+
+.agent-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.agent-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+.agent-avatar.orchestrator { background: var(--gradient-primary); }
+.agent-avatar.analyst { background: var(--gradient-secondary); }
+.agent-avatar.creative { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+.agent-avatar.worker { background: var(--gradient-success); }
+
+.agent-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.agent-role {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+.agent-status {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+}
+.agent-status .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.agent-status .dot.active { background: var(--success); }
+.agent-status .dot.idle { background: var(--warning); }
+.agent-status .dot.error { background: var(--error); }
+
+.agent-stats {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* -- Sessions List -------------------------------------------------------- */
+.sessions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.session-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.session-item:hover {
+  background: var(--bg-card-hover);
+}
+
+.session-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.session-id {
+  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+.session-meta {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.session-badge {
+  font-size: 0.65rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.session-badge.active { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+.session-badge.idle { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+
+/* -- Chat Interface ------------------------------------------------------- */
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 400px;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.chat-message {
+  display: flex;
+  gap: 0.75rem;
+  max-width: 85%;
+}
+.chat-message.user {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.chat-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.chat-avatar.user { background: var(--gradient-primary); }
+.chat-avatar.assistant { background: var(--gradient-secondary); }
+
+.chat-bubble {
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+.chat-message.user .chat-bubble {
+  background: var(--gradient-primary);
+  border-bottom-right-radius: 4px;
+}
+.chat-message.assistant .chat-bubble {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-bottom-left-radius: 4px;
+}
+
+.chat-input-container {
+  display: flex;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.chat-input {
+  flex: 1;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-family: var(--font-sans);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+.chat-input:focus {
+  border-color: var(--accent-primary);
+}
+.chat-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* -- Right Column --------------------------------------------------------- */
+.right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* -- Tabs ----------------------------------------------------------------- */
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.tab {
+  flex: 1;
+  padding: 0.4rem 0.5rem;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  color: var(--text-muted);
+  border: none;
+  background: transparent;
+  font-family: var(--font-sans);
+}
+.tab:hover {
+  color: var(--text-secondary);
+}
+.tab.active {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.tab-content {
+  display: none;
+}
+.tab-content.active {
+  display: block;
+}
+
+/* -- Skills Browser ------------------------------------------------------- */
+.skills-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.skill-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  transition: all var(--transition-fast);
+}
+.skill-item:hover {
+  background: var(--bg-card-hover);
+}
+
+.skill-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.skill-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.skill-tier {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+.skill-badge {
+  font-size: 0.6rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.skill-badge.active { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+.skill-badge.inactive { background: rgba(107, 107, 128, 0.2); color: var(--text-muted); }
+
+/* -- Memory Viewer -------------------------------------------------------- */
+.memory-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.memory-stat {
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  text-align: center;
+}
+
+.memory-stat-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--accent-primary);
+}
+
+.memory-stat-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.memory-search {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.memory-search input {
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-family: var(--font-sans);
+  outline: none;
+}
+.memory-search input:focus {
+  border-color: var(--accent-primary);
+}
+
+.memory-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.memory-entry {
+  padding: 0.4rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.memory-entry-time {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* -- Channel Status ------------------------------------------------------- */
+.channels-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.channel-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+}
+
+.channel-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.channel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.channel-dot.connected { background: var(--success); }
+.channel-dot.disconnected { background: var(--error); }
+.channel-dot.connecting { background: var(--warning); }
+
+.channel-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.channel-type {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+/* -- Workflows ------------------------------------------------------------ */
+.workflows-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.workflow-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+}
+
+.workflow-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.workflow-status {
+  font-size: 0.65rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.workflow-status.running { background: rgba(59, 130, 246, 0.2); color: var(--info); }
+.workflow-status.completed { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+.workflow-status.idle { background: rgba(107, 107, 128, 0.2); color: var(--text-muted); }
+
+/* -- Plugins -------------------------------------------------------------- */
+.plugins-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.plugin-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+}
+
+.plugin-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.plugin-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.plugin-version {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* Toggle switch */
+.toggle {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  cursor: pointer;
+}
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-primary);
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-fast);
+}
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  left: 2px;
+  top: 2px;
+  background: var(--text-muted);
+  border-radius: 50%;
+  transition: all var(--transition-fast);
+}
+.toggle input:checked + .toggle-slider {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+.toggle input:checked + .toggle-slider::before {
+  transform: translateX(16px);
+  background: white;
+}
+
+/* -- Settings Modal ------------------------------------------------------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--transition-normal);
+}
+.modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  transform: scale(0.95);
+  transition: transform var(--transition-normal);
+}
+.modal-overlay.active .modal {
+  transform: scale(1);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.modal-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  transition: all var(--transition-fast);
+}
+.modal-close:hover {
+  background: var(--error);
+  color: white;
+}
+
+.settings-group {
+  margin-bottom: 1.25rem;
+}
+
+.settings-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.settings-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-family: var(--font-sans);
+  outline: none;
+}
+.settings-input:focus {
+  border-color: var(--accent-primary);
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+}
+
+.settings-row-label {
+  font-size: 0.85rem;
+}
+
+.settings-row-desc {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* -- Animations ----------------------------------------------------------- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-in {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.animate-slide {
+  animation: slideIn 0.3s ease forwards;
+}
+
+/* -- Loading Spinner ------------------------------------------------------ */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* -- Responsive ----------------------------------------------------------- */
+@media (max-width: 768px) {
+  .header {
+    padding: 0.75rem 1rem;
+  }
+  .metrics-bar {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 0.75rem 1rem;
+  }
+  .main-content {
+    padding: 0 1rem 1rem;
+  }
+  .agent-grid {
+    grid-template-columns: 1fr;
+  }
+  .header-version {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .metrics-bar {
+    grid-template-columns: 1fr;
+  }
+  .header-actions .btn span {
+    display: none;
+  }
+}
+
+/* -- Progress Bar --------------------------------------------------------- */
+.progress-bar {
+  height: 4px;
+  background: var(--bg-tertiary);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width var(--transition-slow);
+}
+.progress-fill.success { background: var(--gradient-success); }
+.progress-fill.primary { background: var(--gradient-primary); }
+.progress-fill.warning { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+
+/* -- Tooltip -------------------------------------------------------------- */
+.tooltip {
+  position: relative;
+}
+.tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.3rem 0.5rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.7rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--transition-fast);
+  pointer-events: none;
+}
+.tooltip:hover::after {
+  opacity: 1;
+  visibility: visible;
+  bottom: calc(100% + 4px);
+}
+
+/* -- Empty State ---------------------------------------------------------- */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+.empty-state .icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.5;
+}
+</style>
+</head>
+<body>
+<div class="dashboard">
+  <!-- Header -->
+  <header class="header">
+    <div class="header-brand">
+      <div class="header-logo">N</div>
+      <div>
+        <div class="header-title">NEUGI Dashboard</div>
+        <span class="header-version">v2.1.1</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="header-status">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Connecting...</span>
+      </div>
+      <button class="btn btn-sm" onclick="refreshAll()" title="Refresh">
+        <span>&#x21bb;</span> <span>Refresh</span>
+      </button>
+      <button class="btn btn-sm" onclick="openSettings()" title="Settings">
+        <span>&#x2699;</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Metrics Bar -->
+  <div class="metrics-bar">
+    <div class="glass-card metric-card">
+      <span class="metric-label">Agents</span>
+      <span class="metric-value info" id="metricAgents">0</span>
+      <span class="metric-change" id="metricAgentsActive">0 active</span>
+    </div>
+    <div class="glass-card metric-card">
+      <span class="metric-label">Sessions</span>
+      <span class="metric-value success" id="metricSessions">0</span>
+      <span class="metric-change" id="metricSessionsActive">0 active</span>
+    </div>
+    <div class="glass-card metric-card">
+      <span class="metric-label">Skills</span>
+      <span class="metric-value" id="metricSkills" style="color: var(--accent-secondary)">0</span>
+      <span class="metric-change" id="metricSkillsTiers">0 tiers</span>
+    </div>
+    <div class="glass-card metric-card">
+      <span class="metric-label">Memory</span>
+      <span class="metric-value warning" id="metricMemory">0</span>
+      <span class="metric-change" id="metricMemoryDaily">0 daily</span>
+    </div>
+    <div class="glass-card metric-card">
+      <span class="metric-label">Requests</span>
+      <span class="metric-value info" id="metricRequests">0</span>
+      <span class="metric-change" id="metricRequestsRate">0/min</span>
+    </div>
+    <div class="glass-card metric-card">
+      <span class="metric-label">Uptime</span>
+      <span class="metric-value success" id="metricUptime">0s</span>
+      <span class="metric-change" id="metricWsClients">0 WS clients</span>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Left Column -->
+    <div class="left-column">
+      <!-- Agent Grid -->
+      <div class="glass-card animate-in">
+        <div class="section-header">
+          <div class="section-title">
+            <span class="icon">&#x1F916;</span> Agents
+          </div>
+          <span class="section-badge" id="agentCount">0 total</span>
+        </div>
+        <div class="agent-grid" id="agentGrid">
+          <div class="empty-state">
+            <div class="icon">&#x1F916;</div>
+            <div>Loading agents...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sessions -->
+      <div class="glass-card animate-in" style="animation-delay: 0.1s">
+        <div class="section-header">
+          <div class="section-title">
+            <span class="icon">&#x1F4AC;</span> Active Sessions
+          </div>
+          <span class="section-badge" id="sessionCount">0 total</span>
+        </div>
+        <div class="sessions-list" id="sessionsList">
+          <div class="empty-state">
+            <div class="icon">&#x1F4AC;</div>
+            <div>No active sessions</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat -->
+      <div class="glass-card chat-container animate-in" style="animation-delay: 0.2s">
+        <div class="section-header">
+          <div class="section-title">
+            <span class="icon">&#x2728;</span> Chat
+          </div>
+          <button class="btn btn-sm" onclick="clearChat()">Clear</button>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+          <div class="chat-message assistant">
+            <div class="chat-avatar assistant">N</div>
+            <div class="chat-bubble">Welcome to NEUGI v2! How can I help you today?</div>
+          </div>
+        </div>
+        <div class="chat-input-container">
+          <input type="text" class="chat-input" id="chatInput" placeholder="Type a message..." onkeydown="handleChatKey(event)">
+          <button class="btn btn-primary btn-sm" onclick="sendChat()">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column -->
+    <div class="right-column">
+      <!-- Tabbed Panel -->
+      <div class="glass-card">
+        <div class="tabs">
+          <button class="tab active" onclick="switchTab('skills')">Skills</button>
+          <button class="tab" onclick="switchTab('memory')">Memory</button>
+          <button class="tab" onclick="switchTab('channels')">Channels</button>
+          <button class="tab" onclick="switchTab('workflows')">Workflows</button>
+          <button class="tab" onclick="switchTab('plugins')">Plugins</button>
+        </div>
+
+        <!-- Skills Tab -->
+        <div class="tab-content active" id="tab-skills">
+          <div class="skills-list" id="skillsList" style="margin-top: 0.75rem">
+            <div class="empty-state">
+              <div class="icon">&#x1F4DA;</div>
+              <div>Loading skills...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Memory Tab -->
+        <div class="tab-content" id="tab-memory">
+          <div style="margin-top: 0.75rem">
+            <div class="memory-stats" id="memoryStats">
+              <div class="memory-stat">
+                <div class="memory-stat-value" id="memTotal">0</div>
+                <div class="memory-stat-label">Total</div>
+              </div>
+              <div class="memory-stat">
+                <div class="memory-stat-value" id="memDaily">0</div>
+                <div class="memory-stat-label">Daily</div>
+              </div>
+              <div class="memory-stat">
+                <div class="memory-stat-value" id="memConsolidated">0</div>
+                <div class="memory-stat-label">Consolidated</div>
+              </div>
+              <div class="memory-stat">
+                <div class="memory-stat-value" id="memSize">0B</div>
+                <div class="memory-stat-label">Size</div>
+              </div>
+            </div>
+            <div class="memory-search">
+              <input type="text" id="memorySearchInput" placeholder="Search memory...">
+              <button class="btn btn-sm" onclick="searchMemory()">Search</button>
+            </div>
+            <div class="memory-entries" id="memoryEntries">
+              <div class="empty-state">
+                <div class="icon">&#x1F9E0;</div>
+                <div>No memories yet</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Channels Tab -->
+        <div class="tab-content" id="tab-channels">
+          <div class="channels-list" id="channelsList" style="margin-top: 0.75rem">
+            <div class="empty-state">
+              <div class="icon">&#x1F4E1;</div>
+              <div>No channels configured</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Workflows Tab -->
+        <div class="tab-content" id="tab-workflows">
+          <div class="workflows-list" id="workflowsList" style="margin-top: 0.75rem">
+            <div class="empty-state">
+              <div class="icon">&#x1F504;</div>
+              <div>No workflows defined</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Plugins Tab -->
+        <div class="tab-content" id="tab-plugins">
+          <div class="plugins-list" id="pluginsList" style="margin-top: 0.75rem">
+            <div class="empty-state">
+              <div class="icon">&#x1F9E9;</div>
+              <div>No plugins installed</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Governance -->
+      <div class="glass-card">
+        <div class="section-header">
+          <div class="section-title">
+            <span class="icon">&#x1F6E1;</span> Governance
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 0.5rem">
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.25rem">
+              <span>Daily Budget</span>
+              <span id="budgetDaily">0 / 1000</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill success" id="budgetDailyBar" style="width: 0%"></div>
+            </div>
+          </div>
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.25rem">
+              <span>Monthly Budget</span>
+              <span id="budgetMonthly">0 / 30000</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill primary" id="budgetMonthlyBar" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Settings</div>
+      <button class="modal-close" onclick="closeSettings()">&times;</button>
+    </div>
+    <div class="settings-group">
+      <div class="settings-label">Connection</div>
+      <input type="text" class="settings-input" id="settingsHost" value="http://localhost:8080" placeholder="Dashboard URL">
+    </div>
+    <div class="settings-group">
+      <div class="settings-label">API Key</div>
+      <input type="password" class="settings-input" id="settingsApiKey" placeholder="Enter API key (optional)">
+    </div>
+    <div class="settings-group">
+      <div class="settings-label">Preferences</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Auto-refresh</div>
+          <div class="settings-row-desc">Update data every 5 seconds</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="settingsAutoRefresh" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">WebSocket</div>
+          <div class="settings-row-desc">Real-time updates via WebSocket</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="settingsWebSocket" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Notifications</div>
+          <div class="settings-row-desc">Show browser notifications</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="settingsNotifications">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="width: 100%" onclick="saveSettings()">Save Settings</button>
+  </div>
+</div>
+
+<script>
+// -- State ------------------------------------------------------------------
+const state = {
+  baseUrl: 'http://localhost:8080',
+  apiKey: '',
+  autoRefresh: true,
+  useWebSocket: true,
+  ws: null,
+  refreshInterval: null,
+  health: null,
+  agents: [],
+  sessions: [],
+  skills: [],
+  memory: {},
+  channels: [],
+  workflows: [],
+  plugins: [],
+  governance: {},
+};
+
+// -- API Helper -------------------------------------------------------------
+async function api(path, options = {}) {
+  const url = `${state.baseUrl}${path}`;
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+  if (state.apiKey) {
+    headers['X-API-Key'] = state.apiKey;
+  }
+  const response = await fetch(url, { ...options, headers });
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status}`);
+  }
+  return response.json();
+}
+
+// -- Health Check -----------------------------------------------------------
+async function fetchHealth() {
+  try {
+    const data = await api('/api/health');
+    state.health = data.data;
+    updateStatus('connected');
+    updateMetrics();
+  } catch (e) {
+    updateStatus('offline');
+    console.warn('Health check failed:', e);
+  }
+}
+
+// -- Agents -----------------------------------------------------------------
+async function fetchAgents() {
+  try {
+    const data = await api('/api/agents');
+    state.agents = data.data.agents || [];
+    renderAgents();
+    document.getElementById('agentCount').textContent = `${data.data.total} total`;
+    document.getElementById('metricAgents').textContent = data.data.total;
+    document.getElementById('metricAgentsActive').textContent = `${data.data.active} active`;
+  } catch (e) {
+    console.warn('Failed to fetch agents:', e);
+  }
+}
+
+function renderAgents() {
+  const grid = document.getElementById('agentGrid');
+  if (!state.agents.length) {
+    grid.innerHTML = '<div class="empty-state"><div class="icon">&#x1F916;</div><div>No agents available</div></div>';
+    return;
+  }
+  grid.innerHTML = state.agents.map((agent, i) => `
+    <div class="glass-card agent-card animate-in" style="animation-delay: ${i * 0.05}s">
+      <div class="agent-header">
+        <div class="agent-avatar ${agent.role || 'worker'}">${(agent.name || agent.id || '?')[0].toUpperCase()}</div>
+        <div>
+          <div class="agent-name">${agent.name || agent.id}</div>
+          <div class="agent-role">${agent.role || 'worker'}</div>
+        </div>
+      </div>
+      <div class="agent-status">
+        <span class="dot ${agent.status || 'idle'}"></span>
+        <span>${agent.status || 'idle'}</span>
+      </div>
+      <div class="agent-stats">
+        <span>Lvl ${agent.level || 1}</span>
+        <span>${agent.tasks_completed || 0} tasks</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// -- Sessions ---------------------------------------------------------------
+async function fetchSessions() {
+  try {
+    const data = await api('/api/sessions');
+    state.sessions = data.data.sessions || [];
+    renderSessions();
+    document.getElementById('sessionCount').textContent = `${data.data.total} total`;
+    document.getElementById('metricSessions').textContent = data.data.total;
+    document.getElementById('metricSessionsActive').textContent = `${data.data.active} active`;
+  } catch (e) {
+    console.warn('Failed to fetch sessions:', e);
+  }
+}
+
+function renderSessions() {
+  const list = document.getElementById('sessionsList');
+  if (!state.sessions.length) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">&#x1F4AC;</div><div>No active sessions</div></div>';
+    return;
+  }
+  list.innerHTML = state.sessions.map(s => `
+    <div class="session-item">
+      <div class="session-info">
+        <span class="session-id">${s.id.substring(0, 12)}...</span>
+        <span class="session-meta">${s.message_count || 0} messages</span>
+      </div>
+      <span class="session-badge ${s.state || 'idle'}">${s.state || 'idle'}</span>
+    </div>
+  `).join('');
+}
+
+// -- Skills -----------------------------------------------------------------
+async function fetchSkills() {
+  try {
+    const data = await api('/api/skills');
+    state.skills = data.data.skills || [];
+    renderSkills();
+    document.getElementById('metricSkills').textContent = data.data.total;
+    document.getElementById('metricSkillsTiers').textContent = `${(data.data.tiers || []).length} tiers`;
+  } catch (e) {
+    console.warn('Failed to fetch skills:', e);
+  }
+}
+
+function renderSkills() {
+  const list = document.getElementById('skillsList');
+  if (!state.skills.length) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">&#x1F4DA;</div><div>No skills loaded</div></div>';
+    return;
+  }
+  list.innerHTML = state.skills.map(s => `
+    <div class="skill-item">
+      <div class="skill-info">
+        <span class="skill-name">${s.name || s.id}</span>
+        <span class="skill-tier">${s.tier || 'workspace'} &middot; ${s.actions || 0} actions</span>
+      </div>
+      <span class="skill-badge ${s.state === 'active' ? 'active' : 'inactive'}">${s.state || 'active'}</span>
+    </div>
+  `).join('');
+}
+
+// -- Memory -----------------------------------------------------------------
+async function fetchMemory() {
+  try {
+    const data = await api('/api/memory/stats');
+    state.memory = data.data;
+    document.getElementById('memTotal').textContent = data.data.total_entries || 0;
+    document.getElementById('memDaily').textContent = data.data.daily_entries || 0;
+    document.getElementById('memConsolidated').textContent = data.data.consolidated_entries || 0;
+    document.getElementById('memSize').textContent = formatBytes(data.data.storage_size_bytes || 0);
+    document.getElementById('metricMemory').textContent = data.data.total_entries || 0;
+    document.getElementById('metricMemoryDaily').textContent = `${data.data.daily_entries || 0} daily`;
+  } catch (e) {
+    console.warn('Failed to fetch memory:', e);
+  }
+}
+
+async function searchMemory() {
+  const query = document.getElementById('memorySearchInput').value.trim();
+  if (!query) return;
+  try {
+    const data = await api(`/api/memory/recall?query=${encodeURIComponent(query)}&limit=10`);
+    renderMemoryEntries(data.data.results || []);
+  } catch (e) {
+    console.warn('Memory search failed:', e);
+  }
+}
+
+function renderMemoryEntries(entries) {
+  const container = document.getElementById('memoryEntries');
+  if (!entries.length) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">&#x1F9E0;</div><div>No results found</div></div>';
+    return;
+  }
+  container.innerHTML = entries.map(e => `
+    <div class="memory-entry">
+      <div class="memory-entry-time">${formatTime(e.created_at || e.timestamp)}</div>
+      <div>${e.content || e.text || JSON.stringify(e)}</div>
+    </div>
+  `).join('');
+}
+
+// -- Channels ---------------------------------------------------------------
+async function fetchChannels() {
+  try {
+    const data = await api('/api/channels');
+    state.channels = data.data.channels || [];
+    renderChannels();
+  } catch (e) {
+    console.warn('Failed to fetch channels:', e);
+  }
+}
+
+function renderChannels() {
+  const list = document.getElementById('channelsList');
+  if (!state.channels.length) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">&#x1F4E1;</div><div>No channels configured</div></div>';
+    return;
+  }
+  list.innerHTML = state.channels.map(c => `
+    <div class="channel-item">
+      <div class="channel-info">
+        <span class="channel-dot ${c.status || 'disconnected'}"></span>
+        <div>
+          <div class="channel-name">${c.name || c.id}</div>
+          <div class="channel-type">${c.type || 'unknown'}</div>
+        </div>
+      </div>
+      <span style="font-size: 0.7rem; color: var(--text-muted)">${c.message_count || 0} msgs</span>
+    </div>
+  `).join('');
+}
+
+// -- Workflows --------------------------------------------------------------
+async function fetchWorkflows() {
+  try {
+    const data = await api('/api/workflows');
+    state.workflows = data.data.workflows || [];
+    renderWorkflows();
+  } catch (e) {
+    console.warn('Failed to fetch workflows:', e);
+  }
+}
+
+function renderWorkflows() {
+  const list = document.getElementById('workflowsList');
+  if (!state.workflows.length) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">&#x1F504;</div><div>No workflows defined</div></div>';
+    return;
+  }
+  list.innerHTML = state.workflows.map(w => `
+    <div class="workflow-item">
+      <div>
+        <div class="workflow-name">${w.name || w.id}</div>
+        <div style="font-size: 0.65rem; color: var(--text-muted)">${w.steps || 0} steps &middot; ${w.success_count || 0} runs</div>
+      </div>
+      <span class="workflow-status ${w.status || 'idle'}">${w.status || 'idle'}</span>
+    </div>
+  `).join('');
+}
+
+// -- Plugins ----------------------------------------------------------------
+async function fetchPlugins() {
+  try {
+    const data = await api('/api/plugins');
+    state.plugins = data.data.plugins || [];
+    renderPlugins();
+  } catch (e) {
+    console.warn('Failed to fetch plugins:', e);
+  }
+}
+
+function renderPlugins() {
+  const list = document.getElementById('pluginsList');
+  if (!state.plugins.length) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">&#x1F9E9;</div><div>No plugins installed</div></div>';
+    return;
+  }
+  list.innerHTML = state.plugins.map(p => `
+    <div class="plugin-item">
+      <div class="plugin-info">
+        <span class="plugin-name">${p.name || p.id}</span>
+        <span class="plugin-version">v${p.version || '0.0.0'}</span>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" ${p.enabled ? 'checked' : ''}>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  `).join('');
+}
+
+// -- Governance -------------------------------------------------------------
+async function fetchGovernance() {
+  try {
+    const data = await api('/api/governance/budget');
+    state.governance = data.data;
+    updateBudget();
+  } catch (e) {
+    console.warn('Failed to fetch governance:', e);
+  }
+}
+
+function updateBudget() {
+  const g = state.governance;
+  const dailyPct = g.daily_budget ? Math.round((g.daily_spent / g.daily_budget) * 100) : 0;
+  const monthlyPct = g.monthly_budget ? Math.round((g.monthly_spent / g.monthly_budget) * 100) : 0;
+
+  document.getElementById('budgetDaily').textContent = `${g.daily_spent || 0} / ${g.daily_budget || 1000}`;
+  document.getElementById('budgetDailyBar').style.width = `${dailyPct}%`;
+
+  document.getElementById('budgetMonthly').textContent = `${g.monthly_spent || 0} / ${g.monthly_budget || 30000}`;
+  document.getElementById('budgetMonthlyBar').style.width = `${monthlyPct}%`;
+
+  document.getElementById('metricRequests').textContent = g.total_requests || 0;
+}
+
+// -- Chat -------------------------------------------------------------------
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const message = input.value.trim();
+  if (!message) return;
+
+  input.value = '';
+  appendChatMessage('user', message);
+
+  try {
+    const data = await api('/api/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    });
+    appendChatMessage('assistant', data.data.response || 'No response');
+  } catch (e) {
+    appendChatMessage('assistant', `Error: ${e.message}`);
+  }
+}
+
+function handleChatKey(event) {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    sendChat();
+  }
+}
+
+function appendChatMessage(role, text) {
+  const container = document.getElementById('chatMessages');
+  const avatar = role === 'user' ? 'U' : 'N';
+  container.innerHTML += `
+    <div class="chat-message ${role} animate-slide">
+      <div class="chat-avatar ${role}">${avatar}</div>
+      <div class="chat-bubble">${escapeHtml(text)}</div>
+    </div>
+  `;
+  container.scrollTop = container.scrollHeight;
+}
+
+function clearChat() {
+  const container = document.getElementById('chatMessages');
+  container.innerHTML = `
+    <div class="chat-message assistant">
+      <div class="chat-avatar assistant">N</div>
+      <div class="chat-bubble">Chat cleared. How can I help you?</div>
+    </div>
+  `;
+}
+
+// -- WebSocket --------------------------------------------------------------
+function connectWebSocket() {
+  if (!state.useWebSocket) return;
+
+  const wsUrl = state.baseUrl.replace('http', 'ws') + '/ws';
+  try {
+    state.ws = new WebSocket(wsUrl);
+    state.ws.onopen = () => {
+      console.log('WebSocket connected');
+      document.getElementById('metricWsClients').textContent = 'WS connected';
+    };
+    state.ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        handleWsEvent(data);
+      } catch (e) {
+        console.warn('WS parse error:', e);
+      }
+    };
+    state.ws.onclose = () => {
+      console.log('WebSocket disconnected, reconnecting in 5s...');
+      document.getElementById('metricWsClients').textContent = 'WS disconnected';
+      setTimeout(connectWebSocket, 5000);
+    };
+    state.ws.onerror = () => {
+      state.ws.close();
+    };
+  } catch (e) {
+    console.warn('WebSocket connection failed:', e);
+  }
+}
+
+function handleWsEvent(data) {
+  switch (data.type) {
+    case 'agent_update':
+      fetchAgents();
+      break;
+    case 'session_update':
+      fetchSessions();
+      break;
+    case 'chat_message':
+      if (data.data.response) {
+        appendChatMessage('assistant', data.data.response);
+      }
+      break;
+    case 'task_delegated':
+      showNotification(`Task delegated to ${data.data.agent_id}`);
+      break;
+    case 'workflow_run':
+      fetchWorkflows();
+      break;
+    case 'steering':
+      showNotification('Steering message sent');
+      break;
+  }
+}
+
+// -- Status -----------------------------------------------------------------
+function updateStatus(status) {
+  const dot = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+  dot.className = 'status-dot';
+
+  switch (status) {
+    case 'connected':
+      text.textContent = 'Connected';
+      dot.classList.add('online');
+      break;
+    case 'offline':
+      text.textContent = 'Offline';
+      dot.classList.add('offline');
+      break;
+    case 'connecting':
+      text.textContent = 'Connecting...';
+      dot.classList.add('connecting');
+      break;
+  }
+}
+
+// -- Metrics ----------------------------------------------------------------
+function updateMetrics() {
+  if (!state.health) return;
+  const uptime = state.health.uptime_seconds || 0;
+  document.getElementById('metricUptime').textContent = formatUptime(uptime);
+  document.getElementById('metricWsClients').textContent = `${state.health.websocket_clients || 0} WS clients`;
+}
+
+// -- Tabs -------------------------------------------------------------------
+function switchTab(tabName) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+  event.target.classList.add('active');
+  document.getElementById(`tab-${tabName}`).classList.add('active');
+}
+
+// -- Settings ---------------------------------------------------------------
+function openSettings() {
+  document.getElementById('settingsModal').classList.add('active');
+  document.getElementById('settingsHost').value = state.baseUrl;
+  document.getElementById('settingsApiKey').value = state.apiKey;
+  document.getElementById('settingsAutoRefresh').checked = state.autoRefresh;
+  document.getElementById('settingsWebSocket').checked = state.useWebSocket;
+}
+
+function closeSettings() {
+  document.getElementById('settingsModal').classList.remove('active');
+}
+
+function saveSettings() {
+  state.baseUrl = document.getElementById('settingsHost').value.replace(/\/$/, '');
+  state.apiKey = document.getElementById('settingsApiKey').value;
+  state.autoRefresh = document.getElementById('settingsAutoRefresh').checked;
+  state.useWebSocket = document.getElementById('settingsWebSocket').checked;
+
+  localStorage.setItem('neugi_settings', JSON.stringify({
+    baseUrl: state.baseUrl,
+    apiKey: state.apiKey,
+    autoRefresh: state.autoRefresh,
+    useWebSocket: state.useWebSocket,
+  }));
+
+  closeSettings();
+  refreshAll();
+
+  if (state.useWebSocket) {
+    if (state.ws) state.ws.close();
+    connectWebSocket();
+  }
+
+  setupAutoRefresh();
+}
+
+function loadSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('neugi_settings'));
+    if (saved) {
+      state.baseUrl = saved.baseUrl || state.baseUrl;
+      state.apiKey = saved.apiKey || '';
+      state.autoRefresh = saved.autoRefresh !== undefined ? saved.autoRefresh : true;
+      state.useWebSocket = saved.useWebSocket !== undefined ? saved.useWebSocket : true;
+    }
+  } catch (e) {
+    console.warn('Failed to load settings:', e);
+  }
+}
+
+// -- Auto Refresh -----------------------------------------------------------
+function setupAutoRefresh() {
+  if (state.refreshInterval) {
+    clearInterval(state.refreshInterval);
+    state.refreshInterval = null;
+  }
+  if (state.autoRefresh) {
+    state.refreshInterval = setInterval(refreshAll, 5000);
+  }
+}
+
+async function refreshAll() {
+  await Promise.allSettled([
+    fetchHealth(),
+    fetchAgents(),
+    fetchSessions(),
+    fetchSkills(),
+    fetchMemory(),
+    fetchChannels(),
+    fetchWorkflows(),
+    fetchPlugins(),
+    fetchGovernance(),
+  ]);
+}
+
+// -- Utilities --------------------------------------------------------------
+function formatBytes(bytes) {
+  if (bytes === 0) return '0B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + sizes[i];
+}
+
+function formatUptime(seconds) {
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+  if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
+  if (seconds < 86400) return `${Math.round(seconds / 3600)}h`;
+  return `${Math.round(seconds / 86400)}d`;
+}
+
+function formatTime(timestamp) {
+  if (!timestamp) return '';
+  const d = new Date(timestamp * 1000);
+  return d.toLocaleTimeString();
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function showNotification(message) {
+  if (document.getElementById('settingsNotifications').checked && 'Notification' in window) {
+    new Notification('NEUGI Dashboard', { body: message });
+  }
+}
+
+// -- Init -------------------------------------------------------------------
+document.addEventListener('DOMContentLoaded', () => {
+  loadSettings();
+  refreshAll();
+  setupAutoRefresh();
+  connectWebSocket();
+
+  // Close modal on overlay click
+  document.getElementById('settingsModal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeSettings();
+  });
+
+  // Keyboard shortcut
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeSettings();
+    if (e.key === 'r' && e.ctrlKey) {
+      e.preventDefault();
+      refreshAll();
+    }
+  });
+});
+</script>
+</body>
+</html>
