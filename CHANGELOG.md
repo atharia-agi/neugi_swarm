@@ -89,6 +89,7 @@ NEUGI is an autonomous, multi-agent swarm intelligence system designed to run on
 - DOM state grounding for precise element interaction
 - Safety guards for destructive actions
 - Task decomposition for complex workflows
+- **Integrated with Multi-modal LLM** for real vision-based decisions
 
 #### Typed Agent (`agents/typed.py`)
 - Pydantic AI-inspired dependency injection: `RunContext[Deps]`
@@ -102,10 +103,36 @@ NEUGI is an autonomous, multi-agent swarm intelligence system designed to run on
 - Regression detection against baseline results
 - Built-in benchmarks: WebSearch, Browser, Skills
 - Human-readable markdown reports with deltas
-- 78 integration tests (all passing)
+
+#### Multi-modal LLM (`llm_multimodal.py`)
+- Image input support for Ollama (llava, bakllava, etc.)
+- Image input support for OpenAI (GPT-4V) and Anthropic (Claude 3)
+- `analyze_screenshot()` for Computer Use vision decisions
+- `compare_screenshots()` for before/after validation
+- Base64 encoding helpers for all providers
+
+#### Stealth Browser (`tools/stealth_browser.py`)
+- Anti-detection browser automation
+- Fingerprint randomization: user-agent, viewport, timezone, language
+- WebDriver property hiding
+- Canvas/WebGL noise injection
+- Chrome automation feature masking
+- Fingerprint rotation on demand
+
+#### A2A Protocol (`a2a.py`)
+- Agent-to-Agent communication standard
+- Capability advertisement and discovery
+- Task delegation with load balancing
+- Message routing, broadcast, and multicast
+- Heartbeat monitoring and dead letter queue
+- Persistent channels with pub/sub
+
+#### Test Results
+- **104 integration tests** (all passing)
+- 26 new tests for Multi-modal, Stealth Browser, and A2A
 
 #### Documentation Updates
-- `ARCHITECTURE.md`: Added 5 new subsystems to subsystem map
+- `ARCHITECTURE.md`: Added 8 new subsystems to subsystem map
 - `API.md`: Added REST endpoints for Web Search, Browser, Computer Use, Evals
 
 ### v29.0.0 (March 30, 2026) - THE ULTIMATE AGENT PLATFORM

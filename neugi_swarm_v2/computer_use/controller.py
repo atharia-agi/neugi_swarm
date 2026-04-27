@@ -252,9 +252,52 @@ class ComputerUseController:
         previous_steps: List[StepResult]
     ) -> Optional[ComputerAction]:
         """Call vision model to determine next action."""
-        # This would integrate with your LLM provider
-        # For now, return None to trigger rule-based fallback
-        # TODO: Integrate with neugi_swarm_v2.llm_provider
+        try:
+            from llm_multimodal import VisionComputerUse, MultimodalProvider
+            from llm_provider import LLMProvider
+            
+            # Check if we have a vision-capable provider
+            # For now, we need to create a basic provider from config
+            # In production, this would be injected
+            import os
+            provider_url = os.environ.get("OLLAMA_URL", "http://localhost:11434")
+            
+            from llm_provider import ProviderConfig, ProviderType, OllamaProvider
+            config = ProviderConfig(
+                provider_type=ProviderType.OLLAMA,
+                base_url=provider_url,
+                default_model=os.environ.get("VISION_MODEL", "llava:7b"),
+            )
+            provider = OllamaProvider(config)
+            multimodal = MultimodalProvider(provider)
+            vision = VisionComputerUse(multimodal)
+            
+            # Get action from vision model
+            previous_actions = [
+                {
+                    "action": s.action.action.value,
+                    "reason": s.action.reason,
+                }
+                for s in previous_steps[-5:]
+            ]
+            
+            result = vision.determine_action(task, screenshot_b64, dom_state, previous_actions)
+            
+            if result and "action" in result:
+                action_type = ActionType(result.get("action", "screenshot"))
+                return ComputerAction(
+                    action=action_type,
+                    selector=result.get("selector", ""),
+                    text=result.get("text", ""),
+                    url=result.get("url", ""),
+                    reason=result.get("reason", "Vision model decision"),
+                )
+                
+        except ImportError as e:
+            logger.warning(f"Vision model dependencies not available: {e}")
+        except Exception as e:
+            logger.warning(f"Vision model call failed: {e}")
+        
         return None
 
     def _rule_based_action(

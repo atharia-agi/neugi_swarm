@@ -32,6 +32,9 @@ NEUGI Swarm v2 is a deterministic multi-agent state machine with **22 subsystems
 ├─────────────┼─────────────┼─────────────┼─────────────────────┤
 │ Web Search  │   Browser   │Computer Use │   Typed Agent       │
 │(Jina+DDGS)  │(Playwright) │(Vision Loop)│ (Pydantic-style)    │
+├─────────────┼─────────────┼─────────────┼─────────────────────┤
+│ Multi-modal │   Stealth   │    A2A      │                     │
+│(Vision LLM) │  Browser    │  Protocol   │                     │
 ├─────────────┴─────────────┴─────────────┴─────────────────────┤
 │   Evals (Regression Detection + Benchmarks)  │   Dashboard      │
 └─────────────────────────────────────────────────────────────┘
@@ -134,6 +137,29 @@ User Input → Context Builder → Token Budget → LLM Provider
 - Built-in benchmarks: WebSearch, Browser, Skills
 - Human-readable markdown reports with deltas
 - Performance metrics: success rate, score, duration
+
+### 23. Multi-modal LLM (`llm_multimodal.py`)
+- Image input support for Ollama (llava, bakllava, moondream)
+- Image input support for OpenAI GPT-4V and Anthropic Claude 3
+- `analyze_screenshot()` — structured action decisions from screenshots
+- `compare_screenshots()` — before/after validation for Computer Use
+- Provider-agnostic base64 encoding with format auto-detection
+
+### 24. Stealth Browser (`tools/stealth_browser.py`)
+- Anti-detection automation inspired by browser-use
+- Fingerprint randomization: user-agent, viewport, timezone, language, hardware
+- WebDriver property hiding via Object.defineProperty
+- Canvas 2D and WebGL noise injection for anti-fingerprinting
+- Chrome automation feature masking (`window.chrome`, `navigator.plugins`)
+- On-demand fingerprint rotation for fresh identity
+
+### 25. A2A Protocol (`a2a.py`)
+- Agent-to-Agent communication standard for multi-agent meshes
+- Capability advertisement and discovery (`AgentCapability`)
+- Task delegation with automatic load balancing (least-busy agent)
+- Message types: TASK, RESPONSE, HEARTBEAT, DELEGATION, ERROR, STREAM
+- Broadcast and multicast messaging with capability filters
+- Heartbeat monitoring, dead letter queue, and persistent channels
 
 ## Extensibility
 

@@ -192,6 +192,28 @@ from neugi_swarm_v2.llm_provider import (
     ProviderType,
     ErrorType,
 )
+from neugi_swarm_v2.llm_multimodal import (
+    ImageMessage,
+    MultimodalProvider,
+    VisionComputerUse,
+)
+from neugi_swarm_v2.tools.stealth_browser import (
+    StealthBrowser,
+    StealthConfig,
+    BrowserFingerprint,
+)
+from neugi_swarm_v2.a2a import (
+    A2AChannel,
+    A2AError,
+    A2AMessage,
+    A2AMessageType,
+    A2APriority,
+    A2AProtocol,
+    AgentCapability,
+    AgentNotFoundError,
+    AgentRegistration,
+    MessageExpiredError,
+)
 from neugi_swarm_v2.config import (
     NeugiConfig,
     LLMConfig,
@@ -528,4 +550,23 @@ __all__ = [
     "BrowserAction",
     "DOMElement",
     "BrowserToolError",
+    # Multi-modal
+    "ImageMessage",
+    "MultimodalProvider",
+    "VisionComputerUse",
+    # Stealth Browser
+    "StealthBrowser",
+    "StealthConfig",
+    "BrowserFingerprint",
+    # A2A Protocol
+    "A2AChannel",
+    "A2AError",
+    "A2AMessage",
+    "A2AMessageType",
+    "A2APriority",
+    "A2AProtocol",
+    "AgentCapability",
+    "AgentNotFoundError",
+    "AgentRegistration",
+    "MessageExpiredError",
 ]
