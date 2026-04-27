@@ -1,14 +1,23 @@
-# 🦞 NEUGI Swarm v2
+<p align="center">
+  <img src="assets/icon_mascot.png" width="80" alt="NEUGI Mascot">
+</p>
+<h1 align="center">NEUGI Swarm v2.1.1</h1>
 
-## The Ultimate Agentic Framework
+<p align="center">
+  <b>The Ultimate Agentic Framework</b>
+</p>
 
-> **17 Subsystems | 96 Modules | 54,000+ Lines | 61 Built-in Tools**
+<p align="center">
+  <img src="assets/hero_logo_mascot.png" width="640" alt="NEUGI Agent Swarm">
+</p>
+
+> **25 Subsystems | 108+ Modules | 60,000+ Lines | 61 Built-in Tools | 122 Tests Passing**
 
 NEUGI Swarm v2 is the most advanced open-source agentic AI framework ever built. A deterministic multi-agent state machine designed for production-grade reliability at scale.
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### One-Liner Install
 
@@ -34,13 +43,17 @@ neugi chat      # Start chatting
 
 ---
 
-## 🏗️ Architecture
+## Architecture
+
+<p align="center">
+  <img src="assets/brand_guide_neugi_1.png" width="700" alt="NEUGI Architecture">
+</p>
 
 | Subsystem | Description |
 |-----------|-------------|
-| **Memory** | Karpathy dreaming, hierarchical scopes, SQLite FTS5 |
+| **Memory** | Karpathy dreaming, hierarchical scopes, SQLite FTS5, vector embeddings |
 | **Skills** | 6-tier loading, SKILL.md v3, gating, token budgets |
-| **Agents** | Orchestrator-worker, evaluator-optimizer, 6 archetypes |
+| **Agents** | Orchestrator-worker, evaluator-optimizer, 6 archetypes, typed LLM wiring |
 | **Session** | 4 isolation modes, compaction, steering, write locks |
 | **Context** | 10-section prompt assembly, token budget, KV cache |
 | **MCP Server** | Full Model Context Protocol (stdio + HTTP) |
@@ -50,60 +63,68 @@ neugi chat      # Start chatting
 | **Learning** | Pattern tracking, auto skill generation, feedback |
 | **Gateway** | WebSocket RPC, device pairing, cron, heartbeat |
 | **Planning** | Tree of Thoughts, Chain of Verification, goals |
-| **Tools** | 61 builtins across 10 categories, composition |
+| **Tools** | 61 builtins across 10 categories, web search, browser automation |
 | **Channels** | Telegram, Discord, Slack, WhatsApp unified |
 | **Security** | 7-layer sandbox, neuro-symbolic, AES-256 secrets |
-| **CLI+Wizard** | 17 commands, 8-step setup, interactive chat |
-| **Dashboard** | Glass-morphism HTML, 20 REST endpoints, WebSocket |
+| **CLI+Wizard** | 17 commands, 8-step setup, interactive chat, rescue mode |
+| **Dashboard** | Glass-morphism HTML, 20 REST endpoints, WebSocket, vector memory |
+| **Evals** | Benchmark harness, regression detection, skill scoring |
+| **Multimodal** | Vision input, screenshot analysis, computer use |
+| **A2A Protocol** | Agent-to-agent mesh, capability discovery, heartbeat |
+| **Web Search** | Jina Reader + DuckDuckGo fallback with caching |
+| **Browser** | 3-tier automation: requests, Playwright, stealth browser |
+| **Vector Memory** | all-MiniLM-L6-v2 embeddings with TF-IDF fallback |
+| **WebSocket** | RFC 6455 stdlib server, real-time event streaming |
+| **Computer Use** | Vision-guided browser automation with multimodal LLM |
 
 ---
 
-## 📊 Benchmarks
+## Benchmarks
 
 | Metric | Value |
 |--------|-------|
-| Subsystems | 17 |
-| Python Modules | 96 |
-| Lines of Code | 54,000+ |
+| Subsystems | 25 |
+| Python Modules | 108+ |
+| Lines of Code | 60,000+ |
 | Built-in Tools | 61 |
-| Integration Tests | 50 (all passing) |
+| Integration Tests | 122 (all passing) |
 | Cold Start | < 500ms |
 | Memory Query | < 50ms |
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 neugi_swarm/
-├── assets/                  # Brand assets (mascot, logo, guides)
+├── assets/                  # Brand assets (mascot, logo, guides, favicon)
 ├── index.html              # Landing page
 ├── CHANGELOG.md            # Version history
-└── neugi_swarm_v2/         # ⬅️ V2 Framework (this is where the magic happens)
+└── neugi_swarm_v2/         # V2 Framework (this is where the magic happens)
     ├── agents/             # Agent orchestration
     ├── channels/           # Multi-platform messaging
-    ├── cli/                # Command-line interface
+    ├── cli/                # Command-line interface + rescue wizard
     ├── context/            # Prompt assembly
-    ├── dashboard/          # Web dashboard
+    ├── dashboard/          # Web dashboard + WebSocket server
     ├── docs/               # Documentation
     ├── gateway/            # WebSocket gateway
     ├── governance/         # Budget, audit, policy
     ├── learning/           # Auto-learning system
     ├── mcp/                # MCP server implementation
-    ├── memory/             # Hierarchical memory
+    ├── memory/             # Hierarchical memory + vector embeddings
     ├── planning/           # Strategic planning
     ├── plugins/            # Plugin SDK
     ├── security/           # Sandbox & security
     ├── session/            # Session management
     ├── skills/             # Skill system
-    ├── tests/              # Integration tests
-    ├── tools/              # Tool registry
+    ├── tests/              # Integration tests (122 passing)
+    ├── tools/              # Tool registry (web search, browser, etc.)
     └── workflows/          # Workflow engine
 ```
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 All documentation lives in `neugi_swarm_v2/docs/`:
 
@@ -116,18 +137,18 @@ All documentation lives in `neugi_swarm_v2/docs/`:
 
 ---
 
-## 🧪 Testing
+## Testing
 
 ```bash
 cd neugi_swarm_v2
 python -m unittest discover -s tests -v
 ```
 
-**Current status:** 50/50 tests passing ✅
+**Current status:** 122/122 tests passing
 
 ---
 
-## 🐳 Docker
+## Docker
 
 ```bash
 cd neugi_swarm_v2
@@ -137,20 +158,33 @@ docker-compose up -d
 
 ---
 
-## ⚠️ Legacy Notice
+## Brand Assets
+
+<p align="center">
+  <img src="assets/brand_guide_neugi_2.png" width="300" alt="Brand Guide 2">
+  <img src="assets/brand_guide_neugi_3.png" width="300" alt="Brand Guide 3">
+  <img src="assets/brand_guide_neugi_4.png" width="300" alt="Brand Guide 4">
+  <img src="assets/brand_guide_neugi_5.png" width="300" alt="Brand Guide 5">
+</p>
+
+---
+
+## Legacy Notice
 
 **v1 (`neugi_swarm/`) has been completely removed.** It was an unproven prototype. v2 is a from-scratch rewrite with production architecture, comprehensive tests, and proper documentation.
 
 ---
 
-## 📜 License
+## License
 
 MIT — Atharia AGI
 
 ---
 
 <p align="center">
-  <b>Built with 🦞 by Atharia AGI</b><br>
+  <img src="assets/logo_text_neugi.png" width="200" alt="NEUGI">
+  <br><br>
+  <b>Built by Atharia AGI</b><br>
   <a href="https://github.com/atharia-agi/neugi_swarm">GitHub</a> •
   <a href="https://twitter.com/Atharia_AGI">Twitter</a>
 </p>
