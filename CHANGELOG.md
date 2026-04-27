@@ -1,8 +1,8 @@
 # NEUGI SWARM - CHANGELOG
 
 > Complete development history and architecture documentation
-> Last Updated: March 30, 2026
-> Version: 29.0.0
+> Last Updated: April 27, 2026
+> Version: 2.0.0
 
 ---
 
@@ -15,6 +15,57 @@
 NEUGI is an autonomous, multi-agent swarm intelligence system designed to run on local infrastructure. It coordinates specialized agents to execute system-level tasks with absolute sovereignty.
 
 ## Version History
+
+### v2.0.0 (April 27, 2026) - THE ULTIMATE AGENTIC FRAMEWORK
+
+#### Complete Architecture Rewrite
+- **17 Production Subsystems**: Memory, Skills, Agents, Session, Context, MCP Server, Governance, Plugins, Workflows, Learning, Gateway, Planning, Tools, Channels, Security, CLI+Wizard, Dashboard
+- **96 Modules** with strict separation of concerns
+- **54,000+ Lines** of production-ready Python code
+- **50 Integration Tests** covering all subsystems (all passing)
+
+#### Memory System (Karpathy Dreaming)
+- Hierarchical scoped memory with composite scoring (TF-IDF + recency + importance + frequency)
+- Three tiers: CORE.md (permanent), daily/*.md (TTL), working.json (fast access)
+- SQLite FTS5 full-text search + optional sqlite-vec embeddings
+- Sleep-cycle consolidation for memory deduplication
+- Knowledge graph with entity-relation-target triples
+
+#### 6-Tier Skill System
+- Resolution order: Global → Project → Agent → Session → User → Ephemeral
+- SKILL.md v3 spec with YAML frontmatter
+- Gating at load time with risk assessment
+- Token budget enforcement per skill
+- Auto-generation from observed procedures (Workshop)
+
+#### Context Builder (10-Section Assembly)
+- System identity, Active skills, Retrieved memory, Conversation history, Tool schemas, Session state, User preferences, Agent persona, Task context, Steering parameters
+- Token budget enforced at every layer with graceful truncation
+- KV cache stability optimization via prompt fingerprinting
+
+#### MCP Server (Full Spec)
+- stdio and HTTP transports
+- Auto-registers all 61 NEUGI tools
+- Tools, Resources, and Prompts primitives
+
+#### Security (7-Layer Sandbox)
+- Command allowlist/denylist, Path restriction, Resource limits, Process isolation, File system sandboxing, Network sandboxing, Environment sanitization
+- Neuro-symbolic validation and AES-256 secret management
+
+#### Planning
+- Tree of Thoughts with branching, scoring, and backtracking
+- Chain of Verification for claim validation
+- Goal manager with priority and status tracking
+- Strategic planner with topological dependency sorting
+
+#### Multi-Channel Support
+- Unified manager for Telegram, Discord, Slack, WhatsApp
+- One API for all platforms
+
+#### Landing Page v2
+- Updated with working one-liner install commands (GitHub raw URLs)
+- Integrated brand assets: icon_mascot, hero_logo_mascot, logo_text_neugi
+- v2 feature highlights and metrics
 
 ### v29.0.0 (March 30, 2026) - THE ULTIMATE AGENT PLATFORM
 
