@@ -8,9 +8,10 @@ from __future__ import annotations
 
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any
 
 
 class ApprovalStatus(Enum):
@@ -46,12 +47,12 @@ class HumanResponse:
 
     request_id: str
     status: ApprovalStatus
-    comment: Optional[str] = None
-    state_modifications: Optional[Dict[str, Any]] = None
+    comment: str | None = None
+    state_modifications: dict[str, Any] | None = None
     responded_at: float = field(default_factory=time.time)
-    responder: Optional[str] = None
+    responder: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert response to dictionary."""
         return {
             "request_id": self.request_id,
@@ -84,12 +85,12 @@ class ApprovalRequest:
     node_name: str
     pause_type: PausePointType
     prompt: str
-    state_snapshot: Dict[str, Any]
+    state_snapshot: dict[str, Any]
     timeout: float = 300.0
     created_at: float = field(default_factory=time.time)
     status: ApprovalStatus = ApprovalStatus.PENDING
-    response: Optional[HumanResponse] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    response: HumanResponse | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
     def is_expired(self) -> bool:
@@ -106,7 +107,7 @@ class ApprovalRequest:
         remaining = self.timeout - (time.time() - self.created_at)
         return max(0.0, remaining)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert request to dictionary."""
         return {
             "request_id": self.request_id,
@@ -141,11 +142,11 @@ class PausePoint:
     pause_type: PausePointType
     prompt: str
     timeout: float = 300.0
-    required_roles: Set[str] = field(default_factory=set)
-    auto_approve_conditions: Optional[Callable[[Dict[str, Any]], bool]] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    required_roles: set[str] = field(default_factory=set)
+    auto_approve_conditions: Callable[[dict[str, Any]], bool] | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def should_auto_approve(self, state: Dict[str, Any]) -> bool:
+    def should_auto_approve(self, state: dict[str, Any]) -> bool:
         """Check if this pause should be auto-approved based on state.
 
         Args:
@@ -171,12 +172,12 @@ class NotificationHandler:
 
     def __init__(self) -> None:
         """Initialize the notification handler."""
-        self._handlers: List[Callable[[ApprovalRequest], None]] = []
+        self._handlers: list[Callable[[ApprovalRequest], None]] = []
 
     def register_handler(
         self,
         handler: Callable[[ApprovalRequest], None],
-    ) -> "NotificationHandler":
+    ) -> NotificationHandler:
         """Register a notification handler.
 
         Args:
@@ -228,7 +229,7 @@ class HumanInTheLoop:
 
     def __init__(
         self,
-        notifications: Optional[NotificationHandler] = None,
+        notifications: NotificationHandler | None = None,
     ) -> None:
         """Initialize the human-in-the-loop system.
 
@@ -236,10 +237,10 @@ class HumanInTheLoop:
             notifications: Optional notification handler.
         """
         self.notifications = notifications or NotificationHandler()
-        self._pause_points: Dict[str, PausePoint] = {}
-        self._pending_requests: Dict[str, ApprovalRequest] = {}
-        self._completed_requests: Dict[str, ApprovalRequest] = {}
-        self._response_callbacks: List[Callable[[HumanResponse], None]] = []
+        self._pause_points: dict[str, PausePoint] = {}
+        self._pending_requests: dict[str, ApprovalRequest] = {}
+        self._completed_requests: dict[str, ApprovalRequest] = {}
+        self._response_callbacks: list[Callable[[HumanResponse], None]] = []
 
     def add_pause_point(
         self,
@@ -248,10 +249,10 @@ class HumanInTheLoop:
         pause_type: PausePointType = PausePointType.APPROVAL,
         prompt: str = "Please review and approve",
         timeout: float = 300.0,
-        required_roles: Optional[Set[str]] = None,
-        auto_approve_conditions: Optional[Callable[[Dict[str, Any]], bool]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> "HumanInTheLoop":
+        required_roles: set[str] | None = None,
+        auto_approve_conditions: Callable[[dict[str, Any]], bool] | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> HumanInTheLoop:
         """Add a pause point to the workflow.
 
         Args:
@@ -286,7 +287,7 @@ class HumanInTheLoop:
         node_name: str,
         prompt: str = "Please approve this step",
         timeout: float = 300.0,
-    ) -> "HumanInTheLoop":
+    ) -> HumanInTheLoop:
         """Add an approval gate (shorthand for approval pause point).
 
         Args:
@@ -312,7 +313,7 @@ class HumanInTheLoop:
         node_name: str,
         prompt: str = "Please provide input",
         timeout: float = 300.0,
-    ) -> "HumanInTheLoop":
+    ) -> HumanInTheLoop:
         """Add an input request pause point.
 
         Args:
@@ -335,9 +336,9 @@ class HumanInTheLoop:
     def create_request(
         self,
         pause_point_name: str,
-        state: Dict[str, Any],
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> Optional[ApprovalRequest]:
+        state: dict[str, Any],
+        metadata: dict[str, Any] | None = None,
+    ) -> ApprovalRequest | None:
         """Create an approval request for a pause point.
 
         Args:
@@ -388,9 +389,9 @@ class HumanInTheLoop:
     def approve(
         self,
         request_id: str,
-        comment: Optional[str] = None,
-        responder: Optional[str] = None,
-    ) -> Optional[ApprovalRequest]:
+        comment: str | None = None,
+        responder: str | None = None,
+    ) -> ApprovalRequest | None:
         """Approve a pending request.
 
         Args:
@@ -411,9 +412,9 @@ class HumanInTheLoop:
     def reject(
         self,
         request_id: str,
-        comment: Optional[str] = None,
-        responder: Optional[str] = None,
-    ) -> Optional[ApprovalRequest]:
+        comment: str | None = None,
+        responder: str | None = None,
+    ) -> ApprovalRequest | None:
         """Reject a pending request.
 
         Args:
@@ -434,10 +435,10 @@ class HumanInTheLoop:
     def modify_and_approve(
         self,
         request_id: str,
-        state_modifications: Dict[str, Any],
-        comment: Optional[str] = None,
-        responder: Optional[str] = None,
-    ) -> Optional[ApprovalRequest]:
+        state_modifications: dict[str, Any],
+        comment: str | None = None,
+        responder: str | None = None,
+    ) -> ApprovalRequest | None:
         """Approve with state modifications.
 
         Args:
@@ -460,10 +461,10 @@ class HumanInTheLoop:
     def provide_input(
         self,
         request_id: str,
-        input_data: Dict[str, Any],
-        comment: Optional[str] = None,
-        responder: Optional[str] = None,
-    ) -> Optional[ApprovalRequest]:
+        input_data: dict[str, Any],
+        comment: str | None = None,
+        responder: str | None = None,
+    ) -> ApprovalRequest | None:
         """Provide input for an input request.
 
         Args:
@@ -487,10 +488,10 @@ class HumanInTheLoop:
         self,
         request_id: str,
         new_status: ApprovalStatus,
-        state_modifications: Optional[Dict[str, Any]] = None,
-        comment: Optional[str] = None,
-        responder: Optional[str] = None,
-    ) -> Optional[ApprovalRequest]:
+        state_modifications: dict[str, Any] | None = None,
+        comment: str | None = None,
+        responder: str | None = None,
+    ) -> ApprovalRequest | None:
         """Override a previous decision.
 
         Args:
@@ -525,7 +526,7 @@ class HumanInTheLoop:
 
         return request
 
-    def check_timeouts(self) -> List[ApprovalRequest]:
+    def check_timeouts(self) -> list[ApprovalRequest]:
         """Check for timed-out requests and update their status.
 
         Returns:
@@ -552,7 +553,7 @@ class HumanInTheLoop:
 
         return timed_out
 
-    def get_pending_requests(self) -> List[ApprovalRequest]:
+    def get_pending_requests(self) -> list[ApprovalRequest]:
         """Get all pending requests.
 
         Returns:
@@ -562,7 +563,7 @@ class HumanInTheLoop:
         self.check_timeouts()
         return list(self._pending_requests.values())
 
-    def get_request(self, request_id: str) -> Optional[ApprovalRequest]:
+    def get_request(self, request_id: str) -> ApprovalRequest | None:
         """Get a request by ID.
 
         Args:
@@ -576,7 +577,7 @@ class HumanInTheLoop:
             or self._completed_requests.get(request_id)
         )
 
-    def get_requests_for_node(self, node_name: str) -> List[ApprovalRequest]:
+    def get_requests_for_node(self, node_name: str) -> list[ApprovalRequest]:
         """Get all requests for a specific node.
 
         Args:
@@ -593,7 +594,7 @@ class HumanInTheLoop:
     def register_response_callback(
         self,
         callback: Callable[[HumanResponse], None],
-    ) -> "HumanInTheLoop":
+    ) -> HumanInTheLoop:
         """Register a callback for when responses are received.
 
         Args:
@@ -609,7 +610,7 @@ class HumanInTheLoop:
         self,
         request_id: str,
         poll_interval: float = 1.0,
-    ) -> Optional[HumanResponse]:
+    ) -> HumanResponse | None:
         """Block and wait for a response to a request.
 
         Args:
@@ -633,10 +634,10 @@ class HumanInTheLoop:
         self,
         request_id: str,
         status: ApprovalStatus,
-        state_modifications: Optional[Dict[str, Any]] = None,
-        comment: Optional[str] = None,
-        responder: Optional[str] = None,
-    ) -> Optional[ApprovalRequest]:
+        state_modifications: dict[str, Any] | None = None,
+        comment: str | None = None,
+        responder: str | None = None,
+    ) -> ApprovalRequest | None:
         """Internal method to respond to a request.
 
         Args:
@@ -677,7 +678,7 @@ class HumanInTheLoop:
 
         return request
 
-    def clear_completed(self, older_than: Optional[float] = None) -> int:
+    def clear_completed(self, older_than: float | None = None) -> int:
         """Clear completed requests.
 
         Args:
@@ -699,7 +700,7 @@ class HumanInTheLoop:
             del self._completed_requests[rid]
         return len(to_remove)
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get statistics about requests.
 
         Returns:
@@ -709,7 +710,7 @@ class HumanInTheLoop:
             self._completed_requests.values()
         )
 
-        status_counts: Dict[str, int] = {}
+        status_counts: dict[str, int] = {}
         for req in all_requests:
             status = req.status.value
             status_counts[status] = status_counts.get(status, 0) + 1

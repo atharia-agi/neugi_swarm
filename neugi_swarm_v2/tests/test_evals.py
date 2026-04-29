@@ -1,9 +1,12 @@
 """Tests for Evals System and Typed Agent."""
-import sys, os, unittest
+import os
+import sys
+import unittest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from evals.harness import EvalResult, BenchmarkResult, EvalHarness, RegressionReport
-from agents.typed import RunContext, TypedAgent, ToolDef
+from agents.typed import RunContext, TypedAgent
+from evals.harness import BenchmarkResult, EvalHarness, EvalResult
 
 
 class TestEvals(unittest.TestCase):
@@ -40,11 +43,11 @@ class TestEvals(unittest.TestCase):
             version="2.0",
             results=[EvalResult("1", "A", True, 0.7, 1.0)]
         )
-        
+
         harness = EvalHarness()
         harness.load_baseline("test", baseline)
         report = harness.compare_to_baseline(current)
-        
+
         self.assertIsNotNone(report)
         self.assertTrue(report.has_regression)
         self.assertLess(report.score_delta, 0)
@@ -79,32 +82,32 @@ class TestTypedAgent(unittest.TestCase):
 
     def test_tool_registration(self):
         agent = TypedAgent()
-        
+
         @agent.tool
         async def test_tool(ctx, arg: str) -> str:
             return f"Result: {arg}"
-        
+
         self.assertIn("test_tool", agent._tools)
         self.assertEqual(agent._tools["test_tool"].description, "")
 
     def test_tools_schema(self):
         agent = TypedAgent()
-        
+
         @agent.tool(description="A test tool")
         async def my_tool(ctx, query: str) -> str:
             return query
-        
+
         schema = agent.get_tools_schema()
         self.assertEqual(len(schema), 1)
         self.assertEqual(schema[0]["function"]["name"], "my_tool")
 
     def test_tool_with_approval(self):
         agent = TypedAgent()
-        
+
         @agent.tool(requires_approval=True, approval_roles=["admin"])
         async def dangerous_tool(ctx) -> str:
             return "done"
-        
+
         self.assertTrue(agent._tools["dangerous_tool"].requires_approval)
 
 

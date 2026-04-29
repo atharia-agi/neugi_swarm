@@ -36,207 +36,6 @@ __author__ = "NEUGI Team"
 
 # -- Core Systems ------------------------------------------------------------
 
-from neugi_swarm_v2.memory import (
-    MemorySystem,
-    MemoryEntry,
-    MemoryTier,
-    MemoryError,
-    DreamingEngine,
-    DreamPhase,
-    DreamConfig,
-    DreamResult,
-    ScopePath,
-    MemoryScope,
-    MemorySlice,
-    ScopeError,
-    ScoringEngine,
-    ScoreComponents,
-    ScoreConfig,
-)
-
-from neugi_swarm_v2.skills import (
-    SkillManager,
-    SkillContract,
-    SkillFrontmatter,
-    SkillAction,
-    SkillState,
-    SkillTier,
-    SkillLoader,
-    SkillMatcher,
-    PromptAssembler,
-    MatchResult,
-    CompactionResult,
-    PromptTier,
-    GatingResult,
-    SkillParseResult,
-)
-
-from neugi_swarm_v2.session import (
-    Session,
-    SessionManager,
-    SessionState,
-    SessionIsolationMode,
-    SessionConfig,
-    SessionMetadata,
-    SessionCheckpoint,
-    SessionRegistry,
-    CompactionEngine,
-    CompactionConfig,
-    CompactionStrategy,
-    SteeringEngine,
-    SteeringConfig,
-    SteeringMessage,
-    SteeringPriority,
-    MessageQueuePolicy,
-    SteeringHistory,
-    Transcript,
-    TranscriptEntry,
-    TranscriptFormat,
-    TranscriptSearch,
-)
-
-from neugi_swarm_v2.context import (
-    PromptAssembler as ContextPromptAssembler,
-    PromptMode,
-    PromptSection,
-    SectionConfig,
-    BootstrapFile,
-    PromptAssemblyError,
-    PromptResult,
-    TokenBudget,
-    BudgetAllocation,
-    BudgetReport,
-    ModelPreset,
-    BudgetError,
-    SectionBudget,
-    CacheStability,
-    PromptFingerprint,
-    CacheStats,
-    PromptDiff,
-    CacheError,
-    ContextInjector,
-    ContextItem,
-    InjectionResult,
-    InjectionError,
-    ContextScope,
-)
-from neugi_swarm_v2.context.soul_engine import SoulEngine
-
-from neugi_swarm_v2.model_capability_router import (
-    CapabilityProfile,
-    CapabilityProfileBuilder,
-    CapabilityRouter,
-    TaskComplexity,
-    ModelTier,
-)
-from neugi_swarm_v2.model_registry import ModelCapabilityDetector, ModelCapabilities
-
-from neugi_swarm_v2.agents import (
-    Agent,
-    AgentRole,
-    AgentStatus,
-    AgentState,
-    AgentManager,
-    Orchestrator,
-    WorkerResult,
-    OrchestratorReport,
-    EvaluatorOptimizer,
-    EvaluationResult,
-    EvaluationCriteria,
-    Process,
-    SequentialProcess,
-    HierarchicalProcess,
-    ParallelProcess,
-    ConsensusProcess,
-    ProcessStatus,
-    ProcessStep,
-    ProcessResult,
-    MessageBus,
-    Message,
-    MessageType,
-    MessagePriority,
-    DeadLetterQueue,
-    AgentResult,
-    DepsT,
-    OutputT,
-    RunContext,
-    ToolDef,
-    ToolResult,
-    TypedAgent,
-    TypedAgentError,
-)
-
-from neugi_swarm_v2.computer_use import (
-    ActionType,
-    ComputerAction,
-    ComputerUseConfig,
-    ComputerUseController,
-    SafetyChecker,
-    StepResult,
-    TaskResult,
-)
-
-from neugi_swarm_v2.evals import (
-    Benchmark,
-    BenchmarkResult,
-    BrowserBenchmark,
-    EvalHarness,
-    EvalResult,
-    RegressionReport,
-    SkillBenchmark,
-    WebSearchBenchmark,
-)
-
-from neugi_swarm_v2.memory.embeddings import (
-    EmbeddingEngine,
-    VectorMemoryIndex,
-)
-
-from neugi_swarm_v2.tools import (
-    WebSearch,
-    WebSearchConfig,
-    SearchResult,
-    WebSearchError,
-    BrowserTool,
-    BrowserConfig,
-    BrowserAction,
-    DOMElement,
-    BrowserToolError,
-)
-
-# -- Assistant ---------------------------------------------------------------
-
-from neugi_swarm_v2.assistant import NeugiAssistantV2
-from neugi_swarm_v2.response_format import (
-    CodeBlock,
-    Citation,
-    ResponseFormatter,
-    ResponseMetadata,
-    ResponseSection,
-    StructuredResponse,
-    ThinkingBlock,
-)
-from neugi_swarm_v2.llm_provider import (
-    LLMProvider,
-    LLMResponse,
-    ToolCall,
-    OllamaProvider,
-    OpenAICompatibleProvider,
-    AnthropicCompatibleProvider,
-    ProviderConfig,
-    ProviderType,
-    ErrorType,
-)
-from neugi_swarm_v2.llm_multimodal import (
-    ImageMessage,
-    MultimodalProvider,
-    VisionComputerUse,
-)
-from neugi_swarm_v2.tools.stealth_browser import (
-    StealthBrowser,
-    StealthConfig,
-    BrowserFingerprint,
-)
 from neugi_swarm_v2.a2a import (
     A2AChannel,
     A2AError,
@@ -249,54 +48,247 @@ from neugi_swarm_v2.a2a import (
     AgentRegistration,
     MessageExpiredError,
 )
+from neugi_swarm_v2.agents import (
+    Agent,
+    AgentManager,
+    AgentResult,
+    AgentRole,
+    AgentState,
+    AgentStatus,
+    ConsensusProcess,
+    DeadLetterQueue,
+    DepsT,
+    EvaluationCriteria,
+    EvaluationResult,
+    EvaluatorOptimizer,
+    HierarchicalProcess,
+    Message,
+    MessageBus,
+    MessagePriority,
+    MessageType,
+    Orchestrator,
+    OrchestratorReport,
+    OutputT,
+    ParallelProcess,
+    Process,
+    ProcessResult,
+    ProcessStatus,
+    ProcessStep,
+    RunContext,
+    SequentialProcess,
+    ToolDef,
+    ToolResult,
+    TypedAgent,
+    TypedAgentError,
+    WorkerResult,
+)
+
+# -- Assistant ---------------------------------------------------------------
+from neugi_swarm_v2.assistant import NeugiAssistantV2
+from neugi_swarm_v2.autonomous import (
+    ActionResult,
+    ActivityPriority,
+    ActivityReport,
+    ActivityReporter,
+    ActivityStatus,
+    ActivityType,
+    AutonomousActivity,
+    AutonomousLoop,
+    Decision,
+    DecisionCriteria,
+    DecisionOutcome,
+    DecisionType,
+    ExecutionContext,
+    ExecutionResult,
+    ExecutionType,
+    IdleObserver,
+    LoopConfig,
+    LoopError,
+    LoopResult,
+    LoopState,
+    Observation,
+    ObservationType,
+    ProactiveDecisionEngine,
+    ReportChannel,
+    ReportSeverity,
+    RiskAssessment,
+    SelfDirectedExecutor,
+    ValueAssessment,
+)
 from neugi_swarm_v2.cli.rescue_wizard import (
     RescueWizard,
     WizardError,
 )
+from neugi_swarm_v2.computer_use import (
+    ActionType,
+    ComputerAction,
+    ComputerUseConfig,
+    ComputerUseController,
+    SafetyChecker,
+    StepResult,
+    TaskResult,
+)
 from neugi_swarm_v2.config import (
-    NeugiConfig,
-    LLMConfig,
-    NeugiSessionConfig,
-    MemoryConfig,
-    SkillConfig,
     AgentConfig,
     ContextConfig,
+    LLMConfig,
+    MemoryConfig,
+    NeugiConfig,
+    NeugiSessionConfig,
+    SkillConfig,
     load_config,
 )
+from neugi_swarm_v2.context import (
+    BootstrapFile,
+    BudgetAllocation,
+    BudgetError,
+    BudgetReport,
+    CacheError,
+    CacheStability,
+    CacheStats,
+    ContextInjector,
+    ContextItem,
+    ContextScope,
+    InjectionError,
+    InjectionResult,
+    ModelPreset,
+    PromptAssemblyError,
+    PromptDiff,
+    PromptFingerprint,
+    PromptMode,
+    PromptResult,
+    PromptSection,
+    SectionBudget,
+    SectionConfig,
+    TokenBudget,
+)
+from neugi_swarm_v2.context import (
+    PromptAssembler as ContextPromptAssembler,
+)
+from neugi_swarm_v2.context.soul_engine import SoulEngine
 from neugi_swarm_v2.dashboard.websocket import (
     WebSocketError,
     WebSocketHandler,
     WebSocketServer,
 )
-from neugi_swarm_v2.autonomous import (
-    AutonomousLoop,
-    LoopConfig,
-    LoopState,
-    LoopError,
-    LoopResult,
-    AutonomousActivity,
-    ActivityType,
-    ActivityPriority,
-    ActivityStatus,
-    IdleObserver,
-    Observation,
-    ObservationType,
-    ProactiveDecisionEngine,
-    Decision,
-    DecisionType,
-    DecisionOutcome,
-    DecisionCriteria,
-    RiskAssessment,
-    ValueAssessment,
-    SelfDirectedExecutor,
-    ExecutionResult,
-    ExecutionType,
-    ExecutionContext,
-    ActionResult,
-    ActivityReporter,
-    ActivityReport,
-    ReportChannel,
-    ReportSeverity,
+from neugi_swarm_v2.evals import (
+    Benchmark,
+    BenchmarkResult,
+    BrowserBenchmark,
+    EvalHarness,
+    EvalResult,
+    RegressionReport,
+    SkillBenchmark,
+    WebSearchBenchmark,
+)
+from neugi_swarm_v2.llm_multimodal import (
+    ImageMessage,
+    MultimodalProvider,
+    VisionComputerUse,
+)
+from neugi_swarm_v2.llm_provider import (
+    AnthropicCompatibleProvider,
+    ErrorType,
+    LLMProvider,
+    LLMResponse,
+    OllamaProvider,
+    OpenAICompatibleProvider,
+    ProviderConfig,
+    ProviderType,
+    ToolCall,
+)
+from neugi_swarm_v2.memory import (
+    DreamConfig,
+    DreamingEngine,
+    DreamPhase,
+    DreamResult,
+    MemoryEntry,
+    MemoryError,
+    MemoryScope,
+    MemorySlice,
+    MemorySystem,
+    MemoryTier,
+    ScopeError,
+    ScopePath,
+    ScoreComponents,
+    ScoreConfig,
+    ScoringEngine,
+)
+from neugi_swarm_v2.memory.embeddings import (
+    EmbeddingEngine,
+    VectorMemoryIndex,
+)
+from neugi_swarm_v2.model_capability_router import (
+    CapabilityProfile,
+    CapabilityProfileBuilder,
+    CapabilityRouter,
+    ModelTier,
+    TaskComplexity,
+)
+from neugi_swarm_v2.model_registry import ModelCapabilities, ModelCapabilityDetector
+from neugi_swarm_v2.response_format import (
+    Citation,
+    CodeBlock,
+    ResponseFormatter,
+    ResponseMetadata,
+    ResponseSection,
+    StructuredResponse,
+    ThinkingBlock,
+)
+from neugi_swarm_v2.session import (
+    CompactionConfig,
+    CompactionEngine,
+    CompactionStrategy,
+    MessageQueuePolicy,
+    Session,
+    SessionCheckpoint,
+    SessionConfig,
+    SessionIsolationMode,
+    SessionManager,
+    SessionMetadata,
+    SessionRegistry,
+    SessionState,
+    SteeringConfig,
+    SteeringEngine,
+    SteeringHistory,
+    SteeringMessage,
+    SteeringPriority,
+    Transcript,
+    TranscriptEntry,
+    TranscriptFormat,
+    TranscriptSearch,
+)
+from neugi_swarm_v2.skills import (
+    CompactionResult,
+    GatingResult,
+    MatchResult,
+    PromptAssembler,
+    PromptTier,
+    SkillAction,
+    SkillContract,
+    SkillFrontmatter,
+    SkillLoader,
+    SkillManager,
+    SkillMatcher,
+    SkillParseResult,
+    SkillState,
+    SkillTier,
+)
+from neugi_swarm_v2.tools import (
+    BrowserAction,
+    BrowserConfig,
+    BrowserTool,
+    BrowserToolError,
+    DOMElement,
+    SearchResult,
+    WebSearch,
+    WebSearchConfig,
+    WebSearchError,
+)
+from neugi_swarm_v2.tools.stealth_browser import (
+    BrowserFingerprint,
+    StealthBrowser,
+    StealthConfig,
 )
 
 # -- Unified Entry Point -----------------------------------------------------
@@ -567,8 +559,11 @@ class NeugiSwarmV2:
     def _create_llm_provider(self) -> LLMProvider:
         """Create an LLM provider from config."""
         from neugi_swarm_v2.llm_provider import (
-            OllamaProvider, OpenAICompatibleProvider, AnthropicCompatibleProvider,
-            ProviderConfig, ProviderType,
+            AnthropicCompatibleProvider,
+            OllamaProvider,
+            OpenAICompatibleProvider,
+            ProviderConfig,
+            ProviderType,
         )
         llm_cfg = self.config.llm
         provider_type_map = {
@@ -611,7 +606,7 @@ class NeugiSwarmV2:
         else:
             return OpenAICompatibleProvider(cfg)
 
-    def _resolve_skill_tier(self, path: str) -> "SkillTier":
+    def _resolve_skill_tier(self, path: str) -> SkillTier:
         """Resolve a skill directory path to a SkillTier."""
         from neugi_swarm_v2.skills import SkillTier
 
@@ -647,7 +642,7 @@ class NeugiSwarmV2:
         except Exception as e:
             logger.debug("Compaction setup skipped: %s", e)
 
-    def __enter__(self) -> "NeugiSwarmV2":
+    def __enter__(self) -> NeugiSwarmV2:
         return self
 
     def __exit__(self, *args) -> None:

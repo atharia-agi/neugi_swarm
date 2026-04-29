@@ -7,20 +7,12 @@ node definitions, conditional edges, and sub-graph composition.
 from __future__ import annotations
 
 import dataclasses
-import inspect
 from collections import defaultdict, deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import (
     Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    Type,
-    Union,
 )
 
 
@@ -54,7 +46,7 @@ class StateDefinition:
             confidence: float = 0.0
     """
 
-    def get_fields(self) -> Dict[str, Any]:
+    def get_fields(self) -> dict[str, Any]:
         """Get all state fields as a dictionary."""
         return {f.name: getattr(self, f.name) for f in dataclasses.fields(self)}
 
@@ -96,10 +88,10 @@ class NodeDefinition:
 
     name: str
     handler: Callable[[StateDefinition], StateDefinition]
-    input_schema: Optional[Type[StateDefinition]] = None
-    output_schema: Optional[Type[StateDefinition]] = None
+    input_schema: type[StateDefinition] | None = None
+    output_schema: type[StateDefinition] | None = None
     description: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Validate node definition after initialization."""
@@ -118,8 +110,8 @@ class EdgeDefinition:
 
     source: str
     target: str
-    condition: Optional[Callable[[StateDefinition], bool]] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    condition: Callable[[StateDefinition], bool] | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Validate edge definition."""
@@ -144,9 +136,9 @@ class ConditionalEdge:
 
     source: str
     router: Callable[[StateDefinition], str]
-    targets: Set[str]
-    default: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    targets: set[str]
+    default: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Validate conditional edge."""
@@ -165,15 +157,15 @@ class GraphCompilationResult:
     Contains the compiled graph structure ready for execution.
     """
 
-    nodes: Dict[str, NodeDefinition]
-    edges: Dict[str, List[EdgeDefinition]]
-    conditional_edges: Dict[str, ConditionalEdge]
-    entry_points: List[str]
-    exit_points: List[str]
-    execution_order: List[List[str]]  # Levels for parallel execution
+    nodes: dict[str, NodeDefinition]
+    edges: dict[str, list[EdgeDefinition]]
+    conditional_edges: dict[str, ConditionalEdge]
+    entry_points: list[str]
+    exit_points: list[str]
+    execution_order: list[list[str]]  # Levels for parallel execution
     is_valid: bool
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -184,13 +176,13 @@ class ExecutionContext:
     """
 
     state: StateDefinition
-    current_node: Optional[str] = None
-    path: List[str] = field(default_factory=list)
+    current_node: str | None = None
+    path: list[str] = field(default_factory=list)
     depth: int = 0
-    parent_context: Optional["ExecutionContext"] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    parent_context: ExecutionContext | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def child_context(self, node_name: str) -> "ExecutionContext":
+    def child_context(self, node_name: str) -> ExecutionContext:
         """Create a child execution context for a sub-node."""
         return ExecutionContext(
             state=self.state,
@@ -220,7 +212,7 @@ class StateGraph:
 
     def __init__(
         self,
-        state_type: Type[StateDefinition],
+        state_type: type[StateDefinition],
         name: str = "workflow",
     ) -> None:
         """Initialize the state graph.
@@ -231,22 +223,22 @@ class StateGraph:
         """
         self.state_type = state_type
         self.name = name
-        self._nodes: Dict[str, NodeDefinition] = {}
-        self._edges: List[EdgeDefinition] = []
-        self._conditional_edges: List[ConditionalEdge] = []
-        self._entry_points: Set[str] = set()
-        self._subgraphs: Dict[str, Tuple["StateGraph", str, str]] = {}
-        self._compiled: Optional[GraphCompilationResult] = None
+        self._nodes: dict[str, NodeDefinition] = {}
+        self._edges: list[EdgeDefinition] = []
+        self._conditional_edges: list[ConditionalEdge] = []
+        self._entry_points: set[str] = set()
+        self._subgraphs: dict[str, tuple[StateGraph, str, str]] = {}
+        self._compiled: GraphCompilationResult | None = None
 
     def add_node(
         self,
         name: str,
         handler: Callable[[StateDefinition], StateDefinition],
-        input_schema: Optional[Type[StateDefinition]] = None,
-        output_schema: Optional[Type[StateDefinition]] = None,
+        input_schema: type[StateDefinition] | None = None,
+        output_schema: type[StateDefinition] | None = None,
         description: str = "",
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> "StateGraph":
+        metadata: dict[str, Any] | None = None,
+    ) -> StateGraph:
         """Add a node to the graph.
 
         Args:
@@ -281,9 +273,9 @@ class StateGraph:
         self,
         source: str,
         target: str,
-        condition: Optional[Callable[[StateDefinition], bool]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> "StateGraph":
+        condition: Callable[[StateDefinition], bool] | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> StateGraph:
         """Add an edge between two nodes.
 
         Args:
@@ -315,10 +307,10 @@ class StateGraph:
         self,
         source: str,
         router: Callable[[StateDefinition], str],
-        targets: Set[str],
-        default: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> "StateGraph":
+        targets: set[str],
+        default: str | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> StateGraph:
         """Add a conditional edge with multiple possible targets.
 
         Args:
@@ -341,7 +333,7 @@ class StateGraph:
         self._conditional_edges.append(conditional)
         return self
 
-    def set_entry_point(self, node_name: str) -> "StateGraph":
+    def set_entry_point(self, node_name: str) -> StateGraph:
         """Set the entry point for graph execution.
 
         Args:
@@ -360,11 +352,11 @@ class StateGraph:
 
     def add_subgraph(
         self,
-        subgraph: "StateGraph",
+        subgraph: StateGraph,
         entry_node: str,
         exit_node: str,
-        name: Optional[str] = None,
-    ) -> "StateGraph":
+        name: str | None = None,
+    ) -> StateGraph:
         """Add a subgraph to this graph for composition.
 
         Enables building complex workflows from reusable components.
@@ -394,8 +386,8 @@ class StateGraph:
         Raises:
             ValueError: If graph is invalid (cycles, disconnected nodes, etc.)
         """
-        errors: List[str] = []
-        warnings: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
 
         # Validate nodes exist for all edges
         self._validate_edges(errors)
@@ -409,7 +401,7 @@ class StateGraph:
             errors.append("Graph contains cycles which are not allowed")
 
         # Compute execution order via topological sort
-        execution_order: List[List[str]] = []
+        execution_order: list[list[str]] = []
         if not errors:
             execution_order = self._topological_sort()
 
@@ -435,7 +427,7 @@ class StateGraph:
         self._compiled = result
         return result
 
-    def _validate_edges(self, errors: List[str]) -> None:
+    def _validate_edges(self, errors: list[str]) -> None:
         """Validate that all edge references exist as nodes."""
         all_nodes = set(self._nodes.keys())
 
@@ -454,7 +446,7 @@ class StateGraph:
             if cond_edge.default and cond_edge.default not in all_nodes:
                 errors.append(f"Conditional edge default '{cond_edge.default}' not found")
 
-    def _validate_entry_points(self, errors: List[str]) -> None:
+    def _validate_entry_points(self, errors: list[str]) -> None:
         """Validate entry points are set and valid."""
         if not self._entry_points:
             errors.append("No entry point set. Use set_entry_point() to define one")
@@ -466,7 +458,7 @@ class StateGraph:
             True if a cycle is detected, False otherwise.
         """
         WHITE, GRAY, BLACK = 0, 1, 2
-        color: Dict[str, int] = {node: WHITE for node in self._nodes}
+        color: dict[str, int] = {node: WHITE for node in self._nodes}
 
         def dfs(node: str) -> bool:
             color[node] = GRAY
@@ -492,7 +484,7 @@ class StateGraph:
                     return True
         return False
 
-    def _topological_sort(self) -> List[List[str]]:
+    def _topological_sort(self) -> list[list[str]]:
         """Perform topological sort and return execution levels.
 
         Nodes at the same level can be executed in parallel.
@@ -500,8 +492,8 @@ class StateGraph:
         Returns:
             List of lists, where each inner list contains nodes at that level.
         """
-        in_degree: Dict[str, int] = {node: 0 for node in self._nodes}
-        adjacency: Dict[str, List[str]] = {node: [] for node in self._nodes}
+        in_degree: dict[str, int] = {node: 0 for node in self._nodes}
+        adjacency: dict[str, list[str]] = {node: [] for node in self._nodes}
 
         for edge in self._edges:
             adjacency[edge.source].append(edge.target)
@@ -517,12 +509,12 @@ class StateGraph:
         for entry in self._entry_points:
             queue.append(entry)
 
-        levels: List[List[str]] = []
-        visited: Set[str] = set()
+        levels: list[list[str]] = []
+        visited: set[str] = set()
 
         while queue:
             level_size = len(queue)
-            current_level: List[str] = []
+            current_level: list[str] = []
 
             for _ in range(level_size):
                 node = queue.popleft()
@@ -541,13 +533,13 @@ class StateGraph:
 
         return levels
 
-    def _find_exit_points(self) -> List[str]:
+    def _find_exit_points(self) -> list[str]:
         """Find nodes with no outgoing edges (exit points).
 
         Returns:
             List of node names that are exit points.
         """
-        has_outgoing: Set[str] = set()
+        has_outgoing: set[str] = set()
 
         for edge in self._edges:
             has_outgoing.add(edge.source)
@@ -557,29 +549,29 @@ class StateGraph:
 
         return [node for node in self._nodes if node not in has_outgoing]
 
-    def _build_edge_lookup(self) -> Dict[str, List[EdgeDefinition]]:
+    def _build_edge_lookup(self) -> dict[str, list[EdgeDefinition]]:
         """Build a lookup of edges by source node.
 
         Returns:
             Dictionary mapping source node to list of outgoing edges.
         """
-        lookup: Dict[str, List[EdgeDefinition]] = defaultdict(list)
+        lookup: dict[str, list[EdgeDefinition]] = defaultdict(list)
         for edge in self._edges:
             lookup[edge.source].append(edge)
         return dict(lookup)
 
-    def _build_conditional_lookup(self) -> Dict[str, ConditionalEdge]:
+    def _build_conditional_lookup(self) -> dict[str, ConditionalEdge]:
         """Build a lookup of conditional edges by source node.
 
         Returns:
             Dictionary mapping source node to its conditional edge.
         """
-        lookup: Dict[str, ConditionalEdge] = {}
+        lookup: dict[str, ConditionalEdge] = {}
         for cond_edge in self._conditional_edges:
             lookup[cond_edge.source] = cond_edge
         return lookup
 
-    def get_node(self, name: str) -> Optional[NodeDefinition]:
+    def get_node(self, name: str) -> NodeDefinition | None:
         """Get a node by name.
 
         Args:
@@ -590,7 +582,7 @@ class StateGraph:
         """
         return self._nodes.get(name)
 
-    def get_nodes(self) -> Dict[str, NodeDefinition]:
+    def get_nodes(self) -> dict[str, NodeDefinition]:
         """Get all nodes in the graph.
 
         Returns:
@@ -598,7 +590,7 @@ class StateGraph:
         """
         return dict(self._nodes)
 
-    def get_compiled(self) -> Optional[GraphCompilationResult]:
+    def get_compiled(self) -> GraphCompilationResult | None:
         """Get the compiled graph result.
 
         Returns:

@@ -5,29 +5,29 @@ Provides session lifecycle management, context compaction,
 real-time steering, and transcript handling.
 """
 
-from .session_manager import (
-    Session,
-    SessionManager,
-    SessionState,
-    SessionIsolationMode,
-    SessionConfig,
-    SessionMetadata,
-    SessionCheckpoint,
-    SessionRegistry,
-)
 from .compaction import (
-    CompactionEngine,
     CompactionConfig,
+    CompactionEngine,
     CompactionResult,
     CompactionStrategy,
 )
+from .session_manager import (
+    Session,
+    SessionCheckpoint,
+    SessionConfig,
+    SessionIsolationMode,
+    SessionManager,
+    SessionMetadata,
+    SessionRegistry,
+    SessionState,
+)
 from .steering import (
-    SteeringEngine,
+    MessageQueuePolicy,
     SteeringConfig,
+    SteeringEngine,
+    SteeringHistory,
     SteeringMessage,
     SteeringPriority,
-    MessageQueuePolicy,
-    SteeringHistory,
 )
 from .transcript import (
     Transcript,

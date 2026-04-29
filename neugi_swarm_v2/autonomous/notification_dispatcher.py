@@ -21,7 +21,7 @@ import threading
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -51,12 +51,12 @@ class NotificationPreferences:
 
     frequency: NotificationFrequency = NotificationFrequency.DIGEST
     min_severity: str = "warning"  # debug, info, notice, warning, critical
-    enabled_channels: List[NotificationChannel] = field(
+    enabled_channels: list[NotificationChannel] = field(
         default_factory=lambda: [NotificationChannel.DASHBOARD, NotificationChannel.LOG]
     )
     digest_interval_hours: float = 24.0
-    quiet_hours_start: Optional[int] = None  # 0-23
-    quiet_hours_end: Optional[int] = None
+    quiet_hours_start: int | None = None  # 0-23
+    quiet_hours_end: int | None = None
 
 
 @dataclass
@@ -67,8 +67,8 @@ class AutonomousNotification:
     title: str
     message: str
     activity_type: str
-    channels: List[NotificationChannel] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    channels: list[NotificationChannel] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
     created_at: float = field(default_factory=lambda: time.time())
 
 
@@ -83,7 +83,7 @@ class NotificationDispatcher:
 
     def __init__(
         self,
-        preferences: Optional[NotificationPreferences] = None,
+        preferences: NotificationPreferences | None = None,
         channel_manager: Any = None,
         event_bus: Any = None,
     ) -> None:
@@ -91,19 +91,19 @@ class NotificationDispatcher:
         self.channel_manager = channel_manager
         self.event_bus = event_bus
 
-        self._digest_queue: List[AutonomousNotification] = []
+        self._digest_queue: list[AutonomousNotification] = []
         self._digest_lock = threading.RLock()
         self._last_digest_time: float = 0.0
 
     # -- Public API ------------------------------------------------------------
 
-    def dispatch(self, notification: AutonomousNotification) -> Dict[str, Any]:
+    def dispatch(self, notification: AutonomousNotification) -> dict[str, Any]:
         """Dispatch a notification according to user preferences.
 
         Returns:
             Dict with dispatch results per channel.
         """
-        results: Dict[str, Any] = {"dispatched": [], "skipped": [], "errors": []}
+        results: dict[str, Any] = {"dispatched": [], "skipped": [], "errors": []}
 
         # Check severity threshold
         severity_levels = ["debug", "info", "notice", "warning", "critical"]
@@ -147,7 +147,7 @@ class NotificationDispatcher:
 
         return results
 
-    def send_digest(self) -> Dict[str, Any]:
+    def send_digest(self) -> dict[str, Any]:
         """Send all queued digest notifications.
 
         Returns:
@@ -161,7 +161,7 @@ class NotificationDispatcher:
             return {"sent": False, "reason": "empty_queue"}
 
         # Group by severity
-        by_severity: Dict[str, List[AutonomousNotification]] = {}
+        by_severity: dict[str, list[AutonomousNotification]] = {}
         for n in notifications:
             by_severity.setdefault(n.severity, []).append(n)
 
@@ -181,7 +181,7 @@ class NotificationDispatcher:
 
         digest_text = "\n".join(lines)
 
-        results: Dict[str, Any] = {"sent": True, "count": len(notifications), "channels": []}
+        results: dict[str, Any] = {"sent": True, "count": len(notifications), "channels": []}
 
         for channel in self.preferences.enabled_channels:
             if channel == NotificationChannel.LOG:

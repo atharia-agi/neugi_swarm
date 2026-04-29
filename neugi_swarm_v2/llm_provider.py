@@ -18,11 +18,13 @@ from __future__ import annotations
 
 import json
 import time
-import requests
 from abc import ABC, abstractmethod
+from collections.abc import Generator
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any
+
+import requests
 
 
 class ProviderType(Enum):
@@ -50,7 +52,7 @@ class ToolCall:
     arguments: str  # JSON string
 
     @property
-    def parsed_arguments(self) -> Dict[str, Any]:
+    def parsed_arguments(self) -> dict[str, Any]:
         try:
             return json.loads(self.arguments)
         except (json.JSONDecodeError, TypeError):
@@ -61,9 +63,9 @@ class ToolCall:
 class LLMResponse:
     """Response from an LLM provider."""
     content: str
-    tool_calls: List[ToolCall] = field(default_factory=list)
+    tool_calls: list[ToolCall] = field(default_factory=list)
     model: str = ""
-    usage: Dict[str, int] = field(default_factory=dict)
+    usage: dict[str, int] = field(default_factory=dict)
     finish_reason: str = ""
     is_streaming: bool = False
 
@@ -79,7 +81,7 @@ class ProviderConfig:
     timeout: int = 60
     max_retries: int = 3
     retry_delay: float = 1.0
-    extra_headers: Dict[str, str] = field(default_factory=dict)
+    extra_headers: dict[str, str] = field(default_factory=dict)
 
 
 class LLMProvider(ABC):
@@ -87,7 +89,7 @@ class LLMProvider(ABC):
 
     def __init__(self, config: ProviderConfig):
         self.config = config
-        self._last_error: Optional[Exception] = None
+        self._last_error: Exception | None = None
         self._total_tokens_used: int = 0
         self._request_count: int = 0
 
@@ -107,11 +109,11 @@ class LLMProvider(ABC):
     @abstractmethod
     def chat(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         model: str = "",
         temperature: float = 0.7,
         max_tokens: int = 4096,
-        tools: Optional[List[Dict]] = None,
+        tools: list[dict] | None = None,
         stream: bool = False,
     ) -> LLMResponse:
         """Chat with the model using message history."""
@@ -120,11 +122,11 @@ class LLMProvider(ABC):
     @abstractmethod
     def stream_chat(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         model: str = "",
         temperature: float = 0.7,
         max_tokens: int = 4096,
-        tools: Optional[List[Dict]] = None,
+        tools: list[dict] | None = None,
     ) -> Generator[str, None, None]:
         """Stream chat responses."""
         pass
@@ -189,7 +191,7 @@ class OllamaProvider(LLMProvider):
         else:
             return self._blocking_generate(payload)
 
-    def _blocking_generate(self, payload: Dict) -> LLMResponse:
+    def _blocking_generate(self, payload: dict) -> LLMResponse:
         for attempt in range(self.config.max_retries):
             try:
                 response = requests.post(
@@ -212,17 +214,17 @@ class OllamaProvider(LLMProvider):
                     time.sleep(self.config.retry_delay * (attempt + 1))
         raise self._last_error or RuntimeError("Ollama generate failed")
 
-    def _stream_generate(self, payload: Dict) -> LLMResponse:
+    def _stream_generate(self, payload: dict) -> LLMResponse:
         # For non-streaming interface, fall back to blocking
         return self._blocking_generate({**payload, "stream": False})
 
     def chat(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         model: str = "",
         temperature: float = 0.7,
         max_tokens: int = 4096,
-        tools: Optional[List[Dict]] = None,
+        tools: list[dict] | None = None,
         stream: bool = False,
     ) -> LLMResponse:
         model = model or self.config.default_model
@@ -281,11 +283,11 @@ class OllamaProvider(LLMProvider):
 
     def stream_chat(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         model: str = "",
         temperature: float = 0.7,
         max_tokens: int = 4096,
-        tools: Optional[List[Dict]] = None,
+        tools: list[dict] | None = None,
     ) -> Generator[str, None, None]:
         model = model or self.config.default_model
         payload = {
@@ -354,7 +356,7 @@ class OpenAICompatibleProvider(LLMProvider):
             )
         super().__init__(config)
 
-    def _headers(self) -> Dict[str, str]:
+    def _headers(self) -> dict[str, str]:
         headers = {"Content-Type": "application/json"}
         if self.config.api_key:
             headers["Authorization"] = f"Bearer {self.config.api_key}"
@@ -378,15 +380,15 @@ class OpenAICompatibleProvider(LLMProvider):
 
     def chat(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         model: str = "",
         temperature: float = 0.7,
         max_tokens: int = 4096,
-        tools: Optional[List[Dict]] = None,
+        tools: list[dict] | None = None,
         stream: bool = False,
     ) -> LLMResponse:
         model = model or self.config.default_model
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "model": model,
             "messages": messages,
             "temperature": temperature,
@@ -441,14 +443,14 @@ class OpenAICompatibleProvider(LLMProvider):
 
     def stream_chat(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         model: str = "",
         temperature: float = 0.7,
         max_tokens: int = 4096,
-        tools: Optional[List[Dict]] = None,
+        tools: list[dict] | None = None,
     ) -> Generator[str, None, None]:
         model = model or self.config.default_model
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "model": model,
             "messages": messages,
             "temperature": temperature,
@@ -515,7 +517,7 @@ class AnthropicCompatibleProvider(LLMProvider):
             )
         super().__init__(config)
 
-    def _headers(self) -> Dict[str, str]:
+    def _headers(self) -> dict[str, str]:
         headers = {
             "Content-Type": "application/json",
             "anthropic-version": "2023-06-01",
@@ -540,16 +542,16 @@ class AnthropicCompatibleProvider(LLMProvider):
 
     def chat(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         model: str = "",
         temperature: float = 0.7,
         max_tokens: int = 4096,
-        tools: Optional[List[Dict]] = None,
+        tools: list[dict] | None = None,
         stream: bool = False,
         system_prompt: str = "",
     ) -> LLMResponse:
         model = model or self.config.default_model
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "model": model,
             "messages": messages,
             "temperature": temperature,
@@ -606,15 +608,15 @@ class AnthropicCompatibleProvider(LLMProvider):
 
     def stream_chat(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         model: str = "",
         temperature: float = 0.7,
         max_tokens: int = 4096,
-        tools: Optional[List[Dict]] = None,
+        tools: list[dict] | None = None,
         system_prompt: str = "",
     ) -> Generator[str, None, None]:
         model = model or self.config.default_model
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "model": model,
             "messages": messages,
             "temperature": temperature,
@@ -668,7 +670,7 @@ class ToolCallParser:
     """Parse tool calls from model text output."""
 
     @staticmethod
-    def parse_tool_calls(text: str) -> List[ToolCall]:
+    def parse_tool_calls(text: str) -> list[ToolCall]:
         tool_calls = []
 
         # Pattern 1: JSON blocks with tool call structure

@@ -16,9 +16,10 @@ from __future__ import annotations
 import logging
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -161,7 +162,7 @@ class HookResult:
     handlers_failed: int = 0
     total_time: float = 0.0
     errors: list[str] = field(default_factory=list)
-    final_context: Optional[HookContext] = None
+    final_context: HookContext | None = None
 
     @property
     def was_aborted(self) -> bool:
@@ -263,7 +264,7 @@ class HookManager:
         handler: Callable,
         priority: int = HookPriority.NORMAL,
         plugin_name: str = "system",
-        timeout: Optional[float] = None,
+        timeout: float | None = None,
     ) -> None:
         """
         Register a hook handler for an event.
@@ -308,8 +309,8 @@ class HookManager:
     def unregister(
         self,
         event: str,
-        handler: Optional[Callable] = None,
-        plugin_name: Optional[str] = None,
+        handler: Callable | None = None,
+        plugin_name: str | None = None,
     ) -> int:
         """
         Unregister hook handlers.
@@ -458,7 +459,7 @@ class HookManager:
 
         return result
 
-    def fire_sync(self, event: str, data: Optional[dict[str, Any]] = None, **metadata: Any) -> HookResult:
+    def fire_sync(self, event: str, data: dict[str, Any] | None = None, **metadata: Any) -> HookResult:
         """
         Convenience method to fire a hook with inline data.
 
@@ -567,7 +568,7 @@ class HookAbortError(Exception):
 
 # -- Convenience decorators ----------------------------------------------------
 
-def hook(event: str, priority: int = HookPriority.NORMAL, timeout: Optional[float] = None):
+def hook(event: str, priority: int = HookPriority.NORMAL, timeout: float | None = None):
     """
     Decorator to register a function as a hook handler.
 

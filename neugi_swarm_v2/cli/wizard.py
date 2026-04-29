@@ -16,30 +16,29 @@ Usage:
 from __future__ import annotations
 
 import json
-import os
 import platform
-
-from neugi_swarm_v2 import __version__
 import sys
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any
+
+from neugi_swarm_v2 import __version__
 
 try:
-    from rich.console import Console
-    from rich.panel import Panel
-    from rich.table import Table
-    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
-    from rich.prompt import Prompt, Confirm
-    from rich.prompt import IntPrompt
+    from rich.box import DOUBLE, ROUNDED
     from rich.columns import Columns
-    from rich.text import Text
-    from rich.rule import Rule
-    from rich.box import ROUNDED, DOUBLE
-    from rich.theme import Theme
+    from rich.console import Console
     from rich.layout import Layout
+    from rich.panel import Panel
+    from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
+    from rich.prompt import Confirm, IntPrompt, Prompt
+    from rich.rule import Rule
+    from rich.table import Table
+    from rich.text import Text
+    from rich.theme import Theme
 except ImportError:
     print("Error: 'rich' library is required. Install with: pip install rich")
     sys.exit(1)
@@ -408,8 +407,8 @@ class WizardStep:
     id: str
     title_key: str
     description_key: str
-    renderer: Callable[["SetupWizard", dict[str, Any]], WizardAction]
-    validator: Optional[Callable[[dict[str, Any]], tuple[bool, str]]] = None
+    renderer: Callable[[SetupWizard, dict[str, Any]], WizardAction]
+    validator: Callable[[dict[str, Any]], tuple[bool, str]] | None = None
     required: bool = False
     help_text: str = ""
 
@@ -917,7 +916,7 @@ class SetupWizard:
         selected_plugins = []
         for plugin_id, name, desc in available_plugins:
             console.print(f"  [primary]{name}[/primary] - [dim]{desc}[/dim]")
-            if Confirm.ask(f"    Enable?", default=True):
+            if Confirm.ask("    Enable?", default=True):
                 selected_plugins.append(plugin_id)
 
         config["plugins"] = {"enabled": selected_plugins}
@@ -1030,7 +1029,7 @@ class SetupWizard:
             return False
 
         try:
-            with open(self._progress_file, "r", encoding="utf-8") as f:
+            with open(self._progress_file, encoding="utf-8") as f:
                 data = json.load(f)
 
             self.state.current_step = data.get("current_step", 0)

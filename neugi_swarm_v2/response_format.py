@@ -31,11 +31,10 @@ Usage:
 
 from __future__ import annotations
 
-import json
 import re
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 @dataclass
@@ -44,7 +43,7 @@ class CodeBlock:
     language: str
     code: str
     line_count: int = 0
-    
+
     def __post_init__(self):
         self.line_count = len(self.code.splitlines())
 
@@ -86,7 +85,7 @@ class ResponseMetadata:
     confidence: float = 0.0
     tool_calls_count: int = 0
     memory_recalls: int = 0
-    skills_used: List[str] = field(default_factory=list)
+    skills_used: list[str] = field(default_factory=list)
     timestamp: float = field(default_factory=time.time)
 
 
@@ -105,49 +104,49 @@ class StructuredResponse:
         - metadata: Generation info
     """
     text: str = ""
-    sections: List[ResponseSection] = field(default_factory=list)
-    code_blocks: List[CodeBlock] = field(default_factory=list)
-    thinking: Optional[ThinkingBlock] = None
-    citations: List[Citation] = field(default_factory=list)
-    actions: List[str] = field(default_factory=list)
+    sections: list[ResponseSection] = field(default_factory=list)
+    code_blocks: list[CodeBlock] = field(default_factory=list)
+    thinking: ThinkingBlock | None = None
+    citations: list[Citation] = field(default_factory=list)
+    actions: list[str] = field(default_factory=list)
     metadata: ResponseMetadata = field(default_factory=ResponseMetadata)
     raw_response: str = ""  # Original LLM output
-    
+
     # ==================== FORMATTERS ====================
-    
+
     def to_text(self, include_metadata: bool = False) -> str:
         """Format as plain text."""
         parts = [self.text]
-        
+
         if self.actions:
             parts.append("\nSuggested actions:")
             for i, action in enumerate(self.actions, 1):
                 parts.append(f"  {i}. {action}")
-        
+
         if include_metadata and self.metadata.model:
             parts.append(f"\n---\nModel: {self.metadata.model} | "
                         f"Tokens: {self.metadata.tokens_used} | "
                         f"Time: {self.metadata.generation_time_seconds:.2f}s")
-        
+
         return "\n".join(parts)
-    
+
     def to_markdown(self, include_metadata: bool = False) -> str:
         """Format as markdown."""
         parts = []
-        
+
         # Main text
         parts.append(self.text)
-        
+
         # Thinking (if visible)
         if self.thinking and self.thinking.is_visible:
             parts.append(f"\n<details>\n<summary>Thinking</summary>\n\n{self.thinking.content}\n</details>")
-        
+
         # Actions
         if self.actions:
             parts.append("\n### Suggested Actions")
             for action in self.actions:
                 parts.append(f"- {action}")
-        
+
         # Citations
         if self.citations:
             parts.append("\n### Sources")
@@ -156,37 +155,37 @@ class StructuredResponse:
                     parts.append(f"- [{cite.source}]({cite.url})")
                 else:
                     parts.append(f"- {cite.source}")
-        
+
         # Metadata
         if include_metadata and self.metadata.model:
             parts.append(f"\n---\n*Model: `{self.metadata.model}` | "
                         f"Tokens: {self.metadata.tokens_used} | "
                         f"Time: {self.metadata.generation_time_seconds:.2f}s*")
-        
+
         return "\n".join(parts)
-    
+
     def to_html(self, include_metadata: bool = False) -> str:
         """Format as HTML."""
         parts = ["<div class=\"neugi-response\">"]
-        
+
         # Main text (convert markdown-like to HTML)
         text_html = self._markdown_to_html(self.text)
         parts.append(f"<div class=\"response-text\">{text_html}</div>")
-        
+
         # Code blocks
         for block in self.code_blocks:
             lang = block.language or "text"
             parts.append(f'<pre class=\"code-block\" data-language=\"{lang}\">')
             parts.append(f'<code class=\"language-{lang}\">{self._escape_html(block.code)}</code>')
             parts.append('</pre>')
-        
+
         # Actions
         if self.actions:
             parts.append('<div class=\"suggested-actions\"><h4>Actions</h4><ul>')
             for action in self.actions:
                 parts.append(f"<li>{self._escape_html(action)}</li>")
             parts.append('</ul></div>')
-        
+
         # Metadata
         if include_metadata and self.metadata.model:
             parts.append('<div class=\"response-meta\">')
@@ -194,33 +193,33 @@ class StructuredResponse:
             parts.append(f'<span class=\"tokens\">{self.metadata.tokens_used} tokens</span>')
             parts.append(f'<span class=\"time\">{self.metadata.generation_time_seconds:.2f}s</span>')
             parts.append('</div>')
-        
+
         parts.append("</div>")
         return "\n".join(parts)
-    
+
     def to_telegram(self, max_length: int = 4000) -> str:
         """Format for Telegram (HTML parse mode)."""
         text = self.text
-        
+
         # Truncate if too long
         if len(text) > max_length:
             text = text[:max_length - 100] + "\n\n[...message truncated]"
-        
+
         # Escape HTML special chars in text (Telegram HTML mode)
         text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        
+
         # Convert markdown code blocks to Telegram HTML
         text = self._markdown_to_telegram_html(text)
-        
+
         # Add actions
         if self.actions:
             text += "\n\n<b>Actions:</b>\n"
             for action in self.actions[:3]:  # Limit actions
                 text += f"  {action}\n"
-        
+
         return text
-    
-    def to_json(self) -> Dict[str, Any]:
+
+    def to_json(self) -> dict[str, Any]:
         """Serialize to JSON-compatible dict."""
         return {
             "text": self.text,
@@ -250,9 +249,9 @@ class StructuredResponse:
                 "timestamp": self.metadata.timestamp,
             },
         }
-    
+
     # ==================== HELPERS ====================
-    
+
     @staticmethod
     def _markdown_to_html(text: str) -> str:
         """Simple markdown to HTML conversion."""
@@ -269,7 +268,7 @@ class StructuredResponse:
         # Line breaks
         text = text.replace("\n", "<br>")
         return text
-    
+
     @staticmethod
     def _markdown_to_telegram_html(text: str) -> str:
         """Convert markdown to Telegram HTML."""
@@ -282,7 +281,7 @@ class StructuredResponse:
         # Code blocks (simplified)
         text = re.sub(r'```(\w+)?\n(.+?)```', r'<pre><code>\2</code></pre>', text, flags=re.DOTALL)
         return text
-    
+
     @staticmethod
     def _escape_html(text: str) -> str:
         """Escape HTML special characters."""
@@ -297,7 +296,7 @@ class ResponseFormatter:
     """
     Format raw LLM responses into StructuredResponse.
     """
-    
+
     def __init__(self):
         self.thinking_pattern = re.compile(
             r'<think>(.+?)</think>|'
@@ -309,14 +308,14 @@ class ResponseFormatter:
             r'(?:Action:|Next step:|You should:|Try:)(.+?)(?:\n|$)',
             re.IGNORECASE
         )
-    
+
     def format(
         self,
         text: str,
-        tool_calls: Optional[List[Any]] = None,
+        tool_calls: list[Any] | None = None,
         model: str = "",
         provider: str = "",
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> StructuredResponse:
         """
         Format raw LLM text into StructuredResponse.
@@ -332,16 +331,16 @@ class ResponseFormatter:
             StructuredResponse
         """
         metadata = metadata or {}
-        
+
         # Extract thinking
         thinking = self._extract_thinking(text)
-        
+
         # Extract code blocks
         code_blocks = self._extract_code_blocks(text)
-        
+
         # Extract actions
         actions = self._extract_actions(text)
-        
+
         # Build response metadata
         resp_meta = ResponseMetadata(
             model=model,
@@ -355,7 +354,7 @@ class ResponseFormatter:
             tool_calls_count=len(tool_calls) if tool_calls else 0,
             skills_used=metadata.get("skills_used", []),
         )
-        
+
         return StructuredResponse(
             text=text,
             code_blocks=code_blocks,
@@ -364,8 +363,8 @@ class ResponseFormatter:
             metadata=resp_meta,
             raw_response=text,
         )
-    
-    def _extract_thinking(self, text: str) -> Optional[ThinkingBlock]:
+
+    def _extract_thinking(self, text: str) -> ThinkingBlock | None:
         """Extract thinking/reasoning blocks."""
         match = self.thinking_pattern.search(text)
         if match:
@@ -375,8 +374,8 @@ class ResponseFormatter:
                 is_visible=False,  # Hidden by default
             )
         return None
-    
-    def _extract_code_blocks(self, text: str) -> List[CodeBlock]:
+
+    def _extract_code_blocks(self, text: str) -> list[CodeBlock]:
         """Extract code blocks from markdown."""
         blocks = []
         for match in self.code_pattern.finditer(text):
@@ -384,8 +383,8 @@ class ResponseFormatter:
             code = match.group(2).strip()
             blocks.append(CodeBlock(language=language, code=code))
         return blocks
-    
-    def _extract_actions(self, text: str) -> List[str]:
+
+    def _extract_actions(self, text: str) -> list[str]:
         """Extract suggested actions."""
         actions = []
         for match in self.action_pattern.finditer(text):

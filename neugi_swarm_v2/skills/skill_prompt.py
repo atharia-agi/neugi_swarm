@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import textwrap
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Optional, Set
 
 from .skill_contract import SkillContract, SkillState
 
@@ -70,9 +69,9 @@ class PromptAssembler:
 
     def assemble(
         self,
-        skills: List[SkillContract],
+        skills: list[SkillContract],
         tier: PromptTier = PromptTier.FULL,
-        agent_name: Optional[str] = None,
+        agent_name: str | None = None,
         extra_context: str = "",
     ) -> CompactionResult:
         """Assemble skills into prompt content.
@@ -96,7 +95,7 @@ class PromptAssembler:
         else:
             return self._assemble_truncated(enabled, extra_context)
 
-    def compute_fingerprint(self, skills: List[SkillContract]) -> str:
+    def compute_fingerprint(self, skills: list[SkillContract]) -> str:
         """Compute cache-friendly fingerprint for a set of skills.
 
         Normalizes skill order and content to maximize KV cache reuse
@@ -120,13 +119,13 @@ class PromptAssembler:
         blob = "\n".join(normalized).encode("utf-8")
         return hashlib.sha256(blob).hexdigest()[:16]
 
-    def estimate_total_tokens(self, skills: List[SkillContract]) -> int:
+    def estimate_total_tokens(self, skills: list[SkillContract]) -> int:
         """Estimate total token cost for a list of skills."""
         return sum(s.compute_token_cost() for s in skills)
 
     def _filter_by_agent(
-        self, skills: List[SkillContract], agent_name: Optional[str]
-    ) -> List[SkillContract]:
+        self, skills: list[SkillContract], agent_name: str | None
+    ) -> list[SkillContract]:
         """Filter skills by agent allowlist."""
         if agent_name is None:
             return skills
@@ -137,10 +136,10 @@ class PromptAssembler:
         ]
 
     def _assemble_full(
-        self, skills: List[SkillContract], extra_context: str
+        self, skills: list[SkillContract], extra_context: str
     ) -> CompactionResult:
         """Full compaction: include all skill details."""
-        sections: List[str] = []
+        sections: list[str] = []
         if extra_context:
             sections.append(extra_context)
 
@@ -174,10 +173,10 @@ class PromptAssembler:
         )
 
     def _assemble_compact(
-        self, skills: List[SkillContract], extra_context: str
+        self, skills: list[SkillContract], extra_context: str
     ) -> CompactionResult:
         """Compact compaction: name, description, tags only."""
-        sections: List[str] = []
+        sections: list[str] = []
         if extra_context:
             sections.append(extra_context)
 
@@ -211,10 +210,10 @@ class PromptAssembler:
         )
 
     def _assemble_truncated(
-        self, skills: List[SkillContract], extra_context: str
+        self, skills: list[SkillContract], extra_context: str
     ) -> CompactionResult:
         """Truncated compaction: name and one-line description only."""
-        sections: List[str] = []
+        sections: list[str] = []
         if extra_context:
             sections.append(extra_context)
 
@@ -276,9 +275,9 @@ class PromptAssembler:
                 )
         if skill.body:
             body = textwrap.indent(skill.body, "  ")
-            lines.append(f"  <instructions>")
+            lines.append("  <instructions>")
             lines.append(body)
-            lines.append(f"  </instructions>")
+            lines.append("  </instructions>")
         lines.append(f"</{self.delimiter}>")
         return "\n".join(lines)
 

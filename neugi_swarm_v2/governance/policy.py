@@ -59,14 +59,13 @@ Usage:
 
 from __future__ import annotations
 
-import json
 import logging
 import re
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -223,7 +222,7 @@ class PolicyOverride:
     new_effect: PolicyEffect
     reason: str = ""
     override_id: str = ""
-    expires_at: Optional[datetime] = None
+    expires_at: datetime | None = None
     created_by: str = ""
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -381,7 +380,7 @@ class PolicyEvaluationResult:
     explanation: str = ""
     reasons: list[str] = field(default_factory=list)
     requires_approval: bool = False
-    rate_limit: Optional[dict[str, Any]] = None
+    rate_limit: dict[str, Any] | None = None
     evaluated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -452,7 +451,7 @@ class PolicyEngine:
             return True
         return False
 
-    def get_policy(self, policy_id: str) -> Optional[Policy]:
+    def get_policy(self, policy_id: str) -> Policy | None:
         """Get a policy by ID.
 
         Args:
@@ -484,7 +483,7 @@ class PolicyEngine:
         action_type: str = "",
         cost: float = 0.0,
         risk_level: str = "low",
-        metadata: Optional[dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> PolicyEvaluationResult:
         """Evaluate an action against all policies.
 
@@ -682,9 +681,9 @@ class PolicyEngine:
         policy_id: str,
         new_effect: PolicyEffect,
         reason: str = "",
-        expires_at: Optional[datetime] = None,
+        expires_at: datetime | None = None,
         created_by: str = "",
-    ) -> Optional[PolicyOverride]:
+    ) -> PolicyOverride | None:
         """Add an override to a policy.
 
         Args:
@@ -867,7 +866,7 @@ class PolicyEngine:
         """Clean up resources."""
         self._rate_limits.clear()
 
-    def __enter__(self) -> "PolicyEngine":
+    def __enter__(self) -> PolicyEngine:
         return self
 
     def __exit__(self, *args: Any) -> None:

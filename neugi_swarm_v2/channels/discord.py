@@ -10,7 +10,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from typing import Any, Optional
+from typing import Any
 
 import requests
 
@@ -54,21 +54,21 @@ class DiscordChannel(BaseChannel):
     def __init__(
         self,
         token: str,
-        bot_name: Optional[str] = None,
-        application_id: Optional[str] = None,
+        bot_name: str | None = None,
+        application_id: str | None = None,
         use_gateway: bool = False,
         health_check_interval: int = 60,
     ) -> None:
         super().__init__(token, bot_name, health_check_interval)
         self._application_id = application_id
         self._use_gateway = use_gateway
-        self._session: Optional[requests.Session] = None
-        self._gateway_task: Optional[asyncio.Task] = None
-        self._gateway_url: Optional[str] = None
-        self._session_id: Optional[str] = None
-        self._sequence: Optional[int] = None
-        self._heartbeat_interval: Optional[float] = None
-        self._last_heartbeat_ack: Optional[float] = None
+        self._session: requests.Session | None = None
+        self._gateway_task: asyncio.Task | None = None
+        self._gateway_url: str | None = None
+        self._session_id: str | None = None
+        self._sequence: int | None = None
+        self._heartbeat_interval: float | None = None
+        self._last_heartbeat_ack: float | None = None
         self._rate_limit_tokens = DISCORD_RATE_LIMIT
         self._rate_limit_timestamp = time.time()
         self._guilds: dict[str, dict[str, Any]] = {}
@@ -91,9 +91,9 @@ class DiscordChannel(BaseChannel):
         self,
         method: str,
         endpoint: str,
-        data: Optional[dict[str, Any]] = None,
-        files: Optional[dict[str, Any]] = None,
-    ) -> Optional[dict[str, Any]]:
+        data: dict[str, Any] | None = None,
+        files: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | None:
         """
         Make a synchronous API call to Discord.
 
@@ -276,7 +276,7 @@ class DiscordChannel(BaseChannel):
         """WebSocket gateway event loop (simplified polling-based approach)."""
         self._logger.info("Gateway loop not implemented via REST - use webhooks for real-time events")
 
-    async def _parse_message(self, raw_data: dict[str, Any]) -> Optional[IncomingMessage]:
+    async def _parse_message(self, raw_data: dict[str, Any]) -> IncomingMessage | None:
         """Parse raw Discord message data into IncomingMessage."""
         channel = raw_data.get("channel", {})
         channel_type = raw_data.get("channel_type", 0)
@@ -398,7 +398,7 @@ class DiscordChannel(BaseChannel):
 
         return message_type, content, attachments
 
-    async def send_message(self, message: OutgoingMessage) -> Optional[str]:
+    async def send_message(self, message: OutgoingMessage) -> str | None:
         """Send a message via Discord API."""
         try:
             endpoint = f"/channels/{message.conversation_id}/messages"
@@ -440,13 +440,13 @@ class DiscordChannel(BaseChannel):
         title: str,
         description: str,
         color: int = 0x0099FF,
-        fields: Optional[list[dict[str, str]]] = None,
-        footer: Optional[str] = None,
-        thumbnail_url: Optional[str] = None,
-        image_url: Optional[str] = None,
-        author_name: Optional[str] = None,
-        author_icon_url: Optional[str] = None,
-    ) -> Optional[str]:
+        fields: list[dict[str, str]] | None = None,
+        footer: str | None = None,
+        thumbnail_url: str | None = None,
+        image_url: str | None = None,
+        author_name: str | None = None,
+        author_icon_url: str | None = None,
+    ) -> str | None:
         """
         Send an embed message.
 
@@ -537,19 +537,19 @@ class DiscordChannel(BaseChannel):
         result = self._call_api("DELETE", endpoint)
         return result is not None
 
-    async def get_user(self, user_id: str) -> Optional[UserIdentity]:
+    async def get_user(self, user_id: str) -> UserIdentity | None:
         """Get user information."""
         result = self._call_api("GET", f"/users/{user_id}")
         if result:
             return self._parse_user(result)
         return None
 
-    async def get_guild(self, guild_id: str) -> Optional[dict[str, Any]]:
+    async def get_guild(self, guild_id: str) -> dict[str, Any] | None:
         """Get guild information."""
         return self._call_api("GET", f"/guilds/{guild_id}")
 
     async def get_guild_members(
-        self, guild_id: str, limit: int = 100, after: Optional[str] = None
+        self, guild_id: str, limit: int = 100, after: str | None = None
     ) -> list[dict[str, Any]]:
         """Get guild members."""
         params: dict[str, Any] = {"limit": limit}
@@ -565,7 +565,7 @@ class DiscordChannel(BaseChannel):
         return result or []
 
     async def add_role(
-        self, guild_id: str, user_id: str, role_id: str, reason: Optional[str] = None
+        self, guild_id: str, user_id: str, role_id: str, reason: str | None = None
     ) -> bool:
         """Add a role to a user."""
         endpoint = f"/guilds/{guild_id}/members/{user_id}/roles/{role_id}"
@@ -587,7 +587,7 @@ class DiscordChannel(BaseChannel):
         result = self._call_api("DELETE", endpoint)
         return result is not None
 
-    async def get_channel(self, channel_id: str) -> Optional[dict[str, Any]]:
+    async def get_channel(self, channel_id: str) -> dict[str, Any] | None:
         """Get channel information."""
         return self._call_api("GET", f"/channels/{channel_id}")
 
@@ -603,8 +603,8 @@ class DiscordChannel(BaseChannel):
         channel_id: str,
         name: str,
         auto_archive_duration: int = 1440,
-        message_id: Optional[str] = None,
-    ) -> Optional[dict[str, Any]]:
+        message_id: str | None = None,
+    ) -> dict[str, Any] | None:
         """Create a thread."""
         data = {
             "name": name,
@@ -635,7 +635,7 @@ class DiscordChannel(BaseChannel):
         result = self._call_api("GET", "/voice/regions")
         return result or []
 
-    async def register_command(self, command: dict[str, Any]) -> Optional[dict[str, Any]]:
+    async def register_command(self, command: dict[str, Any]) -> dict[str, Any] | None:
         """
         Register a global slash command.
 
@@ -650,7 +650,7 @@ class DiscordChannel(BaseChannel):
 
     async def register_guild_command(
         self, guild_id: str, command: dict[str, Any]
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Register a guild-specific slash command."""
         if not self._application_id:
             raise DiscordError("Application ID not set")
@@ -658,7 +658,7 @@ class DiscordChannel(BaseChannel):
         endpoint = f"/applications/{self._application_id}/guilds/{guild_id}/commands"
         return self._call_api("POST", endpoint, command)
 
-    async def set_commands(self, commands: list[dict[str, Any]]) -> Optional[list[dict[str, Any]]]:
+    async def set_commands(self, commands: list[dict[str, Any]]) -> list[dict[str, Any]] | None:
         """Bulk set global commands (replaces all existing)."""
         if not self._application_id:
             raise DiscordError("Application ID not set")
@@ -668,7 +668,7 @@ class DiscordChannel(BaseChannel):
 
     async def set_guild_commands(
         self, guild_id: str, commands: list[dict[str, Any]]
-    ) -> Optional[list[dict[str, Any]]]:
+    ) -> list[dict[str, Any]] | None:
         """Bulk set guild commands."""
         if not self._application_id:
             raise DiscordError("Application ID not set")

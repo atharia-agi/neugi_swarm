@@ -43,7 +43,6 @@ Usage:
 from __future__ import annotations
 
 import csv
-import io
 import json
 import logging
 import sqlite3
@@ -53,7 +52,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -180,12 +179,12 @@ class SessionAudit:
 
     session_id: str
     agent_id: str = ""
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
+    start_time: datetime | None = None
+    end_time: datetime | None = None
     entries: list[AuditEntry] = field(default_factory=list)
     tool_calls: list[ToolCallRecord] = field(default_factory=list)
     decisions: list[DecisionRecord] = field(default_factory=list)
-    total_duration: Optional[timedelta] = None
+    total_duration: timedelta | None = None
 
 
 @dataclass
@@ -205,8 +204,8 @@ class AuditReport:
     """
 
     generated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    period_start: Optional[datetime] = None
-    period_end: Optional[datetime] = None
+    period_start: datetime | None = None
+    period_end: datetime | None = None
     total_entries: int = 0
     entries_by_type: dict[str, int] = field(default_factory=dict)
     entries_by_agent: dict[str, int] = field(default_factory=dict)
@@ -269,7 +268,7 @@ class AuditLogger:
         self,
         db_path: str = "governance.db",
         enable_hashing: bool = True,
-        retention_policy: Optional[RetentionPolicy] = None,
+        retention_policy: RetentionPolicy | None = None,
     ) -> None:
         self.db_path = db_path
         self.enable_hashing = enable_hashing
@@ -381,9 +380,9 @@ class AuditLogger:
         agent_id: str = "",
         session_id: str = "",
         action: str = "",
-        details: Optional[dict[str, Any]] = None,
-        result: Optional[dict[str, Any]] = None,
-        metadata: Optional[dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
+        result: dict[str, Any] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> AuditEntry:
         """Log an audit event.
 
@@ -413,29 +412,28 @@ class AuditLogger:
             prev_hash = self._get_last_hash()
             entry.hash = self._compute_hash(entry, prev_hash)
 
-        with self._lock:
-            with self._get_conn() as conn:
-                conn.execute(
-                    """
+        with self._lock, self._get_conn() as conn:
+            conn.execute(
+                """
                     INSERT INTO audit_log
                     (entry_id, timestamp, event_type, agent_id, session_id,
                      action, details_json, result_json, metadata_json, hash, prev_hash)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
-                    (
-                        entry.entry_id,
-                        entry.timestamp.isoformat(),
-                        entry.event_type.value,
-                        entry.agent_id,
-                        entry.session_id,
-                        entry.action,
-                        json.dumps(entry.details),
-                        json.dumps(entry.result),
-                        json.dumps(entry.metadata),
-                        entry.hash,
-                        self._get_last_hash() if self.enable_hashing else "",
-                    ),
-                )
+                (
+                    entry.entry_id,
+                    entry.timestamp.isoformat(),
+                    entry.event_type.value,
+                    entry.agent_id,
+                    entry.session_id,
+                    entry.action,
+                    json.dumps(entry.details),
+                    json.dumps(entry.result),
+                    json.dumps(entry.metadata),
+                    entry.hash,
+                    self._get_last_hash() if self.enable_hashing else "",
+                ),
+            )
 
         logger.debug(
             "Audit logged: %s by %s (%s)",
@@ -494,10 +492,10 @@ class AuditLogger:
         agent_id: str,
         decision: str,
         reasoning: str,
-        alternatives_considered: Optional[list[str]] = None,
+        alternatives_considered: list[str] | None = None,
         confidence: float = 1.0,
         session_id: str = "",
-        metadata: Optional[dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> tuple[AuditEntry, DecisionRecord]:
         """Log a decision made by an agent.
 
@@ -542,7 +540,7 @@ class AuditLogger:
         self,
         session_id: str,
         agent_id: str,
-        metadata: Optional[dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> AuditEntry:
         """Log a session start event.
 
@@ -566,7 +564,7 @@ class AuditLogger:
         self,
         session_id: str,
         agent_id: str,
-        metadata: Optional[dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> AuditEntry:
         """Log a session end event.
 
@@ -588,11 +586,11 @@ class AuditLogger:
 
     def get_entries(
         self,
-        event_type: Optional[AuditEventType] = None,
-        agent_id: Optional[str] = None,
-        session_id: Optional[str] = None,
-        since: Optional[datetime] = None,
-        until: Optional[datetime] = None,
+        event_type: AuditEventType | None = None,
+        agent_id: str | None = None,
+        session_id: str | None = None,
+        since: datetime | None = None,
+        until: datetime | None = None,
         limit: int = 1000,
         offset: int = 0,
     ) -> list[AuditEntry]:
@@ -761,8 +759,8 @@ class AuditLogger:
 
     def generate_report(
         self,
-        since: Optional[datetime] = None,
-        until: Optional[datetime] = None,
+        since: datetime | None = None,
+        until: datetime | None = None,
     ) -> AuditReport:
         """Generate a compliance report.
 
@@ -813,10 +811,10 @@ class AuditLogger:
     def export_logs(
         self,
         format: AuditExportFormat = AuditExportFormat.JSON,
-        output_path: Optional[str] = None,
-        since: Optional[datetime] = None,
-        until: Optional[datetime] = None,
-        event_type: Optional[AuditEventType] = None,
+        output_path: str | None = None,
+        since: datetime | None = None,
+        until: datetime | None = None,
+        event_type: AuditEventType | None = None,
     ) -> str:
         """Export audit logs to a file.
 
@@ -956,36 +954,35 @@ class AuditLogger:
 
         deleted = 0
 
-        with self._lock:
-            with self._get_conn() as conn:
-                if self.retention_policy.event_types:
-                    placeholders = ",".join(
-                        "?" for _ in self.retention_policy.event_types
-                    )
-                    query = (
-                        f"SELECT * FROM audit_log "
-                        f"WHERE timestamp < ? AND event_type IN ({placeholders})"
-                    )
-                    params = [cutoff.isoformat()] + list(self.retention_policy.event_types)
-                else:
-                    query = "SELECT * FROM audit_log WHERE timestamp < ?"
-                    params = [cutoff.isoformat()]
+        with self._lock, self._get_conn() as conn:
+            if self.retention_policy.event_types:
+                placeholders = ",".join(
+                    "?" for _ in self.retention_policy.event_types
+                )
+                query = (
+                    f"SELECT * FROM audit_log "
+                    f"WHERE timestamp < ? AND event_type IN ({placeholders})"
+                )
+                params = [cutoff.isoformat()] + list(self.retention_policy.event_types)
+            else:
+                query = "SELECT * FROM audit_log WHERE timestamp < ?"
+                params = [cutoff.isoformat()]
 
-                rows = conn.execute(query, params).fetchall()
+            rows = conn.execute(query, params).fetchall()
 
-                if self.retention_policy.archive_before_delete and rows:
-                    self._archive_entries(conn, rows)
+            if self.retention_policy.archive_before_delete and rows:
+                self._archive_entries(conn, rows)
 
-                if self.retention_policy.event_types:
-                    delete_query = (
-                        f"DELETE FROM audit_log "
-                        f"WHERE timestamp < ? AND event_type IN ({placeholders})"
-                    )
-                else:
-                    delete_query = "DELETE FROM audit_log WHERE timestamp < ?"
+            if self.retention_policy.event_types:
+                delete_query = (
+                    f"DELETE FROM audit_log "
+                    f"WHERE timestamp < ? AND event_type IN ({placeholders})"
+                )
+            else:
+                delete_query = "DELETE FROM audit_log WHERE timestamp < ?"
 
-                cursor = conn.execute(delete_query, params)
-                deleted = cursor.rowcount
+            cursor = conn.execute(delete_query, params)
+            deleted = cursor.rowcount
 
         if deleted > 0:
             logger.info("Retention enforced: %d entries deleted", deleted)
@@ -1056,7 +1053,7 @@ class AuditLogger:
         """Close database connections."""
         pass
 
-    def __enter__(self) -> "AuditLogger":
+    def __enter__(self) -> AuditLogger:
         return self
 
     def __exit__(self, *args: Any) -> None:

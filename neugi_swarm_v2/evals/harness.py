@@ -33,7 +33,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ class EvalResult:
     duration_seconds: float
     tokens_used: int = 0
     error: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
 
 
@@ -57,21 +57,21 @@ class BenchmarkResult:
     """Result of a full benchmark suite."""
     benchmark_name: str
     version: str
-    results: List[EvalResult]
+    results: list[EvalResult]
     total_duration: float = 0.0
-    
+
     @property
     def success_rate(self) -> float:
         if not self.results:
             return 0.0
         return sum(1 for r in self.results if r.success) / len(self.results)
-    
+
     @property
     def average_score(self) -> float:
         if not self.results:
             return 0.0
         return statistics.mean(r.score for r in self.results)
-    
+
     @property
     def average_duration(self) -> float:
         if not self.results:
@@ -91,9 +91,9 @@ class RegressionReport:
     baseline_success_rate: float
     current_success_rate: float
     success_rate_delta: float
-    regressions: List[str] = field(default_factory=list)
-    improvements: List[str] = field(default_factory=list)
-    
+    regressions: list[str] = field(default_factory=list)
+    improvements: list[str] = field(default_factory=list)
+
     @property
     def has_regression(self) -> bool:
         return len(self.regressions) > 0 or self.score_delta < -0.05
@@ -101,28 +101,28 @@ class RegressionReport:
 
 class Benchmark(ABC):
     """Base class for benchmarks."""
-    
+
     name: str = ""
     description: str = ""
     version: str = "1.0"
-    
+
     @abstractmethod
     def setup(self) -> None:
         """Setup benchmark environment."""
         pass
-    
+
     @abstractmethod
     def teardown(self) -> None:
         """Cleanup benchmark environment."""
         pass
-    
+
     @abstractmethod
-    def get_tasks(self) -> List[Dict[str, Any]]:
+    def get_tasks(self) -> list[dict[str, Any]]:
         """Return list of tasks to evaluate."""
         pass
-    
+
     @abstractmethod
-    async def run_task(self, task: Dict[str, Any]) -> EvalResult:
+    async def run_task(self, task: dict[str, Any]) -> EvalResult:
         """Run a single task and return result."""
         pass
 
@@ -133,8 +133,8 @@ class EvalHarness:
     def __init__(self, output_dir: str = "evals/results"):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.benchmarks: Dict[str, Benchmark] = {}
-        self.baselines: Dict[str, BenchmarkResult] = {}
+        self.benchmarks: dict[str, Benchmark] = {}
+        self.baselines: dict[str, BenchmarkResult] = {}
         self._version = "2.0.0"
 
     def register(self, benchmark: Benchmark) -> None:
@@ -163,16 +163,16 @@ class EvalHarness:
         """Run a single benchmark."""
         if name not in self.benchmarks:
             raise ValueError(f"Benchmark '{name}' not registered")
-        
+
         benchmark = self.benchmarks[name]
         logger.info(f"Running benchmark: {name}")
-        
+
         benchmark.setup()
         start_time = time.time()
-        
-        results: List[EvalResult] = []
+
+        results: list[EvalResult] = []
         tasks = benchmark.get_tasks()
-        
+
         for i, task in enumerate(tasks):
             logger.info(f"  Task {i+1}/{len(tasks)}: {task.get('name', task.get('id', 'unknown'))}")
             try:
@@ -188,11 +188,11 @@ class EvalHarness:
                     duration_seconds=0.0,
                     error=str(e)
                 ))
-        
+
         benchmark.teardown()
-        
+
         total_duration = time.time() - start_time
-        
+
         return BenchmarkResult(
             benchmark_name=name,
             version=self._version,
@@ -200,27 +200,27 @@ class EvalHarness:
             total_duration=total_duration
         )
 
-    async def run_all(self) -> Dict[str, BenchmarkResult]:
+    async def run_all(self) -> dict[str, BenchmarkResult]:
         """Run all registered benchmarks."""
         results = {}
         for name in self.benchmarks:
             results[name] = await self.run_benchmark(name)
         return results
 
-    def compare_to_baseline(self, result: BenchmarkResult) -> Optional[RegressionReport]:
+    def compare_to_baseline(self, result: BenchmarkResult) -> RegressionReport | None:
         """Compare benchmark result to baseline."""
         if result.benchmark_name not in self.baselines:
             return None
-        
+
         baseline = self.baselines[result.benchmark_name]
-        
+
         regressions = []
         improvements = []
-        
+
         # Compare individual tasks
         baseline_tasks = {r.task_id: r for r in baseline.results}
         current_tasks = {r.task_id: r for r in result.results}
-        
+
         for task_id, current in current_tasks.items():
             if task_id in baseline_tasks:
                 base = baseline_tasks[task_id]
@@ -232,7 +232,7 @@ class EvalHarness:
                     regressions.append(f"{task_id}: score dropped {base.score:.2f} -> {current.score:.2f}")
                 elif current.score > base.score + 0.1:
                     improvements.append(f"{task_id}: score improved {base.score:.2f} -> {current.score:.2f}")
-        
+
         return RegressionReport(
             benchmark_name=result.benchmark_name,
             baseline_version=baseline.version,
@@ -247,10 +247,10 @@ class EvalHarness:
             improvements=improvements
         )
 
-    def save_results(self, results: Dict[str, BenchmarkResult]) -> None:
+    def save_results(self, results: dict[str, BenchmarkResult]) -> None:
         """Save results to disk."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        
+
         data = {}
         for name, result in results.items():
             data[name] = {
@@ -275,20 +275,20 @@ class EvalHarness:
                     for r in result.results
                 ]
             }
-        
+
         path = self.output_dir / f"eval_results_{timestamp}.json"
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
-        
+
         logger.info(f"Results saved to {path}")
 
-    def report(self, results: Dict[str, BenchmarkResult]) -> str:
+    def report(self, results: dict[str, BenchmarkResult]) -> str:
         """Generate human-readable report."""
         lines = ["# NEUGI v2 Evaluation Report", ""]
         lines.append(f"Generated: {datetime.now().isoformat()}")
         lines.append(f"Version: {self._version}")
         lines.append("")
-        
+
         for name, result in results.items():
             lines.append(f"## {name}")
             lines.append(f"- Success Rate: {result.success_rate:.1%}")
@@ -296,7 +296,7 @@ class EvalHarness:
             lines.append(f"- Average Duration: {result.average_duration:.2f}s")
             lines.append(f"- Total Duration: {result.total_duration:.2f}s")
             lines.append(f"- Tasks: {len(result.results)}")
-            
+
             # Regression check
             comparison = self.compare_to_baseline(result)
             if comparison:
@@ -305,17 +305,17 @@ class EvalHarness:
                 lines.append(f"- Baseline: {comparison.baseline_version}")
                 lines.append(f"- Score Delta: {comparison.score_delta:+.3f}")
                 lines.append(f"- Success Rate Delta: {comparison.success_rate_delta:+.1%}")
-                
+
                 if comparison.has_regression:
                     lines.append("- **REGRESSIONS DETECTED** ⚠️")
                     for r in comparison.regressions:
                         lines.append(f"  - ❌ {r}")
-                
+
                 if comparison.improvements:
                     lines.append("- Improvements:")
                     for i in comparison.improvements:
                         lines.append(f"  - ✅ {i}")
-            
+
             lines.append("")
             lines.append("### Task Breakdown")
             for r in result.results:
@@ -323,17 +323,17 @@ class EvalHarness:
                 lines.append(f"{status} {r.task_name} | Score: {r.score:.2f} | Time: {r.duration_seconds:.2f}s")
                 if r.error:
                     lines.append(f"   Error: {r.error}")
-            
+
             lines.append("")
-        
+
         report = "\n".join(lines)
-        
+
         # Save report
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         report_path = self.output_dir / f"eval_report_{timestamp}.md"
         with open(report_path, "w", encoding="utf-8") as f:
             f.write(report)
-        
+
         return report
 
 
@@ -341,18 +341,18 @@ class EvalHarness:
 
 class WebSearchBenchmark(Benchmark):
     """Benchmark for web search capabilities."""
-    
+
     name = "web_search"
     description = "Tests web search and URL reading capabilities"
-    
+
     def setup(self) -> None:
         from tools.web_search import WebSearch
         self.search = WebSearch()
-    
+
     def teardown(self) -> None:
         self.search.clear_cache()
-    
-    def get_tasks(self) -> List[Dict[str, Any]]:
+
+    def get_tasks(self) -> list[dict[str, Any]]:
         return [
             {
                 "id": "search_basic",
@@ -373,10 +373,10 @@ class WebSearchBenchmark(Benchmark):
                 "expected_keywords": ["AI", "artificial intelligence"]
             }
         ]
-    
-    async def run_task(self, task: Dict[str, Any]) -> EvalResult:
+
+    async def run_task(self, task: dict[str, Any]) -> EvalResult:
         start = time.time()
-        
+
         try:
             if "url" in task:
                 content = self.search.read_url(task["url"])
@@ -413,18 +413,18 @@ class WebSearchBenchmark(Benchmark):
 
 class BrowserBenchmark(Benchmark):
     """Benchmark for browser automation."""
-    
+
     name = "browser_automation"
     description = "Tests browser automation and DOM interaction"
-    
+
     def setup(self) -> None:
         from tools.browser import BrowserTool
         self.browser = BrowserTool()
-    
+
     def teardown(self) -> None:
         self.browser.close()
-    
-    def get_tasks(self) -> List[Dict[str, Any]]:
+
+    def get_tasks(self) -> list[dict[str, Any]]:
         return [
             {
                 "id": "navigate",
@@ -445,29 +445,29 @@ class BrowserBenchmark(Benchmark):
                 "check_elements": True
             }
         ]
-    
-    async def run_task(self, task: Dict[str, Any]) -> EvalResult:
+
+    async def run_task(self, task: dict[str, Any]) -> EvalResult:
         start = time.time()
-        
+
         try:
             self.browser.navigate(task["url"])
-            
+
             success = True
             score = 1.0
-            
+
             if "expected_title" in task:
                 title = self.browser.get_title()
                 success = task["expected_title"] in title
                 score = 1.0 if success else 0.0
-            
+
             if task.get("check_screenshot"):
                 b64 = self.browser.screenshot()
                 success = success and len(b64) > 1000
-            
+
             if task.get("check_elements"):
                 elements = self.browser.get_clickable_elements()
                 success = success and len(elements) > 0
-            
+
             return EvalResult(
                 task_id=task["id"],
                 task_name=task["name"],
@@ -488,20 +488,20 @@ class BrowserBenchmark(Benchmark):
 
 class SkillBenchmark(Benchmark):
     """Benchmark for skill system."""
-    
+
     name = "skill_system"
     description = "Tests skill loading, matching, and execution"
-    
+
     def setup(self) -> None:
         from skills import SkillManager
         self.mgr = SkillManager()
-    
+
     def teardown(self) -> None:
         # Cleanup any temporary skill manager resources
         if hasattr(self.mgr, 'close'):
             self.mgr.close()
-    
-    def get_tasks(self) -> List[Dict[str, Any]]:
+
+    def get_tasks(self) -> list[dict[str, Any]]:
         return [
             {
                 "id": "load_skills",
@@ -515,10 +515,10 @@ class SkillBenchmark(Benchmark):
                 "expected_tier": "global"
             }
         ]
-    
-    async def run_task(self, task: Dict[str, Any]) -> EvalResult:
+
+    async def run_task(self, task: dict[str, Any]) -> EvalResult:
         start = time.time()
-        
+
         try:
             if task.get("check_loaded"):
                 skills = self.mgr.loader.load_all()
@@ -530,7 +530,7 @@ class SkillBenchmark(Benchmark):
                 results = matcher.match(task["query"], [])
                 success = len(results) >= 0  # Matcher might return empty
                 score = 1.0 if success else 0.0
-            
+
             return EvalResult(
                 task_id=task["id"],
                 task_name=task["name"],

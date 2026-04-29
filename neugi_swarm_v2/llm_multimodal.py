@@ -24,13 +24,11 @@ Usage:
 from __future__ import annotations
 
 import base64
-import io
 import logging
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
-from llm_provider import LLMProvider, LLMResponse, ProviderConfig, ProviderType
+from llm_provider import LLMProvider, LLMResponse, ProviderType
 
 logger = logging.getLogger(__name__)
 
@@ -42,8 +40,8 @@ class ImageMessage:
     image_b64: str = ""
     image_path: str = ""
     image_url: str = ""
-    
-    def to_ollama_format(self) -> Dict[str, Any]:
+
+    def to_ollama_format(self) -> dict[str, Any]:
         """Convert to Ollama API format."""
         message = {"role": "user", "content": self.text}
         if self.image_b64:
@@ -52,11 +50,11 @@ class ImageMessage:
             with open(self.image_path, "rb") as f:
                 message["images"] = [base64.b64encode(f.read()).decode()]
         return message
-    
-    def to_openai_format(self) -> Dict[str, Any]:
+
+    def to_openai_format(self) -> dict[str, Any]:
         """Convert to OpenAI API format."""
         content = [{"type": "text", "text": self.text}]
-        
+
         if self.image_b64:
             content.append({
                 "type": "image_url",
@@ -74,13 +72,13 @@ class ImageMessage:
                     "type": "image_url",
                     "image_url": {"url": f"data:image/png;base64,{b64}"}
                 })
-        
+
         return {"role": "user", "content": content}
-    
-    def to_anthropic_format(self) -> Dict[str, Any]:
+
+    def to_anthropic_format(self) -> dict[str, Any]:
         """Convert to Anthropic API format."""
         content = [{"type": "text", "text": self.text}]
-        
+
         if self.image_b64:
             content.append({
                 "type": "image",
@@ -101,17 +99,17 @@ class ImageMessage:
                         "data": b64,
                     }
                 })
-        
+
         return {"role": "user", "content": content}
 
 
 class MultimodalProvider:
     """Wrapper that adds image/vision capabilities to any LLMProvider."""
-    
+
     def __init__(self, provider: LLMProvider):
         self.provider = provider
         self.provider_type = self._detect_provider_type(provider)
-    
+
     def _detect_provider_type(self, provider: LLMProvider) -> ProviderType:
         """Detect the underlying provider type."""
         class_name = provider.__class__.__name__
@@ -121,10 +119,10 @@ class MultimodalProvider:
             return ProviderType.ANTHROPIC_COMPATIBLE
         else:
             return ProviderType.OPENAI_COMPATIBLE
-    
+
     def chat_with_image(
         self,
-        messages: List[Dict[str, Any]],
+        messages: list[dict[str, Any]],
         image_b64: str,
         text: str = "Describe what you see in this image.",
         model: str = "",
@@ -156,17 +154,17 @@ class MultimodalProvider:
             # OpenAI compatible
             image_message = ImageMessage(text=text, image_b64=image_b64)
             multimodal_msg = image_message.to_openai_format()
-        
+
         # Add to message history
         all_messages = list(messages) + [multimodal_msg]
-        
+
         return self.provider.chat(
             messages=all_messages,
             model=model,
             temperature=temperature,
             max_tokens=max_tokens,
         )
-    
+
     def analyze_screenshot(
         self,
         screenshot_b64: str,
@@ -201,9 +199,9 @@ Rules:
 - If task is complete, use action: "terminate"
 - If unsure, use action: "screenshot" to get more context
 """
-        
+
         messages = [{"role": "system", "content": system_prompt}]
-        
+
         return self.chat_with_image(
             messages=messages,
             image_b64=screenshot_b64,
@@ -212,7 +210,7 @@ Rules:
             temperature=0.2,  # Lower temp for deterministic actions
             max_tokens=2048,
         )
-    
+
     def compare_screenshots(
         self,
         before_b64: str,
@@ -220,7 +218,7 @@ Rules:
         model: str = "",
     ) -> LLMResponse:
         """Compare two screenshots and describe changes."""
-        
+
         if self.provider_type == ProviderType.OLLAMA:
             # Ollama doesn't support multiple images well, send sequentially
             messages = [
@@ -265,27 +263,27 @@ Rules:
                 },
             ]
             messages = [{"role": "user", "content": content}]
-        
+
         return self.provider.chat(
             messages=messages,
             model=model,
             temperature=0.3,
             max_tokens=2048,
         )
-    
+
     @staticmethod
     def encode_image(path: str) -> str:
         """Encode an image file to base64."""
         with open(path, "rb") as f:
             return base64.b64encode(f.read()).decode()
-    
+
     @staticmethod
     def encode_image_bytes(data: bytes) -> str:
         """Encode image bytes to base64."""
         return base64.b64encode(data).decode()
-    
+
     @classmethod
-    def from_provider(cls, provider: LLMProvider) -> "MultimodalProvider":
+    def from_provider(cls, provider: LLMProvider) -> MultimodalProvider:
         """Create MultimodalProvider from existing LLMProvider."""
         return cls(provider)
 
@@ -295,7 +293,7 @@ class VisionComputerUse:
     Computer Use with real vision model integration.
     Replaces rule-based action selection with LLM vision analysis.
     """
-    
+
     def __init__(
         self,
         multimodal_provider: MultimodalProvider,
@@ -303,15 +301,15 @@ class VisionComputerUse:
     ):
         self.vision = multimodal_provider
         self.max_steps = max_steps
-        self.action_history: List[Dict[str, Any]] = []
-    
+        self.action_history: list[dict[str, Any]] = []
+
     def determine_action(
         self,
         task: str,
         screenshot_b64: str,
-        dom_state: List[Dict],
-        previous_actions: List[Dict],
-    ) -> Dict[str, Any]:
+        dom_state: list[dict],
+        previous_actions: list[dict],
+    ) -> dict[str, Any]:
         """
         Use vision model to determine next action.
         
@@ -321,7 +319,7 @@ class VisionComputerUse:
         # Build context from DOM state and history
         dom_summary = self._summarize_dom(dom_state)
         history_summary = self._summarize_history(previous_actions)
-        
+
         prompt = f"""Task: {task}
 
 Previous actions: {history_summary}
@@ -331,36 +329,36 @@ Interactive elements on page:
 
 Based on the screenshot and page state, what is the next action to take?
 Respond ONLY with valid JSON."""
-        
+
         try:
             response = self.vision.analyze_screenshot(
                 screenshot_b64=screenshot_b64,
                 task=prompt,
             )
-            
+
             # Parse JSON from response
             import json
             content = response.content.strip()
-            
+
             # Extract JSON if wrapped in markdown
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0].strip()
             elif "```" in content:
                 content = content.split("```")[1].split("```")[0].strip()
-            
+
             action = json.loads(content)
-            
+
             # Validate required fields
             if "action" not in action:
                 return {"action": "screenshot", "reason": "Invalid response from vision model"}
-            
+
             return action
-            
+
         except Exception as e:
             logger.error(f"Vision model failed: {e}")
             return {"action": "screenshot", "reason": f"Vision error: {e}"}
-    
-    def _summarize_dom(self, dom_state: List[Dict]) -> str:
+
+    def _summarize_dom(self, dom_state: list[dict]) -> str:
         """Summarize DOM state for the vision model."""
         lines = []
         for el in dom_state[:20]:  # Limit to 20 elements
@@ -370,8 +368,8 @@ Respond ONLY with valid JSON."""
             clickable = "[clickable]" if el.get("clickable") else ""
             lines.append(f"- {tag} {clickable}: {text} ({selector})")
         return "\n".join(lines) if lines else "No interactive elements found."
-    
-    def _summarize_history(self, actions: List[Dict]) -> str:
+
+    def _summarize_history(self, actions: list[dict]) -> str:
         """Summarize action history."""
         if not actions:
             return "None"

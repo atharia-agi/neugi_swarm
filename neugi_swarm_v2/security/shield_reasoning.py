@@ -25,7 +25,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -304,8 +304,8 @@ class ShieldReasoner:
     def assess_risk(
         self,
         command: str = "",
-        context: Optional[dict[str, Any]] = None,
-        threat_indicators: Optional[list[dict[str, Any]]] = None,
+        context: dict[str, Any] | None = None,
+        threat_indicators: list[dict[str, Any]] | None = None,
     ) -> RiskScore:
         """Assess the risk level of a command or action.
 
@@ -721,8 +721,8 @@ class ShieldReasoner:
         self,
         decision: str,
         reason: str,
-        factors: Optional[list[str]] = None,
-        alternatives: Optional[list[str]] = None,
+        factors: list[str] | None = None,
+        alternatives: list[str] | None = None,
     ) -> DecisionExplanation:
         """Create an explainable security decision.
 
@@ -759,8 +759,8 @@ class ShieldReasoner:
 
     def assess_posture(
         self,
-        controls: Optional[dict[str, bool]] = None,
-        metrics: Optional[dict[str, Any]] = None,
+        controls: dict[str, bool] | None = None,
+        metrics: dict[str, Any] | None = None,
     ) -> SecurityPosture:
         """Assess overall security posture.
 
@@ -883,7 +883,7 @@ class ShieldReasoner:
 
     def get_recommendations(
         self,
-        posture: Optional[SecurityPosture] = None,
+        posture: SecurityPosture | None = None,
     ) -> list[SecurityRecommendation]:
         """Generate security recommendations.
 
@@ -948,7 +948,7 @@ class ShieldReasoner:
     def _recommendation_for_weakness(
         self,
         weakness: str,
-    ) -> Optional[SecurityRecommendation]:
+    ) -> SecurityRecommendation | None:
         """Generate a recommendation for a specific weakness.
 
         Args:

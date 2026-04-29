@@ -31,8 +31,9 @@ import hashlib
 import logging
 import time
 import traceback
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +68,7 @@ class ResearchFinding:
     claim: str
     evidence: str
     confidence: float = 0.5
-    supporting_sources: List[int] = field(default_factory=list)
+    supporting_sources: list[int] = field(default_factory=list)
     round_number: int = 1
 
 
@@ -87,9 +88,9 @@ class ResearchRound:
 
     round_number: int
     query: str
-    sources: List[ResearchSource] = field(default_factory=list)
-    findings: List[ResearchFinding] = field(default_factory=list)
-    hypotheses: List[ResearchHypothesis] = field(default_factory=list)
+    sources: list[ResearchSource] = field(default_factory=list)
+    findings: list[ResearchFinding] = field(default_factory=list)
+    hypotheses: list[ResearchHypothesis] = field(default_factory=list)
     synthesis: str = ""
     duration_ms: float = 0.0
     tokens_used: int = 0
@@ -100,11 +101,11 @@ class ResearchReport:
     """Final research report output."""
 
     topic: str
-    rounds: List[ResearchRound] = field(default_factory=list)
+    rounds: list[ResearchRound] = field(default_factory=list)
     executive_summary: str = ""
-    key_findings: List[ResearchFinding] = field(default_factory=list)
-    all_sources: List[ResearchSource] = field(default_factory=list)
-    unanswered_questions: List[str] = field(default_factory=list)
+    key_findings: list[ResearchFinding] = field(default_factory=list)
+    all_sources: list[ResearchSource] = field(default_factory=list)
+    unanswered_questions: list[str] = field(default_factory=list)
     confidence_overall: float = 0.0
     total_duration_ms: float = 0.0
     total_tokens_used: int = 0
@@ -169,7 +170,7 @@ class ResearchReport:
 
         return "\n".join(lines)
 
-    def to_memory_entry(self) -> Dict[str, Any]:
+    def to_memory_entry(self) -> dict[str, Any]:
         """Convert to a memory entry dict."""
         return {
             "content": self.to_markdown(),
@@ -228,9 +229,9 @@ class ResearchEngine:
     def __init__(
         self,
         web_search: Any = None,
-        llm_callback: Optional[Callable[..., str]] = None,
+        llm_callback: Callable[..., str] | None = None,
         memory_system: Any = None,
-        config: Optional[ResearchConfig] = None,
+        config: ResearchConfig | None = None,
     ) -> None:
         self.web_search = web_search
         self.llm_callback = llm_callback
@@ -255,7 +256,7 @@ class ResearchEngine:
         start = time.time()
 
         report = ResearchReport(topic=topic)
-        all_queries: List[str] = [topic]
+        all_queries: list[str] = [topic]
         seen_urls: set = set()
 
         try:
@@ -354,7 +355,7 @@ class ResearchEngine:
             self.config.max_sources_per_round = old_max
             self.config.max_rounds = old_rounds
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get research engine statistics."""
         return {
             "sessions": self._session_count,
@@ -371,7 +372,7 @@ class ResearchEngine:
         self,
         round_number: int,
         query: str,
-        previous_rounds: List[ResearchRound],
+        previous_rounds: list[ResearchRound],
         seen_urls: set,
     ) -> ResearchRound:
         """Execute one research round: search → read → synthesize → hypothesize."""
@@ -408,9 +409,9 @@ class ResearchEngine:
         query: str,
         round_number: int,
         seen_urls: set,
-    ) -> List[ResearchSource]:
+    ) -> list[ResearchSource]:
         """Search for sources and filter by relevance."""
-        sources: List[ResearchSource] = []
+        sources: list[ResearchSource] = []
 
         if not self.web_search:
             return sources
@@ -457,10 +458,10 @@ class ResearchEngine:
     def _llm_synthesize(
         self,
         query: str,
-        sources: List[ResearchSource],
-        previous_rounds: List[ResearchRound],
+        sources: list[ResearchSource],
+        previous_rounds: list[ResearchRound],
         round_number: int,
-    ) -> tuple[str, List[ResearchFinding], List[ResearchHypothesis], int]:
+    ) -> tuple[str, list[ResearchFinding], list[ResearchHypothesis], int]:
         """Use LLM to synthesize findings and generate hypotheses.
 
         Returns:
@@ -493,8 +494,8 @@ class ResearchEngine:
     def _build_synthesis_prompt(
         self,
         query: str,
-        sources: List[ResearchSource],
-        previous_rounds: List[ResearchRound],
+        sources: list[ResearchSource],
+        previous_rounds: list[ResearchRound],
         round_number: int,
     ) -> str:
         """Build the synthesis prompt for the LLM."""
@@ -563,12 +564,12 @@ class ResearchEngine:
         self,
         response: str,
         round_number: int,
-        sources: List[ResearchSource],
-    ) -> tuple[str, List[ResearchFinding], List[ResearchHypothesis]]:
+        sources: list[ResearchSource],
+    ) -> tuple[str, list[ResearchFinding], list[ResearchHypothesis]]:
         """Parse structured research response from LLM."""
         synthesis = ""
-        findings: List[ResearchFinding] = []
-        hypotheses: List[ResearchHypothesis] = []
+        findings: list[ResearchFinding] = []
+        hypotheses: list[ResearchHypothesis] = []
 
         sections = response.split("### ")
         current_section = ""
@@ -596,10 +597,10 @@ class ResearchEngine:
         self,
         section: str,
         round_number: int,
-        sources: List[ResearchSource],
-    ) -> List[ResearchFinding]:
+        sources: list[ResearchSource],
+    ) -> list[ResearchFinding]:
         """Parse findings from LLM response section."""
-        findings: List[ResearchFinding] = []
+        findings: list[ResearchFinding] = []
 
         # Split by numbered items
         import re
@@ -612,7 +613,7 @@ class ResearchEngine:
 
             evidence = ""
             confidence = 0.5
-            source_indices: List[int] = []
+            source_indices: list[int] = []
 
             for line in lines[1:]:
                 line = line.strip()
@@ -637,9 +638,9 @@ class ResearchEngine:
 
         return findings
 
-    def _parse_hypotheses(self, section: str, round_number: int) -> List[ResearchHypothesis]:
+    def _parse_hypotheses(self, section: str, round_number: int) -> list[ResearchHypothesis]:
         """Parse hypotheses from LLM response section."""
-        hypotheses: List[ResearchHypothesis] = []
+        hypotheses: list[ResearchHypothesis] = []
 
         import re
         pattern = r'\d+\.\s+(.+?)(?=\d+\.\s+|\*\*Priority\*\*|$)'
@@ -672,9 +673,9 @@ class ResearchEngine:
 
     # -- Report Finalization ---------------------------------------------------
 
-    def _aggregate_findings(self, rounds: List[ResearchRound]) -> List[ResearchFinding]:
+    def _aggregate_findings(self, rounds: list[ResearchRound]) -> list[ResearchFinding]:
         """Aggregate and deduplicate findings across all rounds."""
-        all_findings: List[ResearchFinding] = []
+        all_findings: list[ResearchFinding] = []
         seen_claims: set = set()
 
         for r in rounds:
@@ -704,9 +705,9 @@ class ResearchEngine:
 
         return combined
 
-    def _collect_unanswered(self, rounds: List[ResearchRound]) -> List[str]:
+    def _collect_unanswered(self, rounds: list[ResearchRound]) -> list[str]:
         """Collect unanswered questions from hypotheses that weren't pursued."""
-        unanswered: List[str] = []
+        unanswered: list[str] = []
         seen: set = set()
 
         for r in rounds:
@@ -723,7 +724,7 @@ class ResearchEngine:
             return 0.0
 
         # Average finding confidence weighted by source count
-        all_confidences: List[float] = []
+        all_confidences: list[float] = []
         for r in report.rounds:
             for f in r.findings:
                 all_confidences.append(f.confidence)

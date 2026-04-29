@@ -17,11 +17,12 @@ import sqlite3
 import threading
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -1062,33 +1063,32 @@ class CronScheduler:
         Returns:
             Number of jobs loaded.
         """
-        with self._lock:
-            with self._get_conn() as conn:
-                rows = conn.execute("SELECT * FROM cron_jobs").fetchall()
+        with self._lock, self._get_conn() as conn:
+            rows = conn.execute("SELECT * FROM cron_jobs").fetchall()
 
-                for row in rows:
-                    schedule = CronSchedule(
-                        expression=CronExpression.parse(row["schedule"])
-                    )
+            for row in rows:
+                schedule = CronSchedule(
+                    expression=CronExpression.parse(row["schedule"])
+                )
 
-                    job = CronJob(
-                        job_id=row["job_id"],
-                        name=row["name"],
-                        schedule=schedule,
-                        handler=lambda: None,
-                        state=CronJobState(row["state"]),
-                        max_concurrent=row["max_concurrent"],
-                        timeout_seconds=row["timeout_seconds"],
-                        depends_on=json.loads(row["depends_on"]),
-                        last_run_at=row["last_run_at"],
-                        next_run_at=row["next_run_at"],
-                        run_count=row["run_count"],
-                        fail_count=row["fail_count"],
-                        created_at=row["created_at"],
-                        metadata=json.loads(row["metadata"]),
-                    )
+                job = CronJob(
+                    job_id=row["job_id"],
+                    name=row["name"],
+                    schedule=schedule,
+                    handler=lambda: None,
+                    state=CronJobState(row["state"]),
+                    max_concurrent=row["max_concurrent"],
+                    timeout_seconds=row["timeout_seconds"],
+                    depends_on=json.loads(row["depends_on"]),
+                    last_run_at=row["last_run_at"],
+                    next_run_at=row["next_run_at"],
+                    run_count=row["run_count"],
+                    fail_count=row["fail_count"],
+                    created_at=row["created_at"],
+                    metadata=json.loads(row["metadata"]),
+                )
 
-                    self._jobs[row["job_id"]] = job
+                self._jobs[row["job_id"]] = job
 
         count = len(self._jobs)
         logger.info("Loaded %d jobs from database", count)

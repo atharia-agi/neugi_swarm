@@ -18,13 +18,12 @@ Philosophy: Don't treat all models the same. Adapt.
 
 from __future__ import annotations
 
-import json
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from model_registry import ModelCapabilityDetector, ModelCapabilities
+from model_registry import ModelCapabilities, ModelCapabilityDetector
 
 logger = logging.getLogger(__name__)
 
@@ -178,7 +177,7 @@ class CapabilityProfile:
     def is_cloud(self) -> bool:
         return self.tier == ModelTier.CLOUD
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize to dict."""
         return {
             "name": self.name,
@@ -404,10 +403,10 @@ class TaskComplexityClassifier:
     }
 
     @classmethod
-    def classify(cls, task: str, context: Optional[Dict[str, Any]] = None) -> TaskComplexity:
+    def classify(cls, task: str, context: dict[str, Any] | None = None) -> TaskComplexity:
         """Classify task complexity from natural language."""
         task_lower = task.lower()
-        scores: Dict[TaskComplexity, float] = {c: 0.0 for c in TaskComplexity}
+        scores: dict[TaskComplexity, float] = {c: 0.0 for c in TaskComplexity}
 
         # Keyword scoring
         for complexity, keywords in cls._KEYWORDS.items():
@@ -457,7 +456,7 @@ class TaskComplexityClassifier:
         return best
 
     @classmethod
-    def classify_for_autonomous(cls, observation_type: str, data: Dict[str, Any]) -> TaskComplexity:
+    def classify_for_autonomous(cls, observation_type: str, data: dict[str, Any]) -> TaskComplexity:
         """Classify autonomous observation into task complexity."""
         mapping = {
             "memory_trend": TaskComplexity.SIMPLE,
@@ -483,7 +482,7 @@ class RouteDecision:
     task_complexity: TaskComplexity
     recommended: bool  # True if this model can handle the task
     fallback_needed: bool
-    adaptations: List[str]  # What adaptations to apply
+    adaptations: list[str]  # What adaptations to apply
     reason: str
 
 
@@ -499,16 +498,16 @@ class CapabilityRouter:
 
     def __init__(self, profile: CapabilityProfile) -> None:
         self.profile = profile
-        self._call_history: List[Dict[str, Any]] = []
+        self._call_history: list[dict[str, Any]] = []
 
     # -- Public API ------------------------------------------------------------
 
-    def route_task(self, task: str, context: Optional[Dict[str, Any]] = None) -> RouteDecision:
+    def route_task(self, task: str, context: dict[str, Any] | None = None) -> RouteDecision:
         """Determine how to execute a task with the current model."""
         complexity = TaskComplexityClassifier.classify(task, context)
         return self._route_by_complexity(complexity)
 
-    def route_autonomous(self, observation_type: str, data: Dict[str, Any]) -> RouteDecision:
+    def route_autonomous(self, observation_type: str, data: dict[str, Any]) -> RouteDecision:
         """Route an autonomous observation."""
         complexity = TaskComplexityClassifier.classify_for_autonomous(observation_type, data)
         return self._route_by_complexity(complexity)
@@ -542,7 +541,7 @@ class CapabilityRouter:
 
         return prompt
 
-    def adapt_tools(self, available_tools: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def adapt_tools(self, available_tools: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Adapt tool list to model's capability."""
         if self.profile.max_tools_per_call == 0:
             return []
@@ -553,7 +552,7 @@ class CapabilityRouter:
 
         return available_tools
 
-    def adapt_context_budget(self, total_budget: int) -> Dict[str, int]:
+    def adapt_context_budget(self, total_budget: int) -> dict[str, int]:
         """Distribute context budget based on model capability."""
         effective = self.profile.effective_context_length
         actual_budget = min(total_budget, effective)
@@ -633,8 +632,8 @@ class CapabilityRouter:
     def _route_by_complexity(self, complexity: TaskComplexity) -> RouteDecision:
         """Route based on task complexity and model capability."""
         profile = self.profile
-        adaptations: List[str] = []
-        reason_parts: List[str] = []
+        adaptations: list[str] = []
+        reason_parts: list[str] = []
 
         # Check if model can handle this complexity
         can_handle = True

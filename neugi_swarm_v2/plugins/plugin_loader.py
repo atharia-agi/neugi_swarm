@@ -13,27 +13,23 @@ Usage:
 
 from __future__ import annotations
 
-import importlib
-import importlib.util
 import json
 import logging
 import os
 import sys
 import threading
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from plugins.plugin_sdk import (
-    PluginBase,
     PluginContext,
     PluginError,
     PluginManifestSchema,
     PluginMetadata,
     SemVer,
     _set_current_context,
-    check_version_constraint,
     instantiate_plugin,
     resolve_dependencies,
 )
@@ -110,9 +106,9 @@ class PluginDiscovery:
 
     def __init__(
         self,
-        workspace_dir: Optional[str] = None,
-        global_dir: Optional[str] = None,
-        bundled_dir: Optional[str] = None,
+        workspace_dir: str | None = None,
+        global_dir: str | None = None,
+        bundled_dir: str | None = None,
     ) -> None:
         """
         Initialize the discovery system.
@@ -189,7 +185,7 @@ class PluginSandbox:
         """
         self.plugin_name = plugin_name
 
-    def execute(self, fn: Any, *args: Any, timeout: Optional[float] = None, **kwargs: Any) -> Any:
+    def execute(self, fn: Any, *args: Any, timeout: float | None = None, **kwargs: Any) -> Any:
         """
         Execute a function within the sandbox.
 
@@ -252,9 +248,9 @@ class PluginLoader:
 
     def __init__(
         self,
-        base_dir: Optional[str] = None,
-        global_dir: Optional[str] = None,
-        bundled_dir: Optional[str] = None,
+        base_dir: str | None = None,
+        global_dir: str | None = None,
+        bundled_dir: str | None = None,
         neugi_version: str = NEUGI_VERSION,
     ) -> None:
         """
@@ -279,11 +275,11 @@ class PluginLoader:
         self._lock = threading.RLock()
 
         # Hot reload
-        self._watch_thread: Optional[threading.Thread] = None
+        self._watch_thread: threading.Thread | None = None
         self._watch_running = False
         self._watch_interval = 5.0
         self._last_scan: dict[str, float] = {}
-        self._on_reload: Optional[Any] = None
+        self._on_reload: Any | None = None
 
     def discover(self) -> dict[str, PluginManifest]:
         """

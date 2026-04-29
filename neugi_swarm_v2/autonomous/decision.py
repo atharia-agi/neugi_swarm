@@ -19,7 +19,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from autonomous.observer import Observation, ObservationType
 
@@ -55,7 +55,7 @@ class RiskAssessment:
     """Risk analysis for a proposed action."""
 
     score: float = 0.0                  # 0.0-1.0, higher = riskier
-    categories: List[str] = field(default_factory=list)
+    categories: list[str] = field(default_factory=list)
     mitigation: str = ""
     threshold: float = 0.6
 
@@ -69,7 +69,7 @@ class ValueAssessment:
     """Value analysis for a proposed action."""
 
     score: float = 0.0                  # 0.0-1.0, higher = more valuable
-    categories: List[str] = field(default_factory=list)
+    categories: list[str] = field(default_factory=list)
     explanation: str = ""
 
 
@@ -110,7 +110,7 @@ class Decision:
     priority: float = 0.0
     risk: RiskAssessment = field(default_factory=RiskAssessment)
     value: ValueAssessment = field(default_factory=ValueAssessment)
-    action_plan: Dict[str, Any] = field(default_factory=dict)
+    action_plan: dict[str, Any] = field(default_factory=dict)
     reason: str = ""
     created_at: float = field(default_factory=lambda: time.time())
 
@@ -138,7 +138,7 @@ class ProactiveDecisionEngine:
     """
 
     # Mapping from observation type to default decision type
-    _OBS_TO_DECISION: Dict[ObservationType, DecisionType] = {
+    _OBS_TO_DECISION: dict[ObservationType, DecisionType] = {
         ObservationType.MEMORY_TREND: DecisionType.CONSOLIDATE_MEMORY,
         ObservationType.GOAL_STUCK: DecisionType.DECOMPOSE_GOAL,
         ObservationType.GOAL_BLOCKED: DecisionType.RESOLVE_BLOCKER,
@@ -153,14 +153,14 @@ class ProactiveDecisionEngine:
 
     def __init__(
         self,
-        criteria: Optional[DecisionCriteria] = None,
+        criteria: DecisionCriteria | None = None,
         today_action_count: int = 0,
-        capability_profile: Optional[Any] = None,
+        capability_profile: Any | None = None,
     ) -> None:
         self.capability_profile = capability_profile
         self.criteria = criteria or self._adapt_criteria(DecisionCriteria())
         self.today_action_count = today_action_count
-        self._decision_history: List[Decision] = []
+        self._decision_history: list[Decision] = []
 
     def _adapt_criteria(self, base: DecisionCriteria) -> DecisionCriteria:
         """Adapt decision criteria based on model capability.
@@ -198,7 +198,7 @@ class ProactiveDecisionEngine:
 
     # -- Public API ------------------------------------------------------------
 
-    def decide(self, observations: List[Observation]) -> List[Decision]:
+    def decide(self, observations: list[Observation]) -> list[Decision]:
         """Evaluate observations and produce ranked decisions.
 
         Args:
@@ -208,7 +208,7 @@ class ProactiveDecisionEngine:
             List of decisions sorted by priority descending.
             Only APPROVED decisions should be executed.
         """
-        decisions: List[Decision] = []
+        decisions: list[Decision] = []
 
         for obs in observations:
             decision = self._evaluate_observation(obs)
@@ -230,7 +230,7 @@ class ProactiveDecisionEngine:
 
         return decisions
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get decision engine statistics."""
         total = len(self._decision_history)
         approved = sum(1 for d in self._decision_history if d.outcome == DecisionOutcome.APPROVED)
@@ -250,7 +250,7 @@ class ProactiveDecisionEngine:
 
     # -- Evaluation Logic ------------------------------------------------------
 
-    def _evaluate_observation(self, obs: Observation) -> Optional[Decision]:
+    def _evaluate_observation(self, obs: Observation) -> Decision | None:
         """Evaluate a single observation and produce a decision."""
 
         # Filter: confidence too low
@@ -402,9 +402,9 @@ class ProactiveDecisionEngine:
         obs: Observation,
         outcome: DecisionOutcome,
         reason: str,
-        dec_type: Optional[DecisionType] = None,
-        risk: Optional[RiskAssessment] = None,
-        value: Optional[ValueAssessment] = None,
+        dec_type: DecisionType | None = None,
+        risk: RiskAssessment | None = None,
+        value: ValueAssessment | None = None,
         priority: float = 0.0,
     ) -> Decision:
         """Create a Decision object."""

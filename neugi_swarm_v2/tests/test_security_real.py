@@ -1,21 +1,21 @@
 """Real security tests — validate actual security behavior, not just imports."""
-import sys
 import os
-import unittest
+import sys
 import tempfile
+import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from security import (
-    ExecutionSandbox,
-    SandboxConfig,
-    SandboxViolation,
-    CommandValidator,
-    SafetyLevel,
-    ExploitPreventionEngine,
-)
 from governance import ApprovalGate, ApprovalRule
 from governance.approval import RiskLevel
+from security import (
+    CommandValidator,
+    ExecutionSandbox,
+    ExploitPreventionEngine,
+    SafetyLevel,
+    SandboxConfig,
+    SandboxViolation,
+)
 
 
 class TestExecutionSandboxBehavior(unittest.TestCase):
@@ -196,8 +196,8 @@ class TestToolExecutorSecurityIntegration(unittest.TestCase):
     """Test that ToolExecutor with security components blocks dangerous tools."""
 
     def test_blocks_system_command_via_validator(self):
-        from tools.tool_registry import ToolRegistry
         from tools.tool_executor import ToolExecutor
+        from tools.tool_registry import ToolRegistry
 
         registry = ToolRegistry()
         validator = CommandValidator()
@@ -209,8 +209,8 @@ class TestToolExecutorSecurityIntegration(unittest.TestCase):
         self.assertIsInstance(executor.command_validator, CommandValidator)
 
     def test_blocks_complex_tool_via_approval_gate(self):
-        from tools.tool_registry import ToolRegistry
         from tools.tool_executor import ToolExecutor
+        from tools.tool_registry import ToolRegistry
 
         registry = ToolRegistry()
         gate_db = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
@@ -223,8 +223,8 @@ class TestToolExecutorSecurityIntegration(unittest.TestCase):
         # Don't delete on Windows — file locked by SQLite
 
     def test_exploit_prevention_scans_input(self):
-        from tools.tool_registry import ToolRegistry
         from tools.tool_executor import ToolExecutor
+        from tools.tool_registry import ToolRegistry
 
         registry = ToolRegistry()
         engine = ExploitPreventionEngine()
@@ -242,7 +242,7 @@ class TestEvalReplacement(unittest.TestCase):
         builtins_path = os.path.join(
             os.path.dirname(__file__), "..", "tools", "builtins.py"
         )
-        with open(builtins_path, "r", encoding="utf-8") as f:
+        with open(builtins_path, encoding="utf-8") as f:
             content = f.read()
         lines = content.split("\n")
         for i, line in enumerate(lines):
@@ -266,7 +266,7 @@ class TestEvalReplacement(unittest.TestCase):
         builtins_path = os.path.join(
             os.path.dirname(__file__), "..", "tools", "builtins.py"
         )
-        with open(builtins_path, "r", encoding="utf-8") as f:
+        with open(builtins_path, encoding="utf-8") as f:
             content = f.read()
         lines = content.split("\n")
         for i, line in enumerate(lines):

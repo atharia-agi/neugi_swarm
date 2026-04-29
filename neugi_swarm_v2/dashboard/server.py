@@ -17,22 +17,20 @@ Features:
 
 from __future__ import annotations
 
-import asyncio
 import gzip
-import hashlib
 import hmac
 import json
 import logging
 import os
 import secrets
-import time
-import traceback
-from dataclasses import dataclass, field
-from http.server import HTTPServer, BaseHTTPRequestHandler
-from pathlib import Path
-from typing import Any, Callable, Optional
-from urllib.parse import urlparse, parse_qs
 import threading
+import time
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from pathlib import Path
+from typing import Any
+from urllib.parse import parse_qs, urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +114,7 @@ class SessionTokenManager:
         }
         return token
 
-    def validate_token(self, token: str) -> Optional[dict[str, Any]]:
+    def validate_token(self, token: str) -> dict[str, Any] | None:
         session = self._tokens.get(token)
         if session is None:
             return None
@@ -144,8 +142,7 @@ class SessionTokenManager:
 
 # -- WebSocket Server (RFC 6455 stdlib implementation) ----------------------
 
-from .websocket import WebSocketServer, WebSocketHandler
-
+from .websocket import WebSocketHandler, WebSocketServer
 
 # -- Dashboard Server --------------------------------------------------------
 
@@ -163,7 +160,7 @@ class DashboardServer:
     def __init__(
         self,
         swarm: Any = None,
-        config: Optional[DashboardConfig] = None,
+        config: DashboardConfig | None = None,
         **kwargs,
     ):
         self.swarm = swarm
@@ -174,8 +171,8 @@ class DashboardServer:
         )
         self.session_manager = SessionTokenManager(self.config.session_token_ttl)
         self.broadcaster = WebSocketServer()
-        self._server: Optional[HTTPServer] = None
-        self._thread: Optional[threading.Thread] = None
+        self._server: HTTPServer | None = None
+        self._thread: threading.Thread | None = None
         self._running = False
 
         if not self.config.static_dir:
@@ -333,7 +330,7 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         self,
         status: int,
         data: Any,
-        headers: Optional[dict[str, str]] = None,
+        headers: dict[str, str] | None = None,
     ) -> None:
         body = json.dumps(data, indent=2, default=str).encode("utf-8")
 
@@ -483,10 +480,10 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         ws = WebSocketHandler(self)
         if not ws.handshake():
             return
-        
+
         # Register with broadcaster
         self.server_instance.broadcaster.add_client(ws)
-        
+
         try:
             # Send initial connection acknowledgment
             ws.send_text(json.dumps({
@@ -494,39 +491,39 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
                 "message": "WebSocket connected to NEUGI v2",
                 "timestamp": time.time(),
             }))
-            
+
             # Listen for messages
             for message in ws.receive_messages(timeout=1.0):
                 try:
                     data = json.loads(message)
                     msg_type = data.get("type", "")
-                    
+
                     if msg_type == "subscribe":
                         channel = data.get("channel", "all")
                         ws.send_text(json.dumps({
                             "type": "subscribed",
                             "channel": channel,
                         }))
-                    
+
                     elif msg_type == "ping":
                         ws.send_text(json.dumps({"type": "pong"}))
-                    
+
                     elif msg_type == "chat":
                         # Handle chat messages via REST API
                         pass
-                    
+
                     else:
                         ws.send_text(json.dumps({
                             "type": "error",
                             "message": f"Unknown message type: {msg_type}",
                         }))
-                        
+
                 except json.JSONDecodeError:
                     ws.send_text(json.dumps({
                         "type": "error",
                         "message": "Invalid JSON",
                     }))
-                    
+
         except Exception as e:
             logger.debug("WebSocket handler error: %s", e)
         finally:

@@ -1,9 +1,12 @@
 """Tests for Browser Tool and Computer Use."""
-import sys, os, unittest
+import os
+import sys
+import unittest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tools.browser import BrowserTool, BrowserConfig, BrowserAction
-from computer_use.controller import ComputerUseController, ActionType, ComputerAction, SafetyChecker
+from computer_use.controller import ActionType, ComputerAction, ComputerUseController, SafetyChecker
+from tools.browser import BrowserTool
 
 
 class TestBrowserTool(unittest.TestCase):
@@ -61,12 +64,12 @@ class TestComputerUse(unittest.TestCase):
 
     def test_safety_checker(self):
         checker = SafetyChecker()
-        
+
         # Safe action
         safe = ComputerAction(action=ActionType.CLICK, selector="#button")
         result = checker.check(safe)
         self.assertTrue(result["allowed"])
-        
+
         # Destructive action
         destructive = ComputerAction(action=ActionType.FILL, text="rm -rf /")
         result = checker.check(destructive)

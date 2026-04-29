@@ -13,10 +13,9 @@ from __future__ import annotations
 
 import json
 import uuid
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from enum import IntEnum
-from typing import Any, Optional, Union
-
+from typing import Any, Union
 
 # -- JSON-RPC 2.0 Error Codes ------------------------------------------------
 
@@ -52,7 +51,7 @@ class MCPError:
 
     code: int
     message: str
-    data: Optional[Any] = None
+    data: Any | None = None
 
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {"code": self.code, "message": self.message}
@@ -83,8 +82,8 @@ class JSONRPCRequest:
     """
 
     method: str
-    id: Optional[Union[str, int]] = None
-    params: Optional[dict[str, Any]] = None
+    id: str | int | None = None
+    params: dict[str, Any] | None = None
     jsonrpc: str = "2.0"
 
     def to_dict(self) -> dict[str, Any]:
@@ -122,9 +121,9 @@ class JSONRPCResponse:
         error: Error object (mutually exclusive with result).
     """
 
-    id: Optional[Union[str, int]]
-    result: Optional[Any] = None
-    error: Optional[MCPError] = None
+    id: str | int | None
+    result: Any | None = None
+    error: MCPError | None = None
     jsonrpc: str = "2.0"
 
     def to_dict(self) -> dict[str, Any]:
@@ -140,13 +139,13 @@ class JSONRPCResponse:
 
     @classmethod
     def success(
-        cls, request_id: Optional[Union[str, int]], result: Any
+        cls, request_id: str | int | None, result: Any
     ) -> JSONRPCResponse:
         return cls(id=request_id, result=result)
 
     @classmethod
     def error(
-        cls, request_id: Optional[Union[str, int]], err: MCPError
+        cls, request_id: str | int | None, err: MCPError
     ) -> JSONRPCResponse:
         return cls(id=request_id, error=err)
 
@@ -162,7 +161,7 @@ class JSONRPCNotification:
     """
 
     method: str
-    params: Optional[dict[str, Any]] = None
+    params: dict[str, Any] | None = None
     jsonrpc: str = "2.0"
 
     def to_dict(self) -> dict[str, Any]:
@@ -211,11 +210,11 @@ class ServerCapabilities:
         experimental: Experimental feature flags.
     """
 
-    tools: Optional[dict[str, Any]] = None
-    resources: Optional[dict[str, Any]] = None
-    prompts: Optional[dict[str, Any]] = None
-    logging: Optional[dict[str, Any]] = None
-    experimental: Optional[dict[str, Any]] = None
+    tools: dict[str, Any] | None = None
+    resources: dict[str, Any] | None = None
+    prompts: dict[str, Any] | None = None
+    logging: dict[str, Any] | None = None
+    experimental: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {}
@@ -268,7 +267,7 @@ class InitializeResult:
     protocol_version: str
     capabilities: ServerCapabilities
     server_info: Implementation
-    instructions: Optional[str] = None
+    instructions: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {
@@ -379,7 +378,7 @@ class Tool:
     name: str
     description: str
     input_schema: dict[str, Any]
-    annotations: Optional[dict[str, Any]] = None
+    annotations: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {
@@ -436,7 +435,7 @@ class CursorResult:
     """
 
     items: list[Any]
-    next_cursor: Optional[str] = None
+    next_cursor: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {}
@@ -461,9 +460,9 @@ class Resource:
 
     uri: str
     name: str
-    description: Optional[str] = None
-    mime_type: Optional[str] = None
-    size: Optional[int] = None
+    description: str | None = None
+    mime_type: str | None = None
+    size: int | None = None
 
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {
@@ -502,8 +501,8 @@ class ResourceTemplate:
 
     uri_template: str
     name: str
-    description: Optional[str] = None
-    mime_type: Optional[str] = None
+    description: str | None = None
+    mime_type: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {
@@ -538,9 +537,9 @@ class ResourceContents:
     """
 
     uri: str
-    text: Optional[str] = None
-    blob: Optional[str] = None
-    mime_type: Optional[str] = None
+    text: str | None = None
+    blob: str | None = None
+    mime_type: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {"uri": self.uri}
@@ -566,7 +565,7 @@ class PromptArgument:
     """
 
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     required: bool = False
 
     def to_dict(self) -> dict[str, Any]:
@@ -650,7 +649,7 @@ class PromptResult:
     """
 
     messages: list[PromptMessage]
-    description: Optional[str] = None
+    description: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {
@@ -673,9 +672,9 @@ class ProgressNotification:
         total: Optional total value.
     """
 
-    progress_token: Union[str, int]
+    progress_token: str | int
     progress: float
-    total: Optional[float] = None
+    total: float | None = None
 
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {

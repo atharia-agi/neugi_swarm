@@ -29,11 +29,11 @@ import base64
 import hashlib
 import json
 import logging
-import select
 import socket
 import struct
 import threading
-from typing import Any, Callable, Generator, List, Optional
+from collections.abc import Generator
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +64,7 @@ class WebSocketHandler:
             http_handler: The BaseHTTPRequestHandler instance
         """
         self._request = http_handler
-        self._socket: Optional[socket.socket] = None
+        self._socket: socket.socket | None = None
         self._closed = False
         self._lock = threading.Lock()
 
@@ -80,31 +80,31 @@ class WebSocketHandler:
             True if handshake successful
         """
         headers = self._request.headers
-        
+
         # Check required headers
         key = headers.get("Sec-WebSocket-Key", "")
         version = headers.get("Sec-WebSocket-Version", "")
-        
+
         if not key or version != "13":
             self._send_http_error(400, "Bad Request: Invalid WebSocket headers")
             return False
-        
+
         # Compute accept key
         magic = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
         accept = base64.b64encode(
             hashlib.sha1((key + magic).encode()).digest()
         ).decode()
-        
+
         # Send handshake response
         self._request.send_response(101, "Switching Protocols")
         self._request.send_header("Upgrade", "websocket")
         self._request.send_header("Connection", "Upgrade")
         self._request.send_header("Sec-WebSocket-Accept", accept)
         self._request.end_headers()
-        
+
         # Get underlying socket
         self._socket = self._request.connection
-        
+
         logger.debug("WebSocket handshake completed")
         return True
 
@@ -135,15 +135,15 @@ class WebSocketHandler:
         """Encode and send a WebSocket frame."""
         if self._socket is None or self._closed:
             return False
-        
+
         with self._lock:
             try:
                 length = len(payload)
-                
+
                 # First byte: FIN=1, RSV=0, opcode
                 frame = bytearray()
                 frame.append(0x80 | opcode)
-                
+
                 # Mask bit = 0 (server-to-client), payload length
                 if length < 126:
                     frame.append(length)
@@ -153,19 +153,19 @@ class WebSocketHandler:
                 else:
                     frame.append(127)
                     frame.extend(struct.pack("!Q", length))
-                
+
                 # Payload (not masked for server)
                 frame.extend(payload)
-                
+
                 self._socket.sendall(bytes(frame))
                 return True
-                
+
             except Exception as e:
                 logger.debug("WebSocket send failed: %s", e)
                 self._closed = True
                 return False
 
-    def receive_messages(self, timeout: Optional[float] = None) -> Generator[str, None, None]:
+    def receive_messages(self, timeout: float | None = None) -> Generator[str, None, None]:
         """
         Yield decoded text messages until connection closes.
         
@@ -190,28 +190,28 @@ class WebSocketHandler:
                 logger.debug("WebSocket receive exception: %s", e)
                 break
 
-    def _read_frame(self, timeout: Optional[float] = None) -> Optional[Any]:
+    def _read_frame(self, timeout: float | None = None) -> Any | None:
         """Read and decode a single WebSocket frame."""
         if self._socket is None:
             raise WebSocketError("Socket not connected")
-        
+
         # Set timeout for reading
         if timeout is not None:
             self._socket.settimeout(timeout)
-        
+
         # Read first 2 bytes minimum
         header = self._recv_exactly(2)
         if header is None:
             raise WebSocketError("Connection closed")
-        
+
         byte1, byte2 = header[0], header[1]
-        
+
         fin = (byte1 >> 7) & 1
         rsv = (byte1 >> 4) & 0x7
         opcode = byte1 & 0xF
         masked = (byte2 >> 7) & 1
         payload_len = byte2 & 0x7F
-        
+
         # Extended payload length
         if payload_len == 126:
             ext = self._recv_exactly(2)
@@ -223,33 +223,33 @@ class WebSocketHandler:
             if ext is None:
                 raise WebSocketError("Connection closed")
             payload_len = struct.unpack("!Q", ext)[0]
-        
+
         # Mask key (client-to-server must be masked)
         mask_key = None
         if masked:
             mask_key = self._recv_exactly(4)
             if mask_key is None:
                 raise WebSocketError("Connection closed")
-        
+
         # Read payload
         if payload_len > 10 * 1024 * 1024:  # 10MB max
             raise WebSocketError("Payload too large")
-        
+
         payload = self._recv_exactly(payload_len)
         if payload is None:
             raise WebSocketError("Connection closed")
-        
+
         # Unmask if needed
         if mask_key:
             payload = bytes(b ^ mask_key[i % 4] for i, b in enumerate(payload))
-        
+
         # Handle opcodes
         if opcode == self.OP_TEXT:
             return payload.decode("utf-8", errors="replace")
-        
+
         elif opcode == self.OP_BINARY:
             return payload  # Return bytes for binary
-        
+
         elif opcode == self.OP_CLOSE:
             self._closed = True
             if len(payload) >= 2:
@@ -259,25 +259,25 @@ class WebSocketHandler:
             # Send close acknowledgment
             self.send_close()
             return b"__close__"
-        
+
         elif opcode == self.OP_PING:
             # Respond with pong
             self.send_pong(payload)
             return None
-        
+
         elif opcode == self.OP_PONG:
             # Just acknowledge
             return None
-        
+
         elif opcode == self.OP_CONT:
             # Continuation frames not fully implemented
             return None
-        
+
         else:
             logger.warning("Unknown WebSocket opcode: %d", opcode)
             return None
 
-    def _recv_exactly(self, n: int) -> Optional[bytes]:
+    def _recv_exactly(self, n: int) -> bytes | None:
         """Receive exactly n bytes."""
         data = bytearray()
         while len(data) < n:
@@ -286,7 +286,7 @@ class WebSocketHandler:
                 if not chunk:
                     return None
                 data.extend(chunk)
-            except socket.timeout:
+            except TimeoutError:
                 return None
             except Exception as e:
                 logger.debug("Socket recv error: %s", e)
@@ -318,10 +318,10 @@ class WebSocketServer:
     """
 
     def __init__(self):
-        self._clients: List[WebSocketHandler] = []
+        self._clients: list[WebSocketHandler] = []
         self._lock = threading.Lock()
         self._running = False
-        self._broadcast_thread: Optional[threading.Thread] = None
+        self._broadcast_thread: threading.Thread | None = None
 
     def add_client(self, handler: WebSocketHandler) -> None:
         """Add a connected client."""
@@ -346,23 +346,23 @@ class WebSocketServer:
         data = json.dumps(message)
         sent = 0
         dead = []
-        
+
         with self._lock:
             clients = self._clients.copy()
-        
+
         for client in clients:
             if client.send_text(data):
                 sent += 1
             else:
                 dead.append(client)
-        
+
         # Remove dead clients
         if dead:
             with self._lock:
                 for client in dead:
                     if client in self._clients:
                         self._clients.remove(client)
-        
+
         return sent
 
     def broadcast_event(self, event_type: str, payload: dict[str, Any]) -> int:
@@ -387,11 +387,11 @@ class WebSocketServer:
     def stop(self) -> None:
         """Stop and close all connections."""
         self._running = False
-        
+
         with self._lock:
             clients = self._clients.copy()
             self._clients.clear()
-        
+
         for client in clients:
             client.close()
 
@@ -402,15 +402,15 @@ class WebSocketServer:
             time.sleep(30)
             if not self._running:
                 break
-            
+
             with self._lock:
                 clients = self._clients.copy()
-            
+
             dead = []
             for client in clients:
                 if not client.send_ping():
                     dead.append(client)
-            
+
             if dead:
                 with self._lock:
                     for client in dead:

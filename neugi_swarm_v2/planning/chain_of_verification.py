@@ -28,9 +28,9 @@ from __future__ import annotations
 import logging
 import time
 import uuid
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Set
 
 logger = logging.getLogger(__name__)
 
@@ -131,11 +131,11 @@ class CoVResult:
 
     original_response: str
     final_response: str
-    questions: List[VerificationQuestion] = field(default_factory=list)
-    answers: List[VerificationAnswer] = field(default_factory=list)
+    questions: list[VerificationQuestion] = field(default_factory=list)
+    answers: list[VerificationAnswer] = field(default_factory=list)
     revisions: int = 0
     confidence: float = 0.0
-    discrepancies: List[str] = field(default_factory=list)
+    discrepancies: list[str] = field(default_factory=list)
     state: VerificationState = VerificationState.INITIAL_RESPONSE
     iterations: int = 0
     total_time: float = 0.0
@@ -160,7 +160,7 @@ class ChainOfVerification:
     def __init__(
         self,
         llm_callback: Callable[[str], Awaitable[str]],
-        config: Optional[CoVConfig] = None,
+        config: CoVConfig | None = None,
     ) -> None:
         self.llm_callback = llm_callback
         self.config = config or CoVConfig()
@@ -170,18 +170,9 @@ class ChainOfVerification:
         self,
         query: str,
         context: str = "",
-        custom_question_generator: Optional[
-            Callable[[str, str], Awaitable[List[VerificationQuestion]]]
-        ] = None,
-        custom_verifier: Optional[
-            Callable[[VerificationQuestion, str], Awaitable[VerificationAnswer]]
-        ] = None,
-        custom_comparator: Optional[
-            Callable[
-                [List[VerificationQuestion], List[VerificationAnswer], str],
-                Awaitable[tuple[float, List[str]]],
-            ]
-        ] = None,
+        custom_question_generator: Callable[[str, str], Awaitable[list[VerificationQuestion]]] | None = None,
+        custom_verifier: Callable[[VerificationQuestion, str], Awaitable[VerificationAnswer]] | None = None,
+        custom_comparator: Callable[[list[VerificationQuestion], list[VerificationAnswer], str], Awaitable[tuple[float, list[str]]]] | None = None,
     ) -> CoVResult:
         """Run chain of verification on a query.
 
@@ -286,8 +277,8 @@ class ChainOfVerification:
         self,
         query: str,
         response: str,
-        custom_generator: Optional[Callable[[str, str], Awaitable[List[VerificationQuestion]]]],
-    ) -> List[VerificationQuestion]:
+        custom_generator: Callable[[str, str], Awaitable[list[VerificationQuestion]]] | None,
+    ) -> list[VerificationQuestion]:
         if custom_generator is not None:
             return await custom_generator(query, response)
 
@@ -301,11 +292,11 @@ class ChainOfVerification:
 
     async def _verify_questions(
         self,
-        questions: List[VerificationQuestion],
+        questions: list[VerificationQuestion],
         context: str,
-        custom_verifier: Optional[Callable[[VerificationQuestion, str], Awaitable[VerificationAnswer]]],
-    ) -> List[VerificationAnswer]:
-        answers: List[VerificationAnswer] = []
+        custom_verifier: Callable[[VerificationQuestion, str], Awaitable[VerificationAnswer]] | None,
+    ) -> list[VerificationAnswer]:
+        answers: list[VerificationAnswer] = []
 
         for question in questions:
             if custom_verifier is not None:
@@ -338,20 +329,15 @@ class ChainOfVerification:
 
     async def _compare_and_score(
         self,
-        questions: List[VerificationQuestion],
-        answers: List[VerificationAnswer],
+        questions: list[VerificationQuestion],
+        answers: list[VerificationAnswer],
         response: str,
-        custom_comparator: Optional[
-            Callable[
-                [List[VerificationQuestion], List[VerificationAnswer], str],
-                Awaitable[tuple[float, List[str]]],
-            ]
-        ],
-    ) -> tuple[float, List[str]]:
+        custom_comparator: Callable[[list[VerificationQuestion], list[VerificationAnswer], str], Awaitable[tuple[float, list[str]]]] | None,
+    ) -> tuple[float, list[str]]:
         if custom_comparator is not None:
             return await custom_comparator(questions, answers, response)
 
-        discrepancies: List[str] = []
+        discrepancies: list[str] = []
         supporting = 0
         total = len(answers)
 
@@ -384,9 +370,9 @@ class ChainOfVerification:
         self,
         query: str,
         original: str,
-        questions: List[VerificationQuestion],
-        answers: List[VerificationAnswer],
-        discrepancies: List[str],
+        questions: list[VerificationQuestion],
+        answers: list[VerificationAnswer],
+        discrepancies: list[str],
     ) -> str:
         prompt = self._build_revision_prompt(
             query, original, questions, answers, discrepancies
@@ -447,8 +433,8 @@ class ChainOfVerification:
 
     def _build_comparison_prompt(
         self,
-        questions: List[VerificationQuestion],
-        answers: List[VerificationAnswer],
+        questions: list[VerificationQuestion],
+        answers: list[VerificationAnswer],
         response: str,
     ) -> str:
         qa_pairs = "\n".join(
@@ -469,9 +455,9 @@ class ChainOfVerification:
         self,
         query: str,
         original: str,
-        questions: List[VerificationQuestion],
-        answers: List[VerificationAnswer],
-        discrepancies: List[str],
+        questions: list[VerificationQuestion],
+        answers: list[VerificationAnswer],
+        discrepancies: list[str],
     ) -> str:
         verified = "\n".join(
             f"- {q.question} -> {a.answer} ({'confirmed' if a.supports_claim else 'disputed'})"
@@ -491,8 +477,8 @@ class ChainOfVerification:
             f"Revised response:"
         )
 
-    def _parse_questions(self, text: str) -> List[VerificationQuestion]:
-        questions: List[VerificationQuestion] = []
+    def _parse_questions(self, text: str) -> list[VerificationQuestion]:
+        questions: list[VerificationQuestion] = []
         lines = text.strip().split("\n")
 
         current_claim = ""
@@ -524,8 +510,8 @@ class ChainOfVerification:
 
         return questions[: self.config.max_questions]
 
-    def _fallback_parse_questions(self, text: str) -> List[VerificationQuestion]:
-        questions: List[VerificationQuestion] = []
+    def _fallback_parse_questions(self, text: str) -> list[VerificationQuestion]:
+        questions: list[VerificationQuestion] = []
         sentences = [
             s.strip()
             for s in text.replace("\n", " ").split(".")
@@ -585,8 +571,8 @@ class ChainOfVerification:
             discrepancy=discrepancy,
         )
 
-    def _parse_discrepancies(self, text: str) -> List[str]:
-        discrepancies: List[str] = []
+    def _parse_discrepancies(self, text: str) -> list[str]:
+        discrepancies: list[str] = []
         lines = text.strip().split("\n")
 
         for line in lines:

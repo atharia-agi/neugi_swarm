@@ -5,11 +5,11 @@ worker assignment, parallel execution, result aggregation, and error recovery.
 
 import logging
 import time
-import uuid
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any
 
 from .agent import Agent, AgentRole, AgentStatus
 from .agent_manager import AgentManager
@@ -25,7 +25,7 @@ class WorkerResult:
     subtask: str
     output: Any
     success: bool
-    error: Optional[str]
+    error: str | None
     duration_seconds: float
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
@@ -39,7 +39,7 @@ class OrchestratorReport:
     failed: int
     retried: int
     total_duration_seconds: float
-    worker_results: List[WorkerResult]
+    worker_results: list[WorkerResult]
     synthesis: str
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
@@ -64,19 +64,19 @@ class Orchestrator:
         self.max_workers = max_workers
         self.max_retries = max_retries
         self.retry_delay = retry_delay
-        self._decomposer: Optional[Callable[[str], List[str]]] = None
-        self._synthesizer: Optional[Callable[[str, List[WorkerResult]], str]] = None
+        self._decomposer: Callable[[str], list[str]] | None = None
+        self._synthesizer: Callable[[str, list[WorkerResult]], str] | None = None
 
     # ------------------------------------------------------------------
     # Custom hooks
     # ------------------------------------------------------------------
 
-    def set_decomposer(self, func: Callable[[str], List[str]]) -> None:
+    def set_decomposer(self, func: Callable[[str], list[str]]) -> None:
         """Set a custom task decomposition function."""
         self._decomposer = func
 
     def set_synthesizer(
-        self, func: Callable[[str, List[WorkerResult]], str]
+        self, func: Callable[[str, list[WorkerResult]], str]
     ) -> None:
         """Set a custom result synthesis function."""
         self._synthesizer = func
@@ -85,7 +85,7 @@ class Orchestrator:
     # Main orchestration
     # ------------------------------------------------------------------
 
-    def run(self, task: str, context: Optional[Dict[str, Any]] = None) -> OrchestratorReport:
+    def run(self, task: str, context: dict[str, Any] | None = None) -> OrchestratorReport:
         """
         Execute the full orchestrator pipeline:
         1. Decompose task into subtasks
@@ -98,7 +98,7 @@ class Orchestrator:
         subtasks = self._decompose(task)
         assignments = self._assign_workers(subtasks)
 
-        results: List[WorkerResult] = []
+        results: list[WorkerResult] = []
         retried = 0
 
         # First pass: parallel execution
@@ -150,13 +150,13 @@ class Orchestrator:
     # Decomposition
     # ------------------------------------------------------------------
 
-    def _decompose(self, task: str) -> List[str]:
+    def _decompose(self, task: str) -> list[str]:
         """Break a task into subtasks."""
         if self._decomposer:
             return self._decomposer(task)
         return self._default_decompose(task)
 
-    def _default_decompose(self, task: str) -> List[str]:
+    def _default_decompose(self, task: str) -> list[str]:
         """Default decomposition: research, plan, implement, review."""
         return [
             f"Research and analyze: {task}",
@@ -170,8 +170,8 @@ class Orchestrator:
     # ------------------------------------------------------------------
 
     def _assign_workers(
-        self, subtasks: List[str]
-    ) -> List[Tuple[str, Agent]]:
+        self, subtasks: list[str]
+    ) -> list[tuple[str, Agent]]:
         """Match subtasks to agents by role and availability."""
         assignments = []
         for subtask in subtasks:
@@ -181,8 +181,8 @@ class Orchestrator:
         return assignments
 
     def _reassign_workers(
-        self, failed_pairs: List[Tuple[str, str]]
-    ) -> List[Tuple[str, Agent]]:
+        self, failed_pairs: list[tuple[str, str]]
+    ) -> list[tuple[str, Agent]]:
         """Reassign failed subtasks to different agents."""
         assignments = []
         for subtask, _ in failed_pairs:
@@ -192,8 +192,8 @@ class Orchestrator:
         return assignments
 
     def _best_agent_for_task(
-        self, task: str, exclude_ids: Optional[set] = None
-    ) -> Optional[Agent]:
+        self, task: str, exclude_ids: set | None = None
+    ) -> Agent | None:
         """Find the best idle agent for a task."""
         exclude = exclude_ids or set()
         candidates = [
@@ -233,11 +233,11 @@ class Orchestrator:
 
     def _execute_workers(
         self,
-        assignments: List[Tuple[str, Agent]],
-        context: Optional[Dict[str, Any]],
-    ) -> List[WorkerResult]:
+        assignments: list[tuple[str, Agent]],
+        context: dict[str, Any] | None,
+    ) -> list[WorkerResult]:
         """Execute assigned workers, using threads for parallelism."""
-        results: List[WorkerResult] = []
+        results: list[WorkerResult] = []
         if not assignments:
             return results
 
@@ -269,7 +269,7 @@ class Orchestrator:
         self,
         subtask: str,
         agent: Agent,
-        context: Optional[Dict[str, Any]],
+        context: dict[str, Any] | None,
     ) -> WorkerResult:
         start = time.monotonic()
         try:
@@ -301,13 +301,13 @@ class Orchestrator:
     # Synthesis
     # ------------------------------------------------------------------
 
-    def _synthesize(self, task: str, results: List[WorkerResult]) -> str:
+    def _synthesize(self, task: str, results: list[WorkerResult]) -> str:
         """Combine worker outputs into a final answer."""
         if self._synthesizer:
             return self._synthesizer(task, results)
         return self._default_synthesize(task, results)
 
-    def _default_synthesize(self, task: str, results: List[WorkerResult]) -> str:
+    def _default_synthesize(self, task: str, results: list[WorkerResult]) -> str:
         parts = []
         for r in results:
             status = "OK" if r.success else "FAILED"
@@ -327,8 +327,8 @@ class Orchestrator:
     def run_with_progress(
         self,
         task: str,
-        progress_callback: Optional[Callable[[str, float], None]] = None,
-        context: Optional[Dict[str, Any]] = None,
+        progress_callback: Callable[[str, float], None] | None = None,
+        context: dict[str, Any] | None = None,
     ) -> OrchestratorReport:
         """Run orchestration with progress updates via callback."""
         subtasks = self._decompose(task)
@@ -340,7 +340,7 @@ class Orchestrator:
         if progress_callback:
             progress_callback("assigned", 0.2)
 
-        results: List[WorkerResult] = []
+        results: list[WorkerResult] = []
         for i, (subtask, agent) in enumerate(assignments):
             result = self._run_worker(subtask, agent, context)
             results.append(result)

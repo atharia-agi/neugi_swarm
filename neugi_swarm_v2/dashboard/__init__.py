@@ -15,7 +15,7 @@ Usage:
 
 from __future__ import annotations
 
-from neugi_swarm_v2.dashboard.server import DashboardServer, DashboardConfig
+from neugi_swarm_v2.dashboard.server import DashboardConfig, DashboardServer
 
 __all__ = [
     "DashboardServer",

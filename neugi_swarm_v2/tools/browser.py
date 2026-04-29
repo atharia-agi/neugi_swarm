@@ -36,13 +36,12 @@ Usage:
 from __future__ import annotations
 
 import base64
-import json
 import logging
 import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -66,11 +65,11 @@ class DOMElement:
     tag: str
     selector: str
     text: str = ""
-    attributes: Dict[str, str] = field(default_factory=dict)
-    children: List["DOMElement"] = field(default_factory=list)
+    attributes: dict[str, str] = field(default_factory=dict)
+    children: list[DOMElement] = field(default_factory=list)
     clickable: bool = False
     input_type: str = ""
-    bounding_box: Optional[Dict[str, float]] = None
+    bounding_box: dict[str, float] | None = None
 
 
 @dataclass
@@ -92,13 +91,13 @@ class BrowserToolError(Exception):
 class BrowserTool:
     """Tiered browser automation tool."""
 
-    def __init__(self, config: Optional[BrowserConfig] = None):
+    def __init__(self, config: BrowserConfig | None = None):
         self.config = config or BrowserConfig()
         self._playwright = None
         self._browser = None
         self._page = None
         self._context = None
-        self._action_history: List[BrowserAction] = []
+        self._action_history: list[BrowserAction] = []
         self._screenshot_dir = Path(self.config.screenshot_dir or tempfile.gettempdir()) / "neugi_browser"
         self._screenshot_dir.mkdir(parents=True, exist_ok=True)
 
@@ -118,10 +117,10 @@ class BrowserTool:
         """Get or create browser instance."""
         if self._browser is not None:
             return self._browser
-        
+
         self._ensure_playwright()
         browser_type = getattr(self._playwright, self.config.browser_type, self._playwright.chromium)
-        
+
         launch_options = {"headless": self.config.headless}
         if self.config.stealth_mode:
             launch_options["args"] = [
@@ -129,7 +128,7 @@ class BrowserTool:
                 "--disable-web-security",
                 "--disable-features=IsolateOrigins,site-per-process"
             ]
-        
+
         self._browser = browser_type.launch(**launch_options)
         return self._browser
 
@@ -137,7 +136,7 @@ class BrowserTool:
         """Get or create page."""
         if self._page is not None:
             return self._page
-        
+
         browser = self._get_browser()
         context_options = {
             "viewport": {
@@ -147,7 +146,7 @@ class BrowserTool:
         }
         if self.config.user_agent:
             context_options["user_agent"] = self.config.user_agent
-        
+
         self._context = browser.new_context(**context_options)
         self._page = self._context.new_page()
         self._page.set_default_timeout(self.config.timeout_ms)
@@ -163,35 +162,35 @@ class BrowserTool:
 
     # === Tier 2: Interactive Browser ===
 
-    def navigate(self, url: str) -> "BrowserTool":
+    def navigate(self, url: str) -> BrowserTool:
         """Navigate to URL."""
         page = self._get_page()
         page.goto(url, wait_until="networkidle")
         self._action_history.append(BrowserAction(action="navigate", url=url))
         return self
 
-    def click(self, selector: str) -> "BrowserTool":
+    def click(self, selector: str) -> BrowserTool:
         """Click element."""
         page = self._get_page()
         page.click(selector)
         self._action_history.append(BrowserAction(action="click", selector=selector))
         return self
 
-    def fill(self, selector: str, text: str) -> "BrowserTool":
+    def fill(self, selector: str, text: str) -> BrowserTool:
         """Fill form field."""
         page = self._get_page()
         page.fill(selector, text)
         self._action_history.append(BrowserAction(action="fill", selector=selector, text=text))
         return self
 
-    def type_text(self, selector: str, text: str, delay_ms: int = 50) -> "BrowserTool":
+    def type_text(self, selector: str, text: str, delay_ms: int = 50) -> BrowserTool:
         """Type text with human-like delay."""
         page = self._get_page()
         page.type(selector, text, delay=delay_ms)
         self._action_history.append(BrowserAction(action="fill", selector=selector, text=text))
         return self
 
-    def scroll(self, direction: str = "down", amount: int = 500) -> "BrowserTool":
+    def scroll(self, direction: str = "down", amount: int = 500) -> BrowserTool:
         """Scroll page."""
         page = self._get_page()
         if direction == "down":
@@ -201,7 +200,7 @@ class BrowserTool:
         self._action_history.append(BrowserAction(action="scroll", scroll_amount=amount if direction == "down" else -amount))
         return self
 
-    def wait(self, milliseconds: int = 1000) -> "BrowserTool":
+    def wait(self, milliseconds: int = 1000) -> BrowserTool:
         """Wait for specified milliseconds."""
         time.sleep(milliseconds / 1000)
         self._action_history.append(BrowserAction(action="wait", wait_ms=milliseconds))
@@ -213,10 +212,10 @@ class BrowserTool:
         timestamp = int(time.time())
         path = self._screenshot_dir / f"screenshot_{timestamp}.png"
         page.screenshot(path=str(path), full_page=full_page)
-        
+
         with open(path, "rb") as f:
             b64 = base64.b64encode(f.read()).decode()
-        
+
         self._action_history.append(BrowserAction(action="screenshot"))
         return b64
 
@@ -237,10 +236,10 @@ class BrowserTool:
 
     # === Computer Use: DOM Extraction ===
 
-    def get_dom_state(self) -> List[DOMElement]:
+    def get_dom_state(self) -> list[DOMElement]:
         """Extract DOM state for Computer Use / Vision models."""
         page = self._get_page()
-        
+
         js_script = """
         () => {
             const elements = [];
@@ -302,14 +301,14 @@ class BrowserTool:
             return elements.slice(0, 50);  // Limit total
         }
         """
-        
+
         result = page.evaluate(js_script)
         return [DOMElement(**item) for item in result]
 
-    def get_clickable_elements(self) -> List[Dict[str, Any]]:
+    def get_clickable_elements(self) -> list[dict[str, Any]]:
         """Get list of clickable elements with coordinates."""
         page = self._get_page()
-        
+
         js_script = """
         () => {
             const elements = [];
@@ -336,13 +335,13 @@ class BrowserTool:
             return elements.slice(0, 30);
         }
         """
-        
+
         return page.evaluate(js_script)
 
-    def get_form_fields(self) -> List[Dict[str, Any]]:
+    def get_form_fields(self) -> list[dict[str, Any]]:
         """Get all form input fields."""
         page = self._get_page()
-        
+
         js_script = """
         () => {
             const fields = [];
@@ -364,15 +363,15 @@ class BrowserTool:
             return fields;
         }
         """
-        
+
         return page.evaluate(js_script)
 
     # === Tier 3: Automation ===
 
-    def automate(self, actions: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def automate(self, actions: list[dict[str, Any]]) -> dict[str, Any]:
         """Execute a sequence of browser actions."""
         results = []
-        
+
         for action_dict in actions:
             action = BrowserAction(**action_dict)
             try:
@@ -398,12 +397,12 @@ class BrowserTool:
                     results.append({"action": action.action, "status": "unknown"})
             except Exception as e:
                 results.append({"action": action.action, "status": "error", "error": str(e)})
-        
+
         return {"results": results, "final_url": self.get_url() if self._page else ""}
 
     # === Utilities ===
 
-    def get_action_history(self) -> List[Dict[str, Any]]:
+    def get_action_history(self) -> list[dict[str, Any]]:
         """Get action history."""
         return [vars(a) for a in self._action_history]
 
@@ -424,7 +423,7 @@ class BrowserTool:
             self._playwright = None
         self._page = None
 
-    def __enter__(self) -> "BrowserTool":
+    def __enter__(self) -> BrowserTool:
         return self
 
     def __exit__(self, *args) -> None:

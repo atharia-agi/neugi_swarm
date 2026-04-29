@@ -22,15 +22,14 @@ Usage:
 
 from __future__ import annotations
 
-import base64
-import json
 import logging
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, Callable
+from typing import Any
 
-from tools.browser import BrowserTool, BrowserConfig, BrowserAction
+from tools.browser import BrowserConfig, BrowserTool
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +57,7 @@ class ComputerAction:
     selector: str = ""
     text: str = ""
     url: str = ""
-    coordinates: Optional[Tuple[int, int]] = None
+    coordinates: tuple[int, int] | None = None
     key: str = ""
     reason: str = ""  # Why this action was chosen
 
@@ -69,7 +68,7 @@ class StepResult:
     step: int
     action: ComputerAction
     screenshot_b64: str = ""
-    dom_state: List[Dict] = field(default_factory=list)
+    dom_state: list[dict] = field(default_factory=list)
     success: bool = True
     error: str = ""
     observation: str = ""  # What the agent observed
@@ -80,10 +79,10 @@ class TaskResult:
     """Final result of a computer use task."""
     task: str
     success: bool
-    steps: List[StepResult]
+    steps: list[StepResult]
     final_screenshot: str = ""
     final_url: str = ""
-    extracted_data: Dict[str, Any] = field(default_factory=dict)
+    extracted_data: dict[str, Any] = field(default_factory=dict)
     total_time_seconds: float = 0.0
 
 
@@ -111,19 +110,19 @@ class ComputerUseController:
         6. Repeat until task complete
     """
 
-    def __init__(self, config: Optional[ComputerUseConfig] = None):
+    def __init__(self, config: ComputerUseConfig | None = None):
         self.config = config or ComputerUseConfig()
         self.browser = BrowserTool(BrowserConfig(headless=True))
         self._step_count = 0
-        self._action_history: List[ComputerAction] = []
+        self._action_history: list[ComputerAction] = []
         self._safety_checker = SafetyChecker()
 
     def execute_task(
         self,
         task: str,
-        max_steps: Optional[int] = None,
+        max_steps: int | None = None,
         starting_url: str = "",
-        callback: Optional[Callable[[StepResult], None]] = None
+        callback: Callable[[StepResult], None] | None = None
     ) -> TaskResult:
         """
         Execute a computer use task.
@@ -139,28 +138,28 @@ class ComputerUseController:
         """
         max_steps = max_steps or self.config.max_steps
         start_time = time.time()
-        steps: List[StepResult] = []
-        
+        steps: list[StepResult] = []
+
         try:
             # Initialize browser if starting URL provided
             if starting_url:
                 self.browser.navigate(starting_url)
                 time.sleep(0.5)
-            
+
             # Main loop
             for step_num in range(1, max_steps + 1):
                 self._step_count = step_num
-                
+
                 # 1. Capture state
                 screenshot = self.browser.screenshot()
                 dom_state = self.browser.get_clickable_elements()
-                
+
                 # 2. Determine next action
                 action = self._determine_action(task, screenshot, dom_state, steps)
-                
+
                 if action.action == ActionType.TERMINATE:
                     break
-                
+
                 # 3. Safety check
                 if self.config.safety_check:
                     safety = self._safety_checker.check(action)
@@ -172,14 +171,14 @@ class ComputerUseController:
                             error=f"Safety check failed: {safety['reason']}"
                         ))
                         break
-                
+
                 # 4. Execute action
                 step_result = self._execute_action(action, screenshot, dom_state)
                 steps.append(step_result)
-                
+
                 if callback:
                     callback(step_result)
-                
+
                 if not step_result.success:
                     # Retry if possible
                     if step_num < max_steps:
@@ -189,16 +188,16 @@ class ComputerUseController:
                             if retry_result.success:
                                 continue
                     break
-                
+
                 # 5. Check if task is complete
                 if self._is_task_complete(task, steps):
                     break
-                
+
                 time.sleep(self.config.wait_after_action_ms / 1000)
-            
+
             # Final screenshot
             final_screenshot = self.browser.screenshot() if self.browser._page else ""
-            
+
             return TaskResult(
                 task=task,
                 success=all(s.success for s in steps),
@@ -207,7 +206,7 @@ class ComputerUseController:
                 final_url=self.browser.get_url() if self.browser._page else "",
                 total_time_seconds=time.time() - start_time
             )
-            
+
         except Exception as e:
             logger.error(f"Computer use task failed: {e}")
             return TaskResult(
@@ -224,8 +223,8 @@ class ComputerUseController:
         self,
         task: str,
         screenshot_b64: str,
-        dom_state: List[Dict],
-        previous_steps: List[StepResult]
+        dom_state: list[dict],
+        previous_steps: list[StepResult]
     ) -> ComputerAction:
         """
         Determine next action based on current state.
@@ -240,7 +239,7 @@ class ComputerUseController:
                 return action
         except Exception as e:
             logger.warning(f"Vision model failed, using rule-based: {e}")
-        
+
         # Rule-based fallback
         return self._rule_based_action(task, dom_state, previous_steps)
 
@@ -248,21 +247,21 @@ class ComputerUseController:
         self,
         task: str,
         screenshot_b64: str,
-        dom_state: List[Dict],
-        previous_steps: List[StepResult]
-    ) -> Optional[ComputerAction]:
+        dom_state: list[dict],
+        previous_steps: list[StepResult]
+    ) -> ComputerAction | None:
         """Call vision model to determine next action."""
         try:
-            from llm_multimodal import VisionComputerUse, MultimodalProvider
-            from llm_provider import LLMProvider
-            
             # Check if we have a vision-capable provider
             # For now, we need to create a basic provider from config
             # In production, this would be injected
             import os
+
+            from llm_multimodal import MultimodalProvider, VisionComputerUse
+            from llm_provider import LLMProvider
             provider_url = os.environ.get("OLLAMA_URL", "http://localhost:11434")
-            
-            from llm_provider import ProviderConfig, ProviderType, OllamaProvider
+
+            from llm_provider import OllamaProvider, ProviderConfig, ProviderType
             config = ProviderConfig(
                 provider_type=ProviderType.OLLAMA,
                 base_url=provider_url,
@@ -271,7 +270,7 @@ class ComputerUseController:
             provider = OllamaProvider(config)
             multimodal = MultimodalProvider(provider)
             vision = VisionComputerUse(multimodal)
-            
+
             # Get action from vision model
             previous_actions = [
                 {
@@ -280,9 +279,9 @@ class ComputerUseController:
                 }
                 for s in previous_steps[-5:]
             ]
-            
+
             result = vision.determine_action(task, screenshot_b64, dom_state, previous_actions)
-            
+
             if result and "action" in result:
                 action_type = ActionType(result.get("action", "screenshot"))
                 return ComputerAction(
@@ -292,40 +291,40 @@ class ComputerUseController:
                     url=result.get("url", ""),
                     reason=result.get("reason", "Vision model decision"),
                 )
-                
+
         except ImportError as e:
             logger.warning(f"Vision model dependencies not available: {e}")
         except Exception as e:
             logger.warning(f"Vision model call failed: {e}")
-        
+
         return None
 
     def _rule_based_action(
         self,
         task: str,
-        dom_state: List[Dict],
-        previous_steps: List[StepResult]
+        dom_state: list[dict],
+        previous_steps: list[StepResult]
     ) -> ComputerAction:
         """Rule-based action determination for common tasks."""
         task_lower = task.lower()
-        
+
         # Check if we need to navigate
         current_url = self.browser.get_url() if self.browser._page else ""
-        
+
         if "github" in task_lower and "github" not in current_url:
             return ComputerAction(
                 action=ActionType.NAVIGATE,
                 url="https://github.com",
                 reason="Task requires GitHub, navigating there"
             )
-        
+
         if "google" in task_lower and "google" not in current_url:
             return ComputerAction(
                 action=ActionType.NAVIGATE,
                 url="https://google.com",
                 reason="Task requires Google, navigating there"
             )
-        
+
         # Search for search box
         if any(word in task_lower for word in ["search", "find", "look for"]):
             for el in dom_state:
@@ -339,14 +338,14 @@ class ComputerUseController:
                         if prefix in search_term:
                             search_term = search_term.split(prefix, 1)[-1].strip()
                             break
-                    
+
                     return ComputerAction(
                         action=ActionType.FILL,
                         selector=el.get("selector", "input[type='text']"),
                         text=search_term,
                         reason="Found search box, filling with query"
                     )
-        
+
         # Look for buttons to click
         if any(word in task_lower for word in ["click", "press", "submit"]):
             for el in dom_state:
@@ -357,14 +356,14 @@ class ComputerUseController:
                         selector=el.get("selector", ""),
                         reason="Found action button"
                     )
-        
+
         # Default: screenshot and wait
         if len(previous_steps) > 0 and previous_steps[-1].action.action == ActionType.SCREENSHOT:
             return ComputerAction(
                 action=ActionType.TERMINATE,
                 reason="No clear action determined, terminating"
             )
-        
+
         return ComputerAction(
             action=ActionType.SCREENSHOT,
             reason="Capturing state to determine next action"
@@ -374,56 +373,56 @@ class ComputerUseController:
         self,
         action: ComputerAction,
         screenshot: str,
-        dom_state: List[Dict]
+        dom_state: list[dict]
     ) -> StepResult:
         """Execute a single action."""
         try:
             if action.action == ActionType.NAVIGATE:
                 self.browser.navigate(action.url)
                 observation = f"Navigated to {action.url}"
-                
+
             elif action.action == ActionType.CLICK:
                 self.browser.click(action.selector)
                 observation = f"Clicked {action.selector}"
-                
+
             elif action.action == ActionType.FILL:
                 self.browser.fill(action.selector, action.text)
                 observation = f"Filled {action.selector} with '{action.text}'"
-                
+
             elif action.action == ActionType.TYPE:
                 self.browser.type_text(action.selector, action.text)
                 observation = f"Typed into {action.selector}"
-                
+
             elif action.action == ActionType.SCROLL:
                 self.browser.scroll(amount=action.coordinates[1] if action.coordinates else 500)
                 observation = "Scrolled page"
-                
+
             elif action.action == ActionType.SCREENSHOT:
                 observation = "Captured screenshot"
-                
+
             elif action.action == ActionType.WAIT:
                 time.sleep(1)
                 observation = "Waited"
-                
+
             elif action.action == ActionType.KEYPRESS:
                 # Keypress via page.keyboard
                 if self.browser._page:
                     self.browser._page.keyboard.press(action.key)
                 observation = f"Pressed key {action.key}"
-                
+
             elif action.action == ActionType.HOVER:
                 if self.browser._page:
                     self.browser._page.hover(action.selector)
                 observation = f"Hovered over {action.selector}"
-                
+
             elif action.action == ActionType.TERMINATE:
                 observation = "Task terminated"
-                
+
             else:
                 observation = f"Unknown action: {action.action}"
-            
+
             self._action_history.append(action)
-            
+
             return StepResult(
                 step=self._step_count,
                 action=action,
@@ -432,7 +431,7 @@ class ComputerUseController:
                 success=True,
                 observation=observation
             )
-            
+
         except Exception as e:
             return StepResult(
                 step=self._step_count,
@@ -444,54 +443,54 @@ class ComputerUseController:
                 observation=f"Failed to execute {action.action}: {e}"
             )
 
-    def _retry_action(self, action: ComputerAction) -> Optional[StepResult]:
+    def _retry_action(self, action: ComputerAction) -> StepResult | None:
         """Retry a failed action with modifications."""
         logger.info(f"Retrying action: {action.action}")
         time.sleep(1)
-        
+
         # Try with alternative selector strategies
         if action.selector and action.action in [ActionType.CLICK, ActionType.FILL]:
             # Get fresh DOM state
             dom_state = self.browser.get_clickable_elements()
-            
+
             # Try finding by text content
             for el in dom_state:
                 if action.text and action.text.lower() in el.get("text", "").lower():
                     action.selector = el.get("selector", action.selector)
                     break
-        
+
         try:
             return self._execute_action(action, self.browser.screenshot(), [])
         except Exception as e:
             logger.error(f"Retry failed: {e}")
             return None
 
-    def _is_task_complete(self, task: str, steps: List[StepResult]) -> bool:
+    def _is_task_complete(self, task: str, steps: list[StepResult]) -> bool:
         """Check if task appears to be complete."""
         if len(steps) < 2:
             return False
-        
+
         # Check for completion indicators
         recent_actions = [s.action.action for s in steps[-3:]]
-        
+
         # If we've been screenshotting without progress, we might be done
         if all(a == ActionType.SCREENSHOT for a in recent_actions):
             return True
-        
+
         # If last action was terminate
         if steps[-1].action.action == ActionType.TERMINATE:
             return True
-        
+
         # Check if URL contains expected result
         current_url = self.browser.get_url() if self.browser._page else ""
         task_keywords = task.lower().split()
         url_match = sum(1 for kw in task_keywords if len(kw) > 3 and kw in current_url.lower())
         if url_match >= 2:
             return True
-        
+
         return False
 
-    def get_history(self) -> List[Dict[str, Any]]:
+    def get_history(self) -> list[dict[str, Any]]:
         """Get full action history."""
         return [
             {
@@ -525,7 +524,7 @@ class SafetyChecker:
         "login", "signin", "password", "credential"
     ]
 
-    def check(self, action: ComputerAction) -> Dict[str, Any]:
+    def check(self, action: ComputerAction) -> dict[str, Any]:
         """Check if action is safe."""
         # Check for destructive text
         if action.text:
@@ -536,7 +535,7 @@ class SafetyChecker:
                         "allowed": False,
                         "reason": f"Potentially destructive text detected: '{keyword}'"
                     }
-        
+
         # Check for sensitive URLs
         if action.url:
             url_lower = action.url.lower()
@@ -546,5 +545,5 @@ class SafetyChecker:
                         "allowed": True,
                         "warning": f"Navigating to potentially sensitive site: {sensitive}"
                     }
-        
+
         return {"allowed": True, "reason": "Action appears safe"}

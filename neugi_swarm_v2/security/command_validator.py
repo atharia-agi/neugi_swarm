@@ -37,9 +37,10 @@ import hashlib
 import logging
 import re
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -495,7 +496,7 @@ class NeuralRiskScorer:
 
     def __init__(
         self,
-        scorer_fn: Optional[Callable[[str], tuple[int, str, float]]] = None,
+        scorer_fn: Callable[[str], tuple[int, str, float]] | None = None,
         threshold: int = 70,
     ) -> None:
         """Initialize the neural risk scorer.
@@ -659,8 +660,8 @@ class CommandValidator:
 
     def __init__(
         self,
-        symbolic_engine: Optional[SymbolicRuleEngine] = None,
-        neural_scorer: Optional[NeuralRiskScorer] = None,
+        symbolic_engine: SymbolicRuleEngine | None = None,
+        neural_scorer: NeuralRiskScorer | None = None,
         neural_threshold: int = 70,
     ) -> None:
         """Initialize the command validator.

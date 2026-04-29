@@ -10,7 +10,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from typing import Any, Optional
+from typing import Any
 
 import requests
 
@@ -53,17 +53,17 @@ class WhatsAppChannel(BaseChannel):
         self,
         token: str,
         phone_number_id: str,
-        phone_number: Optional[str] = None,
-        app_secret: Optional[str] = None,
-        bot_name: Optional[str] = None,
+        phone_number: str | None = None,
+        app_secret: str | None = None,
+        bot_name: str | None = None,
         health_check_interval: int = 60,
     ) -> None:
         super().__init__(token, bot_name, health_check_interval)
         self._phone_number_id = phone_number_id
         self._phone_number = phone_number
         self._app_secret = app_secret
-        self._session: Optional[requests.Session] = None
-        self._business_account_id: Optional[str] = None
+        self._session: requests.Session | None = None
+        self._business_account_id: str | None = None
         self._templates: dict[str, dict[str, Any]] = {}
 
     @property
@@ -82,9 +82,9 @@ class WhatsAppChannel(BaseChannel):
         self,
         endpoint: str,
         method: str = "POST",
-        data: Optional[dict[str, Any]] = None,
-        params: Optional[dict[str, Any]] = None,
-    ) -> Optional[dict[str, Any]]:
+        data: dict[str, Any] | None = None,
+        params: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | None:
         """
         Make a synchronous API call to WhatsApp Cloud API.
 
@@ -152,7 +152,7 @@ class WhatsAppChannel(BaseChannel):
         token: str,
         challenge: str,
         verify_token: str,
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Verify webhook subscription (GET request from Meta).
 
@@ -265,7 +265,7 @@ class WhatsAppChannel(BaseChannel):
         }
         return caps
 
-    async def _parse_message(self, raw_data: dict[str, Any]) -> Optional[IncomingMessage]:
+    async def _parse_message(self, raw_data: dict[str, Any]) -> IncomingMessage | None:
         """Parse raw WhatsApp message data into IncomingMessage."""
         entry = raw_data.get("entry", [{}])[0]
         changes = entry.get("changes", [{}])[0]
@@ -414,7 +414,7 @@ class WhatsAppChannel(BaseChannel):
 
         return content, attachments
 
-    async def send_message(self, message: OutgoingMessage) -> Optional[str]:
+    async def send_message(self, message: OutgoingMessage) -> str | None:
         """Send a message via WhatsApp Cloud API."""
         try:
             endpoint = f"/{self._phone_number_id}/messages"
@@ -443,7 +443,7 @@ class WhatsAppChannel(BaseChannel):
             self._health.record_error(str(exc))
             return None
 
-    async def _send_text(self, message: OutgoingMessage) -> Optional[str]:
+    async def _send_text(self, message: OutgoingMessage) -> str | None:
         """Send a text message."""
         endpoint = f"/{self._phone_number_id}/messages"
         data = {
@@ -465,7 +465,7 @@ class WhatsAppChannel(BaseChannel):
                 return messages[0].get("id")
         return None
 
-    async def _send_image(self, message: OutgoingMessage) -> Optional[str]:
+    async def _send_image(self, message: OutgoingMessage) -> str | None:
         """Send an image."""
         endpoint = f"/{self._phone_number_id}/messages"
 
@@ -497,7 +497,7 @@ class WhatsAppChannel(BaseChannel):
                 return messages[0].get("id")
         return None
 
-    async def _send_document(self, message: OutgoingMessage) -> Optional[str]:
+    async def _send_document(self, message: OutgoingMessage) -> str | None:
         """Send a document."""
         endpoint = f"/{self._phone_number_id}/messages"
 
@@ -531,7 +531,7 @@ class WhatsAppChannel(BaseChannel):
                 return messages[0].get("id")
         return None
 
-    async def _send_audio(self, message: OutgoingMessage) -> Optional[str]:
+    async def _send_audio(self, message: OutgoingMessage) -> str | None:
         """Send an audio message."""
         endpoint = f"/{self._phone_number_id}/messages"
 
@@ -560,7 +560,7 @@ class WhatsAppChannel(BaseChannel):
                 return messages[0].get("id")
         return None
 
-    async def _send_video(self, message: OutgoingMessage) -> Optional[str]:
+    async def _send_video(self, message: OutgoingMessage) -> str | None:
         """Send a video message."""
         endpoint = f"/{self._phone_number_id}/messages"
 
@@ -597,9 +597,9 @@ class WhatsAppChannel(BaseChannel):
         conversation_id: str,
         latitude: float,
         longitude: float,
-        name: Optional[str] = None,
-        address: Optional[str] = None,
-    ) -> Optional[str]:
+        name: str | None = None,
+        address: str | None = None,
+    ) -> str | None:
         """Send a location message."""
         endpoint = f"/{self._phone_number_id}/messages"
         data = {
@@ -629,7 +629,7 @@ class WhatsAppChannel(BaseChannel):
         self,
         conversation_id: str,
         contact: dict[str, Any],
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Send a contact message.
 
@@ -654,7 +654,7 @@ class WhatsAppChannel(BaseChannel):
                 return messages[0].get("id")
         return None
 
-    async def _send_interactive(self, message: OutgoingMessage) -> Optional[str]:
+    async def _send_interactive(self, message: OutgoingMessage) -> str | None:
         """Send an interactive message (buttons or list)."""
         endpoint = f"/{self._phone_number_id}/messages"
 
@@ -666,7 +666,7 @@ class WhatsAppChannel(BaseChannel):
 
         return await self._send_text(message)
 
-    async def _send_button_message(self, message: OutgoingMessage) -> Optional[str]:
+    async def _send_button_message(self, message: OutgoingMessage) -> str | None:
         """Send a message with reply buttons (max 3)."""
         endpoint = f"/{self._phone_number_id}/messages"
         buttons = []
@@ -705,7 +705,7 @@ class WhatsAppChannel(BaseChannel):
                 return messages[0].get("id")
         return None
 
-    async def _send_list_message(self, message: OutgoingMessage) -> Optional[str]:
+    async def _send_list_message(self, message: OutgoingMessage) -> str | None:
         """Send a list message (up to 10 sections)."""
         endpoint = f"/{self._phone_number_id}/messages"
         sections = []
@@ -753,8 +753,8 @@ class WhatsAppChannel(BaseChannel):
         conversation_id: str,
         template_name: str,
         language: str = "en",
-        components: Optional[list[dict[str, Any]]] = None,
-    ) -> Optional[str]:
+        components: list[dict[str, Any]] | None = None,
+    ) -> str | None:
         """
         Send a template message.
 
@@ -796,8 +796,8 @@ class WhatsAppChannel(BaseChannel):
         template_name: str,
         buttons: list[dict[str, Any]],
         language: str = "en",
-        body_variables: Optional[list[str]] = None,
-    ) -> Optional[str]:
+        body_variables: list[str] | None = None,
+    ) -> str | None:
         """Send a template with interactive buttons."""
         components: list[dict[str, Any]] = []
 
@@ -900,7 +900,7 @@ class WhatsAppChannel(BaseChannel):
             self._logger.error("Media download failed: %s", exc)
             return False
 
-    async def upload_media(self, file_path: str, mime_type: str) -> Optional[str]:
+    async def upload_media(self, file_path: str, mime_type: str) -> str | None:
         """
         Upload media to WhatsApp.
 
@@ -938,7 +938,7 @@ class WhatsAppChannel(BaseChannel):
             self._logger.error("Media upload failed: %s", exc)
             return None
 
-    async def get_user(self, user_id: str) -> Optional[UserIdentity]:
+    async def get_user(self, user_id: str) -> UserIdentity | None:
         """Get user profile (limited by WhatsApp API)."""
         return UserIdentity(
             id=user_id,
@@ -946,7 +946,7 @@ class WhatsAppChannel(BaseChannel):
             metadata={"phone": user_id},
         )
 
-    async def get_phone_number_info(self) -> Optional[dict[str, Any]]:
+    async def get_phone_number_info(self) -> dict[str, Any] | None:
         """Get phone number information."""
         return self._call_api(
             f"/{self._phone_number_id}",
@@ -964,7 +964,7 @@ class WhatsAppChannel(BaseChannel):
             return result.get("data", [])
         return []
 
-    async def get_media_url(self, media_id: str) -> Optional[str]:
+    async def get_media_url(self, media_id: str) -> str | None:
         """Get a temporary media URL."""
         result = self._call_api(f"/{media_id}", method="GET")
         if result:

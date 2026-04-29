@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set, Tuple
 
-from .skill_contract import SkillContract, SkillState
+from .skill_contract import SkillContract
 
 
 @dataclass
@@ -22,10 +21,10 @@ class MatchResult:
 
     skill: SkillContract
     score: float
-    matched_by: List[str] = field(default_factory=list)
-    matched_keywords: List[str] = field(default_factory=list)
+    matched_by: list[str] = field(default_factory=list)
+    matched_keywords: list[str] = field(default_factory=list)
 
-    def __lt__(self, other: "MatchResult") -> bool:
+    def __lt__(self, other: MatchResult) -> bool:
         return self.score < other.score
 
 
@@ -53,11 +52,11 @@ class SkillMatcher:
             min_score: Minimum score threshold for a match to be returned.
         """
         self.min_score = min_score
-        self._category_index: Dict[str, List[SkillContract]] = {}
-        self._keyword_index: Dict[str, List[SkillContract]] = {}
+        self._category_index: dict[str, list[SkillContract]] = {}
+        self._keyword_index: dict[str, list[SkillContract]] = {}
         self._built = False
 
-    def build_index(self, skills: List[SkillContract]) -> None:
+    def build_index(self, skills: list[SkillContract]) -> None:
         """Build search indices for efficient matching.
 
         Args:
@@ -87,8 +86,8 @@ class SkillMatcher:
         self,
         query: str,
         top_n: int = 5,
-        skills: Optional[List[SkillContract]] = None,
-    ) -> List[MatchResult]:
+        skills: list[SkillContract] | None = None,
+    ) -> list[MatchResult]:
         """Match a natural language query to skills.
 
         Args:
@@ -112,8 +111,8 @@ class SkillMatcher:
                 for s in cat_skills
             ]
 
-        seen: Set[str] = set()
-        results: List[MatchResult] = []
+        seen: set[str] = set()
+        results: list[MatchResult] = []
 
         for skill in skills:
             if skill.name in seen:
@@ -139,7 +138,7 @@ class SkillMatcher:
         results.sort(reverse=True)
         return results[:top_n]
 
-    def match_by_category(self, category: str) -> List[SkillContract]:
+    def match_by_category(self, category: str) -> list[SkillContract]:
         """Get all skills in a category.
 
         Args:
@@ -150,7 +149,7 @@ class SkillMatcher:
         """
         return list(self._category_index.get(category.lower(), []))
 
-    def match_by_trigger(self, trigger_phrase: str) -> List[MatchResult]:
+    def match_by_trigger(self, trigger_phrase: str) -> list[MatchResult]:
         """Match skills by exact trigger phrase.
 
         Args:
@@ -160,7 +159,7 @@ class SkillMatcher:
             List of skills whose triggers contain the phrase.
         """
         phrase_lower = trigger_phrase.lower()
-        results: List[MatchResult] = []
+        results: list[MatchResult] = []
 
         for keyword_skills in self._keyword_index.values():
             for skill in keyword_skills:
@@ -185,16 +184,16 @@ class SkillMatcher:
         self,
         skill: SkillContract,
         query_lower: str,
-        query_tokens: List[str],
-    ) -> Tuple[float, List[str], List[str]]:
+        query_tokens: list[str],
+    ) -> tuple[float, list[str], list[str]]:
         """Score a single skill against a query.
 
         Returns:
             Tuple of (score, matched_by_reasons, matched_keywords).
         """
         total_score = 0.0
-        matched_by: List[str] = []
-        matched_kws: List[str] = []
+        matched_by: list[str] = []
+        matched_kws: list[str] = []
 
         # Name match (highest weight)
         name_score = self._name_match(skill.name, query_lower)
@@ -250,8 +249,8 @@ class SkillMatcher:
         return best
 
     def _keyword_match(
-        self, skill: SkillContract, query_tokens: List[str]
-    ) -> Tuple[float, List[str]]:
+        self, skill: SkillContract, query_tokens: list[str]
+    ) -> tuple[float, list[str]]:
         """Score keyword match against tags and body."""
         if not query_tokens:
             return 0.0, []
@@ -259,7 +258,7 @@ class SkillMatcher:
         tag_set = {t.lower() for t in skill.frontmatter.tags}
         body_lower = skill.body.lower()
 
-        matches: List[str] = []
+        matches: list[str] = []
         for token in query_tokens:
             if len(token) < 3:
                 continue
@@ -273,7 +272,7 @@ class SkillMatcher:
         return min(1.0, score), matches
 
     def _description_match(
-        self, skill: SkillContract, query_tokens: List[str]
+        self, skill: SkillContract, query_tokens: list[str]
     ) -> float:
         """Score description similarity using token overlap."""
         if not query_tokens:
@@ -285,9 +284,9 @@ class SkillMatcher:
         overlap = len(set(query_tokens) & set(desc_tokens))
         return overlap / max(len(query_tokens), len(desc_tokens))
 
-    def _extract_keywords(self, skill: SkillContract) -> List[str]:
+    def _extract_keywords(self, skill: SkillContract) -> list[str]:
         """Extract indexable keywords from a skill."""
-        keywords: List[str] = []
+        keywords: list[str] = []
         keywords.extend(skill.frontmatter.tags)
         keywords.append(skill.frontmatter.category)
         keywords.append(skill.name)
@@ -296,7 +295,7 @@ class SkillMatcher:
         return [k.lower() for k in keywords if k]
 
     @staticmethod
-    def _tokenize(text: str) -> List[str]:
+    def _tokenize(text: str) -> list[str]:
         """Tokenize text into words, filtering short tokens."""
         tokens = re.findall(r"[a-z0-9]+", text)
         return [t for t in tokens if len(t) >= 3]

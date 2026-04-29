@@ -39,11 +39,11 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
+from autonomous.decision import DecisionCriteria, DecisionOutcome, ProactiveDecisionEngine
+from autonomous.executor import ExecutionContext, ExecutionResult, SelfDirectedExecutor
 from autonomous.observer import IdleObserver
-from autonomous.decision import ProactiveDecisionEngine, DecisionCriteria, Decision, DecisionOutcome
-from autonomous.executor import SelfDirectedExecutor, ExecutionContext, ExecutionResult
 from autonomous.reporter import ActivityReporter, ReportSeverity
 
 logger = logging.getLogger(__name__)
@@ -88,10 +88,10 @@ class AutonomousActivity:
     priority: ActivityPriority
     status: ActivityStatus
     description: str
-    result: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
+    result: dict[str, Any] | None = None
+    error: str | None = None
     started_at: float = field(default_factory=lambda: time.time())
-    finished_at: Optional[float] = None
+    finished_at: float | None = None
 
     @property
     def duration_ms(self) -> float:
@@ -109,7 +109,7 @@ class LoopResult:
     reports: int = 0
     success: bool = True
     duration_ms: float = 0.0
-    error: Optional[str] = None
+    error: str | None = None
 
 
 @dataclass
@@ -156,20 +156,20 @@ class AutonomousLoop:
     def __init__(
         self,
         swarm: Any,
-        config: Optional[LoopConfig] = None,
+        config: LoopConfig | None = None,
     ) -> None:
         self.swarm = swarm
         self.config = config or LoopConfig()
 
         # Subsystems
-        self.observer: Optional[IdleObserver] = None
-        self.decision_engine: Optional[ProactiveDecisionEngine] = None
-        self.executor: Optional[SelfDirectedExecutor] = None
-        self.reporter: Optional[ActivityReporter] = None
+        self.observer: IdleObserver | None = None
+        self.decision_engine: ProactiveDecisionEngine | None = None
+        self.executor: SelfDirectedExecutor | None = None
+        self.reporter: ActivityReporter | None = None
 
         # Threading
         self._state = LoopState.STOPPED
-        self._thread: Optional[threading.Thread] = None
+        self._thread: threading.Thread | None = None
         self._stop_event = threading.Event()
         self._lock = threading.RLock()
 
@@ -182,7 +182,7 @@ class AutonomousLoop:
         self._failure_count: int = 0
         self._circuit_open: bool = False
         self._circuit_opened_at: float = 0.0
-        self._activities: List[AutonomousActivity] = []
+        self._activities: list[AutonomousActivity] = []
 
         self._init_subsystems()
 
@@ -224,7 +224,10 @@ class AutonomousLoop:
         self.executor = SelfDirectedExecutor(context=context)
 
         # Notification dispatcher for proactive channels
-        from autonomous.notification_dispatcher import NotificationDispatcher, NotificationPreferences
+        from autonomous.notification_dispatcher import (
+            NotificationDispatcher,
+            NotificationPreferences,
+        )
         notifier = NotificationDispatcher(
             preferences=NotificationPreferences(),
             channel_manager=getattr(self.swarm, "channel_manager", None),
@@ -406,7 +409,7 @@ class AutonomousLoop:
         to_execute = approved[:max_actions_per_tick]
 
         # Step 3: EXECUTE
-        exec_results: List[ExecutionResult] = []
+        exec_results: list[ExecutionResult] = []
         if self.executor:
             try:
                 exec_results = self.executor.execute_batch(to_execute)
@@ -475,7 +478,7 @@ class AutonomousLoop:
 
     # -- Stats & Diagnostics ----------------------------------------------------
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         with self._lock:
             return {
                 "state": self._state.value,
@@ -500,11 +503,11 @@ class AutonomousLoop:
                 "reporter": self.reporter.get_summary() if self.reporter else {},
             }
 
-    def get_recent_activities(self, limit: int = 20) -> List[AutonomousActivity]:
+    def get_recent_activities(self, limit: int = 20) -> list[AutonomousActivity]:
         with self._lock:
             return self._activities[-limit:]
 
-    def get_live_status(self) -> Dict[str, Any]:
+    def get_live_status(self) -> dict[str, Any]:
         """Get real-time autonomous status for dashboard/WebSocket.
 
         Returns:

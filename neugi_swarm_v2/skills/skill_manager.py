@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import json
 import os
-import sys
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Set
 
 try:
     import yaml
@@ -21,7 +20,7 @@ from .skill_contract import (
     SkillState,
     SkillTier,
 )
-from .skill_loader import GatingResult, SkillLoader, SkillParseResult
+from .skill_loader import SkillLoader
 from .skill_matcher import MatchResult, SkillMatcher
 from .skill_prompt import CompactionResult, PromptAssembler, PromptTier
 
@@ -42,7 +41,7 @@ class WorkshopObservation:
     procedure: str
     context: str
     frequency: int = 1
-    tools_used: List[str] = field(default_factory=list)
+    tools_used: list[str] = field(default_factory=list)
 
     def to_skill_scaffold(self) -> SkillFrontmatter:
         """Generate a skill frontmatter scaffold from this observation."""
@@ -72,7 +71,7 @@ class SkillManagerStats:
     disabled: int = 0
     errored: int = 0
     total_token_cost: int = 0
-    tier_counts: Dict[str, int] = field(default_factory=dict)
+    tier_counts: dict[str, int] = field(default_factory=dict)
 
 
 class SkillManager:
@@ -101,7 +100,7 @@ class SkillManager:
         self,
         token_budget: int = 8000,
         max_skills_in_prompt: int = 20,
-        default_agent: Optional[str] = None,
+        default_agent: str | None = None,
     ) -> None:
         """Initialize skill manager.
 
@@ -117,12 +116,12 @@ class SkillManager:
             max_skills_in_prompt=max_skills_in_prompt,
         )
         self._default_agent = default_agent
-        self._skills: Dict[str, SkillContract] = {}
-        self._tier_paths: Dict[SkillTier, List[str]] = {
+        self._skills: dict[str, SkillContract] = {}
+        self._tier_paths: dict[SkillTier, list[str]] = {
             tier: [] for tier in SkillTier
         }
-        self._workshop: List[WorkshopObservation] = []
-        self._on_skill_loaded: Optional[Callable[[SkillContract], None]] = None
+        self._workshop: list[WorkshopObservation] = []
+        self._on_skill_loaded: Callable[[SkillContract], None] | None = None
 
     def register_tier_path(self, tier: SkillTier, path: str) -> None:
         """Register a search path for a specific tier.
@@ -177,7 +176,7 @@ class SkillManager:
         """Stop background file watcher."""
         self._loader.stop_watching()
 
-    def load(self) -> Dict[str, SkillContract]:
+    def load(self) -> dict[str, SkillContract]:
         """Load all skills from registered paths.
 
         Loads in tier precedence order. Name collisions resolved by
@@ -195,11 +194,11 @@ class SkillManager:
 
         return self._skills
 
-    def reload(self) -> Dict[str, SkillContract]:
+    def reload(self) -> dict[str, SkillContract]:
         """Reload all skills (full re-scan)."""
         return self.load()
 
-    def get(self, name: str) -> Optional[SkillContract]:
+    def get(self, name: str) -> SkillContract | None:
         """Get a skill by name.
 
         Args:
@@ -210,19 +209,19 @@ class SkillManager:
         """
         return self._skills.get(name.lower())
 
-    def get_all(self) -> Dict[str, SkillContract]:
+    def get_all(self) -> dict[str, SkillContract]:
         """Return all loaded skills."""
         return dict(self._skills)
 
-    def get_enabled(self) -> List[SkillContract]:
+    def get_enabled(self) -> list[SkillContract]:
         """Return all enabled skills."""
         return [s for s in self._skills.values() if s.is_enabled]
 
-    def get_by_tier(self, tier: SkillTier) -> List[SkillContract]:
+    def get_by_tier(self, tier: SkillTier) -> list[SkillContract]:
         """Return all skills in a specific tier."""
         return [s for s in self._skills.values() if s.tier == tier]
 
-    def get_by_agent(self, agent_name: str) -> List[SkillContract]:
+    def get_by_agent(self, agent_name: str) -> list[SkillContract]:
         """Return skills available to a specific agent.
 
         Skills with empty agent allowlist are available to all agents.
@@ -271,8 +270,8 @@ class SkillManager:
         self,
         query: str,
         top_n: int = 5,
-        agent_name: Optional[str] = None,
-    ) -> List[MatchResult]:
+        agent_name: str | None = None,
+    ) -> list[MatchResult]:
         """Match a natural language query to skills.
 
         Args:
@@ -287,15 +286,15 @@ class SkillManager:
         candidates = self.get_by_agent(agent) if agent else self.get_enabled()
         return self._matcher.match(query, top_n=top_n, skills=candidates)
 
-    def match_by_trigger(self, trigger_phrase: str) -> List[MatchResult]:
+    def match_by_trigger(self, trigger_phrase: str) -> list[MatchResult]:
         """Match skills by exact trigger phrase."""
         return self._matcher.match_by_trigger(trigger_phrase)
 
     def assemble_prompt(
         self,
-        skills: Optional[List[SkillContract]] = None,
+        skills: list[SkillContract] | None = None,
         tier: PromptTier = PromptTier.FULL,
-        agent_name: Optional[str] = None,
+        agent_name: str | None = None,
         extra_context: str = "",
     ) -> CompactionResult:
         """Assemble skills into system prompt content.
@@ -316,13 +315,13 @@ class SkillManager:
             skills, tier=tier, agent_name=agent_name, extra_context=extra_context
         )
 
-    def compute_fingerprint(self, skills: Optional[List[SkillContract]] = None) -> str:
+    def compute_fingerprint(self, skills: list[SkillContract] | None = None) -> str:
         """Compute cache-friendly fingerprint for skill set."""
         if skills is None:
             skills = self.get_enabled()
         return self._assembler.compute_fingerprint(skills)
 
-    def estimate_token_cost(self, skills: Optional[List[SkillContract]] = None) -> int:
+    def estimate_token_cost(self, skills: list[SkillContract] | None = None) -> int:
         """Estimate total token cost for skills."""
         if skills is None:
             skills = self.get_enabled()
@@ -350,7 +349,7 @@ class SkillManager:
         name: str,
         procedure: str,
         context: str,
-        tools_used: Optional[List[str]] = None,
+        tools_used: list[str] | None = None,
     ) -> WorkshopObservation:
         """Record an observed procedure for potential skill generation.
 
@@ -416,7 +415,7 @@ class SkillManager:
 
         return contract
 
-    def get_workshop(self) -> List[WorkshopObservation]:
+    def get_workshop(self) -> list[WorkshopObservation]:
         """Return all workshop observations."""
         return list(self._workshop)
 
@@ -463,7 +462,7 @@ class SkillManager:
                 "Supported: neugi, openclaw, claude, mcp, langchain"
             )
 
-    def export_all(self, fmt: str = "neugi") -> Dict[str, str]:
+    def export_all(self, fmt: str = "neugi") -> dict[str, str]:
         """Export all skills in the specified format.
 
         Args:
@@ -472,7 +471,7 @@ class SkillManager:
         Returns:
             Dict mapping skill name to exported content.
         """
-        result: Dict[str, str] = {}
+        result: dict[str, str] = {}
         for name in self._skills:
             try:
                 result[name] = self.export_skill(name, fmt)
@@ -510,8 +509,8 @@ class SkillManager:
             )
 
     def import_from_directory(
-        self, path: str, tier: Optional[SkillTier] = None
-    ) -> List[SkillContract]:
+        self, path: str, tier: SkillTier | None = None
+    ) -> list[SkillContract]:
         """Import all skills from a directory.
 
         Args:
@@ -521,7 +520,7 @@ class SkillManager:
         Returns:
             List of imported skill contracts.
         """
-        imported: List[SkillContract] = []
+        imported: list[SkillContract] = []
         base = Path(path)
         if not base.is_dir():
             return imported
@@ -570,7 +569,7 @@ class SkillManager:
         lines = content.strip().split("\n")
         name = ""
         description = ""
-        body_lines: List[str] = []
+        body_lines: list[str] = []
         in_body = False
 
         for line in lines:

@@ -38,10 +38,11 @@ from __future__ import annotations
 import logging
 import re
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -95,9 +96,9 @@ class ContextItem:
     tags: list[str] = field(default_factory=list)
     relevance_score: float = 0.0
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    last_accessed: Optional[datetime] = None
+    last_accessed: datetime | None = None
     access_count: int = 0
-    ttl_seconds: Optional[int] = None
+    ttl_seconds: int | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
@@ -190,8 +191,8 @@ class InjectionResult:
 def compute_relevance(
     query: str,
     content: str,
-    tags: Optional[list[str]] = None,
-    tag_weights: Optional[dict[str, float]] = None,
+    tags: list[str] | None = None,
+    tag_weights: dict[str, float] | None = None,
     freshness_bonus: float = 0.1,
     access_bonus: float = 0.05,
 ) -> float:
@@ -281,10 +282,10 @@ class ContextInjector:
         max_context_chars: int = 10000,
         max_items: int = 20,
         min_relevance: float = 0.1,
-        tag_weights: Optional[dict[str, float]] = None,
+        tag_weights: dict[str, float] | None = None,
         freshness_bonus: float = 0.1,
         access_bonus: float = 0.05,
-        custom_scorer: Optional[Callable[[str, str, list[str]], float]] = None,
+        custom_scorer: Callable[[str, str, list[str]], float] | None = None,
     ) -> None:
         """
         Initialize context injector.
@@ -312,7 +313,7 @@ class ContextInjector:
         self._id_counter = 0
 
         # Injection history
-        self._last_result: Optional[InjectionResult] = None
+        self._last_result: InjectionResult | None = None
         self._injection_count = 0
 
     # -- Public API: Registration --------------------------------------------
@@ -322,9 +323,9 @@ class ContextInjector:
         key: str,
         content: str,
         scope: ContextScope = ContextScope.GLOBAL,
-        tags: Optional[list[str]] = None,
-        ttl_seconds: Optional[int] = None,
-        metadata: Optional[dict[str, Any]] = None,
+        tags: list[str] | None = None,
+        ttl_seconds: int | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> ContextItem:
         """
         Register a new context item.
@@ -400,7 +401,7 @@ class ContextInjector:
             return True
         return False
 
-    def update(self, key: str, content: Optional[str] = None, tags: Optional[list[str]] = None) -> Optional[ContextItem]:
+    def update(self, key: str, content: str | None = None, tags: list[str] | None = None) -> ContextItem | None:
         """
         Update an existing context item.
 
@@ -428,10 +429,10 @@ class ContextInjector:
     def inject(
         self,
         query: str,
-        scope_filter: Optional[ContextScope] = None,
-        tag_filter: Optional[list[str]] = None,
-        exclude_keys: Optional[set[str]] = None,
-        max_chars: Optional[int] = None,
+        scope_filter: ContextScope | None = None,
+        tag_filter: list[str] | None = None,
+        exclude_keys: set[str] | None = None,
+        max_chars: int | None = None,
     ) -> InjectionResult:
         """
         Inject the most relevant context for a task/query.
@@ -517,9 +518,9 @@ class ContextInjector:
     def inject_dynamic(
         self,
         query: str,
-        previous_items: Optional[list[str]] = None,
-        new_items: Optional[list[dict[str, Any]]] = None,
-        max_chars: Optional[int] = None,
+        previous_items: list[str] | None = None,
+        new_items: list[dict[str, Any]] | None = None,
+        max_chars: int | None = None,
     ) -> InjectionResult:
         """
         Dynamic context injection with swapping.
@@ -560,14 +561,14 @@ class ContextInjector:
 
     # -- Public API: Queries -------------------------------------------------
 
-    def get(self, key: str) -> Optional[ContextItem]:
+    def get(self, key: str) -> ContextItem | None:
         """Get a context item by key."""
         return self._items.get(key)
 
     def list_items(
         self,
-        scope: Optional[ContextScope] = None,
-        tag: Optional[str] = None,
+        scope: ContextScope | None = None,
+        tag: str | None = None,
         include_expired: bool = False,
     ) -> list[ContextItem]:
         """
@@ -618,8 +619,8 @@ class ContextInjector:
 
     def _get_candidates(
         self,
-        scope_filter: Optional[ContextScope],
-        tag_filter: Optional[list[str]],
+        scope_filter: ContextScope | None,
+        tag_filter: list[str] | None,
         exclude_keys: set[str],
     ) -> list[ContextItem]:
         """Get candidate items for injection."""
@@ -696,7 +697,7 @@ class ContextInjector:
         return len(self._items)
 
     @property
-    def last_result(self) -> Optional[InjectionResult]:
+    def last_result(self) -> InjectionResult | None:
         """Get the result of the last injection."""
         return self._last_result
 
@@ -707,7 +708,7 @@ class ContextInjector:
 
     # -- Context Manager -----------------------------------------------------
 
-    def __enter__(self) -> "ContextInjector":
+    def __enter__(self) -> ContextInjector:
         return self
 
     def __exit__(self, *args: Any) -> None:

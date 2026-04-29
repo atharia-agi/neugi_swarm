@@ -13,15 +13,14 @@ Usage:
 
 from __future__ import annotations
 
-import json
 import logging
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any
 
 from plugins.plugin_sdk import PluginContext, PluginMetadata
 
@@ -56,9 +55,9 @@ class PluginStatus:
     """
 
     state: PluginState = PluginState.LOADED
-    enabled_at: Optional[datetime] = None
-    disabled_at: Optional[datetime] = None
-    last_error: Optional[str] = None
+    enabled_at: datetime | None = None
+    disabled_at: datetime | None = None
+    last_error: str | None = None
     error_count: int = 0
     health_status: str = "unknown"
     uptime: float = 0.0
@@ -87,7 +86,7 @@ class PluginInfo:
     name: str
     metadata: PluginMetadata
     status: PluginStatus
-    context: Optional[PluginContext] = None
+    context: PluginContext | None = None
     config: dict[str, Any] = field(default_factory=dict)
     registered_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -139,7 +138,7 @@ class PluginRegistry:
 
     def __init__(
         self,
-        config_store: Optional[Any] = None,
+        config_store: Any | None = None,
         health_check_interval: float = 60.0,
     ) -> None:
         """
@@ -153,9 +152,9 @@ class PluginRegistry:
         self._lock = threading.RLock()
 
         # System component references (set by the loader)
-        self._memory_system: Optional[Any] = None
-        self._agent_manager: Optional[Any] = None
-        self._skill_manager: Optional[Any] = None
+        self._memory_system: Any | None = None
+        self._agent_manager: Any | None = None
+        self._skill_manager: Any | None = None
         self._global_config: dict[str, Any] = {}
 
         # Configuration
@@ -164,7 +163,7 @@ class PluginRegistry:
 
         # Health monitoring
         self._health_check_interval = health_check_interval
-        self._health_thread: Optional[threading.Thread] = None
+        self._health_thread: threading.Thread | None = None
         self._health_running = False
         self._health_checks: dict[str, Callable[[], bool]] = {}
 
@@ -176,10 +175,10 @@ class PluginRegistry:
 
     def set_system_components(
         self,
-        memory_system: Optional[Any] = None,
-        agent_manager: Optional[Any] = None,
-        skill_manager: Optional[Any] = None,
-        config: Optional[dict[str, Any]] = None,
+        memory_system: Any | None = None,
+        agent_manager: Any | None = None,
+        skill_manager: Any | None = None,
+        config: dict[str, Any] | None = None,
     ) -> None:
         """
         Set references to system components for plugin context.
@@ -196,15 +195,15 @@ class PluginRegistry:
         if config:
             self._global_config = config
 
-    def get_memory_system(self) -> Optional[Any]:
+    def get_memory_system(self) -> Any | None:
         """Get the memory system reference."""
         return self._memory_system
 
-    def get_agent_manager(self) -> Optional[Any]:
+    def get_agent_manager(self) -> Any | None:
         """Get the agent manager reference."""
         return self._agent_manager
 
-    def get_skill_manager(self) -> Optional[Any]:
+    def get_skill_manager(self) -> Any | None:
         """Get the skill manager reference."""
         return self._skill_manager
 
@@ -222,7 +221,7 @@ class PluginRegistry:
         self,
         name: str,
         metadata: PluginMetadata,
-        context: Optional[PluginContext],
+        context: PluginContext | None,
     ) -> PluginInfo:
         """
         Register a plugin with the registry.
@@ -537,7 +536,7 @@ class PluginRegistry:
         with self._lock:
             return list(self._plugins.values())
 
-    def get_plugin(self, name: str) -> Optional[PluginInfo]:
+    def get_plugin(self, name: str) -> PluginInfo | None:
         """Get a plugin by name."""
         return self._plugins.get(name)
 
@@ -549,7 +548,7 @@ class PluginRegistry:
                 if info.status.state == PluginState.ENABLED
             ]
 
-    def get_plugin_status(self, name: str) -> Optional[dict[str, Any]]:
+    def get_plugin_status(self, name: str) -> dict[str, Any] | None:
         """Get the status dict for a plugin."""
         info = self._plugins.get(name)
         if info is None:

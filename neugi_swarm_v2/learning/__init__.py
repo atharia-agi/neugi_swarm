@@ -26,41 +26,37 @@ Usage:
 
 from __future__ import annotations
 
-from neugi_swarm_v2.learning.pattern_tracker import (
-    PatternTracker,
-    PatternRecord,
-    PatternType,
-    PatternScore,
-    PatternSequence,
-    PatternDetectionResult,
-)
-
-from neugi_swarm_v2.learning.skill_generator import (
-    SkillGenerator,
-    GeneratedSkill,
-    SkillQualityScore,
-    SkillApprovalStatus,
-    SkillVersion,
-)
-
-from neugi_swarm_v2.learning.feedback_loop import (
-    FeedbackLoop,
-    FeedbackEntry,
-    FeedbackType,
-    FeedbackSummary,
-    TuningRecommendation,
-    DegradationAlert,
-)
-
 from neugi_swarm_v2.learning.dashboard import (
+    AgentImprovementReport,
     LearningDashboard,
     LearningStats,
+    OptimizationRecommendation,
     PerformanceTrend,
     SkillUsageAnalytics,
-    AgentImprovementReport,
-    OptimizationRecommendation,
 )
-
+from neugi_swarm_v2.learning.feedback_loop import (
+    DegradationAlert,
+    FeedbackEntry,
+    FeedbackLoop,
+    FeedbackSummary,
+    FeedbackType,
+    TuningRecommendation,
+)
+from neugi_swarm_v2.learning.pattern_tracker import (
+    PatternDetectionResult,
+    PatternRecord,
+    PatternScore,
+    PatternSequence,
+    PatternTracker,
+    PatternType,
+)
+from neugi_swarm_v2.learning.skill_generator import (
+    GeneratedSkill,
+    SkillApprovalStatus,
+    SkillGenerator,
+    SkillQualityScore,
+    SkillVersion,
+)
 
 __all__ = [
     "LearningSystem",
@@ -314,7 +310,7 @@ class LearningSystem:
         self.feedback_loop.close()
         self.dashboard.close()
 
-    def __enter__(self) -> "LearningSystem":
+    def __enter__(self) -> LearningSystem:
         return self
 
     def __exit__(self, *args) -> None:

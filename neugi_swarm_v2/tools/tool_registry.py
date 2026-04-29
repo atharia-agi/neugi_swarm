@@ -5,22 +5,15 @@ Provides tool registration with typed schemas, categorization, discovery,
 versioning, allowlists, usage statistics, and health monitoring.
 """
 
-import time
-import threading
 import logging
+import threading
+import time
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import (
     Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    Type,
-    Union,
 )
-from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
 
@@ -59,22 +52,22 @@ class ToolSchema:
     name: str
     description: str
     category: ToolCategory
-    parameters: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    parameters: dict[str, dict[str, Any]] = field(default_factory=dict)
     return_type: str = "Any"
-    required_params: List[str] = field(default_factory=list)
-    optional_params: Dict[str, Any] = field(default_factory=dict)
+    required_params: list[str] = field(default_factory=list)
+    optional_params: dict[str, Any] = field(default_factory=dict)
     version: str = "1.0.0"
     deprecated: bool = False
     deprecation_message: str = ""
-    tags: List[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
     timeout_seconds: float = 30.0
     rate_limit_per_minute: int = 60
     cacheable: bool = True
     side_effects: bool = False
     complexity: ToolComplexity = ToolComplexity.SIMPLE
-    required_capabilities: List[str] = field(default_factory=list)
+    required_capabilities: list[str] = field(default_factory=list)
 
-    def validate_params(self, kwargs: Dict[str, Any]) -> List[str]:
+    def validate_params(self, kwargs: dict[str, Any]) -> list[str]:
         """Validate parameters against schema. Returns list of errors."""
         errors = []
         for param in self.required_params:
@@ -124,12 +117,12 @@ class ToolStats:
     success_count: int = 0
     failure_count: int = 0
     total_latency_ms: float = 0.0
-    last_called_at: Optional[float] = None
-    last_error: Optional[str] = None
+    last_called_at: float | None = None
+    last_error: str | None = None
     avg_latency_ms: float = 0.0
     success_rate: float = 1.0
 
-    def record_call(self, latency_ms: float, success: bool, error: Optional[str] = None):
+    def record_call(self, latency_ms: float, success: bool, error: str | None = None):
         """Record a tool call."""
         self.call_count += 1
         self.total_latency_ms += latency_ms
@@ -153,7 +146,7 @@ class ToolHealth:
     status: str = "healthy"
     last_check: float = field(default_factory=time.time)
     consecutive_failures: int = 0
-    last_error: Optional[str] = None
+    last_error: str | None = None
     uptime_ratio: float = 1.0
     circuit_open: bool = False
 
@@ -213,12 +206,12 @@ class ToolRegistry:
     """
 
     def __init__(self):
-        self._tools: Dict[str, ToolMetadata] = {}
-        self._stats: Dict[str, ToolStats] = {}
-        self._health: Dict[str, ToolHealth] = {}
-        self._allowlists: Dict[str, Set[str]] = {}
+        self._tools: dict[str, ToolMetadata] = {}
+        self._stats: dict[str, ToolStats] = {}
+        self._health: dict[str, ToolHealth] = {}
+        self._allowlists: dict[str, set[str]] = {}
         self._lock = threading.RLock()
-        self._categories: Dict[ToolCategory, Set[str]] = {
+        self._categories: dict[ToolCategory, set[str]] = {
             cat: set() for cat in ToolCategory
         }
 
@@ -228,20 +221,20 @@ class ToolRegistry:
         func: Callable,
         category: ToolCategory,
         description: str = "",
-        parameters: Optional[Dict[str, Dict[str, Any]]] = None,
+        parameters: dict[str, dict[str, Any]] | None = None,
         return_type: str = "Any",
-        required_params: Optional[List[str]] = None,
-        optional_params: Optional[Dict[str, Any]] = None,
+        required_params: list[str] | None = None,
+        optional_params: dict[str, Any] | None = None,
         version: str = "1.0.0",
         deprecated: bool = False,
         deprecation_message: str = "",
-        tags: Optional[List[str]] = None,
+        tags: list[str] | None = None,
         timeout_seconds: float = 30.0,
         rate_limit_per_minute: int = 60,
         cacheable: bool = True,
         side_effects: bool = False,
         complexity: ToolComplexity = ToolComplexity.SIMPLE,
-        required_capabilities: Optional[List[str]] = None,
+        required_capabilities: list[str] | None = None,
         author: str = "system",
         source: str = "builtin",
     ) -> ToolSchema:
@@ -385,11 +378,11 @@ class ToolRegistry:
 
     def list_tools(
         self,
-        category: Optional[ToolCategory] = None,
-        tags: Optional[List[str]] = None,
+        category: ToolCategory | None = None,
+        tags: list[str] | None = None,
         include_deprecated: bool = False,
-        capability_profile: Optional[Any] = None,
-    ) -> List[ToolSchema]:
+        capability_profile: Any | None = None,
+    ) -> list[ToolSchema]:
         """
         List registered tools with optional filters.
 
@@ -424,8 +417,8 @@ class ToolRegistry:
     def list_compatible_tools(
         self,
         capability_profile: Any,
-        category: Optional[ToolCategory] = None,
-    ) -> List[ToolSchema]:
+        category: ToolCategory | None = None,
+    ) -> list[ToolSchema]:
         """List only tools compatible with the given capability profile."""
         return self.list_tools(
             category=category,
@@ -479,7 +472,7 @@ class ToolRegistry:
 
         return True
 
-    def search_tools(self, query: str) -> List[ToolSchema]:
+    def search_tools(self, query: str) -> list[ToolSchema]:
         """
         Search tools by name, description, or tags.
 
@@ -506,7 +499,7 @@ class ToolRegistry:
         results.sort(key=lambda x: x[0], reverse=True)
         return [schema for _, schema in results]
 
-    def set_agent_allowlist(self, agent_id: str, tool_names: Set[str]):
+    def set_agent_allowlist(self, agent_id: str, tool_names: set[str]):
         """
         Set the allowlist of tools for a specific agent.
 
@@ -517,7 +510,7 @@ class ToolRegistry:
         with self._lock:
             self._allowlists[agent_id] = tool_names
 
-    def get_agent_allowlist(self, agent_id: str) -> Optional[Set[str]]:
+    def get_agent_allowlist(self, agent_id: str) -> set[str] | None:
         """
         Get the allowlist for an agent.
 
@@ -548,7 +541,7 @@ class ToolRegistry:
             return tool_name in allowlist
 
     def record_stats(
-        self, name: str, latency_ms: float, success: bool, error: Optional[str] = None
+        self, name: str, latency_ms: float, success: bool, error: str | None = None
     ):
         """
         Record usage statistics for a tool call.
@@ -568,7 +561,7 @@ class ToolRegistry:
                 else:
                     self._health[name].record_failure(error or "Unknown error")
 
-    def get_stats(self, name: str) -> Optional[ToolStats]:
+    def get_stats(self, name: str) -> ToolStats | None:
         """
         Get usage statistics for a tool.
 
@@ -581,7 +574,7 @@ class ToolRegistry:
         with self._lock:
             return self._stats.get(name)
 
-    def get_health(self, name: str) -> Optional[ToolHealth]:
+    def get_health(self, name: str) -> ToolHealth | None:
         """
         Get health status for a tool.
 
@@ -594,7 +587,7 @@ class ToolRegistry:
         with self._lock:
             return self._health.get(name)
 
-    def get_all_health(self) -> Dict[str, ToolHealth]:
+    def get_all_health(self) -> dict[str, ToolHealth]:
         """
         Get health status for all tools.
 
@@ -604,7 +597,7 @@ class ToolRegistry:
         with self._lock:
             return dict(self._health)
 
-    def get_tools_by_category(self, category: ToolCategory) -> List[ToolSchema]:
+    def get_tools_by_category(self, category: ToolCategory) -> list[ToolSchema]:
         """
         Get all tools in a category.
 
@@ -627,7 +620,7 @@ class ToolRegistry:
         with self._lock:
             return len(self._tools)
 
-    def get_category_summary(self) -> Dict[str, int]:
+    def get_category_summary(self) -> dict[str, int]:
         """Get count of tools per category."""
         with self._lock:
             return {
@@ -650,7 +643,7 @@ class ToolRegistry:
                 self._tools[name].schema.deprecation_message = message
                 logger.warning(f"Deprecated tool '{name}': {message}")
 
-    def get_tool_versions(self, name: str) -> List[str]:
+    def get_tool_versions(self, name: str) -> list[str]:
         """
         Get version history for a tool (tracks current version).
 

@@ -21,11 +21,11 @@ from __future__ import annotations
 import importlib
 import logging
 import re
-import sys
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +64,7 @@ class SemVer:
     major: int
     minor: int
     patch: int
-    prerelease: Optional[str] = None
+    prerelease: str | None = None
 
     @classmethod
     def parse(cls, version: str) -> SemVer:
@@ -332,11 +332,11 @@ class PluginMetadata:
     version: str
     description: str = ""
     author: str = ""
-    path: Optional[Path] = None
-    module: Optional[Any] = None
-    instance: Optional[PluginBase] = None
+    path: Path | None = None
+    module: Any | None = None
+    instance: PluginBase | None = None
     load_time: float = 0.0
-    load_error: Optional[str] = None
+    load_error: str | None = None
 
     @property
     def is_loaded(self) -> bool:
@@ -386,11 +386,11 @@ class PluginContext:
 
     def __init__(
         self,
-        memory_system: Optional[Any] = None,
-        agent_manager: Optional[Any] = None,
-        skill_manager: Optional[Any] = None,
-        config: Optional[dict[str, Any]] = None,
-        plugin_config: Optional[dict[str, Any]] = None,
+        memory_system: Any | None = None,
+        agent_manager: Any | None = None,
+        skill_manager: Any | None = None,
+        config: dict[str, Any] | None = None,
+        plugin_config: dict[str, Any] | None = None,
     ) -> None:
         """
         Initialize the plugin context.
@@ -412,15 +412,15 @@ class PluginContext:
         self._hooks: list[dict[str, Any]] = []
         self._routes: list[dict[str, Any]] = []
 
-    def get_memory_system(self) -> Optional[Any]:
+    def get_memory_system(self) -> Any | None:
         """Get the memory system instance (read-only access)."""
         return self._memory_system
 
-    def get_agent_manager(self) -> Optional[Any]:
+    def get_agent_manager(self) -> Any | None:
         """Get the agent manager instance (read-only access)."""
         return self._agent_manager
 
-    def get_skill_manager(self) -> Optional[Any]:
+    def get_skill_manager(self) -> Any | None:
         """Get the skill manager instance (read-only access)."""
         return self._skill_manager
 
@@ -538,7 +538,7 @@ class PluginBase:
 
     def __init__(self) -> None:
         """Initialize the plugin."""
-        self._context: Optional[PluginContext] = None
+        self._context: PluginContext | None = None
         self._enabled = False
 
     @property
@@ -605,10 +605,10 @@ class PluginBase:
 # These are convenience functions that plugins can call from within on_load().
 # They operate on the current plugin's context.
 
-_current_context: Optional[PluginContext] = None
+_current_context: PluginContext | None = None
 
 
-def _set_current_context(ctx: Optional[PluginContext]) -> None:
+def _set_current_context(ctx: PluginContext | None) -> None:
     """Set the current plugin context (internal use)."""
     global _current_context
     _current_context = ctx

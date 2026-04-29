@@ -20,12 +20,11 @@ from __future__ import annotations
 import json
 import logging
 import sqlite3
-import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -109,8 +108,8 @@ class PatternRecord:
     success: bool
     duration_ms: float
     metadata: dict[str, Any] = field(default_factory=dict)
-    id: Optional[int] = None
-    timestamp: Optional[datetime] = None
+    id: int | None = None
+    timestamp: datetime | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to a dictionary."""
@@ -139,10 +138,10 @@ class PatternSequence:
     """
     actions: list[str]
     success: bool
-    id: Optional[int] = None
+    id: int | None = None
     occurrence_count: int = 1
-    first_seen: Optional[datetime] = None
-    last_seen: Optional[datetime] = None
+    first_seen: datetime | None = None
+    last_seen: datetime | None = None
 
     @property
     def signature(self) -> str:
@@ -489,7 +488,7 @@ class PatternTracker:
         self,
         pattern_type: PatternType,
         name: str,
-    ) -> Optional[PatternDetectionResult]:
+    ) -> PatternDetectionResult | None:
         """Get aggregated statistics for a specific pattern.
 
         Args:
@@ -550,7 +549,7 @@ class PatternTracker:
 
     def get_top_patterns(
         self,
-        pattern_type: Optional[PatternType] = None,
+        pattern_type: PatternType | None = None,
         limit: int = 20,
         min_occurrences: int = 1,
     ) -> list[PatternDetectionResult]:

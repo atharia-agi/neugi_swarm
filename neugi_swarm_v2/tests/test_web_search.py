@@ -1,8 +1,11 @@
 """Tests for Web Search Tool."""
-import sys, os, unittest
+import os
+import sys
+import unittest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tools.web_search import WebSearch, WebSearchConfig, SearchResult
+from tools.web_search import SearchResult, WebSearch, WebSearchConfig
 
 
 class TestWebSearch(unittest.TestCase):
@@ -16,7 +19,7 @@ class TestWebSearch(unittest.TestCase):
     def test_cache_operations(self):
         key = self.ws._cache_key("test", "query")
         self.assertIsNone(self.ws._get_cached(key))
-        
+
         self.ws._set_cached(key, "value")
         self.assertEqual(self.ws._get_cached(key), "value")
 

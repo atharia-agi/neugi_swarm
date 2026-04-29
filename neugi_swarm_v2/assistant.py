@@ -20,29 +20,27 @@ Version: 2.0.0
 from __future__ import annotations
 
 import json
-import time
-import re
-from typing import Any, Callable, Dict, Generator, List, Optional
+from collections.abc import Callable, Generator
+from typing import Any
 
-from neugi_swarm_v2.config import NeugiConfig
-from neugi_swarm_v2.memory.memory_core import MemorySystem
-from neugi_swarm_v2.skills.skill_manager import SkillManager
 from neugi_swarm_v2.agents.agent_manager import AgentManager
-from neugi_swarm_v2.session.session_manager import SessionManager
+from neugi_swarm_v2.config import NeugiConfig
 from neugi_swarm_v2.context.prompt_assembler import PromptAssembler
 from neugi_swarm_v2.context.token_budget import TokenBudget
 from neugi_swarm_v2.llm_provider import (
+    AnthropicCompatibleProvider,
     LLMProvider,
     LLMResponse,
     OllamaProvider,
     OpenAICompatibleProvider,
-    AnthropicCompatibleProvider,
     ProviderConfig,
     ProviderType,
     ToolCall,
-    ErrorType,
 )
+from neugi_swarm_v2.memory.memory_core import MemorySystem
 from neugi_swarm_v2.model_registry import ModelCapabilityDetector
+from neugi_swarm_v2.session.session_manager import SessionManager
+from neugi_swarm_v2.skills.skill_manager import SkillManager
 
 
 class NeugiAssistantV2:
@@ -50,15 +48,15 @@ class NeugiAssistantV2:
 
     def __init__(
         self,
-        config: Optional[NeugiConfig] = None,
+        config: NeugiConfig | None = None,
         session_id: str = "default",
-        llm: Optional[LLMProvider] = None,
-        memory: Optional[MemorySystem] = None,
-        skills: Optional[SkillManager] = None,
-        sessions: Optional[SessionManager] = None,
-        prompt_assembler: Optional[PromptAssembler] = None,
-        token_budget: Optional[TokenBudget] = None,
-        on_user_interaction: Optional[Callable[[], None]] = None,
+        llm: LLMProvider | None = None,
+        memory: MemorySystem | None = None,
+        skills: SkillManager | None = None,
+        sessions: SessionManager | None = None,
+        prompt_assembler: PromptAssembler | None = None,
+        token_budget: TokenBudget | None = None,
+        on_user_interaction: Callable[[], None] | None = None,
     ):
         self.config = config or NeugiConfig()
         self.session_id = session_id
@@ -99,7 +97,7 @@ class NeugiAssistantV2:
         )
 
         # Tool registry
-        self._tools: Dict[str, Callable] = {}
+        self._tools: dict[str, Callable] = {}
         self._register_default_tools()
 
         # Model capability detection
@@ -116,21 +114,21 @@ class NeugiAssistantV2:
         self.strict_execution = self.config.strict_agentic_execution
 
         # Steering
-        self._steering_messages: List[str] = []
+        self._steering_messages: list[str] = []
         self._steering_enabled = False
 
     def _create_llm_provider(self) -> LLMProvider:
         """Create the primary LLM provider from config."""
         cfg = self.config.llm
-        
+
         # Handle both dict and dataclass access
         def get_attr(obj, key, default=None):
             if isinstance(obj, dict):
                 return obj.get(key, default)
             return getattr(obj, key, default)
-        
+
         provider_type = get_attr(cfg, "provider", "ollama")
-        
+
         # Normalize provider names (wizard uses "openai"/"anthropic", provider uses "openai_compatible")
         provider_map = {
             "ollama": ProviderType.OLLAMA,
@@ -140,7 +138,7 @@ class NeugiAssistantV2:
             "anthropic_compatible": ProviderType.ANTHROPIC_COMPATIBLE,
         }
         pt = provider_map.get(provider_type, ProviderType.OLLAMA)
-        
+
         # Resolve base_url per provider
         base_url = get_attr(cfg, "base_url", "")
         ollama_url = get_attr(cfg, "ollama_url", "http://localhost:11434")
@@ -170,15 +168,15 @@ class NeugiAssistantV2:
         else:
             return OllamaProvider(config)
 
-    def _create_fallback_llm_provider(self) -> Optional[LLMProvider]:
+    def _create_fallback_llm_provider(self) -> LLMProvider | None:
         """Create fallback LLM provider."""
         cfg = self.config.llm
-        
+
         def get_attr(obj, key, default=None):
             if isinstance(obj, dict):
                 return obj.get(key, default)
             return getattr(obj, key, default)
-        
+
         fallback_model = get_attr(cfg, "fallback_model", "")
         default_model = get_attr(cfg, "model", "")
         if not fallback_model or fallback_model == default_model:
@@ -227,7 +225,7 @@ class NeugiAssistantV2:
         if not os.path.exists(full_path):
             return f"Error: File not found: {path}"
         try:
-            with open(full_path, "r", encoding="utf-8") as f:
+            with open(full_path, encoding="utf-8") as f:
                 return f.read()
         except Exception as e:
             return f"Error reading file: {e}"
@@ -277,7 +275,7 @@ class NeugiAssistantV2:
         if self._steering_enabled:
             self._steering_messages.append(message)
 
-    def _check_steering(self) -> Optional[str]:
+    def _check_steering(self) -> str | None:
         """Check for pending steering messages."""
         if self._steering_messages:
             msg = self._steering_messages.pop(0)
@@ -298,7 +296,8 @@ class NeugiAssistantV2:
             str or StructuredResponse depending on structured parameter.
         """
         import time as time_module
-        from response_format import ResponseFormatter, StructuredResponse, ResponseMetadata
+
+        from response_format import ResponseFormatter
 
         start_time = time_module.time()
         total_tokens = 0
@@ -461,7 +460,7 @@ class NeugiAssistantV2:
 
     # ========== Message Building ==========
 
-    def _build_messages(self, user_message: str) -> List[Dict[str, str]]:
+    def _build_messages(self, user_message: str) -> list[dict[str, str]]:
         """Build message list with system prompt, memory, skills, and context."""
         # Assemble system prompt
         system_prompt = self.prompt_assembler.assemble(
@@ -485,7 +484,7 @@ class NeugiAssistantV2:
 
         return messages
 
-    def _get_identity(self) -> Dict[str, str]:
+    def _get_identity(self) -> dict[str, str]:
         """Get agent identity info."""
         return {
             "name": "NEUGI",
@@ -556,11 +555,11 @@ class NeugiAssistantV2:
 
     # ========== Utility Methods ==========
 
-    def get_session_info(self) -> Dict[str, Any]:
+    def get_session_info(self) -> dict[str, Any]:
         """Get current session information."""
         return self.sessions.get_session_info(self.session_id)
 
-    def get_memory_stats(self) -> Dict[str, Any]:
+    def get_memory_stats(self) -> dict[str, Any]:
         """Get memory system statistics."""
         return self.memory.get_stats()
 

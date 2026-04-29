@@ -19,72 +19,72 @@ Example:
     >>> result = executor.execute("hello")
 """
 
-from tools.tool_registry import (
-    ToolRegistry,
-    ToolSchema,
-    ToolCategory,
-    ToolMetadata,
-    ToolStats,
-    ToolHealth,
-    ToolNotFoundError,
-    ToolAlreadyRegisteredError,
-    ToolDeprecatedError,
+from tools.browser import (
+    BrowserAction,
+    BrowserConfig,
+    BrowserTool,
+    BrowserToolError,
+    DOMElement,
+)
+from tools.builtins import (
+    AITools,
+    CodeTools,
+    CommTools,
+    DataTools,
+    DockerTools,
+    FileTools,
+    GitTools,
+    SecurityTools,
+    SystemTools,
+    WebTools,
+    register_builtin_tools,
 )
 from tools.tool_composer import (
-    ToolComposer,
-    SequentialComposer,
-    ParallelComposer,
-    ConditionalComposer,
-    LoopComposer,
     CompositionResult,
     CompositionType,
     CompositionValidationError,
-)
-from tools.tool_generator import (
-    ToolGenerator,
-    GeneratedTool,
-    ToolQualityReport,
-    APISpecParser,
-    PatternObserver,
-    ToolQualityError,
+    ConditionalComposer,
+    LoopComposer,
+    ParallelComposer,
+    SequentialComposer,
+    ToolComposer,
 )
 from tools.tool_executor import (
-    ToolExecutor,
+    CacheBackend,
+    CircuitBreaker,
+    CircuitOpenError,
+    ExecutionError,
     ExecutionResult,
     ExecutionTrace,
-    CacheBackend,
     RateLimiter,
-    CircuitBreaker,
-    ExecutionError,
-    TimeoutError,
-    CircuitOpenError,
     RateLimitExceededError,
+    TimeoutError,
+    ToolExecutor,
 )
-from tools.builtins import (
-    register_builtin_tools,
-    WebTools,
-    CodeTools,
-    FileTools,
-    DataTools,
-    CommTools,
-    SystemTools,
-    AITools,
-    GitTools,
-    DockerTools,
-    SecurityTools,
+from tools.tool_generator import (
+    APISpecParser,
+    GeneratedTool,
+    PatternObserver,
+    ToolGenerator,
+    ToolQualityError,
+    ToolQualityReport,
+)
+from tools.tool_registry import (
+    ToolAlreadyRegisteredError,
+    ToolCategory,
+    ToolDeprecatedError,
+    ToolHealth,
+    ToolMetadata,
+    ToolNotFoundError,
+    ToolRegistry,
+    ToolSchema,
+    ToolStats,
 )
 from tools.web_search import (
+    SearchResult,
     WebSearch,
     WebSearchConfig,
-    SearchResult,
     WebSearchError,
-)
-from tools.browser import (
-    BrowserTool,
-    BrowserConfig,
-    BrowserAction,
-    DOMElement,
-    BrowserToolError,
 )
 
 __all__ = [

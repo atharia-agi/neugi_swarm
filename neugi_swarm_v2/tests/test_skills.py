@@ -1,5 +1,8 @@
 """Integration tests for Skills subsystem."""
-import sys, os, unittest
+import os
+import sys
+import unittest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
@@ -25,7 +28,7 @@ class TestSkillsImports(unittest.TestCase):
         self.assertTrue(hasattr(skill_prompt, "PromptAssembler"))
 
     def test_package_exports(self):
-        from skills import SkillManager, SkillLoader, SkillMatcher
+        from skills import SkillLoader, SkillManager, SkillMatcher
         self.assertIsNotNone(SkillManager)
         self.assertIsNotNone(SkillLoader)
         self.assertIsNotNone(SkillMatcher)

@@ -25,7 +25,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -59,8 +59,8 @@ class FeedbackEntry:
     feedback_type: FeedbackType
     comment: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)
-    id: Optional[int] = None
-    timestamp: Optional[datetime] = None
+    id: int | None = None
+    timestamp: datetime | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to a dictionary."""
@@ -401,7 +401,7 @@ class FeedbackLoop:
             logger.error("Failed to record performance snapshot: %s", e)
             return False
 
-    def get_feedback_summary(self, target: str) -> Optional[FeedbackSummary]:
+    def get_feedback_summary(self, target: str) -> FeedbackSummary | None:
         """Get aggregated feedback for a target.
 
         Args:

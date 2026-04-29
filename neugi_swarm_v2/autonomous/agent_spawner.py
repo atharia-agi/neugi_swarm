@@ -22,7 +22,7 @@ import logging
 import time
 import traceback
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -35,12 +35,12 @@ class SpawnedAgentResult:
     task: str
     success: bool = False
     output: str = ""
-    error: Optional[str] = None
+    error: str | None = None
     duration_ms: float = 0.0
     tokens_used: int = 0
     created_at: float = field(default_factory=lambda: time.time())
 
-    def to_memory_entry(self) -> Dict[str, Any]:
+    def to_memory_entry(self) -> dict[str, Any]:
         """Convert to memory entry dict."""
         return {
             "content": f"[{self.agent_type}] {self.task}\n\n{self.output}",
@@ -67,7 +67,7 @@ class AutonomousAgentSpawner:
 
     def __init__(
         self,
-        llm_callback: Optional[Any] = None,
+        llm_callback: Any | None = None,
         memory_system: Any = None,
         agent_manager: Any = None,
     ) -> None:
@@ -79,7 +79,7 @@ class AutonomousAgentSpawner:
 
     # -- Public API ------------------------------------------------------------
 
-    def spawn_research_agent(self, task: str, context: Optional[Dict[str, Any]] = None) -> SpawnedAgentResult:
+    def spawn_research_agent(self, task: str, context: dict[str, Any] | None = None) -> SpawnedAgentResult:
         """Spawn a research agent to investigate a topic or blocker."""
         return self._spawn_and_run(
             agent_type="research",
@@ -93,7 +93,7 @@ class AutonomousAgentSpawner:
             context=context,
         )
 
-    def spawn_coder_agent(self, task: str, context: Optional[Dict[str, Any]] = None) -> SpawnedAgentResult:
+    def spawn_coder_agent(self, task: str, context: dict[str, Any] | None = None) -> SpawnedAgentResult:
         """Spawn a coder agent to generate code, fixes, or skills."""
         return self._spawn_and_run(
             agent_type="coder",
@@ -107,7 +107,7 @@ class AutonomousAgentSpawner:
             context=context,
         )
 
-    def spawn_analyst_agent(self, task: str, context: Optional[Dict[str, Any]] = None) -> SpawnedAgentResult:
+    def spawn_analyst_agent(self, task: str, context: dict[str, Any] | None = None) -> SpawnedAgentResult:
         """Spawn an analyst agent to analyze patterns or system health."""
         return self._spawn_and_run(
             agent_type="analyst",
@@ -120,7 +120,7 @@ class AutonomousAgentSpawner:
             context=context,
         )
 
-    def spawn_strategist_agent(self, task: str, context: Optional[Dict[str, Any]] = None) -> SpawnedAgentResult:
+    def spawn_strategist_agent(self, task: str, context: dict[str, Any] | None = None) -> SpawnedAgentResult:
         """Spawn a strategist agent for planning and optimization."""
         return self._spawn_and_run(
             agent_type="strategist",
@@ -133,7 +133,7 @@ class AutonomousAgentSpawner:
             context=context,
         )
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get spawner statistics."""
         return {
             "total_spawns": self._spawn_count,
@@ -150,7 +150,7 @@ class AutonomousAgentSpawner:
         agent_type: str,
         task: str,
         instructions: str,
-        context: Optional[Dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ) -> SpawnedAgentResult:
         """Spawn an agent and execute the task."""
         self._spawn_count += 1

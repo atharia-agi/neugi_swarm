@@ -33,7 +33,7 @@ import logging
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -335,8 +335,8 @@ class TokenBudget:
     def __init__(
         self,
         model: str = "claude-sonnet",
-        total_tokens: Optional[int] = None,
-        output_reservation: Optional[int] = None,
+        total_tokens: int | None = None,
+        output_reservation: int | None = None,
         safety_margin: float = 0.05,
     ) -> None:
         """
@@ -369,7 +369,7 @@ class TokenBudget:
         self,
         name: str,
         tokens: int,
-        priority: Optional[int] = None,
+        priority: int | None = None,
         overflow_allowed: bool = False,
     ) -> SectionBudget:
         """
@@ -497,7 +497,7 @@ class TokenBudget:
         self._section_content[section_name] = content
         return token_count
 
-    def reset_usage(self, section_name: Optional[str] = None) -> None:
+    def reset_usage(self, section_name: str | None = None) -> None:
         """
         Reset usage counters.
 
@@ -653,7 +653,7 @@ class TokenBudget:
 
     def truncate_section_to_fit(
         self, section_name: str, max_tokens: int
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Get truncated content for a section to fit within token limit.
 
@@ -689,7 +689,7 @@ class TokenBudget:
 
     # -- Utilities -----------------------------------------------------------
 
-    def _resolve_preset(self, model: str) -> Optional[ModelPreset]:
+    def _resolve_preset(self, model: str) -> ModelPreset | None:
         """Resolve a model string to a ModelPreset."""
         model_lower = model.lower()
         for preset in ModelPreset:
@@ -726,7 +726,7 @@ class TokenBudget:
 
     # -- Context Manager -----------------------------------------------------
 
-    def __enter__(self) -> "TokenBudget":
+    def __enter__(self) -> TokenBudget:
         return self
 
     def __exit__(self, *args: Any) -> None:

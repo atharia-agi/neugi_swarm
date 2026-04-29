@@ -24,63 +24,59 @@ Usage:
 
 from __future__ import annotations
 
-# -- Budget Tracking ---------------------------------------------------------
+# -- Approval Gates ----------------------------------------------------------
+from .approval import (
+    ApprovalChain,
+    ApprovalDecision,
+    ApprovalGate,
+    ApprovalHistory,
+    ApprovalRequest,
+    ApprovalRule,
+    ApprovalStatus,
+    ApprovalTimeoutError,
+)
 
+# -- Audit Logging -----------------------------------------------------------
+from .audit import (
+    AuditEntry,
+    AuditError,
+    AuditEventType,
+    AuditExportFormat,
+    AuditLogger,
+    AuditReport,
+    DecisionRecord,
+    RetentionPolicy,
+    SessionAudit,
+    ToolCallRecord,
+)
+
+# -- Budget Tracking ---------------------------------------------------------
 from .budget import (
-    BudgetTracker,
     BudgetAllocation,
-    BudgetReport,
+    BudgetExceededError,
     BudgetLevel,
+    BudgetReport,
     BudgetStatus,
     BudgetThreshold,
-    BudgetExceededError,
+    BudgetTracker,
     BudgetWarning,
     CostEntry,
     ModelPricing,
     UsageRecord,
 )
 
-# -- Approval Gates ----------------------------------------------------------
-
-from .approval import (
-    ApprovalGate,
-    ApprovalRule,
-    ApprovalRequest,
-    ApprovalDecision,
-    ApprovalStatus,
-    ApprovalChain,
-    ApprovalTimeoutError,
-    ApprovalHistory,
-)
-
-# -- Audit Logging -----------------------------------------------------------
-
-from .audit import (
-    AuditLogger,
-    AuditEntry,
-    AuditEventType,
-    AuditExportFormat,
-    AuditReport,
-    RetentionPolicy,
-    ToolCallRecord,
-    DecisionRecord,
-    SessionAudit,
-    AuditError,
-)
-
 # -- Policy Engine -----------------------------------------------------------
-
 from .policy import (
-    PolicyEngine,
+    ConditionOperator,
     Policy,
-    PolicyRule,
-    PolicyEffect,
     PolicyCondition,
+    PolicyEffect,
+    PolicyEngine,
+    PolicyError,
     PolicyEvaluation,
     PolicyEvaluationResult,
     PolicyOverride,
-    PolicyError,
-    ConditionOperator,
+    PolicyRule,
 )
 
 __all__ = [

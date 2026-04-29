@@ -22,14 +22,13 @@ Usage:
 from __future__ import annotations
 
 import hashlib
-import json
 import logging
 import time
 import urllib.parse
 import urllib.request
 import warnings
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
+from dataclasses import dataclass
+from typing import Any
 
 # Suppress duckduckgo_search rename warning (ddgs is the new package name)
 warnings.filterwarnings(
@@ -72,9 +71,9 @@ class WebSearchError(Exception):
 class WebSearch:
     """Multi-tier web search with caching and fallback."""
 
-    def __init__(self, config: Optional[WebSearchConfig] = None):
+    def __init__(self, config: WebSearchConfig | None = None):
         self.config = config or WebSearchConfig()
-        self._cache: Dict[str, Dict[str, Any]] = {}
+        self._cache: dict[str, dict[str, Any]] = {}
         self._ddgs_available = self._check_ddgs()
 
     def _check_ddgs(self) -> bool:
@@ -90,7 +89,7 @@ class WebSearch:
         """Generate cache key."""
         return hashlib.sha256(f"{operation}:{query}".encode()).hexdigest()[:16]
 
-    def _get_cached(self, key: str) -> Optional[Any]:
+    def _get_cached(self, key: str) -> Any | None:
         """Get cached result if not expired."""
         if not self.config.cache_enabled or key not in self._cache:
             return None
@@ -105,7 +104,7 @@ class WebSearch:
         if self.config.cache_enabled:
             self._cache[key] = {"timestamp": time.time(), "data": data}
 
-    def _fetch(self, url: str, headers: Optional[Dict[str, str]] = None) -> str:
+    def _fetch(self, url: str, headers: dict[str, str] | None = None) -> str:
         """Fetch URL with timeout."""
         req = urllib.request.Request(
             url,
@@ -148,7 +147,7 @@ class WebSearch:
             except Exception:
                 raise WebSearchError(f"Failed to read URL: {url}")
 
-    def search(self, query: str, max_results: Optional[int] = None) -> List[SearchResult]:
+    def search(self, query: str, max_results: int | None = None) -> list[SearchResult]:
         """Search the web and return LLM-friendly results.
         
         Primary: Jina AI Search (https://s.jina.ai/)
@@ -160,7 +159,7 @@ class WebSearch:
         if cached:
             return cached
 
-        results: List[SearchResult] = []
+        results: list[SearchResult] = []
 
         # Try Jina AI Search first
         try:
@@ -183,27 +182,27 @@ class WebSearch:
 
         return results
 
-    def _search_jina(self, query: str, max_results: int) -> List[SearchResult]:
+    def _search_jina(self, query: str, max_results: int) -> list[SearchResult]:
         """Search using Jina AI Search API."""
         encoded_query = urllib.parse.quote(query)
         url = f"{self.config.jina_search_url}{encoded_query}"
-        
+
         response = self._fetch(url)
-        
+
         # Jina returns markdown with results separated by ---
         results = []
         sections = response.split("\n---\n")
-        
+
         for section in sections[:max_results]:
             lines = section.strip().split("\n")
             if not lines:
                 continue
-            
+
             # Parse title and URL from first lines
             title = ""
             url_str = ""
             content_lines = []
-            
+
             for line in lines:
                 if line.startswith("**URL:** ") or line.startswith("URL: "):
                     url_str = line.replace("**URL:** ", "").replace("URL: ", "").strip()
@@ -215,12 +214,12 @@ class WebSearch:
                     title = line.replace("### ", "").strip()
                 else:
                     content_lines.append(line)
-            
+
             if not title and lines:
                 title = lines[0].replace("## ", "").replace("### ", "").strip()
-            
+
             content = "\n".join(content_lines).strip()
-            
+
             if content or url_str:
                 results.append(SearchResult(
                     title=title or "Untitled",
@@ -228,10 +227,10 @@ class WebSearch:
                     content=content,
                     source="jina"
                 ))
-        
+
         return results
 
-    def _search_ddgs(self, query: str, max_results: int) -> List[SearchResult]:
+    def _search_ddgs(self, query: str, max_results: int) -> list[SearchResult]:
         """Search using DuckDuckGo Search."""
         try:
             from ddgs import DDGS
@@ -275,14 +274,14 @@ class WebSearch:
         results = self.search(query, max_results=max_results)
         if not results:
             return f"No results found for: {query}"
-        
+
         lines = [f"# Search Results: {query}\n"]
         for i, r in enumerate(results, 1):
             lines.append(f"## {i}. {r.title}")
             lines.append(f"**URL:** {r.url}")
             lines.append(f"**Source:** {r.source}")
             lines.append(f"\n{r.content[:2000]}...\n" if len(r.content) > 2000 else f"\n{r.content}\n")
-        
+
         return "\n".join(lines)
 
     def read_and_summarize(self, url: str) -> str:
@@ -294,7 +293,7 @@ class WebSearch:
         """Clear search cache."""
         self._cache.clear()
 
-    def get_cache_stats(self) -> Dict[str, Any]:
+    def get_cache_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         return {
             "entries": len(self._cache),

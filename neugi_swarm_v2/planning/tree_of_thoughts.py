@@ -34,9 +34,10 @@ import heapq
 import logging
 import time
 import uuid
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Sequence
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -70,12 +71,12 @@ class ThoughtNode:
 
     thought: str
     node_id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
-    parent_id: Optional[str] = None
-    children: List[str] = field(default_factory=list)
+    parent_id: str | None = None
+    children: list[str] = field(default_factory=list)
     score: float = 0.0
     state: ThoughtState = ThoughtState.PENDING
     depth: int = 0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     created_at: float = field(default_factory=time.time)
 
     def is_root(self) -> bool:
@@ -84,9 +85,9 @@ class ThoughtNode:
     def is_leaf(self) -> bool:
         return len(self.children) == 0
 
-    def path_from_root(self, tree: Dict[str, "ThoughtNode"]) -> List["ThoughtNode"]:
-        path: List[ThoughtNode] = []
-        current: Optional[ThoughtNode] = self
+    def path_from_root(self, tree: dict[str, ThoughtNode]) -> list[ThoughtNode]:
+        path: list[ThoughtNode] = []
+        current: ThoughtNode | None = self
         while current is not None:
             path.append(current)
             if current.parent_id is None:
@@ -95,10 +96,10 @@ class ThoughtNode:
         path.reverse()
         return path
 
-    def __lt__(self, other: "ThoughtNode") -> bool:
+    def __lt__(self, other: ThoughtNode) -> bool:
         return self.score < other.score
 
-    def __le__(self, other: "ThoughtNode") -> bool:
+    def __le__(self, other: ThoughtNode) -> bool:
         return self.score <= other.score
 
 
@@ -106,7 +107,7 @@ class ThoughtNode:
 class ThoughtBranch:
     """A complete branch from root to leaf."""
 
-    nodes: List[ThoughtNode]
+    nodes: list[ThoughtNode]
     final_score: float
     is_solution: bool = False
 
@@ -177,10 +178,10 @@ class ToTResult:
     nodes_pruned: int = 0
     branches_explored: int = 0
     search_time: float = 0.0
-    best_branch: Optional[ThoughtBranch] = None
-    all_branches: List[ThoughtBranch] = field(default_factory=list)
+    best_branch: ThoughtBranch | None = None
+    all_branches: list[ThoughtBranch] = field(default_factory=list)
     terminated_by: str = "solution_found"
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class TreeOfThoughts:
@@ -200,29 +201,23 @@ class TreeOfThoughts:
     def __init__(
         self,
         llm_callback: Callable[[str], Awaitable[str]],
-        config: Optional[ToTConfig] = None,
+        config: ToTConfig | None = None,
     ) -> None:
         self.llm_callback = llm_callback
         self.config = config or ToTConfig()
-        self._tree: Dict[str, ThoughtNode] = {}
-        self._root_id: Optional[str] = None
+        self._tree: dict[str, ThoughtNode] = {}
+        self._root_id: str | None = None
         self._nodes_explored = 0
         self._nodes_pruned = 0
-        self._branches: List[ThoughtBranch] = []
+        self._branches: list[ThoughtBranch] = []
         self._start_time = 0.0
 
     async def solve(
         self,
         problem: str,
-        thought_generator: Optional[
-            Callable[[str, List[str], int], Awaitable[List[str]]]
-        ] = None,
-        evaluator: Optional[
-            Callable[[str, str, int], Awaitable[float]]
-        ] = None,
-        solution_checker: Optional[
-            Callable[[str], Awaitable[bool]]
-        ] = None,
+        thought_generator: Callable[[str, list[str], int], Awaitable[list[str]]] | None = None,
+        evaluator: Callable[[str, str, int], Awaitable[float]] | None = None,
+        solution_checker: Callable[[str], Awaitable[bool]] | None = None,
     ) -> ToTResult:
         """Solve a problem using tree of thoughts search.
 
@@ -280,11 +275,11 @@ class TreeOfThoughts:
     async def _best_first_search(
         self,
         problem: str,
-        thought_generator: Optional[Callable[[str, List[str], int], Awaitable[List[str]]]],
-        evaluator: Optional[Callable[[str, str, int], Awaitable[float]]],
-        solution_checker: Optional[Callable[[str], Awaitable[bool]]],
+        thought_generator: Callable[[str, list[str], int], Awaitable[list[str]]] | None,
+        evaluator: Callable[[str, str, int], Awaitable[float]] | None,
+        solution_checker: Callable[[str], Awaitable[bool]] | None,
     ) -> None:
-        priority_queue: List[tuple] = []
+        priority_queue: list[tuple] = []
         root = self._tree[self._root_id]
         heapq.heappush(priority_queue, (-root.score, root.node_id))
 
@@ -350,11 +345,11 @@ class TreeOfThoughts:
     async def _breadth_first_search(
         self,
         problem: str,
-        thought_generator: Optional[Callable[[str, List[str], int], Awaitable[List[str]]]],
-        evaluator: Optional[Callable[[str, str, int], Awaitable[float]]],
-        solution_checker: Optional[Callable[[str], Awaitable[bool]]],
+        thought_generator: Callable[[str, list[str], int], Awaitable[list[str]]] | None,
+        evaluator: Callable[[str, str, int], Awaitable[float]] | None,
+        solution_checker: Callable[[str], Awaitable[bool]] | None,
     ) -> None:
-        queue: List[str] = [self._root_id]
+        queue: list[str] = [self._root_id]
 
         while queue and not self._should_terminate():
             level_nodes = list(queue)
@@ -421,11 +416,11 @@ class TreeOfThoughts:
     async def _depth_first_search(
         self,
         problem: str,
-        thought_generator: Optional[Callable[[str, List[str], int], Awaitable[List[str]]]],
-        evaluator: Optional[Callable[[str, str, int], Awaitable[float]]],
-        solution_checker: Optional[Callable[[str], Awaitable[bool]]],
+        thought_generator: Callable[[str, list[str], int], Awaitable[list[str]]] | None,
+        evaluator: Callable[[str, str, int], Awaitable[float]] | None,
+        solution_checker: Callable[[str], Awaitable[bool]] | None,
     ) -> None:
-        stack: List[str] = [self._root_id]
+        stack: list[str] = [self._root_id]
 
         while stack and not self._should_terminate():
             node_id = stack.pop()
@@ -489,17 +484,17 @@ class TreeOfThoughts:
     async def _beam_search(
         self,
         problem: str,
-        thought_generator: Optional[Callable[[str, List[str], int], Awaitable[List[str]]]],
-        evaluator: Optional[Callable[[str, str, int], Awaitable[float]]],
-        solution_checker: Optional[Callable[[str], Awaitable[bool]]],
+        thought_generator: Callable[[str, list[str], int], Awaitable[list[str]]] | None,
+        evaluator: Callable[[str, str, int], Awaitable[float]] | None,
+        solution_checker: Callable[[str], Awaitable[bool]] | None,
     ) -> None:
-        beam: List[ThoughtNode] = [self._tree[self._root_id]]
+        beam: list[ThoughtNode] = [self._tree[self._root_id]]
 
         for depth_level in range(self.config.max_depth):
             if not beam or self._should_terminate():
                 break
 
-            candidates: List[ThoughtNode] = []
+            candidates: list[ThoughtNode] = []
 
             for node in beam:
                 if node.state != ThoughtState.PENDING:
@@ -562,9 +557,9 @@ class TreeOfThoughts:
     async def _monte_carlo_search(
         self,
         problem: str,
-        thought_generator: Optional[Callable[[str, List[str], int], Awaitable[List[str]]]],
-        evaluator: Optional[Callable[[str, str, int], Awaitable[float]]],
-        solution_checker: Optional[Callable[[str], Awaitable[bool]]],
+        thought_generator: Callable[[str, list[str], int], Awaitable[list[str]]] | None,
+        evaluator: Callable[[str, str, int], Awaitable[float]] | None,
+        solution_checker: Callable[[str], Awaitable[bool]] | None,
     ) -> None:
         root = self._tree[self._root_id]
         root.state = ThoughtState.EXPLORED
@@ -602,10 +597,10 @@ class TreeOfThoughts:
         self,
         problem: str,
         node: ThoughtNode,
-        evaluator: Optional[Callable[[str, str, int], Awaitable[float]]],
-        solution_checker: Optional[Callable[[str], Awaitable[bool]]],
+        evaluator: Callable[[str, str, int], Awaitable[float]] | None,
+        solution_checker: Callable[[str], Awaitable[bool]] | None,
     ) -> float:
-        scores: List[float] = []
+        scores: list[float] = []
 
         for _ in range(self.config.mc_rollouts):
             rollout_score = await self._evaluate_thought(problem, node, evaluator)
@@ -622,8 +617,8 @@ class TreeOfThoughts:
         self,
         problem: str,
         node: ThoughtNode,
-        custom_generator: Optional[Callable[[str, List[str], int], Awaitable[List[str]]]],
-    ) -> List[str]:
+        custom_generator: Callable[[str, list[str], int], Awaitable[list[str]]] | None,
+    ) -> list[str]:
         if custom_generator is not None:
             context = [
                 n.thought
@@ -644,7 +639,7 @@ class TreeOfThoughts:
         self,
         problem: str,
         node: ThoughtNode,
-        custom_evaluator: Optional[Callable[[str, str, int], Awaitable[float]]],
+        custom_evaluator: Callable[[str, str, int], Awaitable[float]] | None,
     ) -> float:
         if custom_evaluator is not None:
             return await custom_evaluator(problem, node.thought, node.depth)
@@ -691,8 +686,8 @@ class TreeOfThoughts:
             f"Score: "
         )
 
-    def _parse_thoughts(self, response: str, max_count: int) -> List[str]:
-        thoughts: List[str] = []
+    def _parse_thoughts(self, response: str, max_count: int) -> list[str]:
+        thoughts: list[str] = []
         for line in response.strip().split("\n"):
             line = line.strip().lstrip("-*•").strip()
             if line and len(thoughts) < max_count:
@@ -778,7 +773,7 @@ class TreeOfThoughts:
             terminated_by="no_branches_generated",
         )
 
-    def get_tree_stats(self) -> Dict[str, Any]:
+    def get_tree_stats(self) -> dict[str, Any]:
         total_nodes = len(self._tree)
         max_depth = max((n.depth for n in self._tree.values()), default=0)
         solution_count = sum(
@@ -798,7 +793,7 @@ class TreeOfThoughts:
         }
 
     def visualize_tree(self, max_depth: int = 3) -> str:
-        lines: List[str] = []
+        lines: list[str] = []
 
         def _visit(node_id: str, indent: str, is_last: bool) -> None:
             node = self._tree.get(node_id)

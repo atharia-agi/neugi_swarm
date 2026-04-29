@@ -6,23 +6,20 @@ and API specifications. Includes quality validation, testing, and documentation.
 """
 
 import ast
+import logging
 import re
 import time
-import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import (
     Any,
-    Callable,
-    Dict,
-    List,
     Optional,
-    Tuple,
 )
 
 from tools.tool_registry import (
     ToolCategory,
-    ToolRegistry,
     ToolNotFoundError,
+    ToolRegistry,
 )
 
 logger = logging.getLogger(__name__)
@@ -37,14 +34,14 @@ class GeneratedTool:
     description: str
     category: ToolCategory
     code: str
-    parameters: Dict[str, Dict[str, Any]]
-    required_params: List[str]
-    func: Optional[Callable] = None
+    parameters: dict[str, dict[str, Any]]
+    required_params: list[str]
+    func: Callable | None = None
     quality_report: Optional["ToolQualityReport"] = None
     generated_at: float = field(default_factory=time.time)
     version: str = "1.0.0"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "name": self.name,
@@ -70,13 +67,13 @@ class ToolQualityReport:
     safety_score: float = 0.0
     test_coverage: float = 0.0
     documentation_score: float = 0.0
-    issues: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    issues: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     tests_passed: int = 0
     tests_failed: int = 0
     tests_total: int = 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "tool_name": self.tool_name,
@@ -110,12 +107,12 @@ class PatternObserver:
     """
 
     def __init__(self):
-        self._usage_patterns: Dict[str, List[Dict[str, Any]]] = {}
-        self._tool_sequences: List[List[str]] = []
-        self._param_patterns: Dict[str, Dict[str, Any]] = {}
-        self._suggestions: List[Dict[str, Any]] = []
+        self._usage_patterns: dict[str, list[dict[str, Any]]] = {}
+        self._tool_sequences: list[list[str]] = []
+        self._param_patterns: dict[str, dict[str, Any]] = {}
+        self._suggestions: list[dict[str, Any]] = []
 
-    def record_usage(self, tool_name: str, params: Dict[str, Any], result: Any):
+    def record_usage(self, tool_name: str, params: dict[str, Any], result: Any):
         """Record a tool usage for pattern analysis."""
         if tool_name not in self._usage_patterns:
             self._usage_patterns[tool_name] = []
@@ -127,14 +124,14 @@ class PatternObserver:
             }
         )
 
-    def record_sequence(self, tool_sequence: List[str]):
+    def record_sequence(self, tool_sequence: list[str]):
         """Record a sequence of tool calls."""
         self._tool_sequences.append(tool_sequence)
         self._analyze_sequences()
 
     def _analyze_sequences(self):
         """Analyze tool sequences for common patterns."""
-        sequence_counts: Dict[str, int] = {}
+        sequence_counts: dict[str, int] = {}
         for seq in self._tool_sequences:
             key = " → ".join(seq)
             sequence_counts[key] = sequence_counts.get(key, 0) + 1
@@ -152,16 +149,16 @@ class PatternObserver:
                     }
                 )
 
-    def get_suggestions(self) -> List[Dict[str, Any]]:
+    def get_suggestions(self) -> list[dict[str, Any]]:
         """Get tool generation suggestions based on observed patterns."""
         return self._suggestions
 
-    def get_common_params(self, tool_name: str) -> Dict[str, Any]:
+    def get_common_params(self, tool_name: str) -> dict[str, Any]:
         """Get most common parameters for a tool."""
         if tool_name not in self._usage_patterns:
             return {}
         usages = self._usage_patterns[tool_name]
-        param_counts: Dict[str, Dict[str, int]] = {}
+        param_counts: dict[str, dict[str, int]] = {}
         for usage in usages:
             for param, value in usage["params"].items():
                 if param not in param_counts:
@@ -187,7 +184,7 @@ class APISpecParser:
     - Simplified JSON specs
     """
 
-    def parse_openapi(self, spec: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def parse_openapi(self, spec: dict[str, Any]) -> list[dict[str, Any]]:
         """
         Parse an OpenAPI 3.0 specification.
 
@@ -210,7 +207,7 @@ class APISpecParser:
 
         return tools
 
-    def parse_swagger(self, spec: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def parse_swagger(self, spec: dict[str, Any]) -> list[dict[str, Any]]:
         """
         Parse a Swagger 2.0 specification.
 
@@ -237,9 +234,9 @@ class APISpecParser:
         self,
         path: str,
         method: str,
-        operation: Dict[str, Any],
-        spec: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        operation: dict[str, Any],
+        spec: dict[str, Any],
+    ) -> dict[str, Any]:
         """Convert an API operation to a tool definition."""
         operation_id = operation.get("operationId", "")
         summary = operation.get("summary", "")
@@ -301,7 +298,7 @@ class ToolGenerator:
         self.registry = registry
         self.pattern_observer = PatternObserver()
         self.api_parser = APISpecParser()
-        self._generated_tools: Dict[str, GeneratedTool] = {}
+        self._generated_tools: dict[str, GeneratedTool] = {}
         self._safe_builtins = {
             "len", "str", "int", "float", "bool", "list", "dict", "set", "tuple",
             "range", "enumerate", "zip", "map", "filter", "sorted", "reversed",
@@ -328,7 +325,7 @@ class ToolGenerator:
         self,
         description: str,
         category: ToolCategory = ToolCategory.SYSTEM,
-        name: Optional[str] = None,
+        name: str | None = None,
     ) -> GeneratedTool:
         """
         Generate a tool from a natural language description.
@@ -364,9 +361,9 @@ class ToolGenerator:
 
     def generate_from_pattern(
         self,
-        tool_sequence: List[str],
-        name: Optional[str] = None,
-    ) -> Optional[GeneratedTool]:
+        tool_sequence: list[str],
+        name: str | None = None,
+    ) -> GeneratedTool | None:
         """
         Generate a tool from observed usage patterns.
 
@@ -416,10 +413,10 @@ class ToolGenerator:
 
     def generate_from_openapi(
         self,
-        spec: Dict[str, Any],
+        spec: dict[str, Any],
         base_url: str = "",
         prefix: str = "api",
-    ) -> List[GeneratedTool]:
+    ) -> list[GeneratedTool]:
         """
         Generate tools from an OpenAPI specification.
 
@@ -458,10 +455,10 @@ class ToolGenerator:
 
     def generate_from_swagger(
         self,
-        spec: Dict[str, Any],
+        spec: dict[str, Any],
         base_url: str = "",
         prefix: str = "api",
-    ) -> List[GeneratedTool]:
+    ) -> list[GeneratedTool]:
         """
         Generate tools from a Swagger specification.
 
@@ -555,7 +552,7 @@ class ToolGenerator:
 
         return "\n".join(lines)
 
-    def auto_test_tool(self, tool: GeneratedTool) -> Dict[str, Any]:
+    def auto_test_tool(self, tool: GeneratedTool) -> dict[str, Any]:
         """
         Auto-generate and run test cases for a tool.
 
@@ -629,7 +626,7 @@ class ToolGenerator:
 
     def _parse_description(
         self, description: str, name: str
-    ) -> Tuple[Dict[str, Dict[str, Any]], List[str], str]:
+    ) -> tuple[dict[str, dict[str, Any]], list[str], str]:
         """Parse a description to extract parameters and generate code."""
         params = {}
         required = []
@@ -648,10 +645,10 @@ class ToolGenerator:
         return params, required, code
 
     def _generate_simple_code(
-        self, name: str, description: str, params: Dict[str, Dict[str, Any]]
+        self, name: str, description: str, params: dict[str, dict[str, Any]]
     ) -> str:
         """Generate simple tool code from description."""
-        param_list = ", ".join(f"{p}" for p in params.keys())
+        param_list = ", ".join(f"{p}" for p in params)
         code = f"def {name}({param_list}):\n"
         code += f'    """{description}"""\n'
 
@@ -677,7 +674,7 @@ class ToolGenerator:
         return code
 
     def _generate_pattern_code(
-        self, name: str, tool_sequence: List[str], tool_defs: List[Dict[str, Any]]
+        self, name: str, tool_sequence: list[str], tool_defs: list[dict[str, Any]]
     ) -> str:
         """Generate code for a pattern-based tool."""
         code = f"def {name}(input=None):\n"
@@ -689,7 +686,7 @@ class ToolGenerator:
         return code
 
     def _generate_api_tool_code(
-        self, tool_def: Dict[str, Any], base_url: str
+        self, tool_def: dict[str, Any], base_url: str
     ) -> str:
         """Generate code for an API-based tool."""
         name = tool_def["name"]
@@ -813,7 +810,7 @@ class ToolGenerator:
             score += 30.0
         return score
 
-    def _generate_test_cases(self, tool: GeneratedTool) -> List[Dict[str, Any]]:
+    def _generate_test_cases(self, tool: GeneratedTool) -> list[dict[str, Any]]:
         """Generate test cases for a tool."""
         test_cases = []
 
@@ -885,14 +882,14 @@ class ToolGenerator:
 
         return test_cases
 
-    def get_generated_tool(self, name: str) -> Optional[GeneratedTool]:
+    def get_generated_tool(self, name: str) -> GeneratedTool | None:
         """Get a generated tool by name."""
         return self._generated_tools.get(name)
 
-    def list_generated_tools(self) -> List[GeneratedTool]:
+    def list_generated_tools(self) -> list[GeneratedTool]:
         """List all generated tools."""
         return list(self._generated_tools.values())
 
-    def get_suggestions(self) -> List[Dict[str, Any]]:
+    def get_suggestions(self) -> list[dict[str, Any]]:
         """Get tool generation suggestions from pattern observer."""
         return self.pattern_observer.get_suggestions()

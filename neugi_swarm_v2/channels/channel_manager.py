@@ -11,9 +11,9 @@ import asyncio
 import enum
 import logging
 import time
-from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Optional
+from typing import Any
 
 from .base import (
     BaseChannel,
@@ -21,7 +21,6 @@ from .base import (
     ChannelType,
     IncomingMessage,
     MessageFormat,
-    MessageType,
     OutgoingMessage,
 )
 
@@ -48,9 +47,9 @@ class ChannelStats:
     messages_sent: int = 0
     messages_received: int = 0
     errors: int = 0
-    last_message_time: Optional[float] = None
-    last_error_time: Optional[float] = None
-    last_error: Optional[str] = None
+    last_message_time: float | None = None
+    last_error_time: float | None = None
+    last_error: str | None = None
     uptime_seconds: float = 0.0
     avg_response_time_ms: float = 0.0
     health_score: float = 1.0
@@ -85,7 +84,7 @@ class QueuedMessage:
     attempts: int = 0
     max_attempts: int = 3
     status: str = "pending"
-    error: Optional[str] = None
+    error: str | None = None
 
 
 class ChannelManager:
@@ -124,10 +123,10 @@ class ChannelManager:
         self._error_handlers: list[Callable] = []
         self._format_overrides: dict[ChannelType, MessageFormat] = {}
         self._routing_rules: list[Callable] = []
-        self._health_task: Optional[asyncio.Task] = None
-        self._queue_task: Optional[asyncio.Task] = None
+        self._health_task: asyncio.Task | None = None
+        self._queue_task: asyncio.Task | None = None
         self._is_running = False
-        self._start_time: Optional[float] = None
+        self._start_time: float | None = None
         self._channel_health_cache: dict[str, ChannelHealth] = {}
         self._logger = logging.getLogger(__name__)
 
@@ -178,11 +177,11 @@ class ChannelManager:
         self._logger.info("Unregistered channel: %s", key)
         return True
 
-    def get_channel(self, key: str) -> Optional[BaseChannel]:
+    def get_channel(self, key: str) -> BaseChannel | None:
         """Get a channel by its key."""
         return self._channels.get(key)
 
-    def get_channel_by_type(self, channel_type: ChannelType) -> Optional[BaseChannel]:
+    def get_channel_by_type(self, channel_type: ChannelType) -> BaseChannel | None:
         """Get a channel by its type."""
         key = self._channel_keys.get(channel_type)
         if key:
@@ -217,7 +216,7 @@ class ChannelManager:
         """Set a default message format for a channel type."""
         self._format_overrides[channel_type] = format
 
-    def add_routing_rule(self, rule: Callable[[IncomingMessage], Optional[str]]) -> None:
+    def add_routing_rule(self, rule: Callable[[IncomingMessage], str | None]) -> None:
         """
         Add a custom routing rule.
 
@@ -348,7 +347,7 @@ class ChannelManager:
         channel_key: str,
         message: OutgoingMessage,
         priority: int = 0,
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Send a message through a specific channel.
 
@@ -423,8 +422,8 @@ class ChannelManager:
     async def broadcast(
         self,
         message: OutgoingMessage,
-        exclude: Optional[list[str]] = None,
-    ) -> dict[str, Optional[str]]:
+        exclude: list[str] | None = None,
+    ) -> dict[str, str | None]:
         """
         Send a message to all active channels.
 
@@ -436,7 +435,7 @@ class ChannelManager:
             Dict mapping channel keys to message IDs.
         """
         exclude = exclude or []
-        results: dict[str, Optional[str]] = {}
+        results: dict[str, str | None] = {}
 
         tasks = []
         for key, channel in self._channels.items():
@@ -466,7 +465,7 @@ class ChannelManager:
 
         return results
 
-    async def route_message(self, message: IncomingMessage) -> Optional[str]:
+    async def route_message(self, message: IncomingMessage) -> str | None:
         """
         Route an incoming message to the appropriate handler.
 
@@ -614,7 +613,7 @@ class ChannelManager:
                 self._logger.error("Queue processor error: %s", exc)
                 await asyncio.sleep(1)
 
-    def get_channel_health(self, key: str) -> Optional[ChannelHealth]:
+    def get_channel_health(self, key: str) -> ChannelHealth | None:
         """Get cached health for a channel."""
         return self._channel_health_cache.get(key)
 
@@ -622,7 +621,7 @@ class ChannelManager:
         """Get cached health for all channels."""
         return dict(self._channel_health_cache)
 
-    def get_stats(self, key: Optional[str] = None) -> Any:
+    def get_stats(self, key: str | None = None) -> Any:
         """
         Get statistics.
 
@@ -636,7 +635,7 @@ class ChannelManager:
             return self._stats.get(key)
         return {k: v.to_dict() for k, v in self._stats.items()}
 
-    def get_status(self, key: Optional[str] = None) -> Any:
+    def get_status(self, key: str | None = None) -> Any:
         """
         Get channel status.
 

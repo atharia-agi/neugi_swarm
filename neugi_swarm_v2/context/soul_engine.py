@@ -37,10 +37,10 @@ import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from memory.memory_core import MemorySystem, MemoryTier, ScopePath
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -190,7 +190,7 @@ class SoulEngine:
 
     SOUL_DIR_NAME = "soul"
 
-    DEFAULT_FILES: List[SoulFile] = [
+    DEFAULT_FILES: list[SoulFile] = [
         SoulFile("SOUL.md", "Agent Identity", DEFAULT_SOUL_MD, max_chars=4000, required=True),
         SoulFile("STYLE.md", "Agent Style", DEFAULT_STYLE_MD, max_chars=3000),
         SoulFile("USER.md", "User Profile", DEFAULT_USER_MD, max_chars=3000),
@@ -201,17 +201,17 @@ class SoulEngine:
     def __init__(
         self,
         base_dir: str | Path = "~/.neugi",
-        memory_system: Optional[Any] = None,
+        memory_system: Any | None = None,
     ) -> None:
         self.base_dir = Path(base_dir).expanduser()
         self.soul_dir = self.base_dir / self.SOUL_DIR_NAME
-        self._mem: Optional[Any] = memory_system
-        self._cache: Dict[str, str] = {}
-        self._last_mtime: Dict[str, float] = {}
+        self._mem: Any | None = memory_system
+        self._cache: dict[str, str] = {}
+        self._last_mtime: dict[str, float] = {}
 
     # -- Lifecycle -----------------------------------------------------------
 
-    def init_defaults(self, overwrite: bool = False) -> List[Path]:
+    def init_defaults(self, overwrite: bool = False) -> list[Path]:
         """
         Create default soul files from templates.
 
@@ -222,7 +222,7 @@ class SoulEngine:
             List of file paths created (or existing).
         """
         self.soul_dir.mkdir(parents=True, exist_ok=True)
-        created: List[Path] = []
+        created: list[Path] = []
 
         for sf in self.DEFAULT_FILES:
             path = self.soul_dir / sf.name
@@ -285,8 +285,8 @@ class SoulEngine:
         if self._mem is not None:
             try:
                 # Lazy import to avoid circular deps at module level
-                from memory.scopes import ScopePath
                 from memory.memory_core import MemoryTier
+                from memory.scopes import ScopePath
                 self._mem.save(
                     content=note,
                     scope=ScopePath.global_scope(),
@@ -332,8 +332,8 @@ class SoulEngine:
         """
         if self._mem is not None:
             try:
-                from memory.scopes import ScopePath
                 from memory.memory_core import MemoryTier
+                from memory.scopes import ScopePath
                 self._mem.save(
                     content=f"User fact: {fact}",
                     scope=ScopePath.global_scope(),
@@ -368,7 +368,7 @@ class SoulEngine:
         This ordering puts static identity first and volatile memory last,
         which helps with KV cache stability (identity rarely changes).
         """
-        parts: List[str] = []
+        parts: list[str] = []
         total = 0
 
         for sf in self.DEFAULT_FILES:
@@ -400,7 +400,7 @@ class SoulEngine:
 
     # -- Stats ---------------------------------------------------------------
 
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         """Return stats about the soul system."""
         return {
             "initialized": self.exists(),

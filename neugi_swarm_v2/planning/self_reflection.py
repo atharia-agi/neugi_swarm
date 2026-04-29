@@ -32,10 +32,11 @@ import logging
 import sqlite3
 import time
 import uuid
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,7 @@ class ConfidenceLevel(Enum):
         }[self.value]
 
     @classmethod
-    def from_score(cls, score: float) -> "ConfidenceLevel":
+    def from_score(cls, score: float) -> ConfidenceLevel:
         if score >= 0.9:
             return cls.VERY_HIGH
         if score >= 0.7:
@@ -113,20 +114,20 @@ class Reflection:
     reflection_id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     action: str = ""
     outcome: str = ""
-    context: Dict[str, Any] = field(default_factory=dict)
-    what_worked: List[str] = field(default_factory=list)
-    what_failed: List[str] = field(default_factory=list)
+    context: dict[str, Any] = field(default_factory=dict)
+    what_worked: list[str] = field(default_factory=list)
+    what_failed: list[str] = field(default_factory=list)
     root_cause: str = ""
-    error_category: Optional[ErrorCategory] = None
-    lessons_learned: List[str] = field(default_factory=list)
+    error_category: ErrorCategory | None = None
+    lessons_learned: list[str] = field(default_factory=list)
     strategy_adjustment: str = ""
     confidence: float = 0.5
     severity: float = 0.0
     created_at: float = field(default_factory=time.time)
-    tags: List[str] = field(default_factory=list)
-    related_reflection_ids: List[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
+    related_reflection_ids: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "reflection_id": self.reflection_id,
             "action": self.action,
@@ -146,7 +147,7 @@ class Reflection:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Reflection":
+    def from_dict(cls, data: dict[str, Any]) -> Reflection:
         def _parse_json(key: str, default: Any = None) -> Any:
             val = data.get(key)
             if val is None:
@@ -225,10 +226,10 @@ class ReflectionResult:
     """
 
     reflection: Reflection
-    corrections: List[str] = field(default_factory=list)
-    strategy_changes: List[str] = field(default_factory=list)
-    similar_past_reflections: List[Reflection] = field(default_factory=list)
-    patterns: List[str] = field(default_factory=list)
+    corrections: list[str] = field(default_factory=list)
+    strategy_changes: list[str] = field(default_factory=list)
+    similar_past_reflections: list[Reflection] = field(default_factory=list)
+    patterns: list[str] = field(default_factory=list)
     confidence_calibrated: ConfidenceLevel = ConfidenceLevel.MEDIUM
     should_retry: bool = False
 
@@ -247,7 +248,7 @@ class ReflectionMemory:
     def __init__(self, db_path: str = "reflections.db", max_size: int = 1000) -> None:
         self.db_path = db_path
         self.max_size = max_size
-        self._cache: List[Reflection] = []
+        self._cache: list[Reflection] = []
         self._init_db()
 
     def _init_db(self) -> None:
@@ -325,7 +326,7 @@ class ReflectionMemory:
         if len(self._cache) > self.max_size:
             self._cache = self._cache[-self.max_size :]
 
-    def get(self, reflection_id: str) -> Optional[Reflection]:
+    def get(self, reflection_id: str) -> Reflection | None:
         for r in self._cache:
             if r.reflection_id == reflection_id:
                 return r
@@ -341,7 +342,7 @@ class ReflectionMemory:
             return Reflection.from_dict(dict(row))
         return None
 
-    def get_recent(self, limit: int = 20) -> List[Reflection]:
+    def get_recent(self, limit: int = 20) -> list[Reflection]:
         if len(self._cache) >= limit:
             return list(reversed(self._cache[-limit:]))
 
@@ -359,7 +360,7 @@ class ReflectionMemory:
 
         return reflections
 
-    def search_by_tag(self, tag: str, limit: int = 20) -> List[Reflection]:
+    def search_by_tag(self, tag: str, limit: int = 20) -> list[Reflection]:
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             rows = conn.execute(
@@ -371,7 +372,7 @@ class ReflectionMemory:
 
     def search_by_category(
         self, category: ErrorCategory, limit: int = 20
-    ) -> List[Reflection]:
+    ) -> list[Reflection]:
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             rows = conn.execute(
@@ -383,7 +384,7 @@ class ReflectionMemory:
 
     def search_by_severity(
         self, min_severity: float, limit: int = 20
-    ) -> List[Reflection]:
+    ) -> list[Reflection]:
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             rows = conn.execute(
@@ -395,7 +396,7 @@ class ReflectionMemory:
 
     def search_by_time_range(
         self, start_time: float, end_time: float, limit: int = 100
-    ) -> List[Reflection]:
+    ) -> list[Reflection]:
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             rows = conn.execute(
@@ -405,7 +406,7 @@ class ReflectionMemory:
 
         return [Reflection.from_dict(dict(r)) for r in rows]
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         with sqlite3.connect(self.db_path) as conn:
             total = conn.execute("SELECT COUNT(*) FROM reflections").fetchone()[0]
             avg_confidence = conn.execute(
@@ -459,8 +460,8 @@ class SelfReflectionEngine:
     def __init__(
         self,
         llm_callback: Callable[[str], Awaitable[str]],
-        config: Optional[ReflectionConfig] = None,
-        memory: Optional[ReflectionMemory] = None,
+        config: ReflectionConfig | None = None,
+        memory: ReflectionMemory | None = None,
     ) -> None:
         self.llm_callback = llm_callback
         self.config = config or ReflectionConfig()
@@ -474,10 +475,8 @@ class SelfReflectionEngine:
         self,
         action: str,
         outcome: str,
-        context: Optional[Dict[str, Any]] = None,
-        custom_analyzer: Optional[
-            Callable[[str, str, Dict[str, Any]], Awaitable[Reflection]]
-        ] = None,
+        context: dict[str, Any] | None = None,
+        custom_analyzer: Callable[[str, str, dict[str, Any]], Awaitable[Reflection]] | None = None,
     ) -> ReflectionResult:
         """Reflect on an action and its outcome.
 
@@ -542,10 +541,8 @@ class SelfReflectionEngine:
         self,
         original_action: str,
         reflection: Reflection,
-        custom_corrector: Optional[
-            Callable[[str, Reflection], Awaitable[str]]
-        ] = None,
-    ) -> Optional[str]:
+        custom_corrector: Callable[[str, Reflection], Awaitable[str]] | None = None,
+    ) -> str | None:
         """Attempt to self-correct based on a reflection.
 
         Args:
@@ -573,7 +570,7 @@ class SelfReflectionEngine:
 
     async def get_strategy_adjustment(
         self, reflection: Reflection
-    ) -> List[str]:
+    ) -> list[str]:
         """Get strategy adjustments based on a reflection.
 
         Args:
@@ -597,7 +594,7 @@ class SelfReflectionEngine:
             logger.warning("Strategy adjustment generation failed: %s", e)
             return []
 
-    def get_confidence_calibration(self) -> Dict[str, Any]:
+    def get_confidence_calibration(self) -> dict[str, Any]:
         """Get current confidence calibration metrics.
 
         Returns:
@@ -678,7 +675,7 @@ class SelfReflectionEngine:
         return "\n".join(lines)
 
     async def _analyze(
-        self, action: str, outcome: str, context: Dict[str, Any]
+        self, action: str, outcome: str, context: dict[str, Any]
     ) -> Reflection:
         prompt = self._build_analysis_prompt(action, outcome, context)
         try:
@@ -695,7 +692,7 @@ class SelfReflectionEngine:
                 confidence=0.3,
             )
 
-    async def _identify_corrections(self, reflection: Reflection) -> List[str]:
+    async def _identify_corrections(self, reflection: Reflection) -> list[str]:
         if not reflection.what_failed and reflection.severity < 0.3:
             return []
 
@@ -709,7 +706,7 @@ class SelfReflectionEngine:
 
     async def _generate_strategy_changes(
         self, reflection: Reflection
-    ) -> List[str]:
+    ) -> list[str]:
         if not reflection.strategy_adjustment:
             return []
 
@@ -720,8 +717,8 @@ class SelfReflectionEngine:
         ]
 
     async def _detect_patterns(
-        self, current: Reflection, similar: List[Reflection]
-    ) -> List[str]:
+        self, current: Reflection, similar: list[Reflection]
+    ) -> list[str]:
         if len(similar) < 2:
             return []
 
@@ -735,12 +732,12 @@ class SelfReflectionEngine:
 
     def _find_similar_reflections(
         self, reflection: Reflection, limit: int = 5
-    ) -> List[Reflection]:
+    ) -> list[Reflection]:
         all_recent = self.memory.get_recent(50)
         if not all_recent:
             return []
 
-        scored: List[Tuple[float, Reflection]] = []
+        scored: list[tuple[float, Reflection]] = []
         for r in all_recent:
             if r.reflection_id == reflection.reflection_id:
                 continue
@@ -787,7 +784,7 @@ class SelfReflectionEngine:
         return ConfidenceLevel.from_score(reflection.confidence)
 
     def _build_analysis_prompt(
-        self, action: str, outcome: str, context: Dict[str, Any]
+        self, action: str, outcome: str, context: dict[str, Any]
     ) -> str:
         ctx_str = json.dumps(context, indent=2) if context else "None"
 
@@ -809,7 +806,7 @@ class SelfReflectionEngine:
         )
 
     def _parse_reflection(
-        self, text: str, action: str, outcome: str, context: Dict[str, Any]
+        self, text: str, action: str, outcome: str, context: dict[str, Any]
     ) -> Reflection:
         reflection = Reflection(
             action=action,
@@ -819,7 +816,7 @@ class SelfReflectionEngine:
 
         lines = text.strip().split("\n")
         current_section = ""
-        current_items: List[str] = []
+        current_items: list[str] = []
 
         def _flush_section() -> None:
             nonlocal current_items
@@ -878,9 +875,7 @@ class SelfReflectionEngine:
                 except ValueError:
                     reflection.severity = 0.0
                 current_section = ""
-            elif current_section and stripped.startswith("-"):
-                current_items.append(stripped)
-            elif current_section and stripped:
+            elif current_section and stripped.startswith("-") or current_section and stripped:
                 current_items.append(stripped)
 
         _flush_section()
@@ -899,8 +894,8 @@ class SelfReflectionEngine:
             f"CORRECTION: <specific thing to fix>\n\n"
         )
 
-    def _parse_corrections(self, text: str) -> List[str]:
-        corrections: List[str] = []
+    def _parse_corrections(self, text: str) -> list[str]:
+        corrections: list[str] = []
         for line in text.strip().split("\n"):
             line = line.strip()
             if line.upper().startswith("CORRECTION:"):
@@ -908,7 +903,7 @@ class SelfReflectionEngine:
         return corrections
 
     def _build_strategy_prompt(
-        self, reflection: Reflection, recent: List[Reflection]
+        self, reflection: Reflection, recent: list[Reflection]
     ) -> str:
         recent_summary = "\n".join(
             f"- {r.action[:60]}: {r.strategy_adjustment or 'No adjustment'}"
@@ -925,8 +920,8 @@ class SelfReflectionEngine:
             f"STRATEGY: <specific adjustment>\n\n"
         )
 
-    def _parse_strategy_changes(self, text: str) -> List[str]:
-        changes: List[str] = []
+    def _parse_strategy_changes(self, text: str) -> list[str]:
+        changes: list[str] = []
         for line in text.strip().split("\n"):
             line = line.strip()
             if line.upper().startswith("STRATEGY:"):
@@ -934,8 +929,8 @@ class SelfReflectionEngine:
         return changes
 
     def _build_pattern_prompt(
-        self, current: Reflection, similar: List[Reflection]
-    ) -> List[str]:
+        self, current: Reflection, similar: list[Reflection]
+    ) -> list[str]:
         prompt = (
             f"Current reflection: {current.action}\n"
             f"Category: {current.error_category.value if current.error_category else 'unknown'}\n"
@@ -955,8 +950,8 @@ class SelfReflectionEngine:
         )
         return prompt
 
-    def _parse_patterns(self, text: str) -> List[str]:
-        patterns: List[str] = []
+    def _parse_patterns(self, text: str) -> list[str]:
+        patterns: list[str] = []
         for line in text.strip().split("\n"):
             line = line.strip()
             if line.upper().startswith("PATTERN:"):
@@ -972,9 +967,9 @@ class SelfReflectionEngine:
             f"Root cause: {reflection.root_cause}\n"
             f"What failed:\n"
             + "\n".join(f"- {f}" for f in reflection.what_failed)
-            + f"\n\n"
-            f"Provide a corrected version of the original action that "
-            f"addresses all identified issues. Be specific about what "
-            f"changes to make.\n\n"
-            f"Corrected action:\n"
+            + "\n\n"
+            "Provide a corrected version of the original action that "
+            "addresses all identified issues. Be specific about what "
+            "changes to make.\n\n"
+            "Corrected action:\n"
         )

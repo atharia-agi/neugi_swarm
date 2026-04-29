@@ -9,9 +9,10 @@ import sqlite3
 import time
 import uuid
 from collections import defaultdict
+from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any
 
 from .agent import Agent, AgentRole, AgentStatus
 
@@ -89,10 +90,10 @@ class AgentManager:
     """
 
     def __init__(self, db_path: str = ":memory:") -> None:
-        self._agents: Dict[str, Agent] = {}
+        self._agents: dict[str, Agent] = {}
         self._db_path = db_path
-        self._message_queue: List[Dict[str, Any]] = []
-        self._performance: Dict[str, Dict[str, Any]] = defaultdict(
+        self._message_queue: list[dict[str, Any]] = []
+        self._performance: dict[str, dict[str, Any]] = defaultdict(
             lambda: {
                 "total_tasks": 0,
                 "successful_tasks": 0,
@@ -159,10 +160,10 @@ class AgentManager:
         role: AgentRole,
         goal: str = "",
         backstory: str = "",
-        tools: Optional[Dict[str, Callable]] = None,
-        allowed_tools: Optional[Set[str]] = None,
-        allowed_skills: Optional[Set[str]] = None,
-        parent_id: Optional[str] = None,
+        tools: dict[str, Callable] | None = None,
+        allowed_tools: set[str] | None = None,
+        allowed_skills: set[str] | None = None,
+        parent_id: str | None = None,
     ) -> Agent:
         """Create and register a new agent."""
         agent = Agent(
@@ -182,8 +183,8 @@ class AgentManager:
 
     def create_default_agents(
         self,
-        tools: Optional[Dict[str, Callable]] = None,
-    ) -> List[Agent]:
+        tools: dict[str, Callable] | None = None,
+    ) -> list[Agent]:
         """Create all 9 pre-configured default agents."""
         agents = []
         for spec in DEFAULT_AGENTS:
@@ -197,16 +198,16 @@ class AgentManager:
             agents.append(agent)
         return agents
 
-    def get_agent(self, agent_id: str) -> Optional[Agent]:
+    def get_agent(self, agent_id: str) -> Agent | None:
         return self._agents.get(agent_id)
 
-    def get_agent_by_name(self, name: str) -> Optional[Agent]:
+    def get_agent_by_name(self, name: str) -> Agent | None:
         for agent in self._agents.values():
             if agent.name.lower() == name.lower():
                 return agent
         return None
 
-    def list_agents(self) -> List[Agent]:
+    def list_agents(self) -> list[Agent]:
         return list(self._agents.values())
 
     def remove_agent(self, agent_id: str) -> bool:
@@ -259,11 +260,11 @@ class AgentManager:
     def delegate(
         self,
         task: str,
-        agent_id: Optional[str] = None,
-        agent_name: Optional[str] = None,
-        role: Optional[AgentRole] = None,
-        context: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        agent_id: str | None = None,
+        agent_name: str | None = None,
+        role: AgentRole | None = None,
+        context: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Route a task to the best available agent.
         Priority: explicit id > name > role > auto-select by role inference.
@@ -295,11 +296,11 @@ class AgentManager:
 
     def _resolve_target(
         self,
-        agent_id: Optional[str],
-        agent_name: Optional[str],
-        role: Optional[AgentRole],
+        agent_id: str | None,
+        agent_name: str | None,
+        role: AgentRole | None,
         task: str,
-    ) -> Optional[Agent]:
+    ) -> Agent | None:
         if agent_id and agent_id in self._agents:
             return self._agents[agent_id]
         if agent_name:
@@ -349,7 +350,7 @@ class AgentManager:
             perf["error_count"] += 1
         perf["total_response_time"] += duration
 
-    def get_performance(self, agent_id: str) -> Dict[str, Any]:
+    def get_performance(self, agent_id: str) -> dict[str, Any]:
         perf = self._performance[agent_id]
         total = perf["total_tasks"]
         return {
@@ -360,7 +361,7 @@ class AgentManager:
             "error_rate": round(perf["error_count"] / total, 3) if total else 0.0,
         }
 
-    def get_all_performance(self) -> Dict[str, Dict[str, Any]]:
+    def get_all_performance(self) -> dict[str, dict[str, Any]]:
         return {aid: self.get_performance(aid) for aid in self._performance}
 
     # ------------------------------------------------------------------
@@ -391,7 +392,7 @@ class AgentManager:
         self._persist_message(msg)
         return msg_id
 
-    def poll_messages(self, agent_id: str, limit: int = 10) -> List[Dict[str, Any]]:
+    def poll_messages(self, agent_id: str, limit: int = 10) -> list[dict[str, Any]]:
         """Retrieve pending messages for a specific agent."""
         messages = []
         for msg in self._message_queue:
@@ -412,8 +413,8 @@ class AgentManager:
         name: str,
         role: AgentRole,
         goal: str = "",
-        tools: Optional[Dict[str, Callable]] = None,
-    ) -> Optional[Agent]:
+        tools: dict[str, Callable] | None = None,
+    ) -> Agent | None:
         """Create a sub-agent that inherits parent's allowed tools and skills."""
         parent = self._agents.get(parent_id)
         if parent is None:
@@ -433,7 +434,7 @@ class AgentManager:
     # Persistence helpers
     # ------------------------------------------------------------------
 
-    def _persist_agent(self, agent: Agent, parent_id: Optional[str] = None) -> None:
+    def _persist_agent(self, agent: Agent, parent_id: str | None = None) -> None:
         if self._db_path == ":memory:":
             return
         with sqlite3.connect(self._db_path) as conn:
@@ -464,7 +465,7 @@ class AgentManager:
                 ),
             )
 
-    def _persist_message(self, msg: Dict[str, Any]) -> None:
+    def _persist_message(self, msg: dict[str, Any]) -> None:
         if self._db_path == ":memory:":
             return
         with sqlite3.connect(self._db_path) as conn:
@@ -505,13 +506,13 @@ class AgentManager:
                 count += 1
         return count
 
-    def get_agents_by_status(self, status: AgentStatus) -> List[Agent]:
+    def get_agents_by_status(self, status: AgentStatus) -> list[Agent]:
         return [a for a in self._agents.values() if a.status == status]
 
-    def get_agents_by_role(self, role: AgentRole) -> List[Agent]:
+    def get_agents_by_role(self, role: AgentRole) -> list[Agent]:
         return [a for a in self._agents.values() if a.role == role]
 
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         return {
             "total_agents": len(self._agents),
             "by_status": {

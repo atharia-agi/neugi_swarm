@@ -24,11 +24,10 @@ from __future__ import annotations
 import json
 import logging
 import random
-import string
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
+from typing import Any
 
-from tools.browser import BrowserTool, BrowserConfig
+from tools.browser import BrowserConfig, BrowserTool
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +95,7 @@ class StealthConfig:
 class BrowserFingerprint:
     """Generated browser fingerprint."""
     user_agent: str
-    viewport: Dict[str, int]
+    viewport: dict[str, int]
     color_depth: int
     timezone: str
     language: str
@@ -110,26 +109,26 @@ class BrowserFingerprint:
 
 class StealthBrowser(BrowserTool):
     """Browser with anti-detection stealth capabilities."""
-    
-    def __init__(self, config: Optional[BrowserConfig] = None, stealth: Optional[StealthConfig] = None):
+
+    def __init__(self, config: BrowserConfig | None = None, stealth: StealthConfig | None = None):
         super().__init__(config)
         self.stealth_config = stealth or StealthConfig()
-        self.fingerprint: Optional[BrowserFingerprint] = None
-        self._stealth_scripts: List[str] = []
+        self.fingerprint: BrowserFingerprint | None = None
+        self._stealth_scripts: list[str] = []
         self._init_stealth()
-    
+
     def _init_stealth(self) -> None:
         """Initialize stealth settings."""
         self.fingerprint = self._generate_fingerprint()
         self._build_stealth_scripts()
-        
+
         # Apply config overrides based on fingerprint
         if self.stealth_config.randomize_user_agent:
             self.config.user_agent = self.fingerprint.user_agent
         if self.stealth_config.randomize_viewport:
             self.config.viewport_width = self.fingerprint.viewport["width"]
             self.config.viewport_height = self.fingerprint.viewport["height"]
-    
+
     def _generate_fingerprint(self) -> BrowserFingerprint:
         """Generate a realistic browser fingerprint."""
         return BrowserFingerprint(
@@ -145,15 +144,15 @@ class StealthBrowser(BrowserTool):
             plugins_length=self.stealth_config.plugins_length,
             vendor="Google Inc." if "Chrome" in random.choice(USER_AGENTS) else "Apple Computer, Inc.",
         )
-    
+
     def _build_stealth_scripts(self) -> None:
         """Build JavaScript scripts to inject for stealth."""
         fp = self.fingerprint
         if not fp:
             return
-        
+
         scripts = []
-        
+
         # 1. Hide webdriver property
         if self.stealth_config.hide_webdriver:
             scripts.append("""
@@ -161,7 +160,7 @@ class StealthBrowser(BrowserTool):
                     get: () => undefined,
                 });
             """)
-        
+
         # 2. Override plugins
         scripts.append(f"""
             Object.defineProperty(navigator, 'plugins', {{
@@ -182,35 +181,35 @@ class StealthBrowser(BrowserTool):
                 }},
             }});
         """)
-        
+
         # 3. Override platform
         scripts.append(f"""
             Object.defineProperty(navigator, 'platform', {{
                 get: () => '{fp.platform}',
             }});
         """)
-        
+
         # 4. Override hardware concurrency
         scripts.append(f"""
             Object.defineProperty(navigator, 'hardwareConcurrency', {{
                 get: () => {fp.hardware_concurrency},
             }});
         """)
-        
+
         # 5. Override device memory
         scripts.append(f"""
             Object.defineProperty(navigator, 'deviceMemory', {{
                 get: () => {fp.device_memory},
             }});
         """)
-        
+
         # 6. Override max touch points
         scripts.append(f"""
             Object.defineProperty(navigator, 'maxTouchPoints', {{
                 get: () => {fp.max_touch_points},
             }});
         """)
-        
+
         # 7. Override language
         scripts.append(f"""
             Object.defineProperty(navigator, 'language', {{
@@ -220,7 +219,7 @@ class StealthBrowser(BrowserTool):
                 get: () => {json.dumps(fp.language.split(','))},
             }});
         """)
-        
+
         # 8. Canvas noise injection
         if self.stealth_config.inject_canvas_noise:
             scripts.append("""
@@ -234,7 +233,7 @@ class StealthBrowser(BrowserTool):
                     return imageData;
                 };
             """)
-        
+
         # 9. WebGL noise injection
         if self.stealth_config.inject_webgl_noise:
             scripts.append("""
@@ -249,7 +248,7 @@ class StealthBrowser(BrowserTool):
                     return getParameter.call(this, parameter);
                 };
             """)
-        
+
         # 10. Mask Chrome automation features
         if self.stealth_config.mask_chrome_features:
             scripts.append("""
@@ -260,7 +259,7 @@ class StealthBrowser(BrowserTool):
                     app: {},
                 };
             """)
-        
+
         # 11. Permissions API override
         scripts.append("""
             const originalQuery = window.navigator.permissions.query;
@@ -270,13 +269,13 @@ class StealthBrowser(BrowserTool):
                     : originalQuery(parameters)
             );
         """)
-        
+
         self._stealth_scripts = scripts
-    
+
     def _get_page(self):
         """Override to inject stealth scripts after page creation."""
         page = super()._get_page()
-        
+
         # Inject stealth scripts
         if self._stealth_scripts and not hasattr(self, '_stealth_injected'):
             for script in self._stealth_scripts:
@@ -285,13 +284,13 @@ class StealthBrowser(BrowserTool):
                 except Exception as e:
                     logger.warning(f"Stealth script injection failed: {e}")
             self._stealth_injected = True
-        
+
         return page
-    
-    def navigate(self, url: str) -> "StealthBrowser":
+
+    def navigate(self, url: str) -> StealthBrowser:
         """Navigate with stealth headers."""
         super().navigate(url)
-        
+
         # Re-inject stealth after navigation
         if self._stealth_scripts:
             for script in self._stealth_scripts:
@@ -299,15 +298,15 @@ class StealthBrowser(BrowserTool):
                     self._page.evaluate(script)
                 except Exception as e:
                     logger.warning(f"Stealth re-injection failed: {e}")
-        
+
         return self
-    
+
     @property
-    def stealth_info(self) -> Dict[str, Any]:
+    def stealth_info(self) -> dict[str, Any]:
         """Get current stealth configuration info."""
         if not self.fingerprint:
             return {}
-        
+
         return {
             "user_agent": self.fingerprint.user_agent,
             "viewport": self.fingerprint.viewport,
@@ -319,11 +318,11 @@ class StealthBrowser(BrowserTool):
             "plugins_length": self.fingerprint.plugins_length,
             "scripts_injected": len(self._stealth_scripts),
         }
-    
-    def detect_bot(self) -> Dict[str, Any]:
+
+    def detect_bot(self) -> dict[str, Any]:
         """Run basic bot detection test."""
         page = self._get_page()
-        
+
         detection_script = """
         () => {
             const checks = {
@@ -343,25 +342,25 @@ class StealthBrowser(BrowserTool):
             return checks;
         }
         """
-        
+
         try:
             return page.evaluate(detection_script)
         except Exception as e:
             return {"error": str(e)}
-    
+
     def rotate_fingerprint(self) -> None:
         """Generate a new fingerprint for fresh identity."""
         self.fingerprint = self._generate_fingerprint()
         self._build_stealth_scripts()
         self._init_stealth()
-        
+
         # Close and recreate browser context
         if self._context:
             self._context.close()
             self._context = None
         if self._page:
             self._page = None
-        
+
         logger.info("Fingerprint rotated")
 
 

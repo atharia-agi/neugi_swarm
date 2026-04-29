@@ -39,7 +39,7 @@ import logging
 import re
 import time
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -280,7 +280,7 @@ class CacheStability:
 
     # -- Public API: Fingerprinting ------------------------------------------
 
-    def fingerprint(self, prompt: str, metadata: Optional[dict[str, Any]] = None) -> PromptFingerprint:
+    def fingerprint(self, prompt: str, metadata: dict[str, Any] | None = None) -> PromptFingerprint:
         """
         Create a fingerprint of a prompt for cache comparison.
 
@@ -315,7 +315,7 @@ class CacheStability:
     def fingerprint_sections(
         self,
         sections: dict[str, str],
-        metadata: Optional[dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> PromptFingerprint:
         """
         Create a fingerprint from multiple named sections.
@@ -362,7 +362,7 @@ class CacheStability:
         self._stats.misses += 1
         return False
 
-    def check_against_history(self, prompt: str) -> tuple[bool, Optional[PromptFingerprint]]:
+    def check_against_history(self, prompt: str) -> tuple[bool, PromptFingerprint | None]:
         """
         Check if a prompt would hit against any cached fingerprint.
 
@@ -380,7 +380,7 @@ class CacheStability:
 
         return False, None
 
-    def find_best_prefix_match(self, prompt: str) -> tuple[float, Optional[PromptFingerprint]]:
+    def find_best_prefix_match(self, prompt: str) -> tuple[float, PromptFingerprint | None]:
         """
         Find the best prefix match in history.
 
@@ -395,7 +395,7 @@ class CacheStability:
         normalized = self._normalize(prompt) if self.enable_normalization else prompt
 
         best_length = 0
-        best_match: Optional[PromptFingerprint] = None
+        best_match: PromptFingerprint | None = None
 
         for prev in self._history:
             # Find common prefix length
@@ -499,7 +499,7 @@ class CacheStability:
         self,
         sections: dict[str, str],
         max_chars: int,
-        preserve_order: Optional[list[str]] = None,
+        preserve_order: list[str] | None = None,
     ) -> dict[str, str]:
         """
         Compact sections while preserving cache-friendly prefixes.
@@ -644,7 +644,7 @@ class CacheStability:
 
     # -- Context Manager -----------------------------------------------------
 
-    def __enter__(self) -> "CacheStability":
+    def __enter__(self) -> CacheStability:
         return self
 
     def __exit__(self, *args: Any) -> None:

@@ -1,8 +1,7 @@
 """Tests for SoulEngine identity/personality system."""
 import tempfile
-from pathlib import Path
 
-from context.soul_engine import SoulEngine, SoulFile
+from context.soul_engine import SoulEngine
 
 
 class TestSoulEngine:

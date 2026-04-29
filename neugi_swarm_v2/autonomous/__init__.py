@@ -17,79 +17,71 @@ its own observations.
 
 from __future__ import annotations
 
-from autonomous.loop_engine import (
-    AutonomousLoop,
-    LoopConfig,
-    LoopState,
-    LoopError,
-    LoopResult,
-    AutonomousActivity,
-    ActivityType,
-    ActivityPriority,
-    ActivityStatus,
-)
-
-from autonomous.observer import (
-    IdleObserver,
-    Observation,
-    ObservationType,
-    SystemSignal,
-    MemorySignal,
-    GoalSignal,
-    HealthSignal,
-    LearningSignal,
-)
-
-from autonomous.decision import (
-    ProactiveDecisionEngine,
-    Decision,
-    DecisionType,
-    DecisionOutcome,
-    DecisionCriteria,
-    RiskAssessment,
-    ValueAssessment,
-)
-
-from autonomous.executor import (
-    SelfDirectedExecutor,
-    ExecutionResult,
-    ExecutionType,
-    ExecutionContext,
-    ActionResult,
-)
-
-from autonomous.reporter import (
-    ActivityReporter,
-    ActivityReport,
-    ReportChannel,
-    ReportSeverity,
-)
-
-from autonomous.research_engine import (
-    ResearchEngine,
-    ResearchConfig,
-    ResearchReport,
-    ResearchRound,
-    ResearchSource,
-    ResearchFinding,
-    ResearchHypothesis,
-)
-
-from autonomous.subsystem_wiring import (
-    SubsystemWiring,
-)
-
-from autonomous.notification_dispatcher import (
-    NotificationDispatcher,
-    NotificationPreferences,
-    NotificationFrequency,
-    NotificationChannel,
-    AutonomousNotification,
-)
-
 from autonomous.agent_spawner import (
     AutonomousAgentSpawner,
     SpawnedAgentResult,
+)
+from autonomous.decision import (
+    Decision,
+    DecisionCriteria,
+    DecisionOutcome,
+    DecisionType,
+    ProactiveDecisionEngine,
+    RiskAssessment,
+    ValueAssessment,
+)
+from autonomous.executor import (
+    ActionResult,
+    ExecutionContext,
+    ExecutionResult,
+    ExecutionType,
+    SelfDirectedExecutor,
+)
+from autonomous.loop_engine import (
+    ActivityPriority,
+    ActivityStatus,
+    ActivityType,
+    AutonomousActivity,
+    AutonomousLoop,
+    LoopConfig,
+    LoopError,
+    LoopResult,
+    LoopState,
+)
+from autonomous.notification_dispatcher import (
+    AutonomousNotification,
+    NotificationChannel,
+    NotificationDispatcher,
+    NotificationFrequency,
+    NotificationPreferences,
+)
+from autonomous.observer import (
+    GoalSignal,
+    HealthSignal,
+    IdleObserver,
+    LearningSignal,
+    MemorySignal,
+    Observation,
+    ObservationType,
+    SystemSignal,
+)
+from autonomous.reporter import (
+    ActivityReport,
+    ActivityReporter,
+    ReportChannel,
+    ReportSeverity,
+)
+from autonomous.research_engine import (
+    ResearchConfig,
+    ResearchEngine,
+    ResearchFinding,
+    ResearchHypothesis,
+    ResearchReport,
+    ResearchRound,
+    ResearchSource,
+)
+from autonomous.subsystem_wiring import (
+    SubsystemWiring,
 )
 
 __all__ = [

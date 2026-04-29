@@ -11,10 +11,11 @@ import threading
 import time
 import uuid
 from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Deque, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -44,9 +45,9 @@ class SteeringMessage:
     timestamp: str
     acknowledged: bool = False
     applied: bool = False
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize to dictionary."""
         return {
             "message_id": self.message_id,
@@ -60,7 +61,7 @@ class SteeringMessage:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SteeringMessage":
+    def from_dict(cls, data: dict[str, Any]) -> "SteeringMessage":
         """Deserialize from dictionary."""
         return cls(
             message_id=data["message_id"],
@@ -81,7 +82,7 @@ class SteeringConfig:
     max_queue_size: int = 50
     enable_validation: bool = True
     max_content_length: int = 4096
-    allowed_sources: Optional[Set[str]] = None
+    allowed_sources: set[str] | None = None
     rate_limit_per_second: float = 5.0
     auto_acknowledge_timeout_seconds: float = 60.0
     enable_history: bool = True
@@ -96,7 +97,7 @@ class SteeringHistory:
     """
 
     def __init__(self, max_size: int = 500) -> None:
-        self._entries: Deque[SteeringMessage] = deque(maxlen=max_size)
+        self._entries: deque[SteeringMessage] = deque(maxlen=max_size)
         self._lock = threading.Lock()
 
     def add(self, message: SteeringMessage) -> None:
@@ -104,27 +105,27 @@ class SteeringHistory:
         with self._lock:
             self._entries.append(message)
 
-    def get_all(self) -> List[SteeringMessage]:
+    def get_all(self) -> list[SteeringMessage]:
         """Get all entries in chronological order."""
         with self._lock:
             return list(self._entries)
 
-    def get_applied(self) -> List[SteeringMessage]:
+    def get_applied(self) -> list[SteeringMessage]:
         """Get only applied messages."""
         with self._lock:
             return [m for m in self._entries if m.applied]
 
-    def get_by_source(self, source: str) -> List[SteeringMessage]:
+    def get_by_source(self, source: str) -> list[SteeringMessage]:
         """Get messages from a specific source."""
         with self._lock:
             return [m for m in self._entries if m.source == source]
 
-    def get_by_priority(self, priority: SteeringPriority) -> List[SteeringMessage]:
+    def get_by_priority(self, priority: SteeringPriority) -> list[SteeringMessage]:
         """Get messages with a specific priority."""
         with self._lock:
             return [m for m in self._entries if m.priority == priority]
 
-    def get_recent(self, count: int = 10) -> List[SteeringMessage]:
+    def get_recent(self, count: int = 10) -> list[SteeringMessage]:
         """Get the most recent entries."""
         with self._lock:
             entries = list(self._entries)
@@ -140,7 +141,7 @@ class SteeringHistory:
         with self._lock:
             return len(self._entries)
 
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         """Get statistics about the steering history."""
         with self._lock:
             entries = list(self._entries)
@@ -153,8 +154,8 @@ class SteeringHistory:
                     "by_source": {},
                 }
 
-            by_priority: Dict[str, int] = {}
-            by_source: Dict[str, int] = {}
+            by_priority: dict[str, int] = {}
+            by_source: dict[str, int] = {}
 
             for entry in entries:
                 p = entry.priority.name
@@ -187,17 +188,17 @@ class SteeringEngine:
             engine.acknowledge(msg.message_id)
     """
 
-    def __init__(self, config: Optional[SteeringConfig] = None) -> None:
+    def __init__(self, config: SteeringConfig | None = None) -> None:
         self.config = config or SteeringConfig()
-        self._queue: Deque[SteeringMessage] = deque()
-        self._priority_queues: Dict[SteeringPriority, Deque[SteeringMessage]] = {
+        self._queue: deque[SteeringMessage] = deque()
+        self._priority_queues: dict[SteeringPriority, deque[SteeringMessage]] = {
             p: deque() for p in SteeringPriority
         }
         self._lock = threading.Lock()
         self._history = SteeringHistory(self.config.max_history_size) if self.config.enable_history else None
-        self._validators: List[Callable[[SteeringMessage], bool]] = []
-        self._rate_timestamps: Deque[float] = deque()
-        self._on_steering_applied: List[Callable[[SteeringMessage], None]] = []
+        self._validators: list[Callable[[SteeringMessage], bool]] = []
+        self._rate_timestamps: deque[float] = deque()
+        self._on_steering_applied: list[Callable[[SteeringMessage], None]] = []
 
     def register_validator(self, validator: Callable[[SteeringMessage], bool]) -> None:
         """
@@ -217,8 +218,8 @@ class SteeringEngine:
         content: str,
         source: str = "external",
         priority: SteeringPriority = SteeringPriority.NORMAL,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> Optional[SteeringMessage]:
+        metadata: dict[str, Any] | None = None,
+    ) -> SteeringMessage | None:
         """
         Inject a steering message into the queue.
 
@@ -280,7 +281,7 @@ class SteeringEngine:
 
         return message
 
-    def get_pending(self) -> List[SteeringMessage]:
+    def get_pending(self) -> list[SteeringMessage]:
         """
         Get pending steering messages according to the queue policy.
 
@@ -306,7 +307,7 @@ class SteeringEngine:
 
             return list(self._queue)
 
-    def get_next(self) -> Optional[SteeringMessage]:
+    def get_next(self) -> SteeringMessage | None:
         """
         Get the next steering message to apply (and remove from queue).
 
@@ -374,7 +375,7 @@ class SteeringEngine:
                 pq.clear()
             return count
 
-    def check_steer(self, message: SteeringMessage) -> Tuple[bool, Optional[str]]:
+    def check_steer(self, message: SteeringMessage) -> tuple[bool, str | None]:
         """
         Validate a steering message before injection.
 
@@ -403,7 +404,7 @@ class SteeringEngine:
 
         return True, None
 
-    def get_history(self) -> Optional[SteeringHistory]:
+    def get_history(self) -> SteeringHistory | None:
         """Get the steering history tracker."""
         return self._history
 
@@ -449,7 +450,7 @@ class SteeringEngine:
                 )
                 return
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get steering engine statistics."""
         with self._lock:
             by_priority = {}

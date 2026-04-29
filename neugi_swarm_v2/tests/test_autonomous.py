@@ -13,57 +13,42 @@ import time
 from pathlib import Path
 
 import pytest
-
-from autonomous.observer import (
-    IdleObserver,
-    Observation,
-    ObservationType,
-    MemorySignal,
-    GoalSignal,
-    HealthSignal,
-    LearningSignal,
-)
 from autonomous.decision import (
-    ProactiveDecisionEngine,
     Decision,
-    DecisionType,
-    DecisionOutcome,
     DecisionCriteria,
-    RiskAssessment,
-    ValueAssessment,
+    DecisionOutcome,
+    DecisionType,
+    ProactiveDecisionEngine,
 )
 from autonomous.executor import (
-    SelfDirectedExecutor,
     ExecutionContext,
     ExecutionResult,
     ExecutionType,
-    ActionResult,
-)
-from autonomous.reporter import (
-    ActivityReporter,
-    ActivityReport,
-    ReportSeverity,
-    ReportChannel,
+    SelfDirectedExecutor,
 )
 from autonomous.loop_engine import (
     AutonomousLoop,
     LoopConfig,
-    LoopState,
     LoopResult,
-    AutonomousActivity,
-    ActivityType,
-    ActivityStatus,
+    LoopState,
+)
+from autonomous.observer import (
+    IdleObserver,
+    Observation,
+    ObservationType,
+)
+from autonomous.reporter import (
+    ActivityReporter,
+    ReportChannel,
+    ReportSeverity,
 )
 from autonomous.research_engine import (
-    ResearchEngine,
     ResearchConfig,
-    ResearchReport,
-    ResearchRound,
-    ResearchSource,
+    ResearchEngine,
     ResearchFinding,
-    ResearchHypothesis,
+    ResearchReport,
+    ResearchSource,
 )
-
 
 # -- Fixtures -----------------------------------------------------------------
 

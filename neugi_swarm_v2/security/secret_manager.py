@@ -32,7 +32,7 @@ import sqlite3
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -83,9 +83,9 @@ class SecretEntry:
     secret_class: SecretClass = SecretClass.GENERIC
     status: SecretStatus = SecretStatus.ACTIVE
     created_at: float = 0.0
-    expires_at: Optional[float] = None
-    last_rotated: Optional[float] = None
-    last_accessed: Optional[float] = None
+    expires_at: float | None = None
+    last_rotated: float | None = None
+    last_accessed: float | None = None
     access_count: int = 0
     metadata: dict[str, Any] = field(default_factory=dict)
     description: str = ""
@@ -102,7 +102,7 @@ class SecretEntry:
         return time.time() > self.expires_at
 
     @property
-    def days_until_expiry(self) -> Optional[float]:
+    def days_until_expiry(self) -> float | None:
         """Get days until secret expires."""
         if self.expires_at is None:
             return None
@@ -307,8 +307,8 @@ class SecretManager:
     def __init__(
         self,
         db_path: str = "neugi_secrets.db",
-        master_key: Optional[str] = None,
-        auto_rotate_days: Optional[int] = None,
+        master_key: str | None = None,
+        auto_rotate_days: int | None = None,
     ) -> None:
         """Initialize the secret manager.
 
@@ -381,8 +381,8 @@ class SecretManager:
         name: str,
         value: str,
         secret_class: SecretClass = SecretClass.GENERIC,
-        expires_in_days: Optional[int] = None,
-        metadata: Optional[dict[str, Any]] = None,
+        expires_in_days: int | None = None,
+        metadata: dict[str, Any] | None = None,
         description: str = "",
     ) -> SecretEntry:
         """Add a new secret.
@@ -439,7 +439,7 @@ class SecretManager:
 
         return entry
 
-    def get_secret(self, name: str) -> Optional[SecretEntry]:
+    def get_secret(self, name: str) -> SecretEntry | None:
         """Retrieve a secret by name.
 
         Args:
@@ -498,11 +498,11 @@ class SecretManager:
     def update_secret(
         self,
         name: str,
-        value: Optional[str] = None,
-        secret_class: Optional[SecretClass] = None,
-        status: Optional[SecretStatus] = None,
-        expires_at: Optional[float] = None,
-        metadata: Optional[dict[str, Any]] = None,
+        value: str | None = None,
+        secret_class: SecretClass | None = None,
+        status: SecretStatus | None = None,
+        expires_at: float | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> bool:
         """Update an existing secret.
 
@@ -658,8 +658,8 @@ class SecretManager:
 
     def list_secrets(
         self,
-        status: Optional[SecretStatus] = None,
-        secret_class: Optional[SecretClass] = None,
+        status: SecretStatus | None = None,
+        secret_class: SecretClass | None = None,
         include_expired: bool = False,
     ) -> list[SecretEntry]:
         """List secrets with optional filtering.
@@ -767,7 +767,7 @@ class SecretManager:
 
     # -- Secret Injection ----------------------------------------------------
 
-    def inject_into_env(self, name: str, env_var: Optional[str] = None) -> bool:
+    def inject_into_env(self, name: str, env_var: str | None = None) -> bool:
         """Inject a secret into the process environment.
 
         Args:
@@ -950,7 +950,7 @@ class SecretManager:
 
     def get_access_log(
         self,
-        name: Optional[str] = None,
+        name: str | None = None,
         limit: int = 100,
     ) -> list[dict[str, Any]]:
         """Get access log entries.

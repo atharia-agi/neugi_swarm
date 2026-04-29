@@ -24,21 +24,19 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import sqlite3
 import threading
-import time
 import uuid
-from contextlib import contextmanager
-from dataclasses import dataclass, field, asdict
+from collections.abc import Callable
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any
 
-from memory.scopes import ScopePath, MemoryScope, MemorySlice, ScopeAccessError, ScopeError
-from memory.scoring import ScoringEngine, ScoreComponents, ScoreConfig
 from memory.embeddings import EmbeddingEngine, VectorMemoryIndex
+from memory.scopes import MemorySlice, ScopePath
+from memory.scoring import ScoreComponents, ScoreConfig, ScoringEngine
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +101,7 @@ class MemoryEntry:
     access_count: int = 0
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    expires_at: Optional[datetime] = None
+    expires_at: datetime | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -128,7 +126,7 @@ class MemoryEntry:
             data["expires_at"] = datetime.fromisoformat(data["expires_at"])
         return cls(**data)
 
-    def is_expired(self, now: Optional[datetime] = None) -> bool:
+    def is_expired(self, now: datetime | None = None) -> bool:
         """Check if this memory has passed its TTL."""
         if self.expires_at is None:
             return False
@@ -155,7 +153,7 @@ class KnowledgeTriple:
     relation: str
     target: str
     confidence: float = 0.5
-    source_memory_id: Optional[str] = None
+    source_memory_id: str | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     def to_dict(self) -> dict[str, Any]:
@@ -235,8 +233,8 @@ class MemorySystem:
         base_dir: str = "./memory_data",
         db_name: str = "memory.db",
         daily_ttl_days: int = 30,
-        scoring_config: Optional[ScoreConfig] = None,
-        categorizer: Optional[Callable[[str], tuple[list[str], float]]] = None,
+        scoring_config: ScoreConfig | None = None,
+        categorizer: Callable[[str], tuple[list[str], float]] | None = None,
         enable_fts: bool = True,
         enable_vec: bool = False,
     ) -> None:
@@ -272,7 +270,7 @@ class MemorySystem:
         self._save_queue: list[MemoryEntry] = []
         self._save_lock = threading.Lock()
         self._save_event = threading.Event()
-        self._save_thread: Optional[threading.Thread] = None
+        self._save_thread: threading.Thread | None = None
         self._running = False
 
         # Scoring engine
@@ -280,20 +278,20 @@ class MemorySystem:
 
         # SQLite connection
         self._db_path = self.base_dir / db_name
-        self._conn: Optional[sqlite3.Connection] = None
+        self._conn: sqlite3.Connection | None = None
         self._enable_fts = enable_fts
         self._enable_vec = enable_vec
 
         # Embedding engine (lazy-loaded)
-        self._embedding: Optional[EmbeddingEngine] = None
-        self._vector_index: Optional[VectorMemoryIndex] = None
+        self._embedding: EmbeddingEngine | None = None
+        self._vector_index: VectorMemoryIndex | None = None
 
         # Initialize
         self._init_db()
         self._load_from_disk()
         self._start_background_saver()
 
-    def _get_embedding(self) -> Optional[EmbeddingEngine]:
+    def _get_embedding(self) -> EmbeddingEngine | None:
         """Lazy-load embedding engine."""
         if self._embedding is None and self._enable_vec:
             try:
@@ -509,14 +507,14 @@ class MemorySystem:
     def save(
         self,
         content: str,
-        scope: Optional[ScopePath] = None,
+        scope: ScopePath | None = None,
         tier: MemoryTier = MemoryTier.DAILY,
-        tags: Optional[list[str]] = None,
-        importance: Optional[float] = None,
+        tags: list[str] | None = None,
+        importance: float | None = None,
         source: str = "system",
         is_private: bool = False,
-        ttl_days: Optional[int] = None,
-        metadata: Optional[dict[str, Any]] = None,
+        ttl_days: int | None = None,
+        metadata: dict[str, Any] | None = None,
         extract_triples: bool = True,
     ) -> MemoryEntry:
         """
@@ -602,10 +600,10 @@ class MemorySystem:
     def recall(
         self,
         query: str,
-        agent_id: Optional[str] = None,
-        scope: Optional[ScopePath] = None,
-        tier: Optional[MemoryTier] = None,
-        tags: Optional[list[str]] = None,
+        agent_id: str | None = None,
+        scope: ScopePath | None = None,
+        tier: MemoryTier | None = None,
+        tags: list[str] | None = None,
         min_importance: float = 0.0,
         limit: int = 20,
         include_expired: bool = False,
@@ -697,8 +695,8 @@ class MemorySystem:
     def search(
         self,
         query: str,
-        agent_id: Optional[str] = None,
-        scope: Optional[ScopePath] = None,
+        agent_id: str | None = None,
+        scope: ScopePath | None = None,
         limit: int = 20,
     ) -> list[MemoryEntry]:
         """
@@ -743,7 +741,7 @@ class MemorySystem:
         return results
 
     def _like_search(
-        self, query: str, scope: Optional[ScopePath], limit: int
+        self, query: str, scope: ScopePath | None, limit: int
     ) -> list[MemoryEntry]:
         """Fallback LIKE-based search."""
         with self._store_lock:
@@ -759,17 +757,17 @@ class MemorySystem:
 
     # -- Public API: Get / Update / Delete -----------------------------------
 
-    def get(self, memory_id: str) -> Optional[MemoryEntry]:
+    def get(self, memory_id: str) -> MemoryEntry | None:
         """Get a single memory entry by ID."""
         return self._store.get(memory_id)
 
     def update(
         self,
         memory_id: str,
-        content: Optional[str] = None,
-        tags: Optional[list[str]] = None,
-        importance: Optional[float] = None,
-        metadata: Optional[dict[str, Any]] = None,
+        content: str | None = None,
+        tags: list[str] | None = None,
+        importance: float | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> MemoryEntry:
         """
         Update an existing memory entry.
@@ -909,9 +907,9 @@ class MemorySystem:
 
     def query_triples(
         self,
-        entity: Optional[str] = None,
-        relation: Optional[str] = None,
-        target: Optional[str] = None,
+        entity: str | None = None,
+        relation: str | None = None,
+        target: str | None = None,
         min_confidence: float = 0.0,
     ) -> list[KnowledgeTriple]:
         """
@@ -1013,7 +1011,7 @@ class MemorySystem:
             logger.info("Deduplicated %d memory pairs", len(merged))
         return merged
 
-    def consolidate(self, agent_id: Optional[str] = None) -> dict[str, Any]:
+    def consolidate(self, agent_id: str | None = None) -> dict[str, Any]:
         """
         Run memory consolidation: merge related entries, promote important
         daily memories to core tier.
@@ -1093,7 +1091,7 @@ class MemorySystem:
 
     # -- Public API: File-based tier storage ---------------------------------
 
-    def write_core_md(self, scope: Optional[ScopePath] = None) -> Path:
+    def write_core_md(self, scope: ScopePath | None = None) -> Path:
         """
         Write CORE.md file for a scope (permanent knowledge export).
 
@@ -1127,7 +1125,7 @@ class MemorySystem:
 
         return core_path
 
-    def write_daily_note(self, date: Optional[datetime] = None) -> Path:
+    def write_daily_note(self, date: datetime | None = None) -> Path:
         """
         Write a daily note file with all daily-tier memories for a date.
 
@@ -1162,7 +1160,7 @@ class MemorySystem:
 
         return filepath
 
-    def write_working_json(self, agent_id: Optional[str] = None) -> Path:
+    def write_working_json(self, agent_id: str | None = None) -> Path:
         """
         Write working.json with active task context.
 
@@ -1234,7 +1232,7 @@ class MemorySystem:
             self._conn = None
         logger.info("Memory system closed")
 
-    def __enter__(self) -> "MemorySystem":
+    def __enter__(self) -> MemorySystem:
         return self
 
     def __exit__(self, *args: Any) -> None:

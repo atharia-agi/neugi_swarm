@@ -19,10 +19,11 @@ import sqlite3
 import threading
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -243,38 +244,37 @@ class WakeupQueue:
         payload = payload or {}
         queue_id = str(uuid.uuid4())
 
-        with self._lock:
-            with self._get_conn() as conn:
-                if coalesce_key:
-                    existing = conn.execute(
-                        """SELECT queue_id FROM wakeup_queue
+        with self._lock, self._get_conn() as conn:
+            if coalesce_key:
+                existing = conn.execute(
+                    """SELECT queue_id FROM wakeup_queue
                            WHERE coalesce_key = ? AND state = 'pending'""",
-                        (coalesce_key,),
-                    ).fetchone()
+                    (coalesce_key,),
+                ).fetchone()
 
-                    if existing:
-                        conn.execute(
-                            """UPDATE wakeup_queue
+                if existing:
+                    conn.execute(
+                        """UPDATE wakeup_queue
                                SET scheduled_at = ?, priority = ?, payload = ?
                                WHERE queue_id = ?""",
-                            (
-                                scheduled_at, priority,
-                                json.dumps(payload), existing["queue_id"],
-                            ),
-                        )
-                        return existing["queue_id"]
+                        (
+                            scheduled_at, priority,
+                            json.dumps(payload), existing["queue_id"],
+                        ),
+                    )
+                    return existing["queue_id"]
 
-                conn.execute(
-                    """INSERT INTO wakeup_queue
+            conn.execute(
+                """INSERT INTO wakeup_queue
                        (queue_id, task_id, coalesce_key, scheduled_at,
                         state, priority, payload, created_at)
                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-                    (
-                        queue_id, task_id, coalesce_key, scheduled_at,
-                        HeartbeatState.PENDING.value, priority,
-                        json.dumps(payload), time.time(),
-                    ),
-                )
+                (
+                    queue_id, task_id, coalesce_key, scheduled_at,
+                    HeartbeatState.PENDING.value, priority,
+                    json.dumps(payload), time.time(),
+                ),
+            )
 
         return queue_id
 
@@ -289,32 +289,31 @@ class WakeupQueue:
         """
         now = time.time()
 
-        with self._lock:
-            with self._get_conn() as conn:
-                rows = conn.execute(
-                    """SELECT * FROM wakeup_queue
+        with self._lock, self._get_conn() as conn:
+            rows = conn.execute(
+                """SELECT * FROM wakeup_queue
                        WHERE state = 'pending' AND scheduled_at <= ?
                        ORDER BY priority DESC, scheduled_at ASC
                        LIMIT ?""",
-                    (now, limit),
-                ).fetchall()
+                (now, limit),
+            ).fetchall()
 
-                entries = []
-                for row in rows:
-                    conn.execute(
-                        "UPDATE wakeup_queue SET state = 'queued' WHERE queue_id = ?",
-                        (row["queue_id"],),
-                    )
-                    entries.append({
-                        "queue_id": row["queue_id"],
-                        "task_id": row["task_id"],
-                        "coalesce_key": row["coalesce_key"],
-                        "scheduled_at": row["scheduled_at"],
-                        "priority": row["priority"],
-                        "payload": json.loads(row["payload"]),
-                    })
+            entries = []
+            for row in rows:
+                conn.execute(
+                    "UPDATE wakeup_queue SET state = 'queued' WHERE queue_id = ?",
+                    (row["queue_id"],),
+                )
+                entries.append({
+                    "queue_id": row["queue_id"],
+                    "task_id": row["task_id"],
+                    "coalesce_key": row["coalesce_key"],
+                    "scheduled_at": row["scheduled_at"],
+                    "priority": row["priority"],
+                    "payload": json.loads(row["payload"]),
+                })
 
-                return entries
+            return entries
 
     def complete(self, queue_id: str) -> None:
         """Mark a queue entry as completed.
@@ -322,12 +321,11 @@ class WakeupQueue:
         Args:
             queue_id: The queue entry to complete.
         """
-        with self._lock:
-            with self._get_conn() as conn:
-                conn.execute(
-                    "DELETE FROM wakeup_queue WHERE queue_id = ?",
-                    (queue_id,),
-                )
+        with self._lock, self._get_conn() as conn:
+            conn.execute(
+                "DELETE FROM wakeup_queue WHERE queue_id = ?",
+                (queue_id,),
+            )
 
     def fail(self, queue_id: str) -> None:
         """Mark a queue entry as failed.
@@ -335,12 +333,11 @@ class WakeupQueue:
         Args:
             queue_id: The queue entry to fail.
         """
-        with self._lock:
-            with self._get_conn() as conn:
-                conn.execute(
-                    "UPDATE wakeup_queue SET state = 'failed' WHERE queue_id = ?",
-                    (queue_id,),
-                )
+        with self._lock, self._get_conn() as conn:
+            conn.execute(
+                "UPDATE wakeup_queue SET state = 'failed' WHERE queue_id = ?",
+                (queue_id,),
+            )
 
     def clear_pending(self, task_id: str | None = None) -> int:
         """Clear pending entries from the queue.
@@ -351,18 +348,17 @@ class WakeupQueue:
         Returns:
             Number of entries cleared.
         """
-        with self._lock:
-            with self._get_conn() as conn:
-                if task_id:
-                    result = conn.execute(
-                        "DELETE FROM wakeup_queue WHERE task_id = ? AND state = 'pending'",
-                        (task_id,),
-                    )
-                else:
-                    result = conn.execute(
-                        "DELETE FROM wakeup_queue WHERE state = 'pending'",
-                    )
-                return result.rowcount
+        with self._lock, self._get_conn() as conn:
+            if task_id:
+                result = conn.execute(
+                    "DELETE FROM wakeup_queue WHERE task_id = ? AND state = 'pending'",
+                    (task_id,),
+                )
+            else:
+                result = conn.execute(
+                    "DELETE FROM wakeup_queue WHERE state = 'pending'",
+                )
+            return result.rowcount
 
     def get_pending_count(self, task_id: str | None = None) -> int:
         """Get the number of pending entries.
@@ -961,30 +957,29 @@ class HeartbeatEngine:
         recovered = 0
         now = time.time()
 
-        with self._lock:
-            with self._get_conn() as conn:
-                rows = conn.execute(
-                    """SELECT * FROM heartbeat_tasks
+        with self._lock, self._get_conn() as conn:
+            rows = conn.execute(
+                """SELECT * FROM heartbeat_tasks
                        WHERE next_run_at <= ? AND state != 'failed'""",
-                    (now,),
-                ).fetchall()
+                (now,),
+            ).fetchall()
 
-                for row in rows:
-                    task_id = row["task_id"]
-                    resume_state = json.loads(row["resume_state"])
+            for row in rows:
+                task_id = row["task_id"]
+                resume_state = json.loads(row["resume_state"])
 
-                    if task_id in self._tasks:
-                        task = self._tasks[task_id]
-                        task.resume_state = resume_state
-                        task.state = HeartbeatState.RESUMING
+                if task_id in self._tasks:
+                    task = self._tasks[task_id]
+                    task.resume_state = resume_state
+                    task.state = HeartbeatState.RESUMING
 
-                    self.wakeup_queue.enqueue(
-                        task_id=task_id,
-                        scheduled_at=now,
-                        coalesce_key=row["coalesce_key"],
-                        priority=5,
-                    )
-                    recovered += 1
+                self.wakeup_queue.enqueue(
+                    task_id=task_id,
+                    scheduled_at=now,
+                    coalesce_key=row["coalesce_key"],
+                    priority=5,
+                )
+                recovered += 1
 
         if recovered:
             logger.info("Recovered %d missed heartbeat tasks", recovered)

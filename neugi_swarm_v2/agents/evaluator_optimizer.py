@@ -7,9 +7,10 @@ Pattern: Anthropic's "Evaluator-Optimizer" from Building Effective Agents.
 
 import logging
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ class EvaluationResult:
     """Result of a single evaluation pass."""
     iteration: int
     score: float
-    criteria_scores: Dict[str, float]
+    criteria_scores: dict[str, float]
     feedback: str
     passed: bool
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
@@ -52,12 +53,12 @@ class EvaluatorOptimizer:
 
     def __init__(
         self,
-        generator: Callable[[str, Optional[str]], str],
-        evaluator: Callable[[str, str], Tuple[float, str]],
+        generator: Callable[[str, str | None], str],
+        evaluator: Callable[[str, str], tuple[float, str]],
         refiner: Callable[[str, str, float, str], str],
         quality_gate: float = 0.8,
         max_iterations: int = 5,
-        criteria: Optional[List[EvaluationCriteria]] = None,
+        criteria: list[EvaluationCriteria] | None = None,
     ) -> None:
         """
         Args:
@@ -84,9 +85,9 @@ class EvaluatorOptimizer:
     def run(
         self,
         task: str,
-        initial_output: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        initial_output: str | None = None,
+        context: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Execute the full evaluator-optimizer loop.
 
@@ -94,7 +95,7 @@ class EvaluatorOptimizer:
         and metadata about the run.
         """
         start = time.monotonic()
-        history: List[EvaluationResult] = []
+        history: list[EvaluationResult] = []
         current = initial_output or self.generator(task, None)
 
         for iteration in range(1, self.max_iterations + 1):
@@ -160,7 +161,7 @@ class EvaluatorOptimizer:
 
     def _evaluate(
         self, task: str, output: str
-    ) -> Tuple[float, Dict[str, float], str]:
+    ) -> tuple[float, dict[str, float], str]:
         """
         Evaluate output against all criteria and compute weighted score.
         """
@@ -175,7 +176,7 @@ class EvaluatorOptimizer:
         weighted = self._weighted_score(criteria_scores)
         return weighted, criteria_scores, feedback
 
-    def _weighted_score(self, criteria_scores: Dict[str, float]) -> float:
+    def _weighted_score(self, criteria_scores: dict[str, float]) -> float:
         """Compute weighted average across criteria."""
         total_weight = 0.0
         total_score = 0.0
@@ -195,8 +196,8 @@ class EvaluatorOptimizer:
         self,
         task: str,
         output: str,
-        review_prompt_template: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        review_prompt_template: str | None = None,
+    ) -> dict[str, Any]:
         """
         Perform a self-review of an output without refinement.
         Useful for one-off quality checks.
@@ -219,9 +220,9 @@ class EvaluatorOptimizer:
 
     def run_batch(
         self,
-        tasks: List[str],
-        context: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+        tasks: list[str],
+        context: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
         """Run the evaluator-optimizer loop on multiple tasks."""
         return [self.run(task, context=context) for task in tasks]
 

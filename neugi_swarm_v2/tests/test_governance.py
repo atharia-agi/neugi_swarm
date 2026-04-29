@@ -1,5 +1,8 @@
 """Integration tests for Governance subsystem."""
-import sys, os, unittest
+import os
+import sys
+import unittest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
@@ -21,7 +24,7 @@ class TestGovernanceImports(unittest.TestCase):
         self.assertTrue(hasattr(policy, "PolicyEngine"))
 
     def test_package_exports(self):
-        from governance import BudgetTracker, ApprovalGate, AuditLogger, PolicyEngine
+        from governance import ApprovalGate, AuditLogger, BudgetTracker, PolicyEngine
         self.assertIsNotNone(BudgetTracker)
         self.assertIsNotNone(ApprovalGate)
         self.assertIsNotNone(AuditLogger)

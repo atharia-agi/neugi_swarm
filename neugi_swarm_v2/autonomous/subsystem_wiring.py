@@ -17,7 +17,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import traceback
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Callable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ class SubsystemWiring:
         goal_system: Any = None,
         agent_manager: Any = None,
         skill_generator: Any = None,
-        llm_callback: Optional[Callable[..., str]] = None,
+        llm_callback: Callable[..., str] | None = None,
     ) -> None:
         self.memory_system = memory_system
         self.goal_system = goal_system
@@ -49,7 +50,7 @@ class SubsystemWiring:
 
     # -- Dreaming / Memory Consolidation --------------------------------------
 
-    def run_dream_cycle(self) -> Dict[str, Any]:
+    def run_dream_cycle(self) -> dict[str, Any]:
         """Run memory consolidation via DreamingEngine.
 
         Returns:
@@ -86,7 +87,7 @@ class SubsystemWiring:
 
         return {"success": False, "error": "No dreaming or memory subsystem available"}
 
-    def _find_dreaming_engine(self) -> Optional[Any]:
+    def _find_dreaming_engine(self) -> Any | None:
         """Find DreamingEngine from memory_system or direct reference."""
         if self.memory_system:
             # Check if memory_system IS a DreamingEngine
@@ -99,7 +100,7 @@ class SubsystemWiring:
 
     # -- Goal System ----------------------------------------------------------
 
-    def decompose_goal(self, goal_id: str) -> Dict[str, Any]:
+    def decompose_goal(self, goal_id: str) -> dict[str, Any]:
         """Decompose a goal into subtasks.
 
         Handles async GoalSystem.decompose() safely from sync context.
@@ -129,7 +130,7 @@ class SubsystemWiring:
             logger.warning("Goal decomposition failed: %s\n%s", e, traceback.format_exc())
             return {"success": False, "error": str(e)}
 
-    def complete_goal(self, goal_id: str) -> Dict[str, Any]:
+    def complete_goal(self, goal_id: str) -> dict[str, Any]:
         """Mark a goal as complete.
 
         Handles async GoalSystem.update_progress() safely.
@@ -169,9 +170,9 @@ class SubsystemWiring:
     def delegate_to_agent(
         self,
         task: str,
-        role: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        role: str | None = None,
+        context: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Delegate a task to an idle agent.
 
         Args:
@@ -203,7 +204,7 @@ class SubsystemWiring:
             logger.warning("Agent delegation failed: %s", e)
             return {"success": False, "error": str(e)}
 
-    def get_idle_agents(self) -> List[Dict[str, Any]]:
+    def get_idle_agents(self) -> list[dict[str, Any]]:
         """Get list of idle agents."""
         if not self.agent_manager:
             return []
@@ -231,7 +232,7 @@ class SubsystemWiring:
         min_occurrences: int = 3,
         min_success_rate: float = 0.7,
         auto_approve_threshold: float = 0.9,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate skills from observed patterns.
 
         Returns:

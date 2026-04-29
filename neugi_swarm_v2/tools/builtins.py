@@ -27,9 +27,9 @@ import sys
 import tempfile
 import time
 import xml.etree.ElementTree as ET
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from tools.tool_registry import ToolCategory, ToolRegistry, ToolComplexity
+from tools.tool_registry import ToolCategory, ToolComplexity, ToolRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ class WebTools:
     """Web-related built-in tools."""
 
     @staticmethod
-    def web_search(query: str, engine: str = "google", num_results: int = 10) -> Dict[str, Any]:
+    def web_search(query: str, engine: str = "google", num_results: int = 10) -> dict[str, Any]:
         """
         Search the web for information.
 
@@ -90,8 +90,8 @@ class WebTools:
         return {"query": query, "engine": engine, "results": results, "count": len(results)}
 
     @staticmethod
-    def web_fetch(url: str, method: str = "GET", headers: Optional[Dict] = None,
-                  timeout: float = 10.0) -> Dict[str, Any]:
+    def web_fetch(url: str, method: str = "GET", headers: dict | None = None,
+                  timeout: float = 10.0) -> dict[str, Any]:
         """
         Fetch content from a URL.
 
@@ -128,7 +128,7 @@ class WebTools:
             return {"error": str(e), "status_code": 0}
 
     @staticmethod
-    def web_scrape(url: str, extract_links: bool = True, extract_images: bool = False) -> Dict[str, Any]:
+    def web_scrape(url: str, extract_links: bool = True, extract_images: bool = False) -> dict[str, Any]:
         """
         Scrape content from a web page.
 
@@ -172,7 +172,7 @@ class WebTools:
             return {"error": str(e)}
 
     @staticmethod
-    def web_monitor(url: str, expected_status: int = 200, timeout: float = 10.0) -> Dict[str, Any]:
+    def web_monitor(url: str, expected_status: int = 200, timeout: float = 10.0) -> dict[str, Any]:
         """
         Monitor a URL for availability and response time.
 
@@ -212,7 +212,7 @@ class WebTools:
             }
 
     @staticmethod
-    def web_screenshot(url: str, output_path: Optional[str] = None) -> Dict[str, Any]:
+    def web_screenshot(url: str, output_path: str | None = None) -> dict[str, Any]:
         """
         Take a screenshot of a web page (requires playwright or selenium).
 
@@ -238,7 +238,7 @@ class CodeTools:
     """Code-related built-in tools."""
 
     @staticmethod
-    def code_execute(code: str, language: str = "python", timeout: float = 10.0) -> Dict[str, Any]:
+    def code_execute(code: str, language: str = "python", timeout: float = 10.0) -> dict[str, Any]:
         """
         Execute code in a sandboxed environment.
 
@@ -283,7 +283,7 @@ class CodeTools:
                 pass
 
     @staticmethod
-    def code_lint(code: str, language: str = "python") -> Dict[str, Any]:
+    def code_lint(code: str, language: str = "python") -> dict[str, Any]:
         """
         Lint code for style and potential issues.
 
@@ -316,7 +316,7 @@ class CodeTools:
         return {"issues": issues, "count": len(issues), "language": language}
 
     @staticmethod
-    def code_review(code: str, language: str = "python") -> Dict[str, Any]:
+    def code_review(code: str, language: str = "python") -> dict[str, Any]:
         """
         Review code for best practices and potential issues.
 
@@ -348,7 +348,7 @@ class CodeTools:
         return {"findings": findings, "language": language, "lines": len(lines)}
 
     @staticmethod
-    def code_refactor(code: str, style: str = "pep8") -> Dict[str, Any]:
+    def code_refactor(code: str, style: str = "pep8") -> dict[str, Any]:
         """
         Refactor code to match a style guide.
 
@@ -380,7 +380,7 @@ class CodeTools:
         }
 
     @staticmethod
-    def code_debug(error_trace: str, code_context: str = "") -> Dict[str, Any]:
+    def code_debug(error_trace: str, code_context: str = "") -> dict[str, Any]:
         """
         Analyze an error trace and suggest fixes.
 
@@ -434,7 +434,7 @@ class FileTools:
     """File-related built-in tools."""
 
     @staticmethod
-    def file_read(path: str, encoding: str = "utf-8") -> Dict[str, Any]:
+    def file_read(path: str, encoding: str = "utf-8") -> dict[str, Any]:
         """
         Read a file's contents.
 
@@ -446,7 +446,7 @@ class FileTools:
             Dict with content and metadata.
         """
         try:
-            with open(path, "r", encoding=encoding) as f:
+            with open(path, encoding=encoding) as f:
                 content = f.read()
             stat = os.stat(path)
             return {
@@ -459,7 +459,7 @@ class FileTools:
             return {"error": str(e)}
 
     @staticmethod
-    def file_write(path: str, content: str, mode: str = "w", encoding: str = "utf-8") -> Dict[str, Any]:
+    def file_write(path: str, content: str, mode: str = "w", encoding: str = "utf-8") -> dict[str, Any]:
         """
         Write content to a file.
 
@@ -481,7 +481,7 @@ class FileTools:
             return {"error": str(e)}
 
     @staticmethod
-    def file_list(path: str, recursive: bool = False, pattern: str = "*") -> Dict[str, Any]:
+    def file_list(path: str, recursive: bool = False, pattern: str = "*") -> dict[str, Any]:
         """
         List files in a directory.
 
@@ -518,7 +518,7 @@ class FileTools:
             return {"error": str(e)}
 
     @staticmethod
-    def file_find(path: str, pattern: str, recursive: bool = True) -> Dict[str, Any]:
+    def file_find(path: str, pattern: str, recursive: bool = True) -> dict[str, Any]:
         """
         Find files matching a pattern.
 
@@ -547,7 +547,7 @@ class FileTools:
             return {"error": str(e)}
 
     @staticmethod
-    def file_diff(file1: str, file2: str, context: int = 3) -> Dict[str, Any]:
+    def file_diff(file1: str, file2: str, context: int = 3) -> dict[str, Any]:
         """
         Generate a diff between two files.
 
@@ -560,7 +560,7 @@ class FileTools:
             Dict with diff output.
         """
         try:
-            with open(file1, "r", encoding="utf-8") as f1, open(file2, "r", encoding="utf-8") as f2:
+            with open(file1, encoding="utf-8") as f1, open(file2, encoding="utf-8") as f2:
                 diff = list(difflib.unified_diff(
                     f1.readlines(), f2.readlines(),
                     fromfile=file1, tofile=file2, n=context,
@@ -570,7 +570,7 @@ class FileTools:
             return {"error": str(e)}
 
     @staticmethod
-    def file_archive(files: List[str], output: str, format: str = "zip") -> Dict[str, Any]:
+    def file_archive(files: list[str], output: str, format: str = "zip") -> dict[str, Any]:
         """
         Create an archive of files.
 
@@ -600,7 +600,7 @@ class DataTools:
     """Data-related built-in tools."""
 
     @staticmethod
-    def data_parse_json(data: str) -> Dict[str, Any]:
+    def data_parse_json(data: str) -> dict[str, Any]:
         """
         Parse JSON string into a Python object.
 
@@ -616,7 +616,7 @@ class DataTools:
             return {"error": f"Invalid JSON: {str(e)}"}
 
     @staticmethod
-    def data_format_json(data: Any, indent: int = 2) -> Dict[str, Any]:
+    def data_format_json(data: Any, indent: int = 2) -> dict[str, Any]:
         """
         Format data as JSON string.
 
@@ -633,7 +633,7 @@ class DataTools:
             return {"error": str(e)}
 
     @staticmethod
-    def data_parse_csv(data: str, delimiter: str = ",") -> Dict[str, Any]:
+    def data_parse_csv(data: str, delimiter: str = ",") -> dict[str, Any]:
         """
         Parse CSV string into rows.
 
@@ -656,7 +656,7 @@ class DataTools:
             return {"error": str(e)}
 
     @staticmethod
-    def data_parse_xml(data: str) -> Dict[str, Any]:
+    def data_parse_xml(data: str) -> dict[str, Any]:
         """
         Parse XML string into a dictionary.
 
@@ -674,7 +674,7 @@ class DataTools:
             return {"error": f"Invalid XML: {str(e)}"}
 
     @staticmethod
-    def data_transform(data: Any, operations: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def data_transform(data: Any, operations: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Transform data with a sequence of operations.
 
@@ -760,7 +760,7 @@ class DataTools:
         return {"result": result, "count": len(result)}
 
     @staticmethod
-    def data_visualize(data: List[Dict[str, Any]], chart_type: str = "table") -> Dict[str, Any]:
+    def data_visualize(data: list[dict[str, Any]], chart_type: str = "table") -> dict[str, Any]:
         """
         Generate a text-based visualization of data.
 
@@ -818,7 +818,7 @@ class CommTools:
     """Communication-related built-in tools."""
 
     @staticmethod
-    def comm_webhook(url: str, payload: Dict[str, Any], method: str = "POST") -> Dict[str, Any]:
+    def comm_webhook(url: str, payload: dict[str, Any], method: str = "POST") -> dict[str, Any]:
         """
         Send a webhook notification.
 
@@ -842,7 +842,7 @@ class CommTools:
 
     @staticmethod
     def comm_email_smtp(to: str, subject: str, body: str,
-                        smtp_server: str = "localhost", smtp_port: int = 25) -> Dict[str, Any]:
+                        smtp_server: str = "localhost", smtp_port: int = 25) -> dict[str, Any]:
         """
         Send an email via SMTP.
 
@@ -871,7 +871,7 @@ class CommTools:
             return {"error": str(e)}
 
     @staticmethod
-    def comm_slack_message(channel: str, text: str, webhook_url: str = "") -> Dict[str, Any]:
+    def comm_slack_message(channel: str, text: str, webhook_url: str = "") -> dict[str, Any]:
         """
         Send a Slack message via webhook.
 
@@ -898,7 +898,7 @@ class CommTools:
             return {"error": str(e)}
 
     @staticmethod
-    def comm_discord_message(content: str, webhook_url: str) -> Dict[str, Any]:
+    def comm_discord_message(content: str, webhook_url: str) -> dict[str, Any]:
         """
         Send a Discord message via webhook.
 
@@ -920,7 +920,7 @@ class CommTools:
             return {"error": str(e)}
 
     @staticmethod
-    def comm_telegram_message(chat_id: str, text: str, bot_token: str) -> Dict[str, Any]:
+    def comm_telegram_message(chat_id: str, text: str, bot_token: str) -> dict[str, Any]:
         """
         Send a Telegram message.
 
@@ -952,7 +952,7 @@ class SystemTools:
     """System-related built-in tools."""
 
     @staticmethod
-    def system_cpu_info() -> Dict[str, Any]:
+    def system_cpu_info() -> dict[str, Any]:
         """Get CPU information."""
         import platform
         info = {
@@ -970,7 +970,7 @@ class SystemTools:
         return info
 
     @staticmethod
-    def system_memory_info() -> Dict[str, Any]:
+    def system_memory_info() -> dict[str, Any]:
         """Get memory information."""
         try:
             import psutil
@@ -993,7 +993,7 @@ class SystemTools:
             return {"error": "psutil not available and /proc/meminfo not found"}
 
     @staticmethod
-    def system_disk_info() -> Dict[str, Any]:
+    def system_disk_info() -> dict[str, Any]:
         """Get disk information."""
         try:
             import psutil
@@ -1018,7 +1018,7 @@ class SystemTools:
             return {"total_gb": round(total / (1024**3), 2), "used_gb": round(used / (1024**3), 2)}
 
     @staticmethod
-    def system_network_info() -> Dict[str, Any]:
+    def system_network_info() -> dict[str, Any]:
         """Get network information."""
         try:
             import psutil
@@ -1033,7 +1033,7 @@ class SystemTools:
             return {"error": "psutil not available"}
 
     @staticmethod
-    def system_process_list() -> Dict[str, Any]:
+    def system_process_list() -> dict[str, Any]:
         """List running processes."""
         try:
             import psutil
@@ -1048,7 +1048,7 @@ class SystemTools:
             return {"error": "psutil not available"}
 
     @staticmethod
-    def system_env_vars(pattern: str = "") -> Dict[str, Any]:
+    def system_env_vars(pattern: str = "") -> dict[str, Any]:
         """
         Get environment variables.
 
@@ -1064,7 +1064,7 @@ class SystemTools:
         return {"variables": env, "count": len(env)}
 
     @staticmethod
-    def system_execute_command(command: str, shell: bool = False, timeout: float = 30.0) -> Dict[str, Any]:
+    def system_execute_command(command: str, shell: bool = False, timeout: float = 30.0) -> dict[str, Any]:
         """
         Execute a system command.
 
@@ -1103,7 +1103,7 @@ class AITools:
     """AI-related built-in tools."""
 
     @staticmethod
-    def ai_summarize(text: str, max_length: int = 200) -> Dict[str, Any]:
+    def ai_summarize(text: str, max_length: int = 200) -> dict[str, Any]:
         """
         Summarize text using extractive summarization.
 
@@ -1148,7 +1148,7 @@ class AITools:
         }
 
     @staticmethod
-    def ai_translate(text: str, source: str = "en", target: str = "es") -> Dict[str, Any]:
+    def ai_translate(text: str, source: str = "en", target: str = "es") -> dict[str, Any]:
         """
         Translate text (basic dictionary-based translation).
 
@@ -1180,7 +1180,7 @@ class AITools:
         }
 
     @staticmethod
-    def ai_classify(text: str, categories: List[str]) -> Dict[str, Any]:
+    def ai_classify(text: str, categories: list[str]) -> dict[str, Any]:
         """
         Classify text into categories using keyword matching.
 
@@ -1210,7 +1210,7 @@ class AITools:
         }
 
     @staticmethod
-    def ai_extract_entities(text: str) -> Dict[str, Any]:
+    def ai_extract_entities(text: str) -> dict[str, Any]:
         """
         Extract named entities from text.
 
@@ -1236,7 +1236,7 @@ class AITools:
         }
 
     @staticmethod
-    def ai_generate_text(prompt: str, max_length: int = 100) -> Dict[str, Any]:
+    def ai_generate_text(prompt: str, max_length: int = 100) -> dict[str, Any]:
         """
         Generate text continuation from a prompt (basic template-based).
 
@@ -1278,7 +1278,7 @@ class GitTools:
     """Git-related built-in tools."""
 
     @staticmethod
-    def _run_git(args: List[str], cwd: Optional[str] = None) -> Dict[str, Any]:
+    def _run_git(args: list[str], cwd: str | None = None) -> dict[str, Any]:
         """Run a git command."""
         try:
             result = subprocess.run(
@@ -1293,12 +1293,12 @@ class GitTools:
             return {"error": str(e)}
 
     @staticmethod
-    def git_status(repo_path: str = ".") -> Dict[str, Any]:
+    def git_status(repo_path: str = ".") -> dict[str, Any]:
         """Get git repository status."""
         return GitTools._run_git(["status", "--short"], cwd=repo_path)
 
     @staticmethod
-    def git_diff(repo_path: str = ".", staged: bool = False) -> Dict[str, Any]:
+    def git_diff(repo_path: str = ".", staged: bool = False) -> dict[str, Any]:
         """Get git diff."""
         args = ["diff"]
         if staged:
@@ -1306,24 +1306,24 @@ class GitTools:
         return GitTools._run_git(args, cwd=repo_path)
 
     @staticmethod
-    def git_commit(message: str, repo_path: str = ".", files: Optional[List[str]] = None) -> Dict[str, Any]:
+    def git_commit(message: str, repo_path: str = ".", files: list[str] | None = None) -> dict[str, Any]:
         """Commit changes to git."""
         if files:
             GitTools._run_git(["add"] + files, cwd=repo_path)
         return GitTools._run_git(["commit", "-m", message], cwd=repo_path)
 
     @staticmethod
-    def git_push(repo_path: str = ".", remote: str = "origin", branch: str = "main") -> Dict[str, Any]:
+    def git_push(repo_path: str = ".", remote: str = "origin", branch: str = "main") -> dict[str, Any]:
         """Push to remote repository."""
         return GitTools._run_git(["push", remote, branch], cwd=repo_path)
 
     @staticmethod
-    def git_pull(repo_path: str = ".", remote: str = "origin", branch: str = "main") -> Dict[str, Any]:
+    def git_pull(repo_path: str = ".", remote: str = "origin", branch: str = "main") -> dict[str, Any]:
         """Pull from remote repository."""
         return GitTools._run_git(["pull", remote, branch], cwd=repo_path)
 
     @staticmethod
-    def git_branch(repo_path: str = ".", list_all: bool = False) -> Dict[str, Any]:
+    def git_branch(repo_path: str = ".", list_all: bool = False) -> dict[str, Any]:
         """List git branches."""
         args = ["branch"]
         if list_all:
@@ -1331,12 +1331,12 @@ class GitTools:
         return GitTools._run_git(args, cwd=repo_path)
 
     @staticmethod
-    def git_merge(branch: str, repo_path: str = ".") -> Dict[str, Any]:
+    def git_merge(branch: str, repo_path: str = ".") -> dict[str, Any]:
         """Merge a branch."""
         return GitTools._run_git(["merge", branch], cwd=repo_path)
 
     @staticmethod
-    def git_log(repo_path: str = ".", count: int = 10) -> Dict[str, Any]:
+    def git_log(repo_path: str = ".", count: int = 10) -> dict[str, Any]:
         """Get git log."""
         return GitTools._run_git(["log", "--oneline", f"-{count}"], cwd=repo_path)
 
@@ -1349,7 +1349,7 @@ class DockerTools:
     """Docker-related built-in tools."""
 
     @staticmethod
-    def _run_docker(args: List[str]) -> Dict[str, Any]:
+    def _run_docker(args: list[str]) -> dict[str, Any]:
         """Run a docker command."""
         try:
             result = subprocess.run(
@@ -1366,13 +1366,13 @@ class DockerTools:
             return {"error": str(e)}
 
     @staticmethod
-    def docker_build(path: str = ".", tag: str = "neugi-app", dockerfile: str = "Dockerfile") -> Dict[str, Any]:
+    def docker_build(path: str = ".", tag: str = "neugi-app", dockerfile: str = "Dockerfile") -> dict[str, Any]:
         """Build a Docker image."""
         return DockerTools._run_docker(["build", "-f", dockerfile, "-t", tag, path])
 
     @staticmethod
-    def docker_run(image: str, name: str = "", ports: Optional[List[str]] = None,
-                   detach: bool = True) -> Dict[str, Any]:
+    def docker_run(image: str, name: str = "", ports: list[str] | None = None,
+                   detach: bool = True) -> dict[str, Any]:
         """Run a Docker container."""
         args = ["run"]
         if detach:
@@ -1386,22 +1386,22 @@ class DockerTools:
         return DockerTools._run_docker(args)
 
     @staticmethod
-    def docker_stop(container: str) -> Dict[str, Any]:
+    def docker_stop(container: str) -> dict[str, Any]:
         """Stop a Docker container."""
         return DockerTools._run_docker(["stop", container])
 
     @staticmethod
-    def docker_logs(container: str, lines: int = 100) -> Dict[str, Any]:
+    def docker_logs(container: str, lines: int = 100) -> dict[str, Any]:
         """Get Docker container logs."""
         return DockerTools._run_docker(["logs", "--tail", str(lines), container])
 
     @staticmethod
-    def docker_exec(container: str, command: str) -> Dict[str, Any]:
+    def docker_exec(container: str, command: str) -> dict[str, Any]:
         """Execute a command in a Docker container."""
         return DockerTools._run_docker(["exec", container] + command.split())
 
     @staticmethod
-    def docker_compose_up(path: str = ".", detach: bool = True) -> Dict[str, Any]:
+    def docker_compose_up(path: str = ".", detach: bool = True) -> dict[str, Any]:
         """Start Docker Compose services."""
         args = ["compose", "-f", os.path.join(path, "docker-compose.yml"), "up"]
         if detach:
@@ -1409,7 +1409,7 @@ class DockerTools:
         return DockerTools._run_docker(args)
 
     @staticmethod
-    def docker_ps(all: bool = False) -> Dict[str, Any]:
+    def docker_ps(all: bool = False) -> dict[str, Any]:
         """List Docker containers."""
         args = ["ps"]
         if all:
@@ -1425,7 +1425,7 @@ class SecurityTools:
     """Security-related built-in tools."""
 
     @staticmethod
-    def security_hash(data: str, algorithm: str = "sha256") -> Dict[str, Any]:
+    def security_hash(data: str, algorithm: str = "sha256") -> dict[str, Any]:
         """
         Hash data using specified algorithm.
 
@@ -1449,7 +1449,7 @@ class SecurityTools:
         return {"hash": algo(data.encode()).hexdigest(), "algorithm": algorithm}
 
     @staticmethod
-    def security_encrypt(data: str, key: str) -> Dict[str, Any]:
+    def security_encrypt(data: str, key: str) -> dict[str, Any]:
         """
         Encrypt data using XOR cipher (basic).
 
@@ -1467,7 +1467,7 @@ class SecurityTools:
         return {"encrypted": base64.b64encode(encrypted).decode(), "algorithm": "xor"}
 
     @staticmethod
-    def security_decrypt(encrypted: str, key: str) -> Dict[str, Any]:
+    def security_decrypt(encrypted: str, key: str) -> dict[str, Any]:
         """
         Decrypt data using XOR cipher (basic).
 
@@ -1488,7 +1488,7 @@ class SecurityTools:
             return {"error": str(e)}
 
     @staticmethod
-    def security_sign(data: str, private_key: str) -> Dict[str, Any]:
+    def security_sign(data: str, private_key: str) -> dict[str, Any]:
         """
         Sign data with a private key (HMAC-based).
 
@@ -1504,7 +1504,7 @@ class SecurityTools:
         return {"signature": signature, "algorithm": "hmac-sha256"}
 
     @staticmethod
-    def security_verify(data: str, signature: str, private_key: str) -> Dict[str, Any]:
+    def security_verify(data: str, signature: str, private_key: str) -> dict[str, Any]:
         """
         Verify a data signature.
 
@@ -1522,7 +1522,7 @@ class SecurityTools:
         return {"valid": valid, "algorithm": "hmac-sha256"}
 
     @staticmethod
-    def security_scan_code(code: str) -> Dict[str, Any]:
+    def security_scan_code(code: str) -> dict[str, Any]:
         """
         Scan code for security vulnerabilities.
 
@@ -1554,7 +1554,7 @@ class SecurityTools:
         return {"findings": findings, "count": len(findings)}
 
     @staticmethod
-    def security_audit_file(path: str) -> Dict[str, Any]:
+    def security_audit_file(path: str) -> dict[str, Any]:
         """
         Audit a file for security issues.
 
@@ -1589,7 +1589,7 @@ class SecurityTools:
 # Registration
 # ============================================================================
 
-def register_builtin_tools(registry: ToolRegistry) -> Dict[str, int]:
+def register_builtin_tools(registry: ToolRegistry) -> dict[str, int]:
     """
     Register all built-in tools in the registry.
 

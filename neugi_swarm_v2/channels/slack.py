@@ -8,12 +8,11 @@ and channel management.
 
 from __future__ import annotations
 
-import asyncio
 import hashlib
 import hmac
 import logging
 import time
-from typing import Any, Optional
+from typing import Any
 
 import requests
 
@@ -54,14 +53,14 @@ class SlackChannel(BaseChannel):
         self,
         token: str,
         signing_secret: str,
-        bot_name: Optional[str] = None,
+        bot_name: str | None = None,
         health_check_interval: int = 60,
     ) -> None:
         super().__init__(token, bot_name, health_check_interval)
         self._signing_secret = signing_secret
-        self._session: Optional[requests.Session] = None
-        self._bot_id: Optional[str] = None
-        self._bot_user_id: Optional[str] = None
+        self._session: requests.Session | None = None
+        self._bot_id: str | None = None
+        self._bot_user_id: str | None = None
         self._slash_commands: dict[str, Any] = {}
         self._block_actions: dict[str, Any] = {}
 
@@ -80,9 +79,9 @@ class SlackChannel(BaseChannel):
     def _call_api(
         self,
         method: str,
-        data: Optional[dict[str, Any]] = None,
-        files: Optional[dict[str, Any]] = None,
-    ) -> Optional[dict[str, Any]]:
+        data: dict[str, Any] | None = None,
+        files: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | None:
         """
         Make a synchronous API call to Slack.
 
@@ -236,7 +235,7 @@ class SlackChannel(BaseChannel):
         }
         return caps
 
-    async def _parse_message(self, raw_data: dict[str, Any]) -> Optional[IncomingMessage]:
+    async def _parse_message(self, raw_data: dict[str, Any]) -> IncomingMessage | None:
         """Parse raw Slack message data into IncomingMessage."""
         channel = raw_data.get("channel", "")
         thread_ts = raw_data.get("thread_ts")
@@ -367,7 +366,7 @@ class SlackChannel(BaseChannel):
                         texts.append(element["text"])
         return "\n".join(texts)
 
-    async def send_message(self, message: OutgoingMessage) -> Optional[str]:
+    async def send_message(self, message: OutgoingMessage) -> str | None:
         """Send a message via Slack Web API."""
         try:
             if message.message_type == MessageType.TEXT:
@@ -381,7 +380,7 @@ class SlackChannel(BaseChannel):
             self._health.record_error(str(exc))
             return None
 
-    async def _send_text(self, message: OutgoingMessage) -> Optional[str]:
+    async def _send_text(self, message: OutgoingMessage) -> str | None:
         """Send a text message."""
         data: dict[str, Any] = {
             "channel": message.conversation_id,
@@ -409,7 +408,7 @@ class SlackChannel(BaseChannel):
             return result.get("ts")
         return None
 
-    async def _send_file(self, message: OutgoingMessage) -> Optional[str]:
+    async def _send_file(self, message: OutgoingMessage) -> str | None:
         """Send a file."""
         data = {"channels": message.conversation_id}
 
@@ -434,8 +433,8 @@ class SlackChannel(BaseChannel):
         conversation_id: str,
         blocks: list[dict[str, Any]],
         text: str = "",
-        thread_id: Optional[str] = None,
-    ) -> Optional[str]:
+        thread_id: str | None = None,
+    ) -> str | None:
         """
         Send a message with Block Kit blocks.
 
@@ -464,8 +463,8 @@ class SlackChannel(BaseChannel):
         conversation_id: str,
         user_id: str,
         text: str,
-        blocks: Optional[list[dict[str, Any]]] = None,
-    ) -> Optional[str]:
+        blocks: list[dict[str, Any]] | None = None,
+    ) -> str | None:
         """Send an ephemeral message visible only to a user."""
         data: dict[str, Any] = {
             "channel": conversation_id,
@@ -539,7 +538,7 @@ class SlackChannel(BaseChannel):
         result = self._call_api("pins.remove", data)
         return result is not None and result.get("ok")
 
-    async def get_user(self, user_id: str) -> Optional[UserIdentity]:
+    async def get_user(self, user_id: str) -> UserIdentity | None:
         """Get user information."""
         result = self._call_api("users.info", {"user": user_id})
         if result and result.get("user"):
@@ -562,7 +561,7 @@ class SlackChannel(BaseChannel):
             )
         return None
 
-    async def get_chat_info(self, chat_id: str) -> Optional[dict[str, Any]]:
+    async def get_chat_info(self, chat_id: str) -> dict[str, Any] | None:
         """Get channel/conversation information."""
         if chat_id.startswith("D"):
             result = self._call_api("conversations.info", {"channel": chat_id})
@@ -572,9 +571,9 @@ class SlackChannel(BaseChannel):
 
     async def get_conversations(
         self,
-        types: Optional[list[str]] = None,
+        types: list[str] | None = None,
         limit: int = 100,
-        cursor: Optional[str] = None,
+        cursor: str | None = None,
     ) -> list[dict[str, Any]]:
         """List conversations the bot is a member of."""
         data: dict[str, Any] = {"limit": limit}
@@ -608,8 +607,8 @@ class SlackChannel(BaseChannel):
         self,
         channel_id: str,
         limit: int = 10,
-        oldest: Optional[str] = None,
-        latest: Optional[str] = None,
+        oldest: str | None = None,
+        latest: str | None = None,
     ) -> list[dict[str, Any]]:
         """Get conversation history."""
         data: dict[str, Any] = {"channel": channel_id, "limit": limit}
@@ -633,7 +632,7 @@ class SlackChannel(BaseChannel):
             return result.get("messages", [])
         return []
 
-    async def lookup_user_by_email(self, email: str) -> Optional[UserIdentity]:
+    async def lookup_user_by_email(self, email: str) -> UserIdentity | None:
         """Look up a user by email."""
         result = self._call_api("users.lookupByEmail", {"email": email})
         if result and result.get("user"):
@@ -648,7 +647,7 @@ class SlackChannel(BaseChannel):
         """Register a block action handler."""
         self._block_actions[action_id] = handler
 
-    async def process_event(self, event_data: dict[str, Any]) -> Optional[dict[str, Any]]:
+    async def process_event(self, event_data: dict[str, Any]) -> dict[str, Any] | None:
         """
         Process a Slack Events API event.
 
@@ -695,7 +694,7 @@ class SlackChannel(BaseChannel):
 
     async def process_interaction(
         self, interaction_data: dict[str, Any]
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Process a Slack interaction (slash command, block action, etc.).
 
@@ -733,7 +732,7 @@ class SlackChannel(BaseChannel):
         self,
         response_url: str,
         text: str,
-        blocks: Optional[list[dict[str, Any]]] = None,
+        blocks: list[dict[str, Any]] | None = None,
         replace_original: bool = False,
         delete_original: bool = False,
     ) -> bool:
@@ -770,9 +769,9 @@ class SlackChannel(BaseChannel):
         conversation_id: str,
         post_at: int,
         text: str,
-        blocks: Optional[list[dict[str, Any]]] = None,
-        thread_id: Optional[str] = None,
-    ) -> Optional[str]:
+        blocks: list[dict[str, Any]] | None = None,
+        thread_id: str | None = None,
+    ) -> str | None:
         """
         Schedule a message for future delivery.
 

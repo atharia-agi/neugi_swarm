@@ -13,7 +13,6 @@ Edit this file to add new providers or models anytime.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -43,7 +42,7 @@ class ProviderInfo:
     auth_header: str = "Authorization"
     auth_format: str = "Bearer <API_KEY>"
     notes: str = ""
-    models: List[ModelInfo] = field(default_factory=list)
+    models: list[ModelInfo] = field(default_factory=list)
 
     def get_base_url(self) -> str:
         """Return the base URL for API calls."""
@@ -66,7 +65,7 @@ class ProviderInfo:
 # EDITABLE CATALOG — Add or remove providers/models as needed
 # =============================================================================
 
-DEFAULT_PROVIDERS: List[ProviderInfo] = [
+DEFAULT_PROVIDERS: list[ProviderInfo] = [
     # -- Local / Self-Hosted -------------------------------------------------
     ProviderInfo(
         name="ollama",
@@ -470,7 +469,7 @@ DEFAULT_PROVIDERS: List[ProviderInfo] = [
 # Helper Functions
 # =============================================================================
 
-def get_provider(name: str) -> Optional[ProviderInfo]:
+def get_provider(name: str) -> ProviderInfo | None:
     """Get a provider by its internal name."""
     for p in DEFAULT_PROVIDERS:
         if p.name == name:
@@ -478,18 +477,18 @@ def get_provider(name: str) -> Optional[ProviderInfo]:
     return None
 
 
-def get_all_providers() -> List[ProviderInfo]:
+def get_all_providers() -> list[ProviderInfo]:
     """Get all providers in the catalog."""
     return list(DEFAULT_PROVIDERS)
 
 
-def get_models_for_provider(provider_name: str) -> List[ModelInfo]:
+def get_models_for_provider(provider_name: str) -> list[ModelInfo]:
     """Get all models for a specific provider."""
     p = get_provider(provider_name)
     return p.models if p else []
 
 
-def get_model(provider_name: str, model_id: str) -> Optional[ModelInfo]:
+def get_model(provider_name: str, model_id: str) -> ModelInfo | None:
     """Get a specific model by provider + ID."""
     for m in get_models_for_provider(provider_name):
         if m.id == model_id:
@@ -497,17 +496,17 @@ def get_model(provider_name: str, model_id: str) -> Optional[ModelInfo]:
     return None
 
 
-def list_provider_names() -> List[str]:
+def list_provider_names() -> list[str]:
     """List all provider internal names."""
     return [p.name for p in DEFAULT_PROVIDERS]
 
 
-def list_provider_display_names() -> List[tuple[str, str]]:
+def list_provider_display_names() -> list[tuple[str, str]]:
     """List (name, display_name) tuples."""
     return [(p.name, p.display_name) for p in DEFAULT_PROVIDERS]
 
 
-def get_capable_models(min_tier: str = "local") -> List[tuple[str, str, str]]:
+def get_capable_models(min_tier: str = "local") -> list[tuple[str, str, str]]:
     """Get models capable enough for NEUGI.
 
     Returns list of (provider_name, model_id, display_name).

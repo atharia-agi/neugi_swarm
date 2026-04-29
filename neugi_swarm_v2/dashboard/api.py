@@ -35,12 +35,12 @@ import json
 import logging
 import time
 import uuid
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
-def _parse_body(body: Optional[bytes]) -> dict[str, Any]:
+def _parse_body(body: bytes | None) -> dict[str, Any]:
     """Parse JSON request body."""
     if body is None:
         return {}

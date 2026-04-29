@@ -19,11 +19,12 @@ import sqlite3
 import threading
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -50,11 +51,11 @@ class SessionConfig:
     """Configuration for session behavior."""
     isolation_mode: SessionIsolationMode = SessionIsolationMode.SHARED
     daily_reset_hour: int = 4
-    idle_reset_minutes: Optional[int] = None
+    idle_reset_minutes: int | None = None
     max_transcript_lines: int = 10000
     enable_checkpointing: bool = True
-    checkpoint_dir: Optional[str] = None
-    session_dir: Optional[str] = None
+    checkpoint_dir: str | None = None
+    session_dir: str | None = None
     lock_timeout_seconds: float = 30.0
     compaction_token_threshold: int = 32768
     metadata_ttl_days: int = 90
@@ -73,21 +74,21 @@ class SessionMetadata:
     state: str
     isolation_mode: str
     created_at: str
-    activated_at: Optional[str] = None
-    last_activity_at: Optional[str] = None
-    last_reset_at: Optional[str] = None
-    terminated_at: Optional[str] = None
-    peer_id: Optional[str] = None
-    channel_id: Optional[str] = None
-    account_id: Optional[str] = None
-    transcript_path: Optional[str] = None
+    activated_at: str | None = None
+    last_activity_at: str | None = None
+    last_reset_at: str | None = None
+    terminated_at: str | None = None
+    peer_id: str | None = None
+    channel_id: str | None = None
+    account_id: str | None = None
+    transcript_path: str | None = None
     message_count: int = 0
     token_estimate: int = 0
     reset_count: int = 0
     compaction_count: int = 0
-    custom_fields: Dict[str, Any] = field(default_factory=dict)
+    custom_fields: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize metadata to a dictionary."""
         return {
             "session_id": self.session_id,
@@ -110,7 +111,7 @@ class SessionMetadata:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SessionMetadata":
+    def from_dict(cls, data: dict[str, Any]) -> "SessionMetadata":
         """Deserialize metadata from a dictionary."""
         return cls(
             session_id=data["session_id"],
@@ -140,12 +141,12 @@ class SessionCheckpoint:
     session_id: str
     timestamp: str
     kind: str  # "before" or "after"
-    state_snapshot: Dict[str, Any]
+    state_snapshot: dict[str, Any]
     transcript_head: int
     token_estimate: int
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize checkpoint to a dictionary."""
         return {
             "checkpoint_id": self.checkpoint_id,
@@ -159,7 +160,7 @@ class SessionCheckpoint:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SessionCheckpoint":
+    def from_dict(cls, data: dict[str, Any]) -> "SessionCheckpoint":
         """Deserialize checkpoint from a dictionary."""
         return cls(
             checkpoint_id=data["checkpoint_id"],
@@ -192,9 +193,9 @@ class Session:
         self,
         session_id: str,
         config: SessionConfig,
-        peer_id: Optional[str] = None,
-        channel_id: Optional[str] = None,
-        account_id: Optional[str] = None,
+        peer_id: str | None = None,
+        channel_id: str | None = None,
+        account_id: str | None = None,
     ) -> None:
         self.session_id = session_id
         self.config = config
@@ -207,11 +208,11 @@ class Session:
             channel_id=channel_id,
             account_id=account_id,
         )
-        self.key_space: Dict[str, Any] = {}
+        self.key_space: dict[str, Any] = {}
         self._lock = threading.Lock()
         self._write_locked = False
-        self._write_lock_owner: Optional[str] = None
-        self._last_daily_reset_check: Optional[datetime] = None
+        self._write_lock_owner: str | None = None
+        self._last_daily_reset_check: datetime | None = None
 
         if config.session_dir:
             self._session_dir = Path(config.session_dir)
@@ -471,7 +472,7 @@ class Session:
         parts.append(sub_agent_id)
         return ":".join(parts)
 
-    def _create_checkpoint(self, kind: str) -> Optional[SessionCheckpoint]:
+    def _create_checkpoint(self, kind: str) -> SessionCheckpoint | None:
         """
         Create a checkpoint of the current session state.
 
@@ -512,7 +513,7 @@ class Session:
 
         return checkpoint
 
-    def load_checkpoint(self, checkpoint_id: str) -> Optional[SessionCheckpoint]:
+    def load_checkpoint(self, checkpoint_id: str) -> SessionCheckpoint | None:
         """Load a checkpoint by ID and restore session state."""
         checkpoint_dir = Path(self.config.checkpoint_dir or self._session_dir / "checkpoints")
         checkpoint_path = checkpoint_dir / f"{checkpoint_id}.json"
@@ -560,7 +561,7 @@ class Session:
         with self._lock:
             self.metadata.compaction_count += 1
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize session to a dictionary."""
         return {
             "session_id": self.session_id,
@@ -610,7 +611,7 @@ class SessionRegistry:
     def __init__(self, db_path: str) -> None:
         self.db_path = db_path
         self._lock = threading.Lock()
-        self._sessions: Dict[str, Session] = {}
+        self._sessions: dict[str, Session] = {}
         self._init_db()
 
     def _init_db(self) -> None:
@@ -669,11 +670,11 @@ class SessionRegistry:
             )
             conn.commit()
 
-    def get(self, session_id: str) -> Optional[Session]:
+    def get(self, session_id: str) -> Session | None:
         """Get a session by ID from the in-memory cache."""
         return self._sessions.get(session_id)
 
-    def find_by_peer(self, peer_id: str) -> List[Session]:
+    def find_by_peer(self, peer_id: str) -> list[Session]:
         """Find all sessions for a given peer ID."""
         results = []
         with self._connect() as conn:
@@ -687,7 +688,7 @@ class SessionRegistry:
                 results.append(session)
         return results
 
-    def find_by_channel(self, channel_id: str) -> List[Session]:
+    def find_by_channel(self, channel_id: str) -> list[Session]:
         """Find all sessions for a given channel ID."""
         results = []
         with self._connect() as conn:
@@ -701,13 +702,13 @@ class SessionRegistry:
                 results.append(session)
         return results
 
-    def find_active(self) -> List[Session]:
+    def find_active(self) -> list[Session]:
         """Get all active sessions."""
         return [
             s for s in self._sessions.values() if s.state == SessionState.ACTIVE
         ]
 
-    def load_from_db(self, session_id: str, config: SessionConfig) -> Optional[Session]:
+    def load_from_db(self, session_id: str, config: SessionConfig) -> Session | None:
         """
         Load a session from the database and reconstruct it.
 
@@ -826,22 +827,22 @@ class SessionManager:
 
     def __init__(
         self,
-        config: Optional[SessionConfig] = None,
-        registry_db_path: Optional[str] = None,
+        config: SessionConfig | None = None,
+        registry_db_path: str | None = None,
     ) -> None:
         self.config = config or SessionConfig()
         db_path = registry_db_path or str(Path.cwd() / "data" / "session_registry.db")
         self.registry = SessionRegistry(db_path)
         self._lock = threading.Lock()
-        self._on_session_create: List[Callable[[Session], None]] = []
-        self._on_session_terminate: List[Callable[[Session], None]] = []
+        self._on_session_create: list[Callable[[Session], None]] = []
+        self._on_session_terminate: list[Callable[[Session], None]] = []
 
     def create_session(
         self,
-        peer_id: Optional[str] = None,
-        channel_id: Optional[str] = None,
-        account_id: Optional[str] = None,
-        session_id: Optional[str] = None,
+        peer_id: str | None = None,
+        channel_id: str | None = None,
+        account_id: str | None = None,
+        session_id: str | None = None,
     ) -> Session:
         """
         Create a new session with the given parameters.
@@ -884,7 +885,7 @@ class SessionManager:
         )
         return session
 
-    def get_session(self, session_id: str) -> Optional[Session]:
+    def get_session(self, session_id: str) -> Session | None:
         """Get an existing session by ID."""
         session = self.registry.get(session_id)
         if session:
@@ -894,9 +895,9 @@ class SessionManager:
 
     def get_or_create_session(
         self,
-        peer_id: Optional[str] = None,
-        channel_id: Optional[str] = None,
-        account_id: Optional[str] = None,
+        peer_id: str | None = None,
+        channel_id: str | None = None,
+        account_id: str | None = None,
     ) -> Session:
         """
         Get an existing session for the given scope, or create a new one.
@@ -981,7 +982,7 @@ class SessionManager:
 
         return True
 
-    def check_resets(self) -> Dict[str, int]:
+    def check_resets(self) -> dict[str, int]:
         """
         Check all active sessions for daily and idle resets.
 
@@ -1005,7 +1006,7 @@ class SessionManager:
             session.save_metadata()
         self.registry.sync_all()
 
-    def cleanup(self, ttl_days: Optional[int] = None) -> int:
+    def cleanup(self, ttl_days: int | None = None) -> int:
         """
         Clean up expired sessions.
 
@@ -1026,7 +1027,7 @@ class SessionManager:
         """Register a callback for session termination events."""
         self._on_session_terminate.append(callback)
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get current session statistics."""
         return {
             "total": self.registry.count(),

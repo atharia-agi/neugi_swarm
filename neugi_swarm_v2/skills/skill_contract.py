@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class SkillTier(Enum):
@@ -19,7 +19,7 @@ class SkillTier(Enum):
     WORKSPACE = 5
 
     @classmethod
-    def from_path(cls, path: str) -> "SkillTier":
+    def from_path(cls, path: str) -> SkillTier:
         """Infer tier from directory path heuristics."""
         path_lower = path.lower()
         if "workspace" in path_lower or "ws" in path_lower:
@@ -62,13 +62,13 @@ class SkillAction:
 
     name: str
     description: str
-    parameters: List[Dict[str, Any]] = field(default_factory=list)
-    returns: Optional[str] = None
-    side_effects: List[str] = field(default_factory=list)
+    parameters: list[dict[str, Any]] = field(default_factory=list)
+    returns: str | None = None
+    side_effects: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize to dictionary."""
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "name": self.name,
             "description": self.description,
         }
@@ -81,7 +81,7 @@ class SkillAction:
         return result
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SkillAction":
+    def from_dict(cls, data: dict[str, Any]) -> SkillAction:
         """Deserialize from dictionary."""
         return cls(
             name=data["name"],
@@ -125,25 +125,25 @@ class SkillFrontmatter:
     description: str
     version: str = "1.0.0"
     author: str = ""
-    tags: List[str] = field(default_factory=list)
-    allowed_tools: List[str] = field(default_factory=list)
-    requires: List[str] = field(default_factory=list)
-    bins: List[str] = field(default_factory=list)
-    env: Dict[str, str] = field(default_factory=dict)
-    config: Dict[str, str] = field(default_factory=dict)
-    os: List[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
+    allowed_tools: list[str] = field(default_factory=list)
+    requires: list[str] = field(default_factory=list)
+    bins: list[str] = field(default_factory=list)
+    env: dict[str, str] = field(default_factory=dict)
+    config: dict[str, str] = field(default_factory=dict)
+    os: list[str] = field(default_factory=list)
     always: bool = False
-    agents: List[str] = field(default_factory=list)
-    triggers: List[str] = field(default_factory=list)
+    agents: list[str] = field(default_factory=list)
+    triggers: list[str] = field(default_factory=list)
     category: str = ""
     token_estimate: int = 0
     max_skills_in_prompt: int = 0
 
     _NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 
-    def validate(self) -> List[str]:
+    def validate(self) -> list[str]:
         """Validate frontmatter fields. Returns list of error messages."""
-        errors: List[str] = []
+        errors: list[str] = []
         if not self.name:
             errors.append("name is required")
         elif not self._NAME_RE.match(self.name):
@@ -167,7 +167,7 @@ class SkillFrontmatter:
         except ImportError:
             raise RuntimeError("PyYAML is required for YAML serialization")
 
-        data: Dict[str, Any] = {
+        data: dict[str, Any] = {
             "name": self.name,
             "description": self.description,
         }
@@ -205,7 +205,7 @@ class SkillFrontmatter:
         return yaml.dump(data, default_flow_style=False, sort_keys=False).rstrip()
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SkillFrontmatter":
+    def from_dict(cls, data: dict[str, Any]) -> SkillFrontmatter:
         """Create from dictionary (e.g., parsed YAML)."""
         return cls(
             name=data.get("name", ""),
@@ -253,10 +253,10 @@ class SkillContract:
     tier: SkillTier = SkillTier.BUNDLED
     state: SkillState = SkillState.LOADING
     path: str = ""
-    scripts: List[str] = field(default_factory=list)
-    references: List[str] = field(default_factory=list)
-    assets: List[str] = field(default_factory=list)
-    actions: List[SkillAction] = field(default_factory=list)
+    scripts: list[str] = field(default_factory=list)
+    references: list[str] = field(default_factory=list)
+    assets: list[str] = field(default_factory=list)
+    actions: list[SkillAction] = field(default_factory=list)
     load_error: str = ""
 
     @property
@@ -268,7 +268,7 @@ class SkillContract:
         return self.frontmatter.description
 
     @property
-    def tags(self) -> List[str]:
+    def tags(self) -> list[str]:
         return self.frontmatter.tags
 
     @property
@@ -299,7 +299,7 @@ class SkillContract:
         )
         return max(1, body_tokens + meta_tokens + tag_tokens + action_tokens)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize to dictionary for export."""
         return {
             "frontmatter": {
@@ -332,7 +332,7 @@ class SkillContract:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SkillContract":
+    def from_dict(cls, data: dict[str, Any]) -> SkillContract:
         """Deserialize from dictionary."""
         fm_data = data.get("frontmatter", {})
         frontmatter = SkillFrontmatter.from_dict(fm_data)
@@ -379,10 +379,10 @@ class SkillContract:
             lines.append(self.body)
         return "\n".join(lines)
 
-    def to_mcp_tool_def(self) -> Dict[str, Any]:
+    def to_mcp_tool_def(self) -> dict[str, Any]:
         """Export as MCP tool definition schema."""
-        properties: Dict[str, Any] = {}
-        required: List[str] = []
+        properties: dict[str, Any] = {}
+        required: list[str] = []
         for param in self.actions[0].parameters if self.actions else []:
             prop_name = param.get("name", "")
             properties[prop_name] = {
@@ -402,7 +402,7 @@ class SkillContract:
             },
         }
 
-    def to_langchain_tool(self) -> Dict[str, Any]:
+    def to_langchain_tool(self) -> dict[str, Any]:
         """Export as LangChain-compatible tool definition."""
         return {
             "name": self.name,

@@ -25,7 +25,7 @@ import subprocess
 import sys
 import urllib.request
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -46,14 +46,14 @@ class RescueWizard:
         4. NEVER leave you stuck. If we can't fix it, we tell you WHO can.
     """
 
-    def __init__(self, base_dir: Optional[str] = None):
+    def __init__(self, base_dir: str | None = None):
         self.base_dir = Path(base_dir or os.environ.get("NEUGI_DIR", "~/.neugi")).expanduser()
         self.config_path = self.base_dir / "config.json"
         self._platform = platform.system().lower()  # windows, darwin, linux
         self._is_termux = "TERMUX_VERSION" in os.environ
-        
+
     # ==================== PUBLIC ENTRY POINTS ====================
-    
+
     def run_setup(self) -> bool:
         """
         First-time guided setup. Assumes ZERO knowledge.
@@ -72,7 +72,7 @@ class RescueWizard:
         """
         self._print_header("NEUGI Setup Wizard")
         self._print("I'll check your system and get NEUGI running. Just press Enter to accept my suggestions.")
-        
+
         # Step 1: Python check
         py_ok, py_msg = self._check_python()
         if not py_ok:
@@ -80,13 +80,13 @@ class RescueWizard:
             self._show_python_install_guide()
             return False
         self._print_success(f"Python {py_msg}")
-        
+
         # Step 2: Detect what's available
         self._print_info("Detecting your system...")
         ollama_status = self._check_ollama_installed()
         installed_models = self._list_ollama_models() if ollama_status["installed"] else []
         has_api_key = bool(os.environ.get("OPENAI_API_KEY") or os.environ.get("ANTHROPIC_API_KEY"))
-        
+
         # Step 3: Recommend setup path
         if ollama_status["installed"] and installed_models:
             self._print_success(f"Ollama found with {len(installed_models)} model(s)")
@@ -105,13 +105,13 @@ class RescueWizard:
         else:
             self._print_info("No local AI and no API key found")
             self._ask_user_preference()
-        
+
         # Step 4: Create directories
         self._ensure_directories()
-        
+
         # Step 5: Test
         return self._test_and_finish()
-    
+
     def run_rescue(self) -> bool:
         """
         Interactive rescue mode. Auto-detects and fixes issues.
@@ -121,17 +121,17 @@ class RescueWizard:
         """
         self._print_header("NEUGI Rescue Mode")
         self._print("Scanning your system for issues...")
-        
+
         report = self.system_check()
         critical = [i for i in report["issues"] if i["severity"] == "critical"]
         warnings = [i for i in report["issues"] if i["severity"] == "warning"]
-        
+
         if not report["issues"]:
             self._print_success("No issues found! NEUGI should work fine.")
             return True
-        
+
         self._print(f"\nFound {len(critical)} critical issue(s), {len(warnings)} warning(s)")
-        
+
         # Auto-fix what we can
         fixed = []
         for issue in report["issues"]:
@@ -139,20 +139,20 @@ class RescueWizard:
                 self._print_info(f"Fixing: {issue['message']}")
                 if self._apply_fix(issue):
                     fixed.append(issue["message"])
-        
+
         if fixed:
             self._print_success(f"Fixed {len(fixed)} issue(s) automatically")
-        
+
         # Show remaining issues with exact commands
         remaining = [i for i in report["issues"] if i["message"] not in fixed]
         if remaining:
             self._print_warning(f"\n{len(remaining)} issue(s) need your attention:")
             for issue in remaining:
                 self._print_issue_with_fix(issue)
-        
+
         return len(critical) == 0 or len([i for i in critical if i["message"] not in fixed]) == 0
-    
-    def system_check(self) -> Dict[str, Any]:
+
+    def system_check(self) -> dict[str, Any]:
         """
         Non-interactive full system check.
         
@@ -161,7 +161,7 @@ class RescueWizard:
                       models_available, issues[], fixes[]
         """
         issues = []
-        
+
         # Python check
         py_ok, py_ver = self._check_python()
         if not py_ok:
@@ -171,7 +171,7 @@ class RescueWizard:
                 "auto_fixable": False,
                 "fix": "Install Python 3.10 or newer from python.org",
             })
-        
+
         # Ollama check
         ollama = self._check_ollama_installed()
         if not ollama["installed"]:
@@ -188,7 +188,7 @@ class RescueWizard:
                 "auto_fixable": True,
                 "fix_command": self._get_ollama_start_command(),
             })
-        
+
         # Config check
         if self.config_path.exists():
             try:
@@ -215,7 +215,7 @@ class RescueWizard:
                 "auto_fixable": True,
                 "fix": "Run 'neugi wizard' to create",
             })
-        
+
         # Directory check
         for name in ["skills", "memory", "sessions"]:
             if not (self.base_dir / name).exists():
@@ -225,7 +225,7 @@ class RescueWizard:
                     "auto_fixable": True,
                     "fix": f"mkdir -p {self.base_dir / name}",
                 })
-        
+
         # Model availability check
         models = self._list_ollama_models()
         cfg_model = self._get_configured_model()
@@ -236,7 +236,7 @@ class RescueWizard:
                 "auto_fixable": False,
                 "fix": f"ollama pull {cfg_model}",
             })
-        
+
         return {
             "python_ok": py_ok,
             "python_version": py_ver,
@@ -247,7 +247,7 @@ class RescueWizard:
             "healthy": len([i for i in issues if i["severity"] == "critical"]) == 0,
         }
 
-    def check_health(self) -> Dict[str, Any]:
+    def check_health(self) -> dict[str, Any]:
         """Quick health check returning essential status flags."""
         py_ok, _ = self._check_python()
         ollama = self._check_ollama_installed()
@@ -265,13 +265,13 @@ class RescueWizard:
             "config_valid": config_valid,
             "healthy": py_ok and config_valid,
         }
-    
-    def _load_current_config(self) -> Dict[str, Any]:
+
+    def _load_current_config(self) -> dict[str, Any]:
         """Load current config file, returning empty dict on missing or corruption."""
         if not self.config_path.exists():
             return {}
         try:
-            with open(self.config_path, "r", encoding="utf-8") as f:
+            with open(self.config_path, encoding="utf-8") as f:
                 return json.load(f)
         except Exception:
             return {}
@@ -282,7 +282,7 @@ class RescueWizard:
             (self.base_dir / name).mkdir(parents=True, exist_ok=True)
         return True
 
-    def _save_config(self, provider: str, model: str, features: Dict[str, Any]) -> None:
+    def _save_config(self, provider: str, model: str, features: dict[str, Any]) -> None:
         """Save NEUGI configuration to disk."""
         base_url = ""
         ollama_url = "http://localhost:11434"
@@ -327,22 +327,22 @@ class RescueWizard:
         """Restore config to factory defaults."""
         self._save_config("ollama", "qwen2.5-coder:7b", {"memory": True, "skills": True, "dreaming": True})
 
-    def _check_directories(self) -> List[str]:
+    def _check_directories(self) -> list[str]:
         """Check for missing directories and return list of issue descriptions."""
-        issues: List[str] = []
+        issues: list[str] = []
         for name in ["skills", "memory", "sessions"]:
             if not (self.base_dir / name).exists():
                 issues.append(f"Directory missing: {name}")
         return issues
 
-    def _check_config(self) -> List[str]:
+    def _check_config(self) -> list[str]:
         """Check config file for issues and return list of issue descriptions."""
-        issues: List[str] = []
+        issues: list[str] = []
         if not self.config_path.exists():
             issues.append("Config file missing")
             return issues
         try:
-            with open(self.config_path, "r", encoding="utf-8") as f:
+            with open(self.config_path, encoding="utf-8") as f:
                 cfg = json.load(f)
             if "llm" not in cfg or not cfg["llm"].get("model"):
                 issues.append("Config missing model")
@@ -350,9 +350,9 @@ class RescueWizard:
             issues.append("Config file corrupted")
         return issues
 
-    def _auto_fix(self, issues: List[str], category: str) -> List[str]:
+    def _auto_fix(self, issues: list[str], category: str) -> list[str]:
         """Attempt to auto-fix detected issues. Returns list of fixes applied."""
-        fixes: List[str] = []
+        fixes: list[str] = []
         if category == "config":
             for issue in issues:
                 if "missing" in issue.lower() or "corrupted" in issue.lower():
@@ -369,15 +369,15 @@ class RescueWizard:
     def switch_provider(self) -> bool:
         """Interactive provider switching with connection test."""
         self._print_header("Switch Provider")
-        
+
         current = self._get_current_provider()
         self._print(f"Current: {current.get('provider', 'unknown')} / {current.get('model', 'unknown')}")
-        
+
         # Detect available options
         ollama_ok = self._check_ollama_installed()["running"]
         has_openai = bool(os.environ.get("OPENAI_API_KEY"))
         has_anthropic = bool(os.environ.get("ANTHROPIC_API_KEY"))
-        
+
         options = []
         if ollama_ok:
             options.append(("ollama", "Local Ollama (private, free, works offline)"))
@@ -385,19 +385,19 @@ class RescueWizard:
             options.append(("openai", "OpenAI Cloud (GPT-4, requires API key)"))
         if has_anthropic:
             options.append(("anthropic", "Anthropic Cloud (Claude, requires API key)"))
-        
+
         if not options:
             self._print_error("No providers available!")
             self._print("Install Ollama (ollama.com) or set OPENAI_API_KEY / ANTHROPIC_API_KEY")
             return False
-        
+
         self._print("\nAvailable providers:")
         for i, (key, desc) in enumerate(options, 1):
             self._print(f"  {i}. {desc}")
-        
+
         choice = self._ask_choice("Select", len(options))
         provider = options[choice - 1][0]
-        
+
         if provider == "ollama":
             models = self._list_ollama_models()
             model = models[0] if models else "qwen2.5-coder:7b"
@@ -405,15 +405,15 @@ class RescueWizard:
             model = "gpt-4o-mini"
         else:
             model = "claude-3-5-sonnet-20241022"
-        
+
         self._save_config(provider, model, {})
         return self._test_and_finish()
-    
+
     def repair_corruption(self) -> bool:
         """Detect and repair corrupted files."""
         self._print_header("Corruption Repair")
         repaired = []
-        
+
         # Config JSON
         if self.config_path.exists():
             try:
@@ -423,34 +423,34 @@ class RescueWizard:
                 self._print_warning("Config file corrupted. Restoring defaults...")
                 self._restore_default_config()
                 repaired.append("config.json")
-        
+
         # Directories
         for name in ["skills", "memory", "sessions", "agents", "plugins", "workflows"]:
             path = self.base_dir / name
             if not path.exists():
                 path.mkdir(parents=True, exist_ok=True)
                 repaired.append(f"directory: {name}")
-        
+
         if repaired:
             self._print_success(f"Repaired: {', '.join(repaired)}")
         else:
             self._print_success("No corruption detected")
-        
+
         return len(repaired) > 0
-    
+
     # ==================== SETUP HELPERS ====================
-    
+
     def _setup_local(self, model: str) -> None:
         """Setup with local Ollama model."""
         features = {"memory": True, "skills": True, "dreaming": True}
         self._save_config("ollama", model, features)
         self._print_success(f"Configured for local Ollama with model: {model}")
-    
+
     def _setup_cloud(self) -> None:
         """Setup with cloud API."""
         self._print_info("Let's set up a cloud provider.")
         self._print("Your API key is kept locally and never sent anywhere except the provider.")
-        
+
         if os.environ.get("OPENAI_API_KEY"):
             provider = "openai"
             model = "gpt-4o-mini"
@@ -464,28 +464,28 @@ class RescueWizard:
             self._print("Get one from:")
             self._print("  OpenAI:  https://platform.openai.com/api-keys")
             self._print("  Anthropic: https://console.anthropic.com/settings/keys")
-            
+
             provider = self._ask_choice_str("Provider", ["openai", "anthropic"])
             import getpass
             key = getpass.getpass("  Paste your API key: ").strip()
-            
+
             if provider == "openai":
                 os.environ["OPENAI_API_KEY"] = key
                 model = "gpt-4o-mini"
             else:
                 os.environ["ANTHROPIC_API_KEY"] = key
                 model = "claude-3-5-sonnet-20241022"
-        
+
         features = {"memory": True, "skills": True, "dreaming": False}
         self._save_config(provider, model, features)
         self._print_success(f"Configured for {provider} cloud with model: {model}")
-    
+
     def _ask_user_preference(self) -> None:
         """Ask user what they prefer when nothing is detected."""
         self._print("\nHow would you like to run NEUGI?")
         self._print("  1. Local (free, private, needs ~4GB download)")
         self._print("  2. Cloud (easiest, requires API key)")
-        
+
         choice = self._ask_choice("Select", 2)
         if choice == 1:
             self._print_info("\nTo install Ollama:")
@@ -495,17 +495,17 @@ class RescueWizard:
             self._save_config("ollama", "qwen2.5-coder:7b", {"memory": True, "skills": True})
         else:
             self._setup_cloud()
-    
+
     def _pull_recommended_model(self) -> None:
         """Guide user to pull a recommended model."""
         model = "qwen2.5-coder:7b"
         self._print_info(f"Downloading {model} (~4GB)...")
-        self._print(f"Run this command in a separate terminal:")
+        self._print("Run this command in a separate terminal:")
         self._print(f"  ollama pull {model}")
         self._print("Then come back here and press Enter...")
         input()
-    
-    def _recommend_local_model(self, available: List[str]) -> str:
+
+    def _recommend_local_model(self, available: list[str]) -> str:
         """Pick the best model from what's installed."""
         # Priority order
         priority = ["qwen3.5", "qwen2.5-coder", "deepseek-coder", "llama3.2", "llama3.1", "mistral"]
@@ -514,19 +514,19 @@ class RescueWizard:
                 if pref in model.lower():
                     return model
         return available[0]
-    
+
     # ==================== SYSTEM DETECTION ====================
-    
+
     def _check_python(self) -> tuple[bool, str]:
         """Check Python version. Returns (ok, version_string)."""
         major, minor = sys.version_info[:2]
         ver_str = f"{major}.{minor}"
         return (major == 3 and minor >= 10) or major > 3, ver_str
-    
-    def _check_ollama_installed(self) -> Dict[str, Any]:
+
+    def _check_ollama_installed(self) -> dict[str, Any]:
         """Check Ollama installation status."""
         result = {"installed": False, "running": False, "version": ""}
-        
+
         # Check if ollama command exists
         ollama_cmd = "ollama.exe" if self._platform == "windows" else "ollama"
         try:
@@ -544,12 +544,12 @@ class RescueWizard:
                 paths = [Path("/usr/local/bin/ollama"), Path("/opt/homebrew/bin/ollama")]
             else:
                 paths = [Path("/usr/local/bin/ollama"), Path("/usr/bin/ollama")]
-            
+
             for path in paths:
                 if path.exists():
                     result["installed"] = True
                     break
-        
+
         # Check if running
         if result["installed"]:
             try:
@@ -559,10 +559,10 @@ class RescueWizard:
                         result["running"] = True
             except Exception:
                 pass
-        
+
         return result
-    
-    def _list_ollama_models(self) -> List[str]:
+
+    def _list_ollama_models(self) -> list[str]:
         """List models available in Ollama."""
         try:
             req = urllib.request.Request("http://localhost:11434/api/tags", method="GET")
@@ -571,7 +571,7 @@ class RescueWizard:
                 return [m.get("name", "") for m in data.get("models", []) if m.get("name")]
         except Exception:
             return []
-    
+
     def _get_configured_model(self) -> str:
         """Get currently configured model."""
         if not self.config_path.exists():
@@ -582,8 +582,8 @@ class RescueWizard:
             return cfg.get("llm", {}).get("model", "")
         except Exception:
             return ""
-    
-    def _get_current_provider(self) -> Dict[str, str]:
+
+    def _get_current_provider(self) -> dict[str, str]:
         """Get current provider config."""
         if not self.config_path.exists():
             return {}
@@ -593,42 +593,42 @@ class RescueWizard:
             return cfg.get("llm", {})
         except Exception:
             return {}
-    
+
     # ==================== FIX HELPERS ====================
-    
-    def _apply_fix(self, issue: Dict[str, Any]) -> bool:
+
+    def _apply_fix(self, issue: dict[str, Any]) -> bool:
         """Apply an auto-fixable issue."""
         msg = issue["message"]
-        
+
         if "Config file missing" in msg or "Config file is corrupted" in msg:
             self._restore_default_config()
             return True
-        
+
         if "Directory missing" in msg:
             dir_name = msg.split(": ")[-1]
             (self.base_dir / dir_name).mkdir(parents=True, exist_ok=True)
             return True
-        
+
         if "Ollama installed but not running" in msg:
             self._print_info("Attempting to start Ollama...")
             cmd = self._get_ollama_start_command()
             self._print(f"Run: {cmd}")
             return False  # Can't auto-start, needs user
-        
+
         return False
-    
-    def _print_issue_with_fix(self, issue: Dict[str, Any]) -> None:
+
+    def _print_issue_with_fix(self, issue: dict[str, Any]) -> None:
         """Print an issue with clear fix instructions."""
         severity = issue["severity"].upper()
         self._print(f"\n  [{severity}] {issue['message']}")
-        
+
         if issue.get("fix_command"):
             self._print(f"  Fix: {issue['fix_command']}")
         elif issue.get("fix"):
             self._print(f"  Fix: {issue['fix']}")
-    
+
     # ==================== OS-SPECIFIC COMMANDS ====================
-    
+
     def _get_ollama_install_command(self) -> str:
         """Get install command for user's OS."""
         if self._platform == "windows":
@@ -643,7 +643,7 @@ class RescueWizard:
             return "pkg install ollama"
         else:
             return "curl -fsSL https://ollama.com/install.sh | sh"
-    
+
     def _get_ollama_start_command(self) -> str:
         """Get start command for user's OS."""
         if self._platform == "windows":
@@ -652,7 +652,7 @@ class RescueWizard:
             return "ollama serve   # or start from Applications"
         else:
             return "ollama serve   # or: sudo systemctl start ollama"
-    
+
     def _show_python_install_guide(self) -> None:
         """Show Python install instructions."""
         self._print_error("\nPython 3.10 or newer is required.")
@@ -664,10 +664,10 @@ class RescueWizard:
         else:
             self._print("sudo apt install python3.12   # Ubuntu/Debian")
             self._print("sudo dnf install python3.12   # Fedora")
-    
+
     # ==================== CONFIG ====================
-    
-    def _save_config(self, provider: str, model: str, features: Dict[str, bool]) -> None:
+
+    def _save_config(self, provider: str, model: str, features: dict[str, bool]) -> None:
         """Save configuration."""
         base_url = ""
         ollama_url = "http://localhost:11434"
@@ -677,7 +677,7 @@ class RescueWizard:
         elif provider == "anthropic":
             base_url = "https://api.anthropic.com"
             ollama_url = ""
-        
+
         config = {
             "version": "2.1.1",
             "llm": {
@@ -702,28 +702,28 @@ class RescueWizard:
             "channels": {"enabled": False},
             "dashboard": {"enabled": True, "port": 17901},
         }
-        
+
         self.base_dir.mkdir(parents=True, exist_ok=True)
         with open(self.config_path, "w", encoding="utf-8") as f:
             json.dump(config, f, indent=2)
         self._print(f"Config saved to {self.config_path}")
-    
+
     def _restore_default_config(self) -> None:
         """Restore default configuration."""
         self._save_config("ollama", "qwen2.5-coder:7b", {"memory": True, "skills": True, "dreaming": True})
-    
+
     def _ensure_directories(self) -> None:
         """Create required directories."""
         for name in ["skills", "memory", "sessions", "agents", "plugins", "workflows"]:
             (self.base_dir / name).mkdir(parents=True, exist_ok=True)
-    
+
     def _test_and_finish(self) -> bool:
         """Test connection and finish."""
         self._print_info("\nTesting connection...")
-        
+
         cfg = self._get_current_provider()
         provider = cfg.get("provider", "ollama")
-        
+
         if provider == "ollama":
             ollama = self._check_ollama_installed()
             if not ollama["running"]:
@@ -731,46 +731,46 @@ class RescueWizard:
                 self._print(f"Start it with: {self._get_ollama_start_command()}")
                 self._print("Then run: neugi chat")
                 return False
-            
+
             model = cfg.get("model", "")
             models = self._list_ollama_models()
             if model and models and model not in models:
                 self._print_warning(f"Model '{model}' not downloaded yet.")
                 self._print(f"Run: ollama pull {model}")
                 return False
-        
+
         self._print_success("Setup complete! Run 'neugi chat' to start.")
         return True
-    
+
     # ==================== UI HELPERS ====================
-    
+
     def _print(self, text: str) -> None:
         print(text)
-    
+
     def _print_header(self, text: str) -> None:
         print(f"\n{'=' * 55}")
         print(f"  {text}")
         print(f"{'=' * 55}")
-    
+
     def _print_success(self, text: str) -> None:
         print(f"  [OK] {text}")
-    
+
     def _print_warning(self, text: str) -> None:
         print(f"  [WARN] {text}")
-    
+
     def _print_error(self, text: str) -> None:
         print(f"  [ERR] {text}")
-    
+
     def _print_info(self, text: str) -> None:
         print(f"  [INFO] {text}")
-    
+
     def _ask_yes_no(self, question: str, default: bool = True) -> bool:
         default_str = "Y/n" if default else "y/N"
         response = input(f"  {question} [{default_str}]: ").strip().lower()
         if not response:
             return default
         return response in ("y", "yes")
-    
+
     def _ask_choice(self, question: str, max_choice: int) -> int:
         while True:
             try:
@@ -781,8 +781,8 @@ class RescueWizard:
             except ValueError:
                 pass
             print("  Invalid choice, please try again.")
-    
-    def _ask_choice_str(self, question: str, options: List[str]) -> str:
+
+    def _ask_choice_str(self, question: str, options: list[str]) -> str:
         for i, opt in enumerate(options, 1):
             print(f"  {i}. {opt}")
         choice = self._ask_choice(question, len(options))

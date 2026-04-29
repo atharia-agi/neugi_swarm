@@ -10,8 +10,7 @@ import json
 import sqlite3
 import time
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 
 @dataclass
@@ -24,16 +23,16 @@ class CheckpointDiff:
         modified: Keys that were modified with old and new values.
     """
 
-    added: Dict[str, Any] = field(default_factory=dict)
-    removed: Dict[str, Any] = field(default_factory=dict)
-    modified: Dict[str, Tuple[Any, Any]] = field(default_factory=dict)
+    added: dict[str, Any] = field(default_factory=dict)
+    removed: dict[str, Any] = field(default_factory=dict)
+    modified: dict[str, tuple[Any, Any]] = field(default_factory=dict)
 
     @property
     def has_changes(self) -> bool:
         """Check if there are any changes."""
         return bool(self.added or self.removed or self.modified)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert diff to dictionary."""
         return {
             "added": dict(self.added),
@@ -60,13 +59,13 @@ class Checkpoint:
     checkpoint_id: str
     workflow_id: str
     node_name: str
-    state: Dict[str, Any]
-    execution_path: List[str]
+    state: dict[str, Any]
+    execution_path: list[str]
     version: int
     created_at: float
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert checkpoint to dictionary for serialization."""
         return {
             "checkpoint_id": self.checkpoint_id,
@@ -80,7 +79,7 @@ class Checkpoint:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Checkpoint":
+    def from_dict(cls, data: dict[str, Any]) -> Checkpoint:
         """Create a checkpoint from a dictionary.
 
         Args:
@@ -112,7 +111,7 @@ class CheckpointStorage:
         """
         raise NotImplementedError
 
-    def load(self, workflow_id: str, version: Optional[int] = None) -> Optional[Checkpoint]:
+    def load(self, workflow_id: str, version: int | None = None) -> Checkpoint | None:
         """Load the latest or specific version checkpoint for a workflow.
 
         Args:
@@ -124,7 +123,7 @@ class CheckpointStorage:
         """
         raise NotImplementedError
 
-    def list_checkpoints(self, workflow_id: str) -> List[Checkpoint]:
+    def list_checkpoints(self, workflow_id: str) -> list[Checkpoint]:
         """List all checkpoints for a workflow.
 
         Args:
@@ -157,7 +156,7 @@ class CheckpointStorage:
         """
         raise NotImplementedError
 
-    def list_workflow_ids(self) -> List[str]:
+    def list_workflow_ids(self) -> list[str]:
         """List all workflow IDs that have checkpoints.
 
         Returns:
@@ -234,7 +233,7 @@ class SQLiteCheckpointStorage(CheckpointStorage):
                 json.dumps(checkpoint.metadata),
             ))
 
-    def load(self, workflow_id: str, version: Optional[int] = None) -> Optional[Checkpoint]:
+    def load(self, workflow_id: str, version: int | None = None) -> Checkpoint | None:
         """Load a checkpoint from the database.
 
         Args:
@@ -273,7 +272,7 @@ class SQLiteCheckpointStorage(CheckpointStorage):
                 metadata=json.loads(row["metadata"]),
             )
 
-    def list_checkpoints(self, workflow_id: str) -> List[Checkpoint]:
+    def list_checkpoints(self, workflow_id: str) -> list[Checkpoint]:
         """List all checkpoints for a workflow.
 
         Args:
@@ -335,7 +334,7 @@ class SQLiteCheckpointStorage(CheckpointStorage):
             )
             return cursor.rowcount
 
-    def list_workflow_ids(self) -> List[str]:
+    def list_workflow_ids(self) -> list[str]:
         """List all workflow IDs that have checkpoints.
 
         Returns:
@@ -388,7 +387,7 @@ class SQLiteCheckpointStorage(CheckpointStorage):
             """, (workflow_id, workflow_id, keep_count))
             return cursor.rowcount
 
-    def get_checkpoint_count(self, workflow_id: Optional[str] = None) -> int:
+    def get_checkpoint_count(self, workflow_id: str | None = None) -> int:
         """Get the number of checkpoints.
 
         Args:
@@ -422,7 +421,7 @@ class CheckpointManager:
 
     def __init__(
         self,
-        storage: Optional[CheckpointStorage] = None,
+        storage: CheckpointStorage | None = None,
         auto_checkpoint: bool = True,
     ) -> None:
         """Initialize the checkpoint manager.
@@ -433,15 +432,15 @@ class CheckpointManager:
         """
         self.storage = storage or SQLiteCheckpointStorage()
         self.auto_checkpoint = auto_checkpoint
-        self._checkpoint_counter: Dict[str, int] = {}
+        self._checkpoint_counter: dict[str, int] = {}
 
     def create_checkpoint(
         self,
         workflow_id: str,
         node_name: str,
-        state: Dict[str, Any],
-        execution_path: Optional[List[str]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        state: dict[str, Any],
+        execution_path: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> Checkpoint:
         """Create and save a new checkpoint.
 
@@ -478,8 +477,8 @@ class CheckpointManager:
     def restore_checkpoint(
         self,
         workflow_id: str,
-        version: Optional[int] = None,
-    ) -> Optional[Checkpoint]:
+        version: int | None = None,
+    ) -> Checkpoint | None:
         """Restore a checkpoint for a workflow.
 
         Args:
@@ -495,8 +494,8 @@ class CheckpointManager:
         self,
         workflow_id: str,
         version_a: int,
-        version_b: Optional[int] = None,
-    ) -> Optional[CheckpointDiff]:
+        version_b: int | None = None,
+    ) -> CheckpointDiff | None:
         """Get the diff between two checkpoints.
 
         Args:
@@ -517,8 +516,8 @@ class CheckpointManager:
 
     def _compute_diff(
         self,
-        state_a: Dict[str, Any],
-        state_b: Dict[str, Any],
+        state_a: dict[str, Any],
+        state_b: dict[str, Any],
     ) -> CheckpointDiff:
         """Compute the diff between two state dictionaries.
 
@@ -546,7 +545,7 @@ class CheckpointManager:
             modified=modified,
         )
 
-    def list_checkpoints(self, workflow_id: str) -> List[Checkpoint]:
+    def list_checkpoints(self, workflow_id: str) -> list[Checkpoint]:
         """List all checkpoints for a workflow.
 
         Args:
@@ -570,9 +569,9 @@ class CheckpointManager:
 
     def cleanup(
         self,
-        workflow_id: Optional[str] = None,
-        max_age_seconds: Optional[float] = None,
-        keep_latest: Optional[int] = None,
+        workflow_id: str | None = None,
+        max_age_seconds: float | None = None,
+        keep_latest: int | None = None,
     ) -> int:
         """Clean up old checkpoints.
 
@@ -623,7 +622,7 @@ class CheckpointManager:
         self._checkpoint_counter[workflow_id] = 1
         return 1
 
-    def _get_all_workflow_ids(self) -> List[str]:
+    def _get_all_workflow_ids(self) -> list[str]:
         """Get all workflow IDs that have checkpoints.
 
         Returns:
@@ -638,7 +637,7 @@ class CheckpointManager:
     def get_checkpoint_history(
         self,
         workflow_id: str,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get a summary of checkpoint history for a workflow.
 
         Args:

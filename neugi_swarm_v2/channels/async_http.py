@@ -19,7 +19,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -64,11 +64,11 @@ class AsyncHTTPClient:
         self,
         method: str,
         url: str,
-        headers: Optional[Dict[str, str]] = None,
-        json_data: Optional[Dict[str, Any]] = None,
-        data: Optional[Any] = None,
+        headers: dict[str, str] | None = None,
+        json_data: dict[str, Any] | None = None,
+        data: Any | None = None,
         timeout: int = 30,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Make async HTTP request."""
         if self._backend == "aiohttp":
             return await self._request_aiohttp(method, url, headers, json_data, data, timeout)
@@ -78,19 +78,19 @@ class AsyncHTTPClient:
     async def get(
         self,
         url: str,
-        headers: Optional[Dict[str, str]] = None,
+        headers: dict[str, str] | None = None,
         timeout: int = 30,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         return await self.request("GET", url, headers=headers, timeout=timeout)
 
     async def post(
         self,
         url: str,
-        headers: Optional[Dict[str, str]] = None,
-        json_data: Optional[Dict[str, Any]] = None,
-        data: Optional[Any] = None,
+        headers: dict[str, str] | None = None,
+        json_data: dict[str, Any] | None = None,
+        data: Any | None = None,
         timeout: int = 30,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         return await self.request("POST", url, headers=headers, json_data=json_data, data=data, timeout=timeout)
 
     async def download(
@@ -119,15 +119,15 @@ class AsyncHTTPClient:
         self,
         method: str,
         url: str,
-        headers: Optional[Dict[str, str]],
-        json_data: Optional[Dict[str, Any]],
-        data: Optional[Any],
+        headers: dict[str, str] | None,
+        json_data: dict[str, Any] | None,
+        data: Any | None,
         timeout: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Make request using aiohttp."""
         if not self._session:
             self._session = self._aiohttp.ClientSession()
-        
+
         kwargs = {}
         if headers:
             kwargs["headers"] = headers
@@ -135,7 +135,7 @@ class AsyncHTTPClient:
             kwargs["json"] = json_data
         if data:
             kwargs["data"] = data
-        
+
         async with self._session.request(
             method, url,
             timeout=self._aiohttp.ClientTimeout(total=timeout),
@@ -151,14 +151,14 @@ class AsyncHTTPClient:
         self,
         method: str,
         url: str,
-        headers: Optional[Dict[str, str]],
-        json_data: Optional[Dict[str, Any]],
-        data: Optional[Any],
+        headers: dict[str, str] | None,
+        json_data: dict[str, Any] | None,
+        data: Any | None,
         timeout: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Make request using requests in thread executor."""
         import requests
-        
+
         def _do_request():
             kwargs = {"timeout": timeout}
             if headers:
@@ -167,17 +167,17 @@ class AsyncHTTPClient:
                 kwargs["json"] = json_data
             if data:
                 kwargs["data"] = data
-            
+
             if method == "GET":
                 return requests.get(url, **kwargs)
             elif method == "POST":
                 return requests.post(url, **kwargs)
             else:
                 return requests.request(method, url, **kwargs)
-        
+
         loop = asyncio.get_event_loop()
         resp = await loop.run_in_executor(None, _do_request)
-        
+
         try:
             return resp.json()
         except Exception:

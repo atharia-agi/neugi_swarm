@@ -8,13 +8,13 @@ Pattern: AutoGen's actor model with event-driven messaging.
 import json
 import logging
 import sqlite3
-import time
 import uuid
 from collections import defaultdict
+from collections.abc import Callable
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -54,8 +54,8 @@ class Message:
         recipient: str = "",
         topic: str = "",
         priority: MessagePriority = MessagePriority.NORMAL,
-        correlation_id: Optional[str] = None,
-        reply_to: Optional[str] = None,
+        correlation_id: str | None = None,
+        reply_to: str | None = None,
         ttl_seconds: float = 300.0,
     ) -> None:
         self.id = str(uuid.uuid4())[:12]
@@ -69,12 +69,12 @@ class Message:
         self.reply_to = reply_to
         self.ttl_seconds = ttl_seconds
         self.created_at = datetime.now(timezone.utc)
-        self.delivered_at: Optional[datetime] = None
-        self.acknowledged_at: Optional[datetime] = None
+        self.delivered_at: datetime | None = None
+        self.acknowledged_at: datetime | None = None
         self.status = "pending"
         self.retry_count = 0
         self.max_retries = 3
-        self.last_error: Optional[str] = None
+        self.last_error: str | None = None
 
     @property
     def is_expired(self) -> bool:
@@ -100,7 +100,7 @@ class Message:
         self.last_error = error
         self.retry_count += 1
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "type": self.type.value,
@@ -120,7 +120,7 @@ class Message:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Message":
+    def from_dict(cls, data: dict[str, Any]) -> "Message":
         msg = cls(
             message_type=MessageType(data["type"]),
             payload=data["payload"],
@@ -157,7 +157,7 @@ class DeadLetterQueue:
     """
 
     def __init__(self, max_size: int = 1000) -> None:
-        self._messages: List[Message] = []
+        self._messages: list[Message] = []
         self.max_size = max_size
 
     def add(self, message: Message, reason: str) -> None:
@@ -167,10 +167,10 @@ class DeadLetterQueue:
             self._messages = self._messages[-self.max_size:]
         logger.warning("DLQ: message %s added (reason: %s)", message.id, reason)
 
-    def list(self, limit: int = 50) -> List[Dict[str, Any]]:
+    def list(self, limit: int = 50) -> list[dict[str, Any]]:
         return [m.to_dict() for m in self._messages[-limit:]]
 
-    def retry(self, message_id: str) -> Optional[Message]:
+    def retry(self, message_id: str) -> Message | None:
         for i, msg in enumerate(self._messages):
             if msg.id == message_id:
                 msg.retry_count = 0
@@ -189,8 +189,8 @@ class DeadLetterQueue:
     def size(self) -> int:
         return len(self._messages)
 
-    def stats(self) -> Dict[str, Any]:
-        by_type: Dict[str, int] = defaultdict(int)
+    def stats(self) -> dict[str, Any]:
+        by_type: dict[str, int] = defaultdict(int)
         for msg in self._messages:
             by_type[msg.type.value] += 1
         return {
@@ -213,19 +213,19 @@ class MessageBus:
     """
 
     def __init__(self, db_path: str = ":memory:") -> None:
-        self._subscribers: Dict[str, List[Callable]] = defaultdict(list)
-        self._type_handlers: Dict[str, List[Callable]] = defaultdict(list)
-        self._agent_routes: Dict[str, List[str]] = defaultdict(list)
-        self._message_log: List[Message] = []
+        self._subscribers: dict[str, list[Callable]] = defaultdict(list)
+        self._type_handlers: dict[str, list[Callable]] = defaultdict(list)
+        self._agent_routes: dict[str, list[str]] = defaultdict(list)
+        self._message_log: list[Message] = []
         self._max_log_size = 5000
         self.dlq = DeadLetterQueue()
         self._db_path = db_path
 
         # Lifecycle hooks
-        self._on_publish: List[Callable[[Message], None]] = []
-        self._on_deliver: List[Callable[[Message], None]] = []
-        self._on_ack: List[Callable[[Message], None]] = []
-        self._on_fail: List[Callable[[Message, str], None]] = []
+        self._on_publish: list[Callable[[Message], None]] = []
+        self._on_deliver: list[Callable[[Message], None]] = []
+        self._on_ack: list[Callable[[Message], None]] = []
+        self._on_fail: list[Callable[[Message, str], None]] = []
 
         self._init_db()
 
@@ -419,7 +419,7 @@ class MessageBus:
         )
 
     def _deliver_to_handlers(
-        self, message: Message, handlers: List[Callable]
+        self, message: Message, handlers: list[Callable]
     ) -> int:
         delivered = 0
         for handler in handlers:
@@ -480,7 +480,7 @@ class MessageBus:
     def on_fail(self, callback: Callable[[Message, str], None]) -> None:
         self._on_fail.append(callback)
 
-    def _run_hooks(self, hooks: List[Callable], *args: Any) -> None:
+    def _run_hooks(self, hooks: list[Callable], *args: Any) -> None:
         for hook in hooks:
             try:
                 hook(*args)
@@ -505,12 +505,12 @@ class MessageBus:
 
     def get_messages(
         self,
-        recipient: Optional[str] = None,
-        topic: Optional[str] = None,
-        message_type: Optional[MessageType] = None,
-        status: Optional[str] = None,
+        recipient: str | None = None,
+        topic: str | None = None,
+        message_type: MessageType | None = None,
+        status: str | None = None,
         limit: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Query message log with filters."""
         results = self._message_log
         if recipient:
@@ -523,7 +523,7 @@ class MessageBus:
             results = [m for m in results if m.status == status]
         return [m.to_dict() for m in results[-limit:]]
 
-    def get_pending(self, recipient: str) -> List[Message]:
+    def get_pending(self, recipient: str) -> list[Message]:
         """Get all pending messages for a recipient."""
         return [
             m for m in self._message_log
@@ -534,10 +534,10 @@ class MessageBus:
     # Stats
     # ------------------------------------------------------------------
 
-    def stats(self) -> Dict[str, Any]:
-        by_type: Dict[str, int] = defaultdict(int)
-        by_status: Dict[str, int] = defaultdict(int)
-        by_priority: Dict[str, int] = defaultdict(int)
+    def stats(self) -> dict[str, Any]:
+        by_type: dict[str, int] = defaultdict(int)
+        by_status: dict[str, int] = defaultdict(int)
+        by_priority: dict[str, int] = defaultdict(int)
         for msg in self._message_log:
             by_type[msg.type.value] += 1
             by_status[msg.status] += 1

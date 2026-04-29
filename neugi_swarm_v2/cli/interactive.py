@@ -16,32 +16,32 @@ Usage:
 from __future__ import annotations
 
 import json
-import os
 import platform
+import subprocess
 import sys
-import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any
 
 try:
-    from rich.console import Console, Group
-    from rich.panel import Panel
-    from rich.table import Table
-    from rich.progress import Progress, SpinnerColumn, TextColumn
-    from rich.prompt import Prompt, Confirm
-    from rich.text import Text
-    from rich.rule import Rule
+    from rich.align import Align
     from rich.box import ROUNDED
+    from rich.columns import Columns
+    from rich.console import Console, Group
+    from rich.layout import Layout
     from rich.live import Live
     from rich.markdown import Markdown
+    from rich.panel import Panel
+    from rich.progress import Progress, SpinnerColumn, TextColumn
+    from rich.prompt import Confirm, Prompt
+    from rich.rule import Rule
     from rich.syntax import Syntax
+    from rich.table import Table
+    from rich.text import Text
     from rich.theme import Theme
-    from rich.layout import Layout
-    from rich.columns import Columns
-    from rich.align import Align
 except ImportError:
     print("Error: 'rich' library is required. Install with: pip install rich")
     sys.exit(1)
@@ -92,7 +92,7 @@ class ChatCommand:
     """
     name: str
     description: str
-    handler: Callable[["InteractiveChat", str], str]
+    handler: Callable[[InteractiveChat, str], str]
     category: CommandType = CommandType.SYSTEM
     aliases: list[str] = field(default_factory=list)
     requires_args: bool = False
@@ -202,7 +202,7 @@ class CommandPalette:
         for alias in command.aliases:
             self._commands[alias] = command
 
-    def get(self, name: str) -> Optional[ChatCommand]:
+    def get(self, name: str) -> ChatCommand | None:
         """Get a command by name.
 
         Args:
@@ -215,7 +215,7 @@ class CommandPalette:
             name = "/" + name
         return self._commands.get(name)
 
-    def execute(self, chat: "InteractiveChat", input_text: str) -> Optional[str]:
+    def execute(self, chat: InteractiveChat, input_text: str) -> str | None:
         """Execute a command from user input.
 
         Args:
@@ -367,7 +367,7 @@ class ChatHistory:
         self._input_index = -1
         self._trim()
 
-    def add_assistant(self, message: str, token_usage: Optional[dict] = None) -> None:
+    def add_assistant(self, message: str, token_usage: dict | None = None) -> None:
         """Add an assistant response to history.
 
         Args:
@@ -397,7 +397,7 @@ class ChatHistory:
         })
         self._trim()
 
-    def get_previous_input(self) -> Optional[str]:
+    def get_previous_input(self) -> str | None:
         """Get the previous user input (up arrow).
 
         Returns:
@@ -413,7 +413,7 @@ class ChatHistory:
 
         return self.input_history[self._input_index]
 
-    def get_next_input(self) -> Optional[str]:
+    def get_next_input(self) -> str | None:
         """Get the next user input (down arrow).
 
         Returns:
@@ -480,7 +480,7 @@ class ChatUI:
     and other UI elements in the terminal.
     """
 
-    def __init__(self, console: Optional[Console] = None) -> None:
+    def __init__(self, console: Console | None = None) -> None:
         """Initialize the chat UI.
 
         Args:
@@ -506,7 +506,7 @@ class ChatUI:
         agent: str = "Aurora",
         model: str = "qwen2.5-coder:7b",
         session_id: str = "default",
-        token_usage: Optional[TokenUsage] = None,
+        token_usage: TokenUsage | None = None,
     ) -> None:
         """Display the status bar at the top of the chat.
 
@@ -518,14 +518,14 @@ class ChatUI:
         """
         parts = [
             f"[agent_name]{agent}[/agent_name]",
-            f"[dim]|[/dim]",
+            "[dim]|[/dim]",
             f"[dim]{model}[/dim]",
-            f"[dim]|[/dim]",
+            "[dim]|[/dim]",
             f"[dim]session: {session_id[:8]}[/dim]",
         ]
 
         if token_usage:
-            parts.append(f"[dim]|[/dim]")
+            parts.append("[dim]|[/dim]")
             parts.append(token_usage.format_summary())
 
         self.console.print(Rule(" ".join(parts), style="dim"))

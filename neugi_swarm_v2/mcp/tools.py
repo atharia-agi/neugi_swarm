@@ -13,18 +13,19 @@ import json
 import logging
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Callable, Optional
+from typing import Any
 
 from neugi_swarm_v2.mcp.protocol import (
-    Tool,
-    ToolResult,
-    TextContent,
-    ImageContent,
-    ResourceContent,
     ContentBlock,
     CursorResult,
+    ImageContent,
+    ResourceContent,
+    TextContent,
+    Tool,
+    ToolResult,
 )
 
 logger = logging.getLogger(__name__)
@@ -49,10 +50,10 @@ class ToolCallLog:
     call_id: str
     tool_name: str
     arguments: dict[str, Any]
-    result: Optional[str] = None
+    result: str | None = None
     duration_ms: float = 0.0
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    error: Optional[str] = None
+    error: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {
@@ -92,7 +93,7 @@ class ToolEntry:
 
 def build_schema(
     properties: dict[str, dict[str, Any]],
-    required: Optional[list[str]] = None,
+    required: list[str] | None = None,
     description: str = "",
 ) -> dict[str, Any]:
     """Build a JSON Schema object for tool input.
@@ -118,8 +119,8 @@ def build_schema(
 
 def string_prop(
     description: str = "",
-    enum: Optional[list[str]] = None,
-    default: Optional[str] = None,
+    enum: list[str] | None = None,
+    default: str | None = None,
 ) -> dict[str, Any]:
     """Create a string property schema."""
     prop: dict[str, Any] = {"type": "string"}
@@ -134,9 +135,9 @@ def string_prop(
 
 def number_prop(
     description: str = "",
-    minimum: Optional[float] = None,
-    maximum: Optional[float] = None,
-    default: Optional[float] = None,
+    minimum: float | None = None,
+    maximum: float | None = None,
+    default: float | None = None,
 ) -> dict[str, Any]:
     """Create a number property schema."""
     prop: dict[str, Any] = {"type": "number"}
@@ -153,9 +154,9 @@ def number_prop(
 
 def integer_prop(
     description: str = "",
-    minimum: Optional[int] = None,
-    maximum: Optional[int] = None,
-    default: Optional[int] = None,
+    minimum: int | None = None,
+    maximum: int | None = None,
+    default: int | None = None,
 ) -> dict[str, Any]:
     """Create an integer property schema."""
     prop: dict[str, Any] = {"type": "integer"}
@@ -172,7 +173,7 @@ def integer_prop(
 
 def bool_prop(
     description: str = "",
-    default: Optional[bool] = None,
+    default: bool | None = None,
 ) -> dict[str, Any]:
     """Create a boolean property schema."""
     prop: dict[str, Any] = {"type": "boolean"}
@@ -186,8 +187,8 @@ def bool_prop(
 def array_prop(
     items: dict[str, Any],
     description: str = "",
-    min_items: Optional[int] = None,
-    max_items: Optional[int] = None,
+    min_items: int | None = None,
+    max_items: int | None = None,
 ) -> dict[str, Any]:
     """Create an array property schema."""
     prop: dict[str, Any] = {"type": "array", "items": items}
@@ -203,7 +204,7 @@ def array_prop(
 def object_prop(
     properties: dict[str, dict[str, Any]],
     description: str = "",
-    required: Optional[list[str]] = None,
+    required: list[str] | None = None,
 ) -> dict[str, Any]:
     """Create an object property schema."""
     prop: dict[str, Any] = {"type": "object", "properties": properties}
@@ -225,7 +226,7 @@ def format_result_text(text: str, max_chars: int = 50000) -> str:
 
 def paginate_results(
     items: list[Any],
-    cursor: Optional[str] = None,
+    cursor: str | None = None,
     page_size: int = 50,
 ) -> CursorResult:
     """Paginate a list of items using cursor-based pagination.
@@ -280,15 +281,15 @@ class ToolRegistry:
         self._call_log: list[ToolCallLog] = []
         self._max_log_entries: int = 1000
         self._default_max_chars = default_max_chars
-        self._on_tool_registered: Optional[Callable[[Tool], None]] = None
+        self._on_tool_registered: Callable[[Tool], None] | None = None
 
     def register(
         self,
         name: str,
         description: str,
-        input_schema: Optional[dict[str, Any]] = None,
-        annotations: Optional[dict[str, Any]] = None,
-        max_result_chars: Optional[int] = None,
+        input_schema: dict[str, Any] | None = None,
+        annotations: dict[str, Any] | None = None,
+        max_result_chars: int | None = None,
     ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """Decorator to register a function as an MCP tool.
 
@@ -319,7 +320,7 @@ class ToolRegistry:
         tool: Tool,
         handler: Callable[..., Any],
         is_async: bool = False,
-        max_result_chars: Optional[int] = None,
+        max_result_chars: int | None = None,
     ) -> None:
         """Register a tool with its handler.
 
@@ -352,7 +353,7 @@ class ToolRegistry:
             return True
         return False
 
-    def get_tool(self, name: str) -> Optional[Tool]:
+    def get_tool(self, name: str) -> Tool | None:
         """Get a tool definition by name."""
         entry = self._tools.get(name)
         return entry.definition if entry else None
@@ -368,7 +369,7 @@ class ToolRegistry:
     def execute(
         self,
         name: str,
-        arguments: Optional[dict[str, Any]] = None,
+        arguments: dict[str, Any] | None = None,
     ) -> ToolResult:
         """Execute a tool by name with the given arguments.
 
@@ -420,7 +421,7 @@ class ToolRegistry:
     async def execute_async(
         self,
         name: str,
-        arguments: Optional[dict[str, Any]] = None,
+        arguments: dict[str, Any] | None = None,
     ) -> ToolResult:
         """Execute a tool asynchronously.
 
@@ -468,7 +469,7 @@ class ToolRegistry:
 
     def get_call_log(
         self,
-        tool_name: Optional[str] = None,
+        tool_name: str | None = None,
         limit: int = 50,
     ) -> list[ToolCallLog]:
         """Get tool call log entries.
@@ -594,10 +595,10 @@ class ToolRegistry:
 
     def register_neugi_tools(
         self,
-        memory_system: Optional[Any] = None,
-        skill_manager: Optional[Any] = None,
-        agent_manager: Optional[Any] = None,
-        session_manager: Optional[Any] = None,
+        memory_system: Any | None = None,
+        skill_manager: Any | None = None,
+        agent_manager: Any | None = None,
+        session_manager: Any | None = None,
     ) -> None:
         """Register NEUGI subsystem tools dynamically.
 
@@ -633,10 +634,10 @@ class ToolRegistry:
         )
         def memory_save(
             content: str,
-            scope: Optional[str] = None,
+            scope: str | None = None,
             tier: str = "daily",
-            tags: Optional[list[str]] = None,
-            importance: Optional[float] = None,
+            tags: list[str] | None = None,
+            importance: float | None = None,
             source: str = "mcp",
         ) -> str:
             from neugi_swarm_v2.memory import MemoryTier, ScopePath
@@ -676,9 +677,9 @@ class ToolRegistry:
         )
         def memory_recall(
             query: str,
-            scope: Optional[str] = None,
-            tier: Optional[str] = None,
-            tags: Optional[list[str]] = None,
+            scope: str | None = None,
+            tier: str | None = None,
+            tags: list[str] | None = None,
             limit: int = 20,
         ) -> str:
             from neugi_swarm_v2.memory import MemoryTier, ScopePath
@@ -747,8 +748,8 @@ class ToolRegistry:
             }),
         )
         def skills_list(
-            tier: Optional[str] = None,
-            agent: Optional[str] = None,
+            tier: str | None = None,
+            agent: str | None = None,
         ) -> str:
             if tier:
                 from neugi_swarm_v2.skills import SkillTier
@@ -783,7 +784,7 @@ class ToolRegistry:
         def skills_match(
             query: str,
             top_n: int = 5,
-            agent: Optional[str] = None,
+            agent: str | None = None,
         ) -> str:
             results = skill_manager.match(query, top_n=top_n, agent_name=agent)
             items = [

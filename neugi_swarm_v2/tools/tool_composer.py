@@ -5,28 +5,21 @@ Enables composing multiple tools into meta-tools with sequential, parallel,
 conditional, and loop patterns. Includes validation and visualization.
 """
 
-import time
 import logging
-from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import (
     Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Union,
 )
 
+from tools.tool_executor import ExecutionResult, ToolExecutor
 from tools.tool_registry import (
-    ToolRegistry,
-    ToolSchema,
     ToolCategory,
     ToolNotFoundError,
+    ToolRegistry,
+    ToolSchema,
 )
-from tools.tool_executor import ToolExecutor, ExecutionResult
 
 logger = logging.getLogger(__name__)
 
@@ -48,12 +41,12 @@ class CompositionResult:
     composition_type: CompositionType
     success: bool
     result: Any = None
-    error: Optional[str] = None
-    step_results: List[ExecutionResult] = field(default_factory=list)
+    error: str | None = None
+    step_results: list[ExecutionResult] = field(default_factory=list)
     total_latency_ms: float = 0.0
     steps_executed: int = 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "composition_name": self.composition_name,
@@ -92,14 +85,14 @@ class ToolComposer:
     def __init__(self, registry: ToolRegistry, executor: ToolExecutor):
         self.registry = registry
         self.executor = executor
-        self._composed_tools: Dict[str, Dict[str, Any]] = {}
+        self._composed_tools: dict[str, dict[str, Any]] = {}
 
     def validate_composition(
         self,
         name: str,
-        tool_names: List[str],
+        tool_names: list[str],
         composition_type: CompositionType,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Validate a composition before creation.
 
@@ -145,10 +138,10 @@ class ToolComposer:
         name: str,
         func: Callable,
         composition_type: CompositionType,
-        tool_names: List[str],
+        tool_names: list[str],
         description: str = "",
-        parameters: Optional[Dict[str, Dict[str, Any]]] = None,
-        required_params: Optional[List[str]] = None,
+        parameters: dict[str, dict[str, Any]] | None = None,
+        required_params: list[str] | None = None,
     ) -> ToolSchema:
         """
         Register a composed tool in the registry.
@@ -186,9 +179,9 @@ class ToolComposer:
     def visualize_composition(
         self,
         name: str,
-        tool_names: List[str],
+        tool_names: list[str],
         composition_type: CompositionType,
-        conditions: Optional[Dict[str, str]] = None,
+        conditions: dict[str, str] | None = None,
     ) -> str:
         """
         Generate a text-based flow diagram of a composition.
@@ -213,9 +206,9 @@ class ToolComposer:
                 connector = "  │" if i < len(tool_names) - 1 else "  "
                 lines.append(f"  ▼ [{tool}]")
                 if i < len(tool_names) - 1:
-                    lines.append(f"  │")
-                    lines.append(f"  │ (output → input)")
-                    lines.append(f"  ▼")
+                    lines.append("  │")
+                    lines.append("  │ (output → input)")
+                    lines.append("  ▼")
 
         elif composition_type == CompositionType.PARALLEL:
             lines.append("  ┌─────────────────────────────────────┐")
@@ -231,10 +224,10 @@ class ToolComposer:
                 if i == 0:
                     lines.append(f"  ▼ [{tool}] (condition: {condition})")
                 else:
-                    lines.append(f"  │")
+                    lines.append("  │")
                     lines.append(f"  ├─ [{tool}] (else if: {condition})")
-            lines.append(f"  │")
-            lines.append(f"  └─ (fallback)")
+            lines.append("  │")
+            lines.append("  └─ (fallback)")
 
         elif composition_type == CompositionType.LOOP:
             lines.append("  ┌─────────────────────────────────────┐")
@@ -248,11 +241,11 @@ class ToolComposer:
         lines.append(f"╚{'═' * 60}╝")
         return "\n".join(lines)
 
-    def get_composition_info(self, name: str) -> Optional[Dict[str, Any]]:
+    def get_composition_info(self, name: str) -> dict[str, Any] | None:
         """Get information about a composed tool."""
         return self._composed_tools.get(name)
 
-    def list_compositions(self) -> Dict[str, Dict[str, Any]]:
+    def list_compositions(self) -> dict[str, dict[str, Any]]:
         """List all registered compositions."""
         return dict(self._composed_tools)
 
@@ -273,11 +266,11 @@ class SequentialComposer(ToolComposer):
     def compose(
         self,
         name: str,
-        tool_names: List[str],
-        param_mapping: Optional[Dict[str, str]] = None,
+        tool_names: list[str],
+        param_mapping: dict[str, str] | None = None,
         description: str = "",
-        parameters: Optional[Dict[str, Dict[str, Any]]] = None,
-        required_params: Optional[List[str]] = None,
+        parameters: dict[str, dict[str, Any]] | None = None,
+        required_params: list[str] | None = None,
     ) -> ToolSchema:
         """
         Create a sequential composition.
@@ -296,7 +289,7 @@ class SequentialComposer(ToolComposer):
         """
         self.validate_composition(name, tool_names, CompositionType.SEQUENTIAL)
 
-        def sequential_func(**kwargs) -> Dict[str, Any]:
+        def sequential_func(**kwargs) -> dict[str, Any]:
             results = {}
             step_results = []
 
@@ -362,11 +355,11 @@ class ParallelComposer(ToolComposer):
     def compose(
         self,
         name: str,
-        tool_names: List[str],
+        tool_names: list[str],
         merge_strategy: str = "dict",
         description: str = "",
-        parameters: Optional[Dict[str, Dict[str, Any]]] = None,
-        required_params: Optional[List[str]] = None,
+        parameters: dict[str, dict[str, Any]] | None = None,
+        required_params: list[str] | None = None,
     ) -> ToolSchema:
         """
         Create a parallel composition.
@@ -384,7 +377,7 @@ class ParallelComposer(ToolComposer):
         """
         self.validate_composition(name, tool_names, CompositionType.PARALLEL)
 
-        def parallel_func(**kwargs) -> Dict[str, Any]:
+        def parallel_func(**kwargs) -> dict[str, Any]:
             import concurrent.futures
 
             step_results = []
@@ -470,12 +463,12 @@ class ConditionalComposer(ToolComposer):
         self,
         name: str,
         primary: str,
-        on_success: Optional[str] = None,
-        on_failure: Optional[str] = None,
-        condition: Optional[Callable[[Any], bool]] = None,
+        on_success: str | None = None,
+        on_failure: str | None = None,
+        condition: Callable[[Any], bool] | None = None,
         description: str = "",
-        parameters: Optional[Dict[str, Dict[str, Any]]] = None,
-        required_params: Optional[List[str]] = None,
+        parameters: dict[str, dict[str, Any]] | None = None,
+        required_params: list[str] | None = None,
     ) -> ToolSchema:
         """
         Create a conditional composition.
@@ -501,7 +494,7 @@ class ConditionalComposer(ToolComposer):
 
         self.validate_composition(name, tool_names, CompositionType.CONDITIONAL)
 
-        def conditional_func(**kwargs) -> Dict[str, Any]:
+        def conditional_func(**kwargs) -> dict[str, Any]:
             step_results = []
 
             primary_result = self.executor.execute(primary, **kwargs)
@@ -582,13 +575,13 @@ class LoopComposer(ToolComposer):
     def compose(
         self,
         name: str,
-        tool_names: List[str],
+        tool_names: list[str],
         condition: Callable[[Any], bool],
         max_iterations: int = 10,
         delay_between: float = 0.0,
         description: str = "",
-        parameters: Optional[Dict[str, Dict[str, Any]]] = None,
-        required_params: Optional[List[str]] = None,
+        parameters: dict[str, dict[str, Any]] | None = None,
+        required_params: list[str] | None = None,
     ) -> ToolSchema:
         """
         Create a loop composition.
@@ -608,7 +601,7 @@ class LoopComposer(ToolComposer):
         """
         self.validate_composition(name, tool_names, CompositionType.LOOP)
 
-        def loop_func(**kwargs) -> Dict[str, Any]:
+        def loop_func(**kwargs) -> dict[str, Any]:
             all_results = []
             iteration = 0
             last_result = None

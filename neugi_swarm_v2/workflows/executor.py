@@ -6,31 +6,21 @@ parallel execution, error handling, timeouts, and progress callbacks.
 
 from __future__ import annotations
 
-import asyncio
 import time
 import traceback
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import (
     Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Set,
-    Union,
 )
 
 from .state_graph import (
-    ConditionalEdge,
-    EdgeDefinition,
     ExecutionContext,
     GraphCompilationResult,
-    NodeDefinition,
     NodeStatus,
     StateDefinition,
-    StateGraph,
 )
 
 
@@ -94,12 +84,12 @@ class NodeExecutionRecord:
     status: NodeStatus
     start_time: float
     end_time: float = 0.0
-    error: Optional[str] = None
-    error_traceback: Optional[str] = None
-    input_state: Optional[Dict[str, Any]] = None
-    output_state: Optional[Dict[str, Any]] = None
+    error: str | None = None
+    error_traceback: str | None = None
+    input_state: dict[str, Any] | None = None
+    output_state: dict[str, Any] | None = None
     retries: int = 0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
     def duration(self) -> float:
@@ -108,7 +98,7 @@ class NodeExecutionRecord:
             return self.end_time - self.start_time
         return 0.0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert record to dictionary for serialization."""
         return {
             "node_name": self.node_name,
@@ -129,12 +119,12 @@ class ExecutionResult:
     """
 
     status: ExecutionStatus
-    final_state: Optional[StateDefinition]
-    history: List[NodeExecutionRecord]
+    final_state: StateDefinition | None
+    history: list[NodeExecutionRecord]
     start_time: float
     end_time: float = 0.0
-    error: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    error: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
     def duration(self) -> float:
@@ -144,16 +134,16 @@ class ExecutionResult:
         return 0.0
 
     @property
-    def successful_nodes(self) -> List[NodeExecutionRecord]:
+    def successful_nodes(self) -> list[NodeExecutionRecord]:
         """Get list of successfully executed nodes."""
         return [r for r in self.history if r.status == NodeStatus.COMPLETED]
 
     @property
-    def failed_nodes(self) -> List[NodeExecutionRecord]:
+    def failed_nodes(self) -> list[NodeExecutionRecord]:
         """Get list of failed nodes."""
         return [r for r in self.history if r.status == NodeStatus.FAILED]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert result to dictionary for serialization."""
         return {
             "status": self.status.value,
@@ -178,16 +168,16 @@ class ExecutionConfig:
         metadata: Arbitrary metadata for the execution.
     """
 
-    timeout: Optional[float] = 300.0
-    retry_policy: Optional[RetryPolicy] = None
+    timeout: float | None = 300.0
+    retry_policy: RetryPolicy | None = None
     error_handling: ErrorHandling = ErrorHandling.RETRY
     max_parallel: int = 4
     enable_callbacks: bool = True
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 # Type alias for progress callback
-ProgressCallback = Callable[[str, NodeStatus, Dict[str, Any]], None]
+ProgressCallback = Callable[[str, NodeStatus, dict[str, Any]], None]
 
 
 class WorkflowExecutor:
@@ -204,7 +194,7 @@ class WorkflowExecutor:
     def __init__(
         self,
         compiled: GraphCompilationResult,
-        config: Optional[ExecutionConfig] = None,
+        config: ExecutionConfig | None = None,
     ) -> None:
         """Initialize the executor.
 
@@ -220,13 +210,13 @@ class WorkflowExecutor:
 
         self.compiled = compiled
         self.config = config or ExecutionConfig()
-        self._history: List[NodeExecutionRecord] = []
-        self._callbacks: List[ProgressCallback] = []
+        self._history: list[NodeExecutionRecord] = []
+        self._callbacks: list[ProgressCallback] = []
         self._cancelled = False
-        self._node_error_handlers: Dict[str, ErrorHandling] = {}
-        self._node_retry_policies: Dict[str, RetryPolicy] = {}
+        self._node_error_handlers: dict[str, ErrorHandling] = {}
+        self._node_retry_policies: dict[str, RetryPolicy] = {}
 
-    def add_callback(self, callback: ProgressCallback) -> "WorkflowExecutor":
+    def add_callback(self, callback: ProgressCallback) -> WorkflowExecutor:
         """Add a progress callback.
 
         Args:
@@ -242,7 +232,7 @@ class WorkflowExecutor:
         self,
         node_name: str,
         handling: ErrorHandling,
-    ) -> "WorkflowExecutor":
+    ) -> WorkflowExecutor:
         """Set error handling for a specific node.
 
         Args:
@@ -259,7 +249,7 @@ class WorkflowExecutor:
         self,
         node_name: str,
         policy: RetryPolicy,
-    ) -> "WorkflowExecutor":
+    ) -> WorkflowExecutor:
         """Set retry policy for a specific node.
 
         Args:
@@ -279,7 +269,7 @@ class WorkflowExecutor:
     def execute(
         self,
         initial_state: StateDefinition,
-        context: Optional[ExecutionContext] = None,
+        context: ExecutionContext | None = None,
     ) -> ExecutionResult:
         """Execute the workflow from the given initial state.
 
@@ -446,7 +436,7 @@ class WorkflowExecutor:
 
     def _execute_parallel(
         self,
-        node_names: List[str],
+        node_names: list[str],
         context: ExecutionContext,
     ) -> None:
         """Execute multiple nodes in parallel.
@@ -455,8 +445,8 @@ class WorkflowExecutor:
             node_names: List of node names to execute.
             context: Current execution context.
         """
-        results: Dict[str, StateDefinition] = {}
-        errors: List[tuple] = []
+        results: dict[str, StateDefinition] = {}
+        errors: list[tuple] = []
 
         with ThreadPoolExecutor(max_workers=self.config.max_parallel) as executor:
             futures = {}
@@ -566,7 +556,7 @@ class WorkflowExecutor:
         self,
         node_name: str,
         status: NodeStatus,
-        metadata: Dict[str, Any],
+        metadata: dict[str, Any],
     ) -> None:
         """Notify all registered callbacks of a status change.
 
@@ -588,7 +578,7 @@ class WorkflowExecutor:
         self,
         node_name: str,
         error: str,
-        tb: Optional[str] = None,
+        tb: str | None = None,
     ) -> None:
         """Record an error in the execution history.
 
@@ -615,7 +605,7 @@ class WorkflowExecutor:
         """
         return any(r.status == NodeStatus.FAILED for r in self._history)
 
-    def _get_error_summary(self) -> Optional[str]:
+    def _get_error_summary(self) -> str | None:
         """Get a summary of all errors.
 
         Returns:
@@ -628,7 +618,7 @@ class WorkflowExecutor:
         errors = [f"{r.node_name}: {r.error}" for r in failures]
         return "; ".join(errors)
 
-    def get_history(self) -> List[NodeExecutionRecord]:
+    def get_history(self) -> list[NodeExecutionRecord]:
         """Get the execution history.
 
         Returns:
@@ -636,7 +626,7 @@ class WorkflowExecutor:
         """
         return list(self._history)
 
-    def get_failed_nodes(self) -> List[str]:
+    def get_failed_nodes(self) -> list[str]:
         """Get list of failed node names.
 
         Returns:
@@ -644,7 +634,7 @@ class WorkflowExecutor:
         """
         return [r.node_name for r in self._history if r.status == NodeStatus.FAILED]
 
-    def get_successful_nodes(self) -> List[str]:
+    def get_successful_nodes(self) -> list[str]:
         """Get list of successful node names.
 
         Returns:

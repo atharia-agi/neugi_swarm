@@ -18,10 +18,9 @@ import logging
 import sqlite3
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +61,7 @@ class Observation:
     confidence: float = 0.5
     urgency: float = 0.5
     value: float = 0.5
-    data: Dict[str, Any] = field(default_factory=dict)
+    data: dict[str, Any] = field(default_factory=dict)
     observed_at: float = field(default_factory=lambda: time.time())
 
     @property
@@ -81,28 +80,28 @@ class SystemSignal:
     memory_usage_percent: float = 0.0
     last_backup_age_hours: float = 0.0
     uptime_hours: float = 0.0
-    anomalies: List[str] = field(default_factory=list)
+    anomalies: list[str] = field(default_factory=list)
 
 
 @dataclass
 class MemorySignal:
     """Trends detected in the memory system."""
 
-    top_topics: List[tuple[str, int]] = field(default_factory=list)
-    recurring_queries: List[str] = field(default_factory=list)
+    top_topics: list[tuple[str, int]] = field(default_factory=list)
+    recurring_queries: list[str] = field(default_factory=list)
     memory_count_24h: int = 0
     consolidation_needed: bool = False
-    gaps: List[str] = field(default_factory=list)  # Topics with few entries
+    gaps: list[str] = field(default_factory=list)  # Topics with few entries
 
 
 @dataclass
 class GoalSignal:
     """State of goals that may need attention."""
 
-    stuck_goals: List[Dict[str, Any]] = field(default_factory=list)
-    nearly_complete: List[Dict[str, Any]] = field(default_factory=list)
-    blocked_goals: List[Dict[str, Any]] = field(default_factory=list)
-    overdue_milestones: List[Dict[str, Any]] = field(default_factory=list)
+    stuck_goals: list[dict[str, Any]] = field(default_factory=list)
+    nearly_complete: list[dict[str, Any]] = field(default_factory=list)
+    blocked_goals: list[dict[str, Any]] = field(default_factory=list)
+    overdue_milestones: list[dict[str, Any]] = field(default_factory=list)
     active_count: int = 0
     total_count: int = 0
 
@@ -111,9 +110,9 @@ class GoalSignal:
 class HealthSignal:
     """Health and performance signals."""
 
-    slow_operations: List[Dict[str, Any]] = field(default_factory=list)
+    slow_operations: list[dict[str, Any]] = field(default_factory=list)
     failed_operations_24h: int = 0
-    circuit_breakers_tripped: List[str] = field(default_factory=list)
+    circuit_breakers_tripped: list[str] = field(default_factory=list)
     rate_limits_hit: int = 0
 
 
@@ -121,10 +120,10 @@ class HealthSignal:
 class LearningSignal:
     """Opportunities for the system to learn or improve."""
 
-    repeated_patterns: List[Dict[str, Any]] = field(default_factory=list)
-    skill_gaps: List[str] = field(default_factory=list)
-    user_preferences_detected: List[str] = field(default_factory=list)
-    tool_usage_inefficiencies: List[str] = field(default_factory=list)
+    repeated_patterns: list[dict[str, Any]] = field(default_factory=list)
+    skill_gaps: list[str] = field(default_factory=list)
+    user_preferences_detected: list[str] = field(default_factory=list)
+    tool_usage_inefficiencies: list[str] = field(default_factory=list)
 
 
 class IdleObserver:
@@ -142,8 +141,8 @@ class IdleObserver:
     def __init__(
         self,
         memory_db_path: str | Path,
-        goals_db_path: Optional[str | Path] = None,
-        system_db_path: Optional[str | Path] = None,
+        goals_db_path: str | Path | None = None,
+        system_db_path: str | Path | None = None,
     ) -> None:
         self.memory_db_path = str(memory_db_path)
         self.goals_db_path = str(goals_db_path) if goals_db_path else None
@@ -151,13 +150,13 @@ class IdleObserver:
 
     # -- Public API ------------------------------------------------------------
 
-    def observe(self) -> List[Observation]:
+    def observe(self) -> list[Observation]:
         """Collect all observations from all subsystems.
 
         Returns:
             List of observations sorted by priority_score descending.
         """
-        observations: List[Observation] = []
+        observations: list[Observation] = []
 
         observations.extend(self._observe_memory())
         observations.extend(self._observe_goals())
@@ -169,7 +168,7 @@ class IdleObserver:
         observations.sort(key=lambda o: o.priority_score, reverse=True)
         return observations
 
-    def get_signals(self) -> Dict[str, Any]:
+    def get_signals(self) -> dict[str, Any]:
         """Get structured signal summary for decision engine.
 
         Returns:
@@ -185,9 +184,9 @@ class IdleObserver:
 
     # -- Memory Observations ---------------------------------------------------
 
-    def _observe_memory(self) -> List[Observation]:
+    def _observe_memory(self) -> list[Observation]:
         """Observe memory trends and consolidation needs."""
-        observations: List[Observation] = []
+        observations: list[Observation] = []
 
         try:
             signal = self._get_memory_signal()
@@ -285,9 +284,9 @@ class IdleObserver:
 
     # -- Goal Observations -----------------------------------------------------
 
-    def _observe_goals(self) -> List[Observation]:
+    def _observe_goals(self) -> list[Observation]:
         """Observe goal state for stuck or nearly-complete goals."""
-        observations: List[Observation] = []
+        observations: list[Observation] = []
 
         if not self.goals_db_path:
             return observations
@@ -420,9 +419,9 @@ class IdleObserver:
 
     # -- System Health Observations -------------------------------------------
 
-    def _observe_system_health(self) -> List[Observation]:
+    def _observe_system_health(self) -> list[Observation]:
         """Observe system health for anomalies."""
-        observations: List[Observation] = []
+        observations: list[Observation] = []
 
         try:
             signal = self._get_health_signal()
@@ -524,9 +523,9 @@ class IdleObserver:
 
     # -- Learning Observations -------------------------------------------------
 
-    def _observe_learning_opportunities(self) -> List[Observation]:
+    def _observe_learning_opportunities(self) -> list[Observation]:
         """Observe for self-improvement opportunities."""
-        observations: List[Observation] = []
+        observations: list[Observation] = []
 
         try:
             signal = self._get_learning_signal()
@@ -610,9 +609,9 @@ class IdleObserver:
 
     # -- Scheduled Task Observations ------------------------------------------
 
-    def _observe_scheduled_tasks(self) -> List[Observation]:
+    def _observe_scheduled_tasks(self) -> list[Observation]:
         """Observe for overdue scheduled tasks."""
-        observations: List[Observation] = []
+        observations: list[Observation] = []
 
         # This requires cron scheduler integration; simplified here
         # In full implementation, would query CronScheduler's DB
@@ -621,13 +620,13 @@ class IdleObserver:
 
     # -- Research Opportunity Observations -------------------------------------
 
-    def _observe_research_opportunities(self) -> List[Observation]:
+    def _observe_research_opportunities(self) -> list[Observation]:
         """Observe for topics that would benefit from autonomous research.
 
         Detects knowledge gaps where the user has asked questions but
         no comprehensive research exists in memory.
         """
-        observations: List[Observation] = []
+        observations: list[Observation] = []
 
         try:
             with sqlite3.connect(self.memory_db_path) as conn:

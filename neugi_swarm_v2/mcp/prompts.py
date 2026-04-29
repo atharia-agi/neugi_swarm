@@ -11,9 +11,8 @@ from __future__ import annotations
 
 import json
 import logging
-import re
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 from neugi_swarm_v2.mcp.protocol import (
     Prompt,
@@ -96,7 +95,7 @@ class PromptTemplate:
     description: str
     arguments: list[PromptArgument] = field(default_factory=list)
     messages: list[dict[str, str]] = field(default_factory=list)
-    category: Optional[str] = None
+    category: str | None = None
     tags: list[str] = field(default_factory=list)
 
     def to_prompt(self) -> Prompt:
@@ -221,7 +220,7 @@ class PromptRegistry:
     def __init__(self) -> None:
         """Initialize the prompt registry."""
         self._templates: dict[str, PromptTemplate] = {}
-        self._on_template_registered: Optional[Callable[[Prompt], None]] = None
+        self._on_template_registered: Callable[[Prompt], None] | None = None
 
     def register_template(self, template: PromptTemplate) -> None:
         """Register a prompt template.
@@ -246,7 +245,7 @@ class PromptRegistry:
             return True
         return False
 
-    def get_template(self, name: str) -> Optional[PromptTemplate]:
+    def get_template(self, name: str) -> PromptTemplate | None:
         """Get a template by name."""
         return self._templates.get(name)
 
@@ -273,7 +272,7 @@ class PromptRegistry:
     def get_prompt(
         self,
         name: str,
-        arguments: Optional[dict[str, Any]] = None,
+        arguments: dict[str, Any] | None = None,
     ) -> PromptResult:
         """Get a rendered prompt by name.
 
@@ -298,7 +297,7 @@ class PromptRegistry:
     def compose(
         self,
         template_names: list[str],
-        arguments: Optional[dict[str, Any]] = None,
+        arguments: dict[str, Any] | None = None,
         separator: str = "\n\n---\n\n",
     ) -> PromptResult:
         """Compose multiple templates into a single prompt.
@@ -343,7 +342,7 @@ class PromptRegistry:
     def compose_system_prompt(
         self,
         template_names: list[str],
-        arguments: Optional[dict[str, Any]] = None,
+        arguments: dict[str, Any] | None = None,
     ) -> str:
         """Compose multiple templates into a single system prompt string.
 

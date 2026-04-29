@@ -42,12 +42,10 @@ import json
 import logging
 import sqlite3
 import threading
-import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -144,7 +142,7 @@ class BudgetThreshold:
     warning_75: float = 0.75
     warning_90: float = 0.90
     hard_stop: float = 1.0
-    soft_limit: Optional[float] = None
+    soft_limit: float | None = None
 
 
 @dataclass
@@ -236,8 +234,8 @@ class UsageRecord:
     total_tokens: int = 0
     total_cost_usd: float = 0.0
     entry_count: int = 0
-    first_usage: Optional[datetime] = None
-    last_usage: Optional[datetime] = None
+    first_usage: datetime | None = None
+    last_usage: datetime | None = None
 
 
 @dataclass
@@ -261,10 +259,10 @@ class BudgetAllocation:
     level: BudgetLevel = BudgetLevel.AGENT
     token_limit: int = 100_000
     cost_limit: float = 10.0
-    parent_id: Optional[str] = None
+    parent_id: str | None = None
     thresholds: BudgetThreshold = field(default_factory=BudgetThreshold)
     rollover: bool = False
-    expiration: Optional[datetime] = None
+    expiration: datetime | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -323,7 +321,7 @@ class BudgetTracker:
     def __init__(
         self,
         db_path: str = "governance.db",
-        model_pricing: Optional[ModelPricing] = None,
+        model_pricing: ModelPricing | None = None,
         auto_warn: bool = True,
     ) -> None:
         self.db_path = db_path
@@ -401,11 +399,11 @@ class BudgetTracker:
         token_limit: int = 100_000,
         cost_limit: float = 10.0,
         level: BudgetLevel = BudgetLevel.AGENT,
-        parent_id: Optional[str] = None,
-        thresholds: Optional[BudgetThreshold] = None,
+        parent_id: str | None = None,
+        thresholds: BudgetThreshold | None = None,
         rollover: bool = False,
-        expiration: Optional[datetime] = None,
-        metadata: Optional[dict[str, Any]] = None,
+        expiration: datetime | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> BudgetAllocation:
         """Create or update a budget allocation.
 
@@ -445,39 +443,38 @@ class BudgetTracker:
             metadata=metadata or {},
         )
 
-        with self._lock:
-            with self._get_conn() as conn:
-                conn.execute(
-                    """
+        with self._lock, self._get_conn() as conn:
+            conn.execute(
+                """
                     INSERT OR REPLACE INTO budget_allocations
                     (budget_id, level, token_limit, cost_limit, parent_id,
                      thresholds_json, rollover, expiration, created_at, metadata_json)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
-                    (
-                        allocation.budget_id,
-                        allocation.level.value,
-                        allocation.token_limit,
-                        allocation.cost_limit,
-                        allocation.parent_id,
-                        json.dumps({
-                            "warning_50": allocation.thresholds.warning_50,
-                            "warning_75": allocation.thresholds.warning_75,
-                            "warning_90": allocation.thresholds.warning_90,
-                            "hard_stop": allocation.thresholds.hard_stop,
-                            "soft_limit": allocation.thresholds.soft_limit,
-                        }),
-                        1 if allocation.rollover else 0,
-                        allocation.expiration.isoformat() if allocation.expiration else None,
-                        allocation.created_at.isoformat(),
-                        json.dumps(allocation.metadata),
-                    ),
-                )
+                (
+                    allocation.budget_id,
+                    allocation.level.value,
+                    allocation.token_limit,
+                    allocation.cost_limit,
+                    allocation.parent_id,
+                    json.dumps({
+                        "warning_50": allocation.thresholds.warning_50,
+                        "warning_75": allocation.thresholds.warning_75,
+                        "warning_90": allocation.thresholds.warning_90,
+                        "hard_stop": allocation.thresholds.hard_stop,
+                        "soft_limit": allocation.thresholds.soft_limit,
+                    }),
+                    1 if allocation.rollover else 0,
+                    allocation.expiration.isoformat() if allocation.expiration else None,
+                    allocation.created_at.isoformat(),
+                    json.dumps(allocation.metadata),
+                ),
+            )
 
         logger.info("Budget set: %s (tokens=%s, cost=$%.2f)", budget_id, token_limit, cost_limit)
         return allocation
 
-    def get_allocation(self, budget_id: str) -> Optional[BudgetAllocation]:
+    def get_allocation(self, budget_id: str) -> BudgetAllocation | None:
         """Get a budget allocation by ID.
 
         Args:
@@ -525,30 +522,29 @@ class BudgetTracker:
         Returns:
             True if deleted, False if not found.
         """
-        with self._lock:
-            with self._get_conn() as conn:
-                if cascade:
-                    children = conn.execute(
-                        "SELECT budget_id FROM budget_allocations WHERE parent_id = ?",
-                        (budget_id,),
-                    ).fetchall()
-                    for child in children:
-                        self.delete_budget(child["budget_id"], cascade=True)
+        with self._lock, self._get_conn() as conn:
+            if cascade:
+                children = conn.execute(
+                    "SELECT budget_id FROM budget_allocations WHERE parent_id = ?",
+                    (budget_id,),
+                ).fetchall()
+                for child in children:
+                    self.delete_budget(child["budget_id"], cascade=True)
 
-                cursor = conn.execute(
-                    "DELETE FROM budget_allocations WHERE budget_id = ?",
-                    (budget_id,),
-                )
-                conn.execute(
-                    "DELETE FROM usage_entries WHERE budget_id = ?",
-                    (budget_id,),
-                )
-                conn.execute(
-                    "DELETE FROM budget_warnings WHERE budget_id = ?",
-                    (budget_id,),
-                )
+            cursor = conn.execute(
+                "DELETE FROM budget_allocations WHERE budget_id = ?",
+                (budget_id,),
+            )
+            conn.execute(
+                "DELETE FROM usage_entries WHERE budget_id = ?",
+                (budget_id,),
+            )
+            conn.execute(
+                "DELETE FROM budget_warnings WHERE budget_id = ?",
+                (budget_id,),
+            )
 
-                return cursor.rowcount > 0
+            return cursor.rowcount > 0
 
     def record_usage(
         self,
@@ -556,7 +552,7 @@ class BudgetTracker:
         input_tokens: int,
         output_tokens: int,
         model: str = "unknown",
-        metadata: Optional[dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> CostEntry:
         """Record token usage and compute cost.
 
@@ -722,7 +718,7 @@ class BudgetTracker:
 
         return warnings
 
-    def _get_last_warning(self, budget_id: str, threshold: float) -> Optional[datetime]:
+    def _get_last_warning(self, budget_id: str, threshold: float) -> datetime | None:
         """Get timestamp of last warning for a threshold.
 
         Args:
@@ -995,8 +991,8 @@ class BudgetTracker:
     def get_usage_history(
         self,
         budget_id: str,
-        since: Optional[datetime] = None,
-        until: Optional[datetime] = None,
+        since: datetime | None = None,
+        until: datetime | None = None,
         limit: int = 100,
     ) -> list[CostEntry]:
         """Get usage history for a budget.
@@ -1040,7 +1036,7 @@ class BudgetTracker:
             for row in rows
         ]
 
-    def reset_usage(self, budget_id: str, since: Optional[datetime] = None) -> int:
+    def reset_usage(self, budget_id: str, since: datetime | None = None) -> int:
         """Reset usage entries for a budget.
 
         Args:
@@ -1050,23 +1046,22 @@ class BudgetTracker:
         Returns:
             Number of entries deleted.
         """
-        with self._lock:
-            with self._get_conn() as conn:
-                if since:
-                    cursor = conn.execute(
-                        "DELETE FROM usage_entries WHERE budget_id = ? AND timestamp >= ?",
-                        (budget_id, since.isoformat()),
-                    )
-                else:
-                    cursor = conn.execute(
-                        "DELETE FROM usage_entries WHERE budget_id = ?",
-                        (budget_id,),
-                    )
-                return cursor.rowcount
+        with self._lock, self._get_conn() as conn:
+            if since:
+                cursor = conn.execute(
+                    "DELETE FROM usage_entries WHERE budget_id = ? AND timestamp >= ?",
+                    (budget_id, since.isoformat()),
+                )
+            else:
+                cursor = conn.execute(
+                    "DELETE FROM usage_entries WHERE budget_id = ?",
+                    (budget_id,),
+                )
+            return cursor.rowcount
 
     def get_analytics(
         self,
-        budget_id: Optional[str] = None,
+        budget_id: str | None = None,
         period: str = "24h",
     ) -> dict[str, Any]:
         """Get budget analytics.
@@ -1147,7 +1142,7 @@ class BudgetTracker:
         """Close database connections (no-op for sqlite3, but good practice)."""
         pass
 
-    def __enter__(self) -> "BudgetTracker":
+    def __enter__(self) -> BudgetTracker:
         return self
 
     def __exit__(self, *args: Any) -> None:

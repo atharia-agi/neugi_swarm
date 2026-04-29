@@ -1,5 +1,4 @@
 """Tests for response_format module."""
-import pytest
 from response_format import (
     CodeBlock,
     ResponseFormatter,

@@ -30,13 +30,13 @@ from __future__ import annotations
 
 import hashlib
 import logging
-import os
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -99,10 +99,10 @@ class SectionConfig:
     """
     name: str
     enabled: bool = True
-    max_chars: Optional[int] = None
+    max_chars: int | None = None
     priority: int = 10
     required: bool = False
-    template: Optional[str] = None
+    template: str | None = None
 
     def fits(self, content: str) -> tuple[str, bool]:
         """
@@ -262,14 +262,14 @@ class PromptAssembler:
         agent_name: str = "NEUGI",
         agent_role: str = "Autonomous AI Agent",
         model_max_chars: int = 120000,
-        section_configs: Optional[dict[PromptSection, SectionConfig]] = None,
-        bootstrap_files: Optional[list[BootstrapFile]] = None,
-        heartbeat_formatter: Optional[Callable[[], str]] = None,
-        skill_injector: Optional[Callable[[], str]] = None,
-        memory_injector: Optional[Callable[[], str]] = None,
-        tools_injector: Optional[Callable[[], str]] = None,
-        soul_engine: Optional[Any] = None,
-        capability_profile: Optional[Any] = None,
+        section_configs: dict[PromptSection, SectionConfig] | None = None,
+        bootstrap_files: list[BootstrapFile] | None = None,
+        heartbeat_formatter: Callable[[], str] | None = None,
+        skill_injector: Callable[[], str] | None = None,
+        memory_injector: Callable[[], str] | None = None,
+        tools_injector: Callable[[], str] | None = None,
+        soul_engine: Any | None = None,
+        capability_profile: Any | None = None,
     ) -> None:
         """
         Initialize the prompt assembler.
@@ -320,7 +320,7 @@ class PromptAssembler:
 
         # Section content cache
         self._section_content: dict[str, str] = {}
-        self._last_assembly: Optional[PromptResult] = None
+        self._last_assembly: PromptResult | None = None
 
     def _adapt_to_capability_profile(self) -> None:
         """Adapt section budgets and behavior based on model capability profile."""
@@ -388,9 +388,9 @@ class PromptAssembler:
     def assemble(
         self,
         mode: PromptMode = PromptMode.FULL,
-        agent_id: Optional[str] = None,
-        extra_sections: Optional[dict[str, str]] = None,
-        override_configs: Optional[dict[PromptSection, SectionConfig]] = None,
+        agent_id: str | None = None,
+        extra_sections: dict[str, str] | None = None,
+        override_configs: dict[PromptSection, SectionConfig] | None = None,
     ) -> PromptResult:
         """
         Assemble a complete system prompt from configured sections.
@@ -576,12 +576,12 @@ class PromptAssembler:
                 logger.warning("SoulEngine identity injection failed: %s", e)
 
         lines = [
-            f"# Identity",
-            f"",
+            "# Identity",
+            "",
             f"You are {self.agent_name} ({agent_id}).",
             f"Role: {self.agent_role}",
             f"Agent ID: {agent_id}",
-            f"System: NEUGI v2 Autonomous Agent Framework",
+            "System: NEUGI v2 Autonomous Agent Framework",
         ]
         if self._capability_profile:
             lines.append(self._build_capability_note().strip())
@@ -631,7 +631,7 @@ class PromptAssembler:
             "",
             f"Current UTC: {now.isoformat()}",
             f"Timestamp: {int(now.timestamp())}",
-            f"Status: active",
+            "Status: active",
             "",
         ]
         return "\n".join(lines)
@@ -841,7 +841,7 @@ class PromptAssembler:
         """Update configuration for a section."""
         self._section_configs[section] = config
 
-    def get_section_config(self, section: PromptSection) -> Optional[SectionConfig]:
+    def get_section_config(self, section: PromptSection) -> SectionConfig | None:
         """Get configuration for a section."""
         return self._section_configs.get(section)
 
@@ -864,7 +864,7 @@ class PromptAssembler:
         self._section_content.pop(section_name, None)
 
     @property
-    def last_assembly(self) -> Optional[PromptResult]:
+    def last_assembly(self) -> PromptResult | None:
         """Get the result of the last assembly."""
         return self._last_assembly
 

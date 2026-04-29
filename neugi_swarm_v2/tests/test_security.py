@@ -1,5 +1,8 @@
 """Integration tests for Security subsystem."""
-import sys, os, unittest
+import os
+import sys
+import unittest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
@@ -25,7 +28,7 @@ class TestSecurityImports(unittest.TestCase):
         self.assertTrue(hasattr(shield_reasoning, "ShieldReasoner"))
 
     def test_package_exports(self):
-        from security import ExecutionSandbox, CommandValidator, SecretManager
+        from security import CommandValidator, ExecutionSandbox, SecretManager
         self.assertIsNotNone(ExecutionSandbox)
         self.assertIsNotNone(CommandValidator)
         self.assertIsNotNone(SecretManager)

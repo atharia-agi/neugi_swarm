@@ -19,10 +19,10 @@ import json
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 try:
-    from security.secret_manager import SecretManager, SecretClass
+    from security.secret_manager import SecretClass, SecretManager
 except ImportError:
     SecretManager = None  # type: ignore
     SecretClass = None  # type: ignore
@@ -86,7 +86,7 @@ class NeugiSessionConfig:
 
     isolation_mode: str = "shared"
     daily_reset_hour: int = 4
-    idle_reset_minutes: Optional[int] = None
+    idle_reset_minutes: int | None = None
     max_transcript_lines: int = 10000
     enable_checkpointing: bool = True
     compaction_token_threshold: int = 32768
@@ -166,7 +166,7 @@ class CapabilityProfileConfig:
     recommended_prompt_tier: str = "standard"
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "CapabilityProfileConfig":
+    def from_dict(cls, data: dict[str, Any]) -> CapabilityProfileConfig:
         known = {k: v for k, v in data.items() if k in cls.__dataclass_fields__}
         return cls(**known)
 
@@ -325,7 +325,7 @@ class NeugiConfig:
                   self.skills_dir, self.sessions_dir]:
             d.mkdir(parents=True, exist_ok=True)
 
-    def to_session_config(self) -> "SessionConfig":
+    def to_session_config(self) -> SessionConfig:
         """Convert to session.SessionConfig for the session manager."""
         from neugi_swarm_v2.session import SessionConfig, SessionIsolationMode
 
@@ -481,7 +481,7 @@ def load_config(
 
     if config_path and Path(config_path).exists():
         try:
-            with open(config_path, "r", encoding="utf-8") as f:
+            with open(config_path, encoding="utf-8") as f:
                 data = json.load(f)
 
             # SECURITY: Migrate API key from plaintext config to SecretManager
@@ -505,7 +505,7 @@ def load_config(
     return config
 
 
-def _find_config(neugi_dir: Path) -> Optional[str]:
+def _find_config(neugi_dir: Path) -> str | None:
     """Find config.json in conventional locations."""
     candidates = [
         neugi_dir / "config.json",

@@ -5,29 +5,27 @@ Provides retry with exponential backoff, timeout handling, result caching,
 rate limiting, circuit breakers, result transformation, and execution tracing.
 """
 
-import time
 import hashlib
 import json
-import threading
 import logging
-from collections import OrderedDict
+import threading
+import time
+from collections import OrderedDict, deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import (
     Any,
-    Callable,
-    Deque,
-    Dict,
-    List,
-    Optional,
-    Tuple,
 )
 
-from tools.tool_registry import ToolRegistry, ToolComplexity
+from tools.tool_registry import ToolComplexity, ToolRegistry
 
 try:
-    from security import ExecutionSandbox, SandboxViolation
-    from security import CommandValidator
-    from security import ExploitPreventionEngine
+    from security import (
+        CommandValidator,
+        ExecutionSandbox,
+        ExploitPreventionEngine,
+        SandboxViolation,
+    )
 except ImportError:
     ExecutionSandbox = None  # type: ignore
     SandboxViolation = None  # type: ignore
@@ -49,7 +47,7 @@ class ExecutionResult:
     tool_name: str
     success: bool
     result: Any = None
-    error: Optional[str] = None
+    error: str | None = None
     latency_ms: float = 0.0
     cached: bool = False
     retries: int = 0
@@ -66,17 +64,17 @@ class ExecutionTrace:
 
     trace_id: str
     root_tool: str
-    steps: List[Dict[str, Any]] = field(default_factory=list)
+    steps: list[dict[str, Any]] = field(default_factory=list)
     total_latency_ms: float = 0.0
     started_at: float = field(default_factory=time.time)
-    completed_at: Optional[float] = None
+    completed_at: float | None = None
 
     def add_step(
         self,
         tool_name: str,
         success: bool,
         latency_ms: float,
-        error: Optional[str] = None,
+        error: str | None = None,
         cached: bool = False,
         retries: int = 0,
     ):
@@ -98,7 +96,7 @@ class ExecutionTrace:
         """Mark trace as complete."""
         self.completed_at = time.time()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert trace to dictionary."""
         return {
             "trace_id": self.trace_id,
@@ -113,7 +111,7 @@ class ExecutionTrace:
 class ExecutionError(Exception):
     """Base exception for execution failures."""
 
-    def __init__(self, tool_name: str, message: str, cause: Optional[Exception] = None):
+    def __init__(self, tool_name: str, message: str, cause: Exception | None = None):
         self.tool_name = tool_name
         self.cause = cause
         super().__init__(f"Tool '{tool_name}' failed: {message}")
@@ -150,7 +148,7 @@ class CacheBackend:
 
     def __init__(self, max_size: int = 10000, default_ttl: float = 300.0):
         self._cache: OrderedDict = OrderedDict()
-        self._expiry: Dict[str, float] = {}
+        self._expiry: dict[str, float] = {}
         self._max_size = max_size
         self._default_ttl = default_ttl
         self._lock = threading.Lock()
@@ -166,7 +164,7 @@ class CacheBackend:
         )
         return hashlib.sha256(key_data.encode()).hexdigest()[:16]
 
-    def get(self, tool_name: str, args: tuple, kwargs: dict) -> Tuple[bool, Any]:
+    def get(self, tool_name: str, args: tuple, kwargs: dict) -> tuple[bool, Any]:
         """
         Get a cached result.
 
@@ -188,7 +186,7 @@ class CacheBackend:
             return True, self._cache[key]
 
     def set(
-        self, tool_name: str, args: tuple, kwargs: dict, value: Any, ttl: Optional[float] = None
+        self, tool_name: str, args: tuple, kwargs: dict, value: Any, ttl: float | None = None
     ):
         """Cache a result with optional TTL."""
         key = self._make_key(tool_name, args, kwargs)
@@ -241,8 +239,8 @@ class RateLimiter:
     """
 
     def __init__(self):
-        self._limits: Dict[str, int] = {}
-        self._windows: Dict[str, Deque[float]] = {}
+        self._limits: dict[str, int] = {}
+        self._windows: dict[str, deque[float]] = {}
         self._lock = threading.Lock()
 
     def set_limit(self, tool_name: str, calls_per_minute: int):
@@ -324,10 +322,10 @@ class CircuitBreaker:
         self._failure_threshold = failure_threshold
         self._recovery_timeout = recovery_timeout
         self._half_open_max_calls = half_open_max_calls
-        self._states: Dict[str, str] = {}
-        self._failure_counts: Dict[str, int] = {}
-        self._last_failure_time: Dict[str, float] = {}
-        self._half_open_calls: Dict[str, int] = {}
+        self._states: dict[str, str] = {}
+        self._failure_counts: dict[str, int] = {}
+        self._last_failure_time: dict[str, float] = {}
+        self._half_open_calls: dict[str, int] = {}
         self._lock = threading.Lock()
 
     def is_open(self, tool_name: str) -> bool:
@@ -409,11 +407,11 @@ class ToolExecutor:
         cache_max_size: int = 10000,
         circuit_failure_threshold: int = 5,
         circuit_recovery_timeout: float = 30.0,
-        capability_profile: Optional[Any] = None,
-        sandbox: Optional[Any] = None,
-        command_validator: Optional[Any] = None,
-        exploit_prevention: Optional[Any] = None,
-        approval_gate: Optional[Any] = None,
+        capability_profile: Any | None = None,
+        sandbox: Any | None = None,
+        command_validator: Any | None = None,
+        exploit_prevention: Any | None = None,
+        approval_gate: Any | None = None,
     ):
         self.registry = registry
         self.capability_profile = capability_profile
@@ -424,8 +422,8 @@ class ToolExecutor:
         self.cache_enabled = cache_enabled
         self.cache = CacheBackend(max_size=cache_max_size, default_ttl=cache_ttl)
         self.rate_limiter = RateLimiter()
-        self._traces: Dict[str, ExecutionTrace] = {}
-        self._transformers: Dict[str, Callable] = {}
+        self._traces: dict[str, ExecutionTrace] = {}
+        self._transformers: dict[str, Callable] = {}
         self._lock = threading.Lock()
 
         # Adapt execution parameters based on model capability
@@ -448,7 +446,7 @@ class ToolExecutor:
         max_backoff: float,
         circuit_failure_threshold: int,
         circuit_recovery_timeout: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Adapt execution parameters based on model capability profile.
 
         LOCAL tier: fail fast, low retries (weak models struggle with recovery)
@@ -534,8 +532,8 @@ class ToolExecutor:
     def execute(
         self,
         tool_name: str,
-        trace_id: Optional[str] = None,
-        timeout_override: Optional[float] = None,
+        trace_id: str | None = None,
+        timeout_override: float | None = None,
         skip_cache: bool = False,
         **kwargs,
     ) -> ExecutionResult:
@@ -806,7 +804,7 @@ class ToolExecutor:
             )
 
     def _execute_with_timeout(
-        self, func: Callable, kwargs: Dict[str, Any], timeout: float
+        self, func: Callable, kwargs: dict[str, Any], timeout: float
     ) -> Any:
         """Execute a function with a timeout."""
         import concurrent.futures
@@ -822,8 +820,8 @@ class ToolExecutor:
                 )
 
     def _build_command_for_sandbox(
-        self, tool_name: str, kwargs: Dict[str, Any]
-    ) -> Optional[List[str]]:
+        self, tool_name: str, kwargs: dict[str, Any]
+    ) -> list[str] | None:
         """Build a command list for sandbox execution from tool kwargs.
 
         Args:
@@ -872,9 +870,9 @@ class ToolExecutor:
 
     def execute_batch(
         self,
-        calls: List[Tuple[str, Dict[str, Any]]],
-        trace_id: Optional[str] = None,
-    ) -> List[ExecutionResult]:
+        calls: list[tuple[str, dict[str, Any]]],
+        trace_id: str | None = None,
+    ) -> list[ExecutionResult]:
         """
         Execute multiple tools in sequence.
 
@@ -908,7 +906,7 @@ class ToolExecutor:
         tool_name: str,
         success: bool,
         latency_ms: float,
-        error: Optional[str] = None,
+        error: str | None = None,
         cached: bool = False,
         retries: int = 0,
     ):
@@ -919,11 +917,11 @@ class ToolExecutor:
                     tool_name, success, latency_ms, error, cached, retries
                 )
 
-    def get_trace(self, trace_id: str) -> Optional[ExecutionTrace]:
+    def get_trace(self, trace_id: str) -> ExecutionTrace | None:
         """Get an execution trace by ID."""
         return self._traces.get(trace_id)
 
-    def get_all_traces(self) -> Dict[str, ExecutionTrace]:
+    def get_all_traces(self) -> dict[str, ExecutionTrace]:
         """Get all execution traces."""
         return dict(self._traces)
 
@@ -935,7 +933,7 @@ class ToolExecutor:
         """Reset circuit breaker for a tool."""
         self.circuit_breaker.reset(tool_name)
 
-    def get_cache_stats(self) -> Dict[str, Any]:
+    def get_cache_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         return {
             "size": self.cache.size,

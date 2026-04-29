@@ -19,13 +19,12 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import sqlite3
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +66,7 @@ class SkillQualityScore:
         has_steps: bool,
         has_examples: bool,
         has_output_format: bool,
-    ) -> "SkillQualityScore":
+    ) -> SkillQualityScore:
         """Compute quality scores from pattern data.
 
         Args:
@@ -165,10 +164,10 @@ class GeneratedSkill:
     approval_status: SkillApprovalStatus = SkillApprovalStatus.PENDING
     examples: list[dict[str, str]] = field(default_factory=list)
     output_format: str = ""
-    version: Optional[SkillVersion] = None
-    id: Optional[int] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    version: SkillVersion | None = None
+    id: int | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_skill_md(self) -> str:
@@ -398,7 +397,7 @@ class SkillGenerator:
         self,
         row: sqlite3.Row,
         auto_approve_threshold: float,
-    ) -> Optional[GeneratedSkill]:
+    ) -> GeneratedSkill | None:
         """Create a GeneratedSkill from a database row.
 
         Args:
@@ -714,28 +713,28 @@ class SkillGenerator:
             # Generate a meaningful implementation hint based on step keywords
             step_lower = step.lower()
             if any(kw in step_lower for kw in ["read", "load", "fetch", "get", "download"]):
-                lines.append(f"    # Implementation: Read/load data from source")
+                lines.append("    # Implementation: Read/load data from source")
                 lines.append(f"    data_{i} = None  # Replace with actual data loading")
             elif any(kw in step_lower for kw in ["write", "save", "store", "export"]):
-                lines.append(f"    # Implementation: Write/save output to destination")
-                lines.append(f"    # save_output(result, destination)")
+                lines.append("    # Implementation: Write/save output to destination")
+                lines.append("    # save_output(result, destination)")
             elif any(kw in step_lower for kw in ["process", "transform", "convert", "parse"]):
-                lines.append(f"    # Implementation: Process/transform the data")
+                lines.append("    # Implementation: Process/transform the data")
                 lines.append(f"    processed_{i} = data  # Replace with actual processing logic")
             elif any(kw in step_lower for kw in ["check", "validate", "verify", "test"]):
-                lines.append(f"    # Implementation: Validate inputs/outputs")
-                lines.append(f"    # assert condition, 'Validation failed'")
+                lines.append("    # Implementation: Validate inputs/outputs")
+                lines.append("    # assert condition, 'Validation failed'")
             elif any(kw in step_lower for kw in ["send", "notify", "call", "request"]):
-                lines.append(f"    # Implementation: Send/notify/call external service")
-                lines.append(f"    # response = send_request(payload)")
+                lines.append("    # Implementation: Send/notify/call external service")
+                lines.append("    # response = send_request(payload)")
             else:
                 lines.append(f"    # Implementation: {step}")
-                lines.append(f"    # Add your implementation here")
+                lines.append("    # Add your implementation here")
             lines.append("")
 
         lines.extend([
             "    return {",
-            f'        "status": "success",',
+            '        "status": "success",',
             f'        "skill": "{skill.name}",',
             "    }",
             "",
@@ -748,7 +747,7 @@ class SkillGenerator:
 
         return "\n".join(lines)
 
-    def get_skill(self, name: str) -> Optional[GeneratedSkill]:
+    def get_skill(self, name: str) -> GeneratedSkill | None:
         """Retrieve a generated skill by name.
 
         Args:
@@ -854,7 +853,7 @@ class SkillGenerator:
             logger.error("Failed to update skill status for %s: %s", name, e)
             return False
 
-    def bump_version(self, name: str, changes: str) -> Optional[SkillVersion]:
+    def bump_version(self, name: str, changes: str) -> SkillVersion | None:
         """Bump the version of a skill.
 
         Increments the patch version and records the changes.

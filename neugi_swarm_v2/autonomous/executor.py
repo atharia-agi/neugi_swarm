@@ -19,14 +19,15 @@ from __future__ import annotations
 import logging
 import time
 import traceback
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
-from autonomous.decision import Decision, DecisionType, DecisionOutcome
-from autonomous.research_engine import ResearchEngine, ResearchConfig
-from autonomous.subsystem_wiring import SubsystemWiring
 from autonomous.agent_spawner import AutonomousAgentSpawner
+from autonomous.decision import Decision, DecisionOutcome, DecisionType
+from autonomous.research_engine import ResearchConfig, ResearchEngine
+from autonomous.subsystem_wiring import SubsystemWiring
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +66,7 @@ class ExecutionContext:
     agent_manager: Any = None
     skill_generator: Any = None
     web_search: Any = None
-    llm_callback: Optional[Callable[..., Any]] = None
+    llm_callback: Callable[..., Any] | None = None
     capability_profile: Any = None
     max_tokens: int = 2000
     timeout_seconds: float = 60.0
@@ -80,7 +81,7 @@ class ActionResult:
     success: bool
     duration_ms: float = 0.0
     output: Any = None
-    error: Optional[str] = None
+    error: str | None = None
 
 
 @dataclass
@@ -102,11 +103,11 @@ class ExecutionResult:
     decision: Decision
     execution_type: ExecutionType
     success: bool = False
-    actions: List[ActionResult] = field(default_factory=list)
+    actions: list[ActionResult] = field(default_factory=list)
     duration_ms: float = 0.0
     tokens_used: int = 0
-    output: Dict[str, Any] = field(default_factory=dict)
-    error: Optional[str] = None
+    output: dict[str, Any] = field(default_factory=dict)
+    error: str | None = None
     created_at: float = field(default_factory=lambda: time.time())
 
 
@@ -176,7 +177,7 @@ class SelfDirectedExecutor:
         result.duration_ms = (time.time() - start) * 1000
         return result
 
-    def execute_batch(self, decisions: List[Decision]) -> List[ExecutionResult]:
+    def execute_batch(self, decisions: list[Decision]) -> list[ExecutionResult]:
         """Execute a batch of approved decisions.
 
         Args:
@@ -185,7 +186,7 @@ class SelfDirectedExecutor:
         Returns:
             List of ExecutionResults, one per decision.
         """
-        results: List[ExecutionResult] = []
+        results: list[ExecutionResult] = []
 
         for decision in decisions:
             if decision.outcome != DecisionOutcome.APPROVED:
@@ -201,7 +202,7 @@ class SelfDirectedExecutor:
 
         return results
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get executor statistics."""
         return {
             "total_executions": self._execution_count,

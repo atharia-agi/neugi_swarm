@@ -11,10 +11,10 @@ Usage:
     from memory import MemorySystem, DreamingEngine, ScopePath, ScoringEngine
 """
 
-from memory.scopes import ScopePath, MemoryScope, MemorySlice, ScopeError
-from memory.scoring import ScoringEngine, ScoreComponents, ScoreConfig
-from memory.memory_core import MemorySystem, MemoryEntry, MemoryTier, MemoryError
-from memory.dreaming import DreamingEngine, DreamPhase, DreamConfig, DreamResult
+from memory.dreaming import DreamConfig, DreamingEngine, DreamPhase, DreamResult
+from memory.memory_core import MemoryEntry, MemoryError, MemorySystem, MemoryTier
+from memory.scopes import MemoryScope, MemorySlice, ScopeError, ScopePath
+from memory.scoring import ScoreComponents, ScoreConfig, ScoringEngine
 
 __all__ = [
     "MemorySystem",

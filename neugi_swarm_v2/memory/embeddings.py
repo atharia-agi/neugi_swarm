@@ -23,7 +23,7 @@ from __future__ import annotations
 import logging
 import math
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -50,9 +50,9 @@ class EmbeddingEngine:
         self.ollama_model = ollama_model
         self.dimension = dimension
 
-        self._backend: Optional[str] = None
+        self._backend: str | None = None
         self._st_model: Any = None
-        self._tfidf: Optional[Any] = None
+        self._tfidf: Any | None = None
 
     def _init_backend(self) -> str:
         """Lazy-initialize the best available backend."""
@@ -96,7 +96,7 @@ class EmbeddingEngine:
         logger.info("Embedding backend: TF-IDF (sparse fallback)")
         return self._backend
 
-    def encode(self, text: str) -> List[float]:
+    def encode(self, text: str) -> list[float]:
         """
         Encode text into embedding vector.
         
@@ -117,7 +117,7 @@ class EmbeddingEngine:
         else:
             return self._encode_tfidf(text)
 
-    def encode_batch(self, texts: List[str]) -> List[List[float]]:
+    def encode_batch(self, texts: list[str]) -> list[list[float]]:
         """Encode multiple texts efficiently."""
         backend = self._init_backend()
 
@@ -131,7 +131,7 @@ class EmbeddingEngine:
         else:
             return [self._encode_tfidf(t) for t in texts]
 
-    def _encode_ollama(self, text: str) -> List[float]:
+    def _encode_ollama(self, text: str) -> list[float]:
         """Encode via Ollama API."""
         import requests
         try:
@@ -146,33 +146,33 @@ class EmbeddingEngine:
             logger.error("Ollama embedding failed: %s", e)
             return [0.0] * self.dimension
 
-    def _encode_tfidf(self, text: str) -> List[float]:
+    def _encode_tfidf(self, text: str) -> list[float]:
         """Simple TF-IDF sparse encoding fallback."""
         # Tokenize
         tokens = text.lower().split()
         # Build vocabulary on first call
         if self._tfidf is None:
             self._tfidf = {"vocab": {}, "docs": 0}
-        
+
         # Simple hash-based encoding (deterministic)
         vec = [0.0] * self.dimension
         for token in tokens:
             idx = hash(token) % self.dimension
             vec[idx] += 1.0
-        
+
         # Normalize
         norm = math.sqrt(sum(v * v for v in vec))
         if norm > 0:
             vec = [v / norm for v in vec]
-        
+
         return vec
 
     def similarity(
         self,
-        query_vec: List[float],
-        candidates: List[Tuple[str, List[float]]],
+        query_vec: list[float],
+        candidates: list[tuple[str, list[float]]],
         top_k: int = 10,
-    ) -> List[Tuple[str, float]]:
+    ) -> list[tuple[str, float]]:
         """
         Compute cosine similarity and return top-k.
         
@@ -188,12 +188,12 @@ class EmbeddingEngine:
         for cid, vec in candidates:
             score = self._cosine_similarity(query_vec, vec)
             scores.append((cid, score))
-        
+
         scores.sort(key=lambda x: x[1], reverse=True)
         return scores[:top_k]
 
     @staticmethod
-    def _cosine_similarity(a: List[float], b: List[float]) -> float:
+    def _cosine_similarity(a: list[float], b: list[float]) -> float:
         """Compute cosine similarity between two vectors."""
         dot = sum(x * y for x, y in zip(a, b))
         norm_a = math.sqrt(sum(x * x for x in a))
@@ -224,13 +224,13 @@ class VectorMemoryIndex:
     def __init__(
         self,
         embedding: EmbeddingEngine,
-        db_conn: Optional[Any] = None,
+        db_conn: Any | None = None,
         table_name: str = "memory_embeddings",
     ):
         self.embedding = embedding
         self._db = db_conn
         self._table = table_name
-        self._vectors: Dict[str, List[float]] = {}
+        self._vectors: dict[str, list[float]] = {}
         self._use_sqlite_vec = False
 
         if db_conn is not None:
@@ -262,7 +262,7 @@ class VectorMemoryIndex:
             except Exception as e:
                 logger.warning("sqlite-vec insert failed: %s", e)
 
-    def search(self, query: str, top_k: int = 10) -> List[Tuple[str, float]]:
+    def search(self, query: str, top_k: int = 10) -> list[tuple[str, float]]:
         """Search for similar memories."""
         query_vec = self.embedding.encode(query)
 
@@ -276,7 +276,7 @@ class VectorMemoryIndex:
         candidates = list(self._vectors.items())
         return self.embedding.similarity(query_vec, candidates, top_k)
 
-    def _search_sqlite_vec(self, query_vec: List[float], top_k: int) -> List[Tuple[str, float]]:
+    def _search_sqlite_vec(self, query_vec: list[float], top_k: int) -> list[tuple[str, float]]:
         """Search using sqlite-vec KNN."""
         try:
             rows = self._db.execute(
@@ -304,7 +304,7 @@ class VectorMemoryIndex:
             except Exception as e:
                 logger.warning("sqlite-vec delete failed: %s", e)
 
-    def _serialize(self, vec: List[float]) -> bytes:
+    def _serialize(self, vec: list[float]) -> bytes:
         """Serialize vector to sqlite-vec format."""
         import struct
         return struct.pack(f"{len(vec)}f", *vec)

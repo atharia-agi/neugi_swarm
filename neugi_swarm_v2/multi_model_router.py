@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from model_capability_router import TaskComplexity, TaskComplexityClassifier
 
@@ -42,7 +42,7 @@ class RoutingConfig:
 
     enabled: bool = False
     default_model: str = ""  # Which model to use when no route matches
-    routes: List[ModelRoute] = field(default_factory=list)
+    routes: list[ModelRoute] = field(default_factory=list)
     # Complexity thresholds for routing
     local_threshold: TaskComplexity = TaskComplexity.SIMPLE
     medium_threshold: TaskComplexity = TaskComplexity.MEDIUM
@@ -60,9 +60,9 @@ class MultiModelRouter:
     def __init__(self, config: RoutingConfig) -> None:
         self.config = config
         self._classifier = TaskComplexityClassifier()
-        self._route_history: List[Dict[str, Any]] = []
+        self._route_history: list[dict[str, Any]] = []
 
-    def pick_model(self, message: str, context: Optional[Dict[str, Any]] = None) -> Optional[ModelRoute]:
+    def pick_model(self, message: str, context: dict[str, Any] | None = None) -> ModelRoute | None:
         """Pick the best model for a user message.
 
         Returns:
@@ -82,7 +82,7 @@ class MultiModelRouter:
 
         return route
 
-    def pick_for_task(self, task_type: str, description: str = "") -> Optional[ModelRoute]:
+    def pick_for_task(self, task_type: str, description: str = "") -> ModelRoute | None:
         """Pick model for a specific task type.
 
         Task types: chat, code, research, summarize, vision
@@ -103,7 +103,7 @@ class MultiModelRouter:
         complexity = complexity_map.get(task_type, TaskComplexity.MEDIUM)
         return self._route_by_complexity(complexity)
 
-    def _route_by_complexity(self, complexity: TaskComplexity) -> Optional[ModelRoute]:
+    def _route_by_complexity(self, complexity: TaskComplexity) -> ModelRoute | None:
         """Internal: pick route by complexity tier."""
         enabled_routes = [r for r in self.config.routes if r.enabled]
         if not enabled_routes:
@@ -142,7 +142,7 @@ class MultiModelRouter:
 
         return enabled_routes[0]
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get routing statistics."""
         total = len(self._route_history)
         by_complexity = {}
@@ -158,7 +158,7 @@ class MultiModelRouter:
         }
 
     @classmethod
-    def from_config(cls, config_dict: Dict[str, Any]) -> "MultiModelRouter":
+    def from_config(cls, config_dict: dict[str, Any]) -> MultiModelRouter:
         """Build router from config dict (loaded from config.json)."""
         routing_cfg = config_dict.get("routing", {})
         if not routing_cfg.get("enabled", False):

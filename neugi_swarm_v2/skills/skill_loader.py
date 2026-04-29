@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import os
-import platform
 import re
 import sys
 import threading
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
 
 try:
     import yaml
@@ -39,18 +38,18 @@ class GatingResult:
     """
 
     passed: bool
-    reasons: List[str] = field(default_factory=list)
-    failed_check: Optional[str] = None
+    reasons: list[str] = field(default_factory=list)
+    failed_check: str | None = None
 
     @classmethod
-    def ok(cls, reason: str = "") -> "GatingResult":
+    def ok(cls, reason: str = "") -> GatingResult:
         result = cls(passed=True)
         if reason:
             result.reasons.append(reason)
         return result
 
     @classmethod
-    def fail(cls, check: str, reason: str) -> "GatingResult":
+    def fail(cls, check: str, reason: str) -> GatingResult:
         return cls(passed=False, reasons=[reason], failed_check=check)
 
 
@@ -65,7 +64,7 @@ class SkillParseResult:
     """
 
     success: bool
-    contract: Optional[SkillContract] = None
+    contract: SkillContract | None = None
     error: str = ""
 
 
@@ -82,15 +81,15 @@ class SkillLoader:
     """
 
     def __init__(self) -> None:
-        self._search_paths: List[Tuple[Path, SkillTier]] = []
-        self._loaded_contracts: Dict[str, SkillContract] = {}
-        self._file_hashes: Dict[str, str] = {}
-        self._watch_thread: Optional[threading.Thread] = None
+        self._search_paths: list[tuple[Path, SkillTier]] = []
+        self._loaded_contracts: dict[str, SkillContract] = {}
+        self._file_hashes: dict[str, str] = {}
+        self._watch_thread: threading.Thread | None = None
         self._watching = False
-        self._on_reload: Optional[Callable[[], None]] = None
+        self._on_reload: Callable[[], None] | None = None
         self._lock = threading.Lock()
 
-    def add_search_path(self, path: str, tier: Optional[SkillTier] = None) -> None:
+    def add_search_path(self, path: str, tier: SkillTier | None = None) -> None:
         """Add a directory to scan for skill directories.
 
         Args:
@@ -131,14 +130,14 @@ class SkillLoader:
             self._watch_thread.join(timeout=10)
             self._watch_thread = None
 
-    def load_all(self) -> Dict[str, SkillContract]:
+    def load_all(self) -> dict[str, SkillContract]:
         """Load all skills from registered search paths.
 
         Returns:
             Dict mapping skill name to SkillContract. Higher-tier skills
             overwrite lower-tier skills with the same name.
         """
-        contracts: Dict[str, SkillContract] = {}
+        contracts: dict[str, SkillContract] = {}
 
         for search_path, tier in self._search_paths:
             if not search_path.is_dir():
@@ -162,14 +161,14 @@ class SkillLoader:
 
         return contracts
 
-    def reload_changed(self) -> List[str]:
+    def reload_changed(self) -> list[str]:
         """Check for changed files and reload affected skills.
 
         Returns:
             List of skill names that were reloaded.
         """
-        changed: List[str] = []
-        current_hashes: Dict[str, str] = {}
+        changed: list[str] = []
+        current_hashes: dict[str, str] = {}
 
         for search_path, tier in self._search_paths:
             if not search_path.is_dir():
@@ -195,7 +194,7 @@ class SkillLoader:
 
         return changed
 
-    def load_single(self, path: str, tier: Optional[SkillTier] = None) -> SkillParseResult:
+    def load_single(self, path: str, tier: SkillTier | None = None) -> SkillParseResult:
         """Load a single SKILL.md file.
 
         Args:
@@ -210,7 +209,7 @@ class SkillLoader:
             tier = SkillTier.from_path(str(p))
         return self._parse_skill_file(p, tier)
 
-    def get_loaded(self) -> Dict[str, SkillContract]:
+    def get_loaded(self) -> dict[str, SkillContract]:
         """Return currently loaded skill contracts."""
         with self._lock:
             return dict(self._loaded_contracts)
@@ -283,7 +282,7 @@ class SkillLoader:
 
         return SkillParseResult(success=True, contract=contract)
 
-    def _load_directory(self, dir_path: Path) -> List[str]:
+    def _load_directory(self, dir_path: Path) -> list[str]:
         """List files in a skill subdirectory. Returns relative paths."""
         if not dir_path.is_dir():
             return []
@@ -293,14 +292,14 @@ class SkillLoader:
             if f.is_file()
         ]
 
-    def _parse_actions(self, body: str) -> List[SkillAction]:
+    def _parse_actions(self, body: str) -> list[SkillAction]:
         """Extract action definitions from markdown body.
 
         Looks for patterns like:
             ## Action: action_name
             Description text...
         """
-        actions: List[SkillAction] = []
+        actions: list[SkillAction] = []
         action_re = re.compile(r"^##\s+[Aa]ction:\s+(\S+)\s*$", re.MULTILINE)
         for match in action_re.finditer(body):
             name = match.group(1)

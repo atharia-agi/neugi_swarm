@@ -15,7 +15,6 @@ import hashlib
 import hmac
 import json
 import logging
-import os
 import secrets
 import sqlite3
 import threading
@@ -24,7 +23,7 @@ import uuid
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -316,28 +315,27 @@ class DeviceManager:
         token_hash = hashlib.sha256(token.encode()).hexdigest()
         now = time.time()
 
-        with self._lock:
-            with self._get_conn() as conn:
-                try:
-                    conn.execute(
-                        """INSERT INTO devices
+        with self._lock, self._get_conn() as conn:
+            try:
+                conn.execute(
+                    """INSERT INTO devices
                            (device_id, device_name, trust_level, state, token_hash,
                             capabilities, created_at, last_seen_at, metadata)
                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                        (
-                            device_id, device_name, trust_level.value,
-                            DeviceState.OFFLINE.value, token_hash,
-                            json.dumps(capabilities.to_dict()),
-                            now, now, json.dumps(metadata),
-                        ),
+                    (
+                        device_id, device_name, trust_level.value,
+                        DeviceState.OFFLINE.value, token_hash,
+                        json.dumps(capabilities.to_dict()),
+                        now, now, json.dumps(metadata),
+                    ),
+                )
+            except sqlite3.IntegrityError as e:
+                if "UNIQUE" in str(e):
+                    raise DeviceAlreadyRegisteredError(
+                        f"Device name '{device_name}' already registered",
+                        device_name,
                     )
-                except sqlite3.IntegrityError as e:
-                    if "UNIQUE" in str(e):
-                        raise DeviceAlreadyRegisteredError(
-                            f"Device name '{device_name}' already registered",
-                            device_name,
-                        )
-                    raise
+                raise
 
         device = Device(
             device_id=device_id,
@@ -367,12 +365,11 @@ class DeviceManager:
         nonce = secrets.token_hex(16)
         expires_at = time.time() + ttl_seconds
 
-        with self._lock:
-            with self._get_conn() as conn:
-                conn.execute(
-                    "INSERT INTO challenge_nonces (nonce, device_id, expires_at) VALUES (?, ?, ?)",
-                    (nonce, device_id, expires_at),
-                )
+        with self._lock, self._get_conn() as conn:
+            conn.execute(
+                "INSERT INTO challenge_nonces (nonce, device_id, expires_at) VALUES (?, ?, ?)",
+                (nonce, device_id, expires_at),
+            )
 
         return nonce
 
@@ -389,35 +386,34 @@ class DeviceManager:
         Returns:
             True if the challenge is valid and unused.
         """
-        with self._lock:
-            with self._get_conn() as conn:
-                row = conn.execute(
-                    "SELECT * FROM challenge_nonces WHERE nonce = ? AND used = 0",
-                    (nonce,),
-                ).fetchone()
+        with self._lock, self._get_conn() as conn:
+            row = conn.execute(
+                "SELECT * FROM challenge_nonces WHERE nonce = ? AND used = 0",
+                (nonce,),
+            ).fetchone()
 
-                if row is None:
-                    return False
+            if row is None:
+                return False
 
-                if time.time() > row["expires_at"]:
-                    return False
+            if time.time() > row["expires_at"]:
+                return False
 
-                if device_id and row["device_id"] and row["device_id"] != device_id:
-                    return False
+            if device_id and row["device_id"] and row["device_id"] != device_id:
+                return False
 
-                expected = hmac.new(
-                    self.server_id.encode(), nonce.encode(), hashlib.sha256
-                ).hexdigest()
+            expected = hmac.new(
+                self.server_id.encode(), nonce.encode(), hashlib.sha256
+            ).hexdigest()
 
-                if not hmac.compare_digest(signature, expected):
-                    return False
+            if not hmac.compare_digest(signature, expected):
+                return False
 
-                conn.execute(
-                    "UPDATE challenge_nonces SET used = 1 WHERE nonce = ?",
-                    (nonce,),
-                )
+            conn.execute(
+                "UPDATE challenge_nonces SET used = 1 WHERE nonce = ?",
+                (nonce,),
+            )
 
-                return True
+            return True
 
     # -- Authentication ------------------------------------------------------
 
@@ -438,30 +434,29 @@ class DeviceManager:
         """
         token_hash = hashlib.sha256(token.encode()).hexdigest()
 
-        with self._lock:
-            with self._get_conn() as conn:
-                row = conn.execute(
-                    "SELECT * FROM devices WHERE device_id = ?",
-                    (device_id,),
-                ).fetchone()
+        with self._lock, self._get_conn() as conn:
+            row = conn.execute(
+                "SELECT * FROM devices WHERE device_id = ?",
+                (device_id,),
+            ).fetchone()
 
-                if row is None:
-                    raise DeviceNotFoundError(
-                        f"Device '{device_id}' not found", device_id
-                    )
+            if row is None:
+                raise DeviceNotFoundError(
+                    f"Device '{device_id}' not found", device_id
+                )
 
-                if not hmac.compare_digest(row["token_hash"], token_hash):
-                    raise DeviceTokenError(
-                        f"Invalid token for device '{device_id}'", device_id
-                    )
+            if not hmac.compare_digest(row["token_hash"], token_hash):
+                raise DeviceTokenError(
+                    f"Invalid token for device '{device_id}'", device_id
+                )
 
-                if row["trust_level"] == DeviceTrustLevel.BLOCKED.value:
-                    raise DeviceBlockedError(
-                        f"Device '{device_id}' is blocked", device_id
-                    )
+            if row["trust_level"] == DeviceTrustLevel.BLOCKED.value:
+                raise DeviceBlockedError(
+                    f"Device '{device_id}' is blocked", device_id
+                )
 
-                device = self._row_to_device(row)
-                return device
+            device = self._row_to_device(row)
+            return device
 
     # -- Session Management --------------------------------------------------
 
@@ -623,19 +618,18 @@ class DeviceManager:
         Raises:
             DeviceNotFoundError: If not found.
         """
-        with self._lock:
-            with self._get_conn() as conn:
-                row = conn.execute(
-                    "SELECT * FROM devices WHERE device_id = ?",
-                    (device_id,),
-                ).fetchone()
+        with self._lock, self._get_conn() as conn:
+            row = conn.execute(
+                "SELECT * FROM devices WHERE device_id = ?",
+                (device_id,),
+            ).fetchone()
 
-                if row is None:
-                    raise DeviceNotFoundError(
-                        f"Device '{device_id}' not found", device_id
-                    )
+            if row is None:
+                raise DeviceNotFoundError(
+                    f"Device '{device_id}' not found", device_id
+                )
 
-                return self._row_to_device(row)
+            return self._row_to_device(row)
 
     def list_devices(
         self,
@@ -661,10 +655,9 @@ class DeviceManager:
             query += " AND state = ?"
             params.append(state.value)
 
-        with self._lock:
-            with self._get_conn() as conn:
-                rows = conn.execute(query, params).fetchall()
-                return [self._row_to_device(row) for row in rows]
+        with self._lock, self._get_conn() as conn:
+            rows = conn.execute(query, params).fetchall()
+            return [self._row_to_device(row) for row in rows]
 
     def update_trust_level(
         self,

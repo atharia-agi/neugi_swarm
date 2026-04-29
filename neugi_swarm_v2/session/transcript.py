@@ -10,11 +10,12 @@ import json
 import logging
 import os
 import threading
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ class TranscriptEntry:
     role: str
     content: str
     timestamp: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     line_number: int = 0
 
     def to_json(self) -> str:
@@ -76,14 +77,14 @@ class TranscriptSearch:
     Provides methods to search entries by role, content, or timestamp.
     """
 
-    def __init__(self, entries: List[TranscriptEntry]) -> None:
+    def __init__(self, entries: list[TranscriptEntry]) -> None:
         self._entries = entries
 
-    def by_role(self, role: str) -> List[TranscriptEntry]:
+    def by_role(self, role: str) -> list[TranscriptEntry]:
         """Find all entries with a specific role."""
         return [e for e in self._entries if e.role == role]
 
-    def by_content(self, query: str, case_sensitive: bool = False) -> List[TranscriptEntry]:
+    def by_content(self, query: str, case_sensitive: bool = False) -> list[TranscriptEntry]:
         """Find entries containing the query string."""
         results = []
         search_query = query if case_sensitive else query.lower()
@@ -97,9 +98,9 @@ class TranscriptSearch:
 
     def by_timestamp(
         self,
-        start: Optional[str] = None,
-        end: Optional[str] = None,
-    ) -> List[TranscriptEntry]:
+        start: str | None = None,
+        end: str | None = None,
+    ) -> list[TranscriptEntry]:
         """Find entries within a timestamp range (ISO format)."""
         results = []
         for entry in self._entries:
@@ -111,19 +112,19 @@ class TranscriptSearch:
             results.append(entry)
         return results
 
-    def by_metadata(self, key: str, value: Any) -> List[TranscriptEntry]:
+    def by_metadata(self, key: str, value: Any) -> list[TranscriptEntry]:
         """Find entries with a specific metadata key-value pair."""
         return [e for e in self._entries if e.metadata.get(key) == value]
 
-    def tool_calls(self) -> List[TranscriptEntry]:
+    def tool_calls(self) -> list[TranscriptEntry]:
         """Find all tool call entries."""
         return [e for e in self._entries if e.is_tool_call()]
 
-    def tool_results(self) -> List[TranscriptEntry]:
+    def tool_results(self) -> list[TranscriptEntry]:
         """Find all tool result entries."""
         return [e for e in self._entries if e.is_tool_result()]
 
-    def recent(self, count: int = 10) -> List[TranscriptEntry]:
+    def recent(self, count: int = 10) -> list[TranscriptEntry]:
         """Get the most recent entries."""
         return self._entries[-count:] if len(self._entries) > count else self._entries
 
@@ -164,8 +165,8 @@ class Transcript:
         self,
         role: str,
         content: str,
-        metadata: Optional[Dict[str, Any]] = None,
-        timestamp: Optional[str] = None,
+        metadata: dict[str, Any] | None = None,
+        timestamp: str | None = None,
     ) -> TranscriptEntry:
         """
         Append a new entry to the transcript.
@@ -221,9 +222,9 @@ class Transcript:
 
     def read(
         self,
-        start_line: Optional[int] = None,
-        end_line: Optional[int] = None,
-    ) -> List[TranscriptEntry]:
+        start_line: int | None = None,
+        end_line: int | None = None,
+    ) -> list[TranscriptEntry]:
         """
         Read entries from the transcript.
 
@@ -237,7 +238,7 @@ class Transcript:
         with self._lock:
             entries = []
             try:
-                with open(self.path, "r", encoding="utf-8") as f:
+                with open(self.path, encoding="utf-8") as f:
                     for line_num, line in enumerate(f, 1):
                         line = line.strip()
                         if not line:
@@ -260,14 +261,14 @@ class Transcript:
 
             return entries
 
-    def read_tail(self, count: int = 20) -> List[TranscriptEntry]:
+    def read_tail(self, count: int = 20) -> list[TranscriptEntry]:
         """Read the last N entries from the transcript."""
         total = self.count()
         if total <= count:
             return self.read()
         return self.read(start_line=total - count + 1)
 
-    def read_range(self, start: int, end: int) -> List[TranscriptEntry]:
+    def read_range(self, start: int, end: int) -> list[TranscriptEntry]:
         """Read entries in a specific line range (1-indexed, inclusive)."""
         return self.read(start_line=start, end_line=end)
 
@@ -279,7 +280,7 @@ class Transcript:
     def _count_lines(self) -> int:
         """Count lines without holding the lock (caller must hold lock)."""
         try:
-            with open(self.path, "r", encoding="utf-8") as f:
+            with open(self.path, encoding="utf-8") as f:
                 return sum(1 for line in f if line.strip())
         except OSError:
             return 0
@@ -297,7 +298,7 @@ class Transcript:
         """
         with self._lock:
             try:
-                with open(self.path, "r", encoding="utf-8") as f:
+                with open(self.path, encoding="utf-8") as f:
                     for line_num, line in enumerate(f, 1):
                         line = line.strip()
                         if not line:
@@ -332,7 +333,7 @@ class Transcript:
         else:
             raise ValueError(f"Unknown export format: {format}")
 
-    def _export_json(self, entries: List[TranscriptEntry]) -> str:
+    def _export_json(self, entries: list[TranscriptEntry]) -> str:
         """Export as a JSON array."""
         data = [
             {
@@ -345,7 +346,7 @@ class Transcript:
         ]
         return json.dumps(data, indent=2, ensure_ascii=False)
 
-    def _export_markdown(self, entries: List[TranscriptEntry]) -> str:
+    def _export_markdown(self, entries: list[TranscriptEntry]) -> str:
         """Export as markdown with role headers."""
         lines = ["# Transcript\n"]
 
@@ -362,7 +363,7 @@ class Transcript:
 
         return "\n".join(lines)
 
-    def _export_plain_text(self, entries: List[TranscriptEntry]) -> str:
+    def _export_plain_text(self, entries: list[TranscriptEntry]) -> str:
         """Export as plain text with role prefixes."""
         lines = []
 
@@ -393,7 +394,7 @@ class Transcript:
         with self._lock:
             entries = []
             try:
-                with open(self.path, "r", encoding="utf-8") as f:
+                with open(self.path, encoding="utf-8") as f:
                     for line in f:
                         line = line.strip()
                         if line:
@@ -451,7 +452,7 @@ class Transcript:
         with self._lock:
             entries = []
             try:
-                with open(self.path, "r", encoding="utf-8") as f:
+                with open(self.path, encoding="utf-8") as f:
                     for idx, line in enumerate(f, 1):
                         line = line.strip()
                         if line:
@@ -482,7 +483,7 @@ class Transcript:
             logger.info("Pruned %d entries before line %d from %s", removed, line_number, self.path)
             return removed
 
-    def summarize_tool_results(self) -> Dict[str, Any]:
+    def summarize_tool_results(self) -> dict[str, Any]:
         """
         Generate a summary of tool results in the transcript.
 
@@ -493,7 +494,7 @@ class Transcript:
         tool_results = [e for e in entries if e.is_tool_result()]
         tool_calls = [e for e in entries if e.is_tool_call()]
 
-        tool_names: Dict[str, int] = {}
+        tool_names: dict[str, int] = {}
         for entry in tool_calls:
             name = entry.metadata.get("tool_name", "unknown")
             tool_names[name] = tool_names.get(name, 0) + 1
@@ -508,12 +509,12 @@ class Transcript:
             "estimated_tool_tokens": total_tool_content // 4,
         }
 
-    def get_last_entry(self) -> Optional[TranscriptEntry]:
+    def get_last_entry(self) -> TranscriptEntry | None:
         """Get the last entry in the transcript without reading all entries."""
         with self._lock:
             try:
                 last_line = None
-                with open(self.path, "r", encoding="utf-8") as f:
+                with open(self.path, encoding="utf-8") as f:
                     for line in f:
                         stripped = line.strip()
                         if stripped:

@@ -13,7 +13,6 @@ Version: 2.0.0
 from __future__ import annotations
 
 import asyncio
-import hashlib
 import hmac
 import json
 import logging
@@ -21,11 +20,12 @@ import os
 import secrets
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from threading import Thread
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -55,13 +55,13 @@ class Device:
     type: str  # "web", "cli", "mobile", "api"
     trust_level: DeviceTrustLevel = DeviceTrustLevel.PENDING
     token: str = ""
-    capabilities: Dict[str, Any] = field(default_factory=dict)
+    capabilities: dict[str, Any] = field(default_factory=dict)
     connected_at: float = 0.0
     last_seen: float = 0.0
-    session_ids: List[str] = field(default_factory=list)
+    session_ids: list[str] = field(default_factory=list)
     ip_address: str = ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "name": self.name,
@@ -78,7 +78,7 @@ class Device:
 class Event:
     """Server-push event."""
     type: EventType
-    data: Dict[str, Any]
+    data: dict[str, Any]
     idempotency_key: str = ""
     timestamp: float = field(default_factory=time.time)
 
@@ -96,10 +96,10 @@ class RPCRequest:
     """JSON-RPC 2.0 request."""
     id: Any
     method: str
-    params: Dict[str, Any] = field(default_factory=dict)
+    params: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "RPCRequest":
+    def from_dict(cls, data: dict) -> RPCRequest:
         return cls(
             id=data.get("id"),
             method=data.get("method", ""),
@@ -112,10 +112,10 @@ class RPCResponse:
     """JSON-RPC 2.0 response."""
     id: Any
     result: Any = None
-    error: Optional[Dict[str, Any]] = None
+    error: dict[str, Any] | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
-        resp: Dict[str, Any] = {"jsonrpc": "2.0", "id": self.id}
+    def to_dict(self) -> dict[str, Any]:
+        resp: dict[str, Any] = {"jsonrpc": "2.0", "id": self.id}
         if self.error:
             resp["error"] = self.error
         else:
@@ -132,7 +132,7 @@ class Connection:
         self._send_fn = send_fn
         self.created_at = time.time()
         self.last_activity = time.time()
-        self._pending_requests: Dict[str, asyncio.Future] = {}
+        self._pending_requests: dict[str, asyncio.Future] = {}
 
     async def send(self, data: str):
         """Send data to the client."""
@@ -180,17 +180,17 @@ class GatewayServer:
         os.makedirs(self.data_dir, exist_ok=True)
 
         # State
-        self._connections: Dict[str, Connection] = {}
-        self._devices: Dict[str, Device] = {}
-        self._device_tokens: Dict[str, str] = {}  # token -> device_id
-        self._handlers: Dict[str, Callable] = {}
+        self._connections: dict[str, Connection] = {}
+        self._devices: dict[str, Device] = {}
+        self._device_tokens: dict[str, str] = {}  # token -> device_id
+        self._handlers: dict[str, Callable] = {}
         self._running = False
         self._start_time = 0.0
         self._request_count = 0
         self._error_count = 0
 
         # Pairing secrets
-        self._pairing_secrets: Dict[str, str] = {}
+        self._pairing_secrets: dict[str, str] = {}
 
         # Load persisted state
         self._load_devices()
@@ -215,7 +215,7 @@ class GatewayServer:
         """Register an RPC method handler."""
         self._handlers[method] = handler
 
-    async def handle_message(self, conn: Connection, raw: str) -> Optional[RPCResponse]:
+    async def handle_message(self, conn: Connection, raw: str) -> RPCResponse | None:
         """Handle an incoming RPC message."""
         try:
             data = json.loads(raw)
@@ -254,7 +254,7 @@ class GatewayServer:
 
     # ========== RPC Handlers ==========
 
-    async def _handle_connect(self, conn: Connection, params: Dict) -> Dict:
+    async def _handle_connect(self, conn: Connection, params: dict) -> dict:
         """Handle device connection with identity."""
         device_id = params.get("device_id", "")
         device_name = params.get("device_name", "Unknown")
@@ -342,12 +342,12 @@ class GatewayServer:
             "token": device.token,
         }
 
-    async def _handle_ping(self, conn: Connection, params: Dict) -> Dict:
+    async def _handle_ping(self, conn: Connection, params: dict) -> dict:
         """Handle ping request."""
         conn.last_activity = time.time()
         return {"pong": True, "timestamp": time.time()}
 
-    async def _handle_pair(self, conn: Connection, params: Dict) -> Dict:
+    async def _handle_pair(self, conn: Connection, params: dict) -> dict:
         """Initiate pairing for a remote device."""
         device_id = params.get("device_id", "")
         device_name = params.get("device_name", "Remote Device")
@@ -383,7 +383,7 @@ class GatewayServer:
             "status": "pending_approval",
         }
 
-    async def _handle_pair_confirm(self, conn: Connection, params: Dict) -> Dict:
+    async def _handle_pair_confirm(self, conn: Connection, params: dict) -> dict:
         """Confirm/approve a pending device pairing."""
         device_id = params.get("device_id", "")
         approve = params.get("approve", True)
@@ -410,7 +410,7 @@ class GatewayServer:
             "token": device.token if approve else None,
         }
 
-    async def _handle_get_status(self, conn: Connection, params: Dict) -> Dict:
+    async def _handle_get_status(self, conn: Connection, params: dict) -> dict:
         """Get gateway status."""
         active_conns = sum(1 for c in self._connections.values() if c.is_alive())
         return {
@@ -427,11 +427,11 @@ class GatewayServer:
             "timestamp": time.time(),
         }
 
-    async def _handle_list_devices(self, conn: Connection, params: Dict) -> List[Dict]:
+    async def _handle_list_devices(self, conn: Connection, params: dict) -> list[dict]:
         """List all registered devices."""
         return [d.to_dict() for d in self._devices.values()]
 
-    async def _handle_revoke_device(self, conn: Connection, params: Dict) -> Dict:
+    async def _handle_revoke_device(self, conn: Connection, params: dict) -> dict:
         """Revoke a device's access."""
         device_id = params.get("device_id", "")
         device = self._devices.get(device_id)
@@ -456,7 +456,7 @@ class GatewayServer:
 
         return {"status": "revoked", "device_id": device_id}
 
-    async def _handle_send_chat(self, conn: Connection, params: Dict) -> Dict:
+    async def _handle_send_chat(self, conn: Connection, params: dict) -> dict:
         """Send a chat message through the gateway."""
         message = params.get("message", "")
         session_id = params.get("session_id", "default")
@@ -472,13 +472,13 @@ class GatewayServer:
             "message_id": str(uuid.uuid4()),
         }
 
-    async def _handle_subscribe(self, conn: Connection, params: Dict) -> Dict:
+    async def _handle_subscribe(self, conn: Connection, params: dict) -> dict:
         """Subscribe to event types."""
         event_types = params.get("types", [])
         conn.device.capabilities["subscriptions"] = event_types
         return {"status": "subscribed", "types": event_types}
 
-    async def _handle_unsubscribe(self, conn: Connection, params: Dict) -> Dict:
+    async def _handle_unsubscribe(self, conn: Connection, params: dict) -> dict:
         """Unsubscribe from event types."""
         event_types = params.get("types", [])
         current = conn.device.capabilities.get("subscriptions", [])
@@ -489,7 +489,7 @@ class GatewayServer:
 
     # ========== Event Broadcasting ==========
 
-    async def broadcast(self, event: Event, exclude_conn: Optional[str] = None):
+    async def broadcast(self, event: Event, exclude_conn: str | None = None):
         """Broadcast an event to all connected devices."""
         targets = [
             c for c in self._connections.values()
@@ -558,7 +558,7 @@ class GatewayServer:
 
     # ========== Health ==========
 
-    def get_health(self) -> Dict[str, Any]:
+    def get_health(self) -> dict[str, Any]:
         """Get gateway health status."""
         active = sum(1 for c in self._connections.values() if c.is_alive())
         return {
@@ -593,7 +593,7 @@ class GatewayServer:
             return
 
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 data = json.load(f)
 
             for did, ddata in data.get("devices", {}).items():
@@ -696,7 +696,7 @@ class GatewayServer:
                 else:
                     self.send_error(404)
 
-            def _send_json(self, data: Dict):
+            def _send_json(self, data: dict):
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
                 self.send_header("Access-Control-Allow-Origin", "*")

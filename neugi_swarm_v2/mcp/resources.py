@@ -11,20 +11,19 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Optional
-from urllib.parse import unquote, urlparse
+from typing import Any
+from urllib.parse import unquote
 
 from neugi_swarm_v2.mcp.protocol import (
     Resource,
     ResourceContents,
     ResourceTemplate,
     ResourceUpdatedNotification,
-    JSONRPCNotification,
 )
 
 logger = logging.getLogger(__name__)
@@ -47,9 +46,9 @@ class ResourceHandler:
 
     uri: str
     name: str
-    description: Optional[str] = None
-    mime_type: Optional[str] = None
-    read_fn: Optional[Callable[..., str | bytes]] = None
+    description: str | None = None
+    mime_type: str | None = None
+    read_fn: Callable[..., str | bytes] | None = None
     is_template: bool = False
 
     def to_resource(self) -> Resource:
@@ -112,14 +111,14 @@ class URITemplateMatcher:
             explode = match.group(2)
             param_names.append(name)
             if explode:
-                return r"(?P<{}>[^/]+)".format(name)
-            return r"(?P<{}>[^/]+)".format(name)
+                return rf"(?P<{name}>[^/]+)"
+            return rf"(?P<{name}>[^/]+)"
 
         pattern = self._PATTERN.sub(replacer, pattern)
         pattern = "^" + pattern + "$"
         return re.compile(pattern), param_names
 
-    def match(self, uri: str) -> Optional[dict[str, str]]:
+    def match(self, uri: str) -> dict[str, str] | None:
         """Match a URI against the template.
 
         Returns:
@@ -172,7 +171,7 @@ class ResourceRegistry:
         contents = registry.read_resource("neugi://config")
     """
 
-    def __init__(self, workspace_root: Optional[str] = None) -> None:
+    def __init__(self, workspace_root: str | None = None) -> None:
         """Initialize the resource registry.
 
         Args:
@@ -182,12 +181,12 @@ class ResourceRegistry:
         self._templates: list[tuple[ResourceTemplate, URITemplateMatcher, Callable]] = []
         self._subscriptions: dict[str, list[ResourceSubscription]] = {}
         self._workspace_root = Path(workspace_root) if workspace_root else Path.cwd()
-        self._on_resource_registered: Optional[Callable[[Resource], None]] = None
+        self._on_resource_registered: Callable[[Resource], None] | None = None
 
     def register_resource(
         self,
         resource: Resource,
-        read_fn: Optional[Callable[..., str | bytes]] = None,
+        read_fn: Callable[..., str | bytes] | None = None,
     ) -> None:
         """Register a static resource.
 
@@ -236,7 +235,7 @@ class ResourceRegistry:
             return True
         return False
 
-    def get_resource(self, uri: str) -> Optional[Resource]:
+    def get_resource(self, uri: str) -> Resource | None:
         """Get a resource definition by URI."""
         handler = self._resources.get(uri)
         if handler:
@@ -307,7 +306,7 @@ class ResourceRegistry:
             ) from exc
 
     def _make_contents(
-        self, uri: str, content: str | bytes, mime_type: Optional[str] = None
+        self, uri: str, content: str | bytes, mime_type: str | None = None
     ) -> ResourceContents:
         """Create ResourceContents from raw content."""
         if isinstance(content, bytes):
@@ -346,7 +345,7 @@ class ResourceRegistry:
     def unsubscribe(
         self,
         uri: str,
-        callback: Optional[Callable[[ResourceUpdatedNotification], None]] = None,
+        callback: Callable[[ResourceUpdatedNotification], None] | None = None,
     ) -> int:
         """Unsubscribe from resource updates.
 
@@ -401,10 +400,10 @@ class ResourceRegistry:
 
     def register_neugi_resources(
         self,
-        memory_system: Optional[Any] = None,
-        skill_manager: Optional[Any] = None,
-        agent_manager: Optional[Any] = None,
-        config: Optional[Any] = None,
+        memory_system: Any | None = None,
+        skill_manager: Any | None = None,
+        agent_manager: Any | None = None,
+        config: Any | None = None,
     ) -> None:
         """Register NEUGI subsystem resources.
 

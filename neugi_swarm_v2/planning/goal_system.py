@@ -34,10 +34,11 @@ import logging
 import sqlite3
 import time
 import uuid
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +56,7 @@ class GoalLevel(Enum):
         return {"mission": 0, "objective": 1, "task": 2, "subtask": 3}[self.value]
 
     @property
-    def children_level(self) -> Optional["GoalLevel"]:
+    def children_level(self) -> GoalLevel | None:
         mapping = {
             "mission": GoalLevel.OBJECTIVE,
             "objective": GoalLevel.TASK,
@@ -80,7 +81,7 @@ class GoalStatus(Enum):
 class GoalError(Exception):
     """Error in goal system operations."""
 
-    def __init__(self, message: str, goal_id: Optional[str] = None) -> None:
+    def __init__(self, message: str, goal_id: str | None = None) -> None:
         super().__init__(message)
         self.goal_id = goal_id
 
@@ -134,37 +135,37 @@ class Goal:
     title: str = ""
     description: str = ""
     status: GoalStatus = GoalStatus.PROPOSED
-    parent_id: Optional[str] = None
-    children_ids: List[str] = field(default_factory=list)
-    dependencies: List[GoalDependency] = field(default_factory=list)
+    parent_id: str | None = None
+    children_ids: list[str] = field(default_factory=list)
+    dependencies: list[GoalDependency] = field(default_factory=list)
     priority: float = 0.5
     urgency: float = 0.5
     importance: float = 0.5
     progress: float = 0.0
     blocker_reason: str = ""
-    acceptance_criteria: List[str] = field(default_factory=list)
+    acceptance_criteria: list[str] = field(default_factory=list)
     estimated_effort: float = 0.0
     actual_effort: float = 0.0
-    tags: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    tags: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
     created_at: float = field(default_factory=time.time)
     updated_at: float = field(default_factory=time.time)
-    completed_at: Optional[float] = None
-    deadline: Optional[float] = None
+    completed_at: float | None = None
+    deadline: float | None = None
 
     @property
     def is_leaf(self) -> bool:
         return self.children_level is None or not self.children_ids
 
     @property
-    def children_level(self) -> Optional[GoalLevel]:
+    def children_level(self) -> GoalLevel | None:
         return self.level.children_level
 
     @property
     def ancestry_depth(self) -> int:
         return self.level.depth
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "level": self.level.value,
@@ -200,7 +201,7 @@ class Goal:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Goal":
+    def from_dict(cls, data: dict[str, Any]) -> Goal:
         def _parse_json(key: str, default: Any = None) -> Any:
             val = data.get(key)
             if val is None:
@@ -260,26 +261,26 @@ class GoalHierarchy:
     """
 
     root: Goal
-    descendants: List[Goal] = field(default_factory=list)
+    descendants: list[Goal] = field(default_factory=list)
     depth: int = 0
     total_progress: float = 0.0
 
-    def get_all_ids(self) -> Set[str]:
+    def get_all_ids(self) -> set[str]:
         ids = {self.root.id}
         ids.update(g.id for g in self.descendants)
         return ids
 
-    def get_by_level(self, level: GoalLevel) -> List[Goal]:
+    def get_by_level(self, level: GoalLevel) -> list[Goal]:
         result = []
         if self.root.level == level:
             result.append(self.root)
         result.extend(g for g in self.descendants if g.level == level)
         return result
 
-    def get_blocked(self) -> List[Goal]:
+    def get_blocked(self) -> list[Goal]:
         return [g for g in self.descendants if g.status == GoalStatus.BLOCKED]
 
-    def get_active(self) -> List[Goal]:
+    def get_active(self) -> list[Goal]:
         return [
             g
             for g in self.descendants
@@ -299,7 +300,7 @@ class GoalDecomposition:
     """
 
     parent_id: str
-    children: List[Goal] = field(default_factory=list)
+    children: list[Goal] = field(default_factory=list)
     decomposition_strategy: str = "recursive"
     completeness: float = 0.0
 
@@ -326,9 +327,9 @@ class GoalProgress:
     total_progress: float = 0.0
     completed_children: int = 0
     total_children: int = 0
-    blockers: List[str] = field(default_factory=list)
-    at_risk: List[str] = field(default_factory=list)
-    estimated_completion: Optional[float] = None
+    blockers: list[str] = field(default_factory=list)
+    at_risk: list[str] = field(default_factory=list)
+    estimated_completion: float | None = None
 
 
 @dataclass
@@ -348,10 +349,10 @@ class GoalSuggestion:
     title: str
     description: str
     level: GoalLevel
-    parent_id: Optional[str] = None
+    parent_id: str | None = None
     reasoning: str = ""
     confidence: float = 0.5
-    related_goals: List[str] = field(default_factory=list)
+    related_goals: list[str] = field(default_factory=list)
 
 
 class GoalSystem:
@@ -374,7 +375,7 @@ class GoalSystem:
     ) -> None:
         self.llm_callback = llm_callback
         self.db_path = db_path
-        self._cache: Dict[str, Goal] = {}
+        self._cache: dict[str, Goal] = {}
         self._init_db()
 
     def _init_db(self) -> None:
@@ -426,15 +427,15 @@ class GoalSystem:
         level: GoalLevel,
         title: str,
         description: str = "",
-        parent_id: Optional[str] = None,
-        acceptance_criteria: Optional[List[str]] = None,
+        parent_id: str | None = None,
+        acceptance_criteria: list[str] | None = None,
         estimated_effort: float = 0.0,
-        deadline: Optional[float] = None,
-        tags: Optional[List[str]] = None,
-        dependencies: Optional[List[GoalDependency]] = None,
-        priority: Optional[float] = None,
-        urgency: Optional[float] = None,
-        importance: Optional[float] = None,
+        deadline: float | None = None,
+        tags: list[str] | None = None,
+        dependencies: list[GoalDependency] | None = None,
+        priority: float | None = None,
+        urgency: float | None = None,
+        importance: float | None = None,
     ) -> Goal:
         """Create a new goal.
 
@@ -505,9 +506,7 @@ class GoalSystem:
         self,
         goal_id: str,
         max_children: int = 7,
-        custom_decomposer: Optional[
-            Callable[[Goal, int], Awaitable[List[Dict[str, str]]]]
-        ] = None,
+        custom_decomposer: Callable[[Goal, int], Awaitable[list[dict[str, str]]]] | None = None,
     ) -> GoalDecomposition:
         """Decompose a goal into child goals.
 
@@ -533,7 +532,7 @@ class GoalSystem:
         else:
             children_data = await self._generate_decomposition(goal, max_children)
 
-        children: List[Goal] = []
+        children: list[Goal] = []
         for data in children_data:
             child = await self.create_goal(
                 level=goal.children_level,
@@ -554,7 +553,7 @@ class GoalSystem:
             completeness=completeness,
         )
 
-    def get_goal(self, goal_id: str) -> Optional[Goal]:
+    def get_goal(self, goal_id: str) -> Goal | None:
         """Get a goal by ID."""
         if goal_id in self._cache:
             return self._cache[goal_id]
@@ -571,7 +570,7 @@ class GoalSystem:
             return goal
         return None
 
-    def get_hierarchy(self, root_id: str) -> Optional[GoalHierarchy]:
+    def get_hierarchy(self, root_id: str) -> GoalHierarchy | None:
         """Get the full hierarchy tree for a root goal.
 
         Args:
@@ -584,7 +583,7 @@ class GoalSystem:
         if root is None:
             return None
 
-        descendants: List[Goal] = []
+        descendants: list[Goal] = []
         queue = list(root.children_ids)
         max_depth = 0
 
@@ -606,7 +605,7 @@ class GoalSystem:
             total_progress=total_progress,
         )
 
-    def get_progress(self, goal_id: str) -> Optional[GoalProgress]:
+    def get_progress(self, goal_id: str) -> GoalProgress | None:
         """Get progress report for a goal and its subtree.
 
         Args:
@@ -620,8 +619,8 @@ class GoalSystem:
             return None
 
         children_progress = []
-        blockers: List[str] = []
-        at_risk: List[str] = []
+        blockers: list[str] = []
+        at_risk: list[str] = []
         completed = 0
 
         for child_id in goal.children_ids:
@@ -679,7 +678,7 @@ class GoalSystem:
 
     async def update_progress(
         self, goal_id: str, progress: float, actual_effort: float = 0.0
-    ) -> Optional[Goal]:
+    ) -> Goal | None:
         """Update a goal's progress.
 
         Args:
@@ -711,7 +710,7 @@ class GoalSystem:
 
     async def update_status(
         self, goal_id: str, status: GoalStatus, reason: str = ""
-    ) -> Optional[Goal]:
+    ) -> Goal | None:
         """Update a goal's status.
 
         Args:
@@ -744,10 +743,10 @@ class GoalSystem:
 
     def get_prioritized_goals(
         self,
-        level: Optional[GoalLevel] = None,
-        status: Optional[GoalStatus] = None,
+        level: GoalLevel | None = None,
+        status: GoalStatus | None = None,
         limit: int = 20,
-    ) -> List[Goal]:
+    ) -> list[Goal]:
         """Get goals sorted by priority.
 
         Args:
@@ -764,10 +763,10 @@ class GoalSystem:
 
     def get_all_goals(
         self,
-        level: Optional[GoalLevel] = None,
-        status: Optional[GoalStatus] = None,
-        tag: Optional[str] = None,
-    ) -> List[Goal]:
+        level: GoalLevel | None = None,
+        status: GoalStatus | None = None,
+        tag: str | None = None,
+    ) -> list[Goal]:
         """Get all goals with optional filters.
 
         Args:
@@ -779,7 +778,7 @@ class GoalSystem:
             List of matching goals.
         """
         query = "SELECT * FROM goals WHERE 1=1"
-        params: List[Any] = []
+        params: list[Any] = []
 
         if level:
             query += " AND level = ?"
@@ -799,7 +798,7 @@ class GoalSystem:
 
         return [Goal.from_dict(dict(r)) for r in rows]
 
-    def trace_ancestry(self, goal_id: str) -> List[Goal]:
+    def trace_ancestry(self, goal_id: str) -> list[Goal]:
         """Trace the full ancestry chain of a goal.
 
         Args:
@@ -808,7 +807,7 @@ class GoalSystem:
         Returns:
             List of goals from root to the target goal.
         """
-        chain: List[Goal] = []
+        chain: list[Goal] = []
         current = self.get_goal(goal_id)
 
         while current:
@@ -842,7 +841,7 @@ class GoalSystem:
 
         return "\n".join(lines)
 
-    async def verify_completion(self, goal_id: str) -> Tuple[bool, str]:
+    async def verify_completion(self, goal_id: str) -> tuple[bool, str]:
         """Verify if a goal is truly complete.
 
         Args:
@@ -879,7 +878,7 @@ class GoalSystem:
 
     async def suggest_goals(
         self, context: str = "", limit: int = 5
-    ) -> List[GoalSuggestion]:
+    ) -> list[GoalSuggestion]:
         """Autonomously suggest goals based on patterns.
 
         Args:
@@ -902,7 +901,7 @@ class GoalSystem:
             logger.warning("Goal suggestion failed: %s", e)
             return []
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get goal system statistics.
 
         Returns:
@@ -1021,8 +1020,8 @@ class GoalSystem:
 
     def _calculate_priority(
         self,
-        urgency: Optional[float],
-        importance: Optional[float],
+        urgency: float | None,
+        importance: float | None,
     ) -> float:
         u = urgency or 0.5
         i = importance or 0.5
@@ -1044,7 +1043,7 @@ class GoalSystem:
 
     async def _generate_decomposition(
         self, goal: Goal, max_children: int
-    ) -> List[Dict[str, str]]:
+    ) -> list[dict[str, str]]:
         prompt = self._build_decomposition_prompt(goal, max_children)
         try:
             text = await self.llm_callback(prompt)
@@ -1075,9 +1074,9 @@ class GoalSystem:
             f"(repeat for each child)\n"
         )
 
-    def _parse_decomposition(self, text: str) -> List[Dict[str, str]]:
-        children: List[Dict[str, str]] = []
-        current: Dict[str, str] = {}
+    def _parse_decomposition(self, text: str) -> list[dict[str, str]]:
+        children: list[dict[str, str]] = []
+        current: dict[str, str] = {}
 
         for line in text.strip().split("\n"):
             line = line.strip()
@@ -1111,8 +1110,8 @@ class GoalSystem:
     def _build_suggestion_prompt(
         self,
         context: str,
-        recent: List[Goal],
-        active: List[Goal],
+        recent: list[Goal],
+        active: list[Goal],
     ) -> str:
         lines = [
             "Based on the current state of goals, suggest new goals that"
@@ -1141,9 +1140,9 @@ class GoalSystem:
 
     def _parse_suggestions(
         self, text: str, limit: int
-    ) -> List[GoalSuggestion]:
-        suggestions: List[GoalSuggestion] = []
-        current: Dict[str, str] = {}
+    ) -> list[GoalSuggestion]:
+        suggestions: list[GoalSuggestion] = []
+        current: dict[str, str] = {}
 
         for line in text.strip().split("\n"):
             line = line.strip()
@@ -1166,7 +1165,7 @@ class GoalSystem:
         return suggestions[:limit]
 
     def _build_suggestion_from_dict(
-        self, data: Dict[str, str]
+        self, data: dict[str, str]
     ) -> GoalSuggestion:
         level_str = data.get("level", "task").lower()
         try:

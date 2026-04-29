@@ -12,38 +12,38 @@ Usage:
     from context import PromptAssembler, TokenBudget, CacheStability, ContextInjector
 """
 
-from context.prompt_assembler import (
-    PromptAssembler,
-    PromptMode,
-    PromptSection,
-    SectionConfig,
-    BootstrapFile,
-    PromptAssemblyError,
-    PromptResult,
-)
-from context.token_budget import (
-    TokenBudget,
-    BudgetAllocation,
-    BudgetReport,
-    ModelPreset,
-    BudgetError,
-    SectionBudget,
-)
 from context.cache_stability import (
+    CacheError,
     CacheStability,
-    PromptFingerprint,
     CacheStats,
     PromptDiff,
-    CacheError,
+    PromptFingerprint,
 )
 from context.context_injector import (
     ContextInjector,
     ContextItem,
-    InjectionResult,
-    InjectionError,
     ContextScope,
+    InjectionError,
+    InjectionResult,
+)
+from context.prompt_assembler import (
+    BootstrapFile,
+    PromptAssembler,
+    PromptAssemblyError,
+    PromptMode,
+    PromptResult,
+    PromptSection,
+    SectionConfig,
 )
 from context.soul_engine import SoulEngine, SoulFile
+from context.token_budget import (
+    BudgetAllocation,
+    BudgetError,
+    BudgetReport,
+    ModelPreset,
+    SectionBudget,
+    TokenBudget,
+)
 
 __all__ = [
     # Prompt assembler

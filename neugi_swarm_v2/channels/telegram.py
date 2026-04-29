@@ -13,7 +13,7 @@ import asyncio
 import base64
 import logging
 import time
-from typing import Any, Optional
+from typing import Any
 
 from .async_http import AsyncHTTPClient
 from .base import (
@@ -21,7 +21,6 @@ from .base import (
     BaseChannel,
     ChannelCapabilities,
     ChannelType,
-    ConversationType,
     IncomingMessage,
     MessageFormat,
     MessageType,
@@ -76,11 +75,11 @@ class TelegramChannel(BaseChannel):
     def __init__(
         self,
         token: str,
-        bot_name: Optional[str] = None,
+        bot_name: str | None = None,
         mode: str = "polling",
-        webhook_url: Optional[str] = None,
+        webhook_url: str | None = None,
         poll_timeout: int = 30,
-        allowed_updates: Optional[list[str]] = None,
+        allowed_updates: list[str] | None = None,
         health_check_interval: int = 60,
     ) -> None:
         super().__init__(token, bot_name, health_check_interval)
@@ -92,12 +91,12 @@ class TelegramChannel(BaseChannel):
             "inline_query", "channel_post", "my_chat_member",
         ]
         self._offset = 0
-        self._poll_task: Optional[asyncio.Task] = None
-        self._http: Optional[AsyncHTTPClient] = None
+        self._poll_task: asyncio.Task | None = None
+        self._http: AsyncHTTPClient | None = None
         self._rate_limit_tokens = TELEGRAM_RATE_LIMIT
         self._rate_limit_timestamp = time.time()
-        self._webhook_secret: Optional[str] = None
-        self._me: Optional[dict[str, Any]] = None
+        self._webhook_secret: str | None = None
+        self._me: dict[str, Any] | None = None
 
     @property
     def channel_type(self) -> ChannelType:
@@ -114,32 +113,32 @@ class TelegramChannel(BaseChannel):
     async def _call_api(
         self,
         method: str,
-        data: Optional[dict[str, Any]] = None,
+        data: dict[str, Any] | None = None,
         timeout: int = 30,
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Make async API call to Telegram."""
         self._wait_for_rate_limit()
-        
+
         if self._http is None:
             self._http = AsyncHTTPClient()
-        
+
         url = self._api_url(method)
-        
+
         try:
             result = await self._http.post(url, json_data=data, timeout=timeout)
-            
+
             if not result.get("ok"):
                 description = result.get("description", "Unknown error")
                 error_code = result.get("error_code", 0)
-                
+
                 if error_code == 429:
                     retry_after = result.get("parameters", {}).get("retry_after", 1)
                     raise TelegramRateLimited(retry_after, description)
-                
+
                 raise TelegramError(error_code, description)
-            
+
             return result.get("result")
-            
+
         except TelegramRateLimited:
             raise
         except TelegramError:
@@ -167,7 +166,7 @@ class TelegramChannel(BaseChannel):
     async def _connect(self) -> None:
         """Initialize Telegram Bot API connection."""
         self._http = AsyncHTTPClient()
-        
+
         try:
             me = await self._call_api("getMe")
             if me:
@@ -176,7 +175,7 @@ class TelegramChannel(BaseChannel):
                 logger.info("Connected as @%s (id: %s)", me.get("username"), me.get("id"))
             else:
                 raise TelegramError(0, "Failed to get bot info")
-            
+
             if self._mode == "webhook":
                 if not self._webhook_url:
                     raise ValueError("webhook_url is required for webhook mode")
@@ -191,7 +190,7 @@ class TelegramChannel(BaseChannel):
             else:
                 await self._call_api("deleteWebhook")
                 logger.info("Using long polling mode")
-        
+
         except Exception:
             raise
 
@@ -203,13 +202,13 @@ class TelegramChannel(BaseChannel):
                 await self._poll_task
             except asyncio.CancelledError:
                 pass
-        
+
         if self._mode == "webhook":
             try:
                 await self._call_api("deleteWebhook", {"drop_pending_updates": True})
             except Exception as e:
                 logger.debug("Failed to delete webhook on disconnect: %s", e)
-        
+
         logger.info("Telegram channel disconnected")
 
     async def _build_capabilities(self) -> ChannelCapabilities:
@@ -245,7 +244,7 @@ class TelegramChannel(BaseChannel):
     async def _poll_updates(self) -> None:
         """Long polling loop for receiving updates."""
         logger.info("Starting long polling with timeout=%ds", self._poll_timeout)
-        
+
         while self._is_running:
             try:
                 data = {
@@ -253,14 +252,14 @@ class TelegramChannel(BaseChannel):
                     "timeout": self._poll_timeout,
                     "allowed_updates": self._allowed_updates,
                 }
-                
+
                 result = await self._call_api("getUpdates", data, timeout=self._poll_timeout + 5)
-                
+
                 if result:
                     for update in result:
                         self._offset = update["update_id"] + 1
                         await self._handle_update(update)
-            
+
             except asyncio.CancelledError:
                 break
             except TelegramRateLimited as exc:
@@ -277,13 +276,13 @@ class TelegramChannel(BaseChannel):
             message = await self._receive_message(update["message"])
             if message:
                 await self._handle_message(message)
-        
+
         elif "edited_message" in update:
             message = await self._receive_message(update["edited_message"])
             if message:
                 message.metadata["edited"] = True
                 await self._handle_message(message)
-        
+
         elif "callback_query" in update:
             cb = update["callback_query"]
             message = IncomingMessage(
@@ -301,20 +300,20 @@ class TelegramChannel(BaseChannel):
     async def _handle_message(self, message: IncomingMessage) -> None:
         """Handle incoming message with command detection."""
         content = message.content.strip()
-        
+
         # Check for bot commands
         if content.startswith("/"):
             command = content.split()[0].lower()
             await self._handle_command(command, message)
             return
-        
+
         # Regular message - notify handlers
         await self._notify_message_handlers(message)
 
     async def _handle_command(self, command: str, message: IncomingMessage) -> None:
         """Handle Telegram bot commands."""
         chat_id = message.conversation_id
-        
+
         if command == "/start":
             welcome = (
                 f"Hello {message.user.display_name or 'there'}! I'm NEUGI, your AI assistant.\n\n"
@@ -328,7 +327,7 @@ class TelegramChannel(BaseChannel):
                 f"  /status - Check my status"
             )
             await self.send_text(chat_id, welcome)
-        
+
         elif command == "/help":
             help_text = (
                 "Available commands:\n\n"
@@ -339,11 +338,11 @@ class TelegramChannel(BaseChannel):
                 "Just send me a message to chat!"
             )
             await self.send_text(chat_id, help_text)
-        
+
         elif command == "/reset":
             # Reset session memory for this chat
             await self.send_text(chat_id, "Conversation context has been reset.")
-        
+
         elif command == "/status":
             status = (
                 f"Bot: @{self._bot_name or 'NEUGI'}\n"
@@ -351,7 +350,7 @@ class TelegramChannel(BaseChannel):
                 f"Connected: {self._is_running}"
             )
             await self.send_text(chat_id, status)
-        
+
         else:
             # Unknown command - pass to handlers
             await self._notify_message_handlers(message)
@@ -370,15 +369,15 @@ class TelegramChannel(BaseChannel):
                 return False
         return True
 
-    async def _receive_message(self, msg: dict[str, Any]) -> Optional[IncomingMessage]:
+    async def _receive_message(self, msg: dict[str, Any]) -> IncomingMessage | None:
         """Parse a Telegram message into IncomingMessage."""
         if not msg or "chat" not in msg:
             return None
-        
+
         chat = msg["chat"]
         chat_id = str(chat["id"])
         user = self._parse_user(msg.get("from", {}))
-        
+
         # Text message
         if "text" in msg:
             return IncomingMessage(
@@ -391,16 +390,16 @@ class TelegramChannel(BaseChannel):
                 conversation_id=chat_id,
                 metadata={"chat_type": chat.get("type", "private")},
             )
-        
+
         # Photo message
         elif "photo" in msg:
             caption = msg.get("caption", "")
             photo = msg["photo"][-1]  # Highest resolution
             file_id = photo["file_id"]
-            
+
             # Download and process image
             image_data = await self._download_file(file_id)
-            
+
             if image_data:
                 b64 = base64.b64encode(image_data).decode()
                 # If text-only model, generate description
@@ -408,7 +407,7 @@ class TelegramChannel(BaseChannel):
                 content = description if description else caption
             else:
                 content = caption or "[Image received but could not be processed]"
-            
+
             return IncomingMessage(
                 message_id=str(msg["message_id"]),
                 channel_type=ChannelType.TELEGRAM,
@@ -426,7 +425,7 @@ class TelegramChannel(BaseChannel):
                 )],
                 metadata={"chat_type": chat.get("type", "private"), "caption": caption},
             )
-        
+
         # Document
         elif "document" in msg:
             doc = msg["document"]
@@ -447,7 +446,7 @@ class TelegramChannel(BaseChannel):
                 )],
                 metadata={"chat_type": chat.get("type", "private")},
             )
-        
+
         # Voice message
         elif "voice" in msg:
             voice = msg["voice"]
@@ -467,7 +466,7 @@ class TelegramChannel(BaseChannel):
                 )],
                 metadata={"chat_type": chat.get("type", "private")},
             )
-        
+
         # Other message types
         else:
             return IncomingMessage(
@@ -481,23 +480,23 @@ class TelegramChannel(BaseChannel):
                 metadata={"chat_type": chat.get("type", "private")},
             )
 
-    async def _download_file(self, file_id: str) -> Optional[bytes]:
+    async def _download_file(self, file_id: str) -> bytes | None:
         """Download file from Telegram by file_id."""
         try:
             # Get file path
             result = await self._call_api("getFile", {"file_id": file_id})
             if not result or "file_path" not in result:
                 return None
-            
+
             file_path = result["file_path"]
             url = self._file_url(file_path)
-            
+
             # Download file
             if self._http is None:
                 self._http = AsyncHTTPClient()
-            
+
             return await self._http.download(url, timeout=60)
-        
+
         except Exception as e:
             logger.warning("Failed to download Telegram file %s: %s", file_id, e)
             return None
@@ -512,12 +511,12 @@ class TelegramChannel(BaseChannel):
             3. Return caption + generic description
         """
         description = caption or ""
-        
+
         # Try to use a lightweight vision model for description
         try:
             from llm_multimodal import MultimodalProvider
-            from llm_provider import ProviderConfig, ProviderType, OllamaProvider
-            
+            from llm_provider import OllamaProvider, ProviderConfig, ProviderType
+
             config = ProviderConfig(
                 provider_type=ProviderType.OLLAMA,
                 base_url="http://localhost:11434",
@@ -525,33 +524,33 @@ class TelegramChannel(BaseChannel):
             )
             provider = OllamaProvider(config)
             multimodal = MultimodalProvider(provider)
-            
+
             response = multimodal.analyze_screenshot(
                 screenshot_b64=image_b64,
                 task="Describe this image in 1-2 sentences. Be concise.",
             )
-            
+
             if response and response.content:
                 vision_desc = response.content.strip()
                 if description:
                     description = f"{vision_desc}\n\nCaption: {description}"
                 else:
                     description = vision_desc
-                
+
         except Exception as e:
             logger.debug("Vision description failed: %s", e)
-        
+
         # If still no description, provide generic info
         if not description:
             description = "[Image received. Current model is text-only and cannot view images.]"
-        
+
         return description
 
     def _parse_user(self, user_data: dict[str, Any]) -> UserIdentity:
         """Parse Telegram user into UserIdentity."""
         if not user_data:
             return UserIdentity(id="unknown", username="unknown")
-        
+
         return UserIdentity(
             id=str(user_data.get("id", "unknown")),
             username=user_data.get("username"),
@@ -568,10 +567,10 @@ class TelegramChannel(BaseChannel):
     async def send_message(self, message: OutgoingMessage) -> bool:
         """Send outgoing message to Telegram."""
         chat_id = message.conversation_id
-        
+
         if message.message_type == MessageType.TEXT:
             return await self.send_text(chat_id, message.content)
-        
+
         elif message.message_type == MessageType.IMAGE:
             # Send photo
             text = message.content or ""
@@ -581,7 +580,7 @@ class TelegramChannel(BaseChannel):
                 "caption": text[:1024],
             })
             return result is not None
-        
+
         elif message.message_type == MessageType.FILE:
             text = message.content or ""
             result = await self._call_api("sendDocument", {
@@ -590,7 +589,7 @@ class TelegramChannel(BaseChannel):
                 "caption": text[:1024],
             })
             return result is not None
-        
+
         else:
             # Fallback to text
             return await self.send_text(chat_id, message.content)

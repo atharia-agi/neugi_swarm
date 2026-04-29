@@ -23,34 +23,34 @@ import shutil
 import signal
 import sys
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any
 
 from neugi_swarm_v2 import __version__
 
 try:
-    from rich.console import Console
-    from rich.table import Table
-    from rich.panel import Panel
-    from rich.tree import Tree
-    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
-    from rich.prompt import Prompt, Confirm
-    from rich.prompt import IntPrompt, FloatPrompt
+    from rich import box
+    from rich.align import Align
+    from rich.box import DOUBLE, ROUNDED
     from rich.columns import Columns
+    from rich.console import Console
     from rich.layout import Layout
     from rich.live import Live
-    from rich.text import Text
-    from rich.box import ROUNDED, DOUBLE
     from rich.markdown import Markdown
-    from rich.syntax import Syntax
+    from rich.panel import Panel
+    from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
+    from rich.prompt import Confirm, FloatPrompt, IntPrompt, Prompt
     from rich.rule import Rule
-    from rich.align import Align
-    from rich import box
     from rich.style import Style
+    from rich.syntax import Syntax
+    from rich.table import Table
+    from rich.text import Text
     from rich.theme import Theme
+    from rich.tree import Tree
 except ImportError:
     print("Error: 'rich' library is required. Install with: pip install rich")
     sys.exit(1)
@@ -96,7 +96,7 @@ class CommandResult:
     """
     status: CommandStatus = CommandStatus.SUCCESS
     message: str = ""
-    data: Optional[dict[str, Any]] = None
+    data: dict[str, Any] | None = None
     exit_code: int = 0
 
 
@@ -152,7 +152,7 @@ class HealthMonitor:
         except (ValueError, OSError, ProcessLookupError):
             return False
 
-    def get_pid(self) -> Optional[int]:
+    def get_pid(self) -> int | None:
         """Get the PID of the running gateway process."""
         if not self._pid_file.exists():
             return None
@@ -213,7 +213,7 @@ class ConfigManager:
         """Load configuration from disk."""
         if self.config_path.exists():
             try:
-                with open(self.config_path, "r", encoding="utf-8") as f:
+                with open(self.config_path, encoding="utf-8") as f:
                     self._config = json.load(f)
             except (json.JSONDecodeError, OSError) as e:
                 console.print(f"[warning]Config load error: {e}[/warning]")
@@ -322,7 +322,7 @@ class BackupManager:
             if backup_path.is_dir():
                 manifest_path = backup_path / "manifest.json"
                 if manifest_path.exists():
-                    with open(manifest_path, "r", encoding="utf-8") as f:
+                    with open(manifest_path, encoding="utf-8") as f:
                         manifest = json.load(f)
                     manifest["path"] = str(backup_path)
                     backups.append(manifest)
@@ -444,7 +444,7 @@ class Doctor:
             })
         else:
             try:
-                with open(config_path, "r", encoding="utf-8") as f:
+                with open(config_path, encoding="utf-8") as f:
                     json.load(f)
             except json.JSONDecodeError as e:
                 self._issues.append({
@@ -460,7 +460,7 @@ class Doctor:
             return
 
         try:
-            with open(config_path, "r", encoding="utf-8") as f:
+            with open(config_path, encoding="utf-8") as f:
                 config = json.load(f)
 
             llm = config.get("llm", {})
@@ -1167,7 +1167,7 @@ class NeugiCLI:
                 if skill_dir.is_dir():
                     manifest = skill_dir / "manifest.json"
                     if manifest.exists():
-                        with open(manifest, "r", encoding="utf-8") as f:
+                        with open(manifest, encoding="utf-8") as f:
                             skills.append(json.load(f))
                     else:
                         skills.append({"name": skill_dir.name, "description": ""})
@@ -1490,7 +1490,7 @@ class NeugiCLI:
                 console.print(f"  Circuit open: {'yes' if stats.get('circuit_open') else 'no'}")
 
                 cfg = stats.get("config", {})
-                console.print(f"\n[dim]Config:[/dim]")
+                console.print("\n[dim]Config:[/dim]")
                 console.print(f"  Tick interval:     {cfg.get('tick_interval', 0):.0f}s")
                 console.print(f"  Idle threshold:    {cfg.get('idle_threshold', 0):.0f}s")
                 console.print(f"  Max actions/tick:  {cfg.get('max_actions_per_tick', 0)}")
@@ -1500,7 +1500,7 @@ class NeugiCLI:
                 # Show recent signals
                 observer = stats.get("observer", {})
                 if observer:
-                    console.print(f"\n[dim]Latest Signals:[/dim]")
+                    console.print("\n[dim]Latest Signals:[/dim]")
                     for key, val in observer.items():
                         if isinstance(val, dict):
                             console.print(f"  {key}: {len(val)} items")
@@ -1532,7 +1532,7 @@ class NeugiCLI:
             result = swarm.autonomous_loop._tick()
             swarm.autonomous_loop.config.idle_threshold_seconds = old_threshold
 
-            console.print(f"[success]Tick complete[/success]")
+            console.print("[success]Tick complete[/success]")
             console.print(f"  Observations: {result.observations}")
             console.print(f"  Decisions:    {result.decisions}")
             console.print(f"  Executions:   {result.executions}")
@@ -1565,7 +1565,7 @@ class NeugiCLI:
         if sessions_dir.exists():
             for session_file in sessions_dir.glob("*.json"):
                 try:
-                    with open(session_file, "r", encoding="utf-8") as f:
+                    with open(session_file, encoding="utf-8") as f:
                         session = json.load(f)
                     sessions.append(session)
                 except (json.JSONDecodeError, OSError):
@@ -1959,11 +1959,11 @@ class NeugiCLI:
 
         return CommandResult(status=CommandStatus.ERROR, message="Restore cancelled")
 
-    def _check_latest_version(self) -> Optional[str]:
+    def _check_latest_version(self) -> str | None:
         """Check PyPI for latest version."""
         try:
-            import urllib.request
             import json
+            import urllib.request
             req = urllib.request.Request(
                 "https://pypi.org/pypi/neugi-swarm/json",
                 headers={"Accept": "application/json", "User-Agent": f"neugi-swarm/{__version__}"},
@@ -2002,9 +2002,9 @@ class NeugiCLI:
         latest = self._check_latest_version()
         if latest and latest != __version__:
             console.print(f"[warning]New version available: v{latest} (current: v{__version__})[/warning]")
-            console.print(f"[dim]Run 'pip install --upgrade neugi-swarm' or 'git pull' to update[/dim]")
+            console.print("[dim]Run 'pip install --upgrade neugi-swarm' or 'git pull' to update[/dim]")
             return CommandResult(status=CommandStatus.SUCCESS, message=f"Update available: v{latest}")
-        
+
         console.print(f"[success]NEUGI is up to date (v{__version__})[/success]")
         return CommandResult(status=CommandStatus.SUCCESS, message="No updates available")
 

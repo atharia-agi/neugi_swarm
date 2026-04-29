@@ -48,12 +48,11 @@ import json
 import logging
 import sqlite3
 import threading
-import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +111,7 @@ class ApprovalRule:
     approvers: list[str] = field(default_factory=list)
     approval_count: int = 1
     timeout_minutes: float = 60.0
-    auto_approve_below: Optional[float] = None
+    auto_approve_below: float | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     enabled: bool = True
 
@@ -209,7 +208,7 @@ class ApprovalRequest:
     rule_id: str = ""
     decisions: list[ApprovalDecision] = field(default_factory=list)
     required_approvals: int = 1
-    timeout_at: Optional[datetime] = None
+    timeout_at: datetime | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -293,7 +292,7 @@ class ApprovalHistory:
     request: ApprovalRequest
     decisions: list[ApprovalDecision] = field(default_factory=list)
     status_changes: list[tuple[str, datetime]] = field(default_factory=list)
-    total_duration: Optional[timedelta] = None
+    total_duration: timedelta | None = None
 
 
 # -- Approval Gate -----------------------------------------------------------
@@ -498,7 +497,7 @@ class ApprovalGate:
                 return True
             return False
 
-    def get_rule(self, rule_id: str) -> Optional[ApprovalRule]:
+    def get_rule(self, rule_id: str) -> ApprovalRule | None:
         """Get an approval rule by ID.
 
         Args:
@@ -581,7 +580,7 @@ class ApprovalGate:
         agent_role: str = "",
         cost_estimate: float = 0.0,
         risk_level: RiskLevel = RiskLevel.LOW,
-        metadata: Optional[dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> ApprovalRequest:
         """Create an approval request for an action.
 
@@ -793,7 +792,7 @@ class ApprovalGate:
         logger.info("Request escalated: %s (%s)", request_id, reason)
         return request
 
-    def get_request(self, request_id: str) -> Optional[ApprovalRequest]:
+    def get_request(self, request_id: str) -> ApprovalRequest | None:
         """Get an approval request by ID.
 
         Args:
@@ -917,7 +916,7 @@ class ApprovalGate:
                 (request_id, status.value, datetime.now(timezone.utc).isoformat()),
             )
 
-    def get_pending_requests(self, agent_id: Optional[str] = None) -> list[ApprovalRequest]:
+    def get_pending_requests(self, agent_id: str | None = None) -> list[ApprovalRequest]:
         """Get all pending approval requests.
 
         Args:
@@ -1018,7 +1017,7 @@ class ApprovalGate:
             logger.info("Approval chain added: %s", chain.name)
             return chain
 
-    def get_chain(self, chain_id: str) -> Optional[ApprovalChain]:
+    def get_chain(self, chain_id: str) -> ApprovalChain | None:
         """Get an approval chain by ID.
 
         Args:
@@ -1049,7 +1048,7 @@ class ApprovalGate:
         self._chains[chain.chain_id] = chain
         return chain
 
-    def advance_chain(self, chain_id: str) -> Optional[ApprovalChain]:
+    def advance_chain(self, chain_id: str) -> ApprovalChain | None:
         """Advance an approval chain to the next level.
 
         Args:
@@ -1149,7 +1148,7 @@ class ApprovalGate:
         """Close database connections."""
         pass
 
-    def __enter__(self) -> "ApprovalGate":
+    def __enter__(self) -> ApprovalGate:
         return self
 
     def __exit__(self, *args: Any) -> None:

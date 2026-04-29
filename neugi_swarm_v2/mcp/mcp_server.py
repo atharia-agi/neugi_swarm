@@ -24,26 +24,21 @@ import json
 import logging
 import sys
 import time
-from typing import Any, Optional
+from typing import Any
 
+from neugi_swarm_v2.mcp.prompts import PromptRegistry
 from neugi_swarm_v2.mcp.protocol import (
-    JSONRPCRequest,
-    JSONRPCResponse,
-    JSONRPCNotification,
-    MCPError,
+    CursorResult,
     ErrorCode,
     Implementation,
-    ServerCapabilities,
     InitializeResult,
-    ToolResult,
-    TextContent,
-    CursorResult,
-    content_from_dict,
-    generate_id,
+    JSONRPCRequest,
+    JSONRPCResponse,
+    MCPError,
+    ServerCapabilities,
 )
-from neugi_swarm_v2.mcp.tools import ToolRegistry
 from neugi_swarm_v2.mcp.resources import ResourceRegistry
-from neugi_swarm_v2.mcp.prompts import PromptRegistry
+from neugi_swarm_v2.mcp.tools import ToolRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -71,8 +66,8 @@ class ServerState:
 
     def __init__(self) -> None:
         self._state = self.CREATED
-        self._client_info: Optional[dict[str, Any]] = None
-        self._client_capabilities: Optional[dict[str, Any]] = None
+        self._client_info: dict[str, Any] | None = None
+        self._client_capabilities: dict[str, Any] | None = None
 
     @property
     def state(self) -> str:
@@ -98,11 +93,11 @@ class ServerState:
         self._state = self.SHUTDOWN
 
     @property
-    def client_info(self) -> Optional[dict[str, Any]]:
+    def client_info(self) -> dict[str, Any] | None:
         return self._client_info
 
     @property
-    def client_capabilities(self) -> Optional[dict[str, Any]]:
+    def client_capabilities(self) -> dict[str, Any] | None:
         return self._client_capabilities
 
 
@@ -138,7 +133,7 @@ class MCPServer:
         self,
         name: str = SERVER_NAME,
         version: str = SERVER_VERSION,
-        instructions: Optional[str] = None,
+        instructions: str | None = None,
     ) -> None:
         """Initialize the MCP server.
 
@@ -159,15 +154,15 @@ class MCPServer:
 
         # Request tracking
         self._request_count = 0
-        self._start_time: Optional[float] = None
+        self._start_time: float | None = None
 
         # Logging
         self._log_level = logging.INFO
-        self._log_handler: Optional[logging.Handler] = None
+        self._log_handler: logging.Handler | None = None
 
     # -- Request Routing -----------------------------------------------------
 
-    def handle_request(self, raw: str) -> Optional[str]:
+    def handle_request(self, raw: str) -> str | None:
         """Handle a raw JSON-RPC request and return a response string.
 
         Args:
@@ -186,7 +181,7 @@ class MCPServer:
 
         return self._dispatch(request)
 
-    def _dispatch(self, request: JSONRPCRequest) -> Optional[str]:
+    def _dispatch(self, request: JSONRPCRequest) -> str | None:
         """Dispatch a parsed request to the appropriate handler."""
         self._request_count += 1
         method = request.method
@@ -468,7 +463,7 @@ class MCPServer:
     # -- Pagination Helper ---------------------------------------------------
 
     def _paginate(
-        self, items: list[Any], cursor: Optional[str], page_size: int
+        self, items: list[Any], cursor: str | None, page_size: int
     ) -> CursorResult:
         """Paginate a list of items."""
         start = int(cursor) if cursor else 0
@@ -526,8 +521,8 @@ class MCPServer:
             port: Bind port.
         """
         try:
-            from http.server import HTTPServer, BaseHTTPRequestHandler
             import threading
+            from http.server import BaseHTTPRequestHandler, HTTPServer
         except ImportError:
             logger.error("http.server not available")
             return
@@ -598,9 +593,9 @@ class MCPServer:
         httpd = HTTPServer((host, port), MCPHTTPHandler)
         logger.info("NEUGI MCP Server starting (HTTP transport) on %s:%d", host, port)
         print(f"NEUGI MCP Server running on http://{host}:{port}")
-        print(f"  POST /message - Send MCP requests")
-        print(f"  GET  /health  - Health check")
-        print(f"  GET  /messages - SSE stream")
+        print("  POST /message - Send MCP requests")
+        print("  GET  /health  - Health check")
+        print("  GET  /messages - SSE stream")
 
         try:
             httpd.serve_forever()
@@ -615,11 +610,11 @@ class MCPServer:
 
     def setup_neugi(
         self,
-        memory_system: Optional[Any] = None,
-        skill_manager: Optional[Any] = None,
-        agent_manager: Optional[Any] = None,
-        session_manager: Optional[Any] = None,
-        config: Optional[Any] = None,
+        memory_system: Any | None = None,
+        skill_manager: Any | None = None,
+        agent_manager: Any | None = None,
+        session_manager: Any | None = None,
+        config: Any | None = None,
     ) -> None:
         """Set up the server with NEUGI subsystems.
 

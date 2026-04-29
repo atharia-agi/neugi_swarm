@@ -21,14 +21,14 @@ import threading
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from autonomous.executor import ExecutionResult
 from autonomous.notification_dispatcher import (
-    NotificationDispatcher,
-    NotificationPreferences,
     AutonomousNotification,
     NotificationChannel,
+    NotificationDispatcher,
+    NotificationPreferences,
 )
 
 logger = logging.getLogger(__name__)
@@ -73,9 +73,9 @@ class ActivityReport:
     severity: ReportSeverity
     title: str
     description: str
-    channels: List[ReportChannel] = field(default_factory=list)
-    result: Optional[ExecutionResult] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    channels: list[ReportChannel] = field(default_factory=list)
+    result: ExecutionResult | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
     created_at: float = field(default_factory=lambda: time.time())
 
 
@@ -98,13 +98,13 @@ class ActivityReporter:
         event_bus: Any = None,
         user_notify_threshold: ReportSeverity = ReportSeverity.WARNING,
         max_reports: int = 1000,
-        notification_dispatcher: Optional[NotificationDispatcher] = None,
+        notification_dispatcher: NotificationDispatcher | None = None,
     ) -> None:
         self.memory_system = memory_system
         self.event_bus = event_bus
         self.user_notify_threshold = user_notify_threshold
         self._max_reports = max_reports
-        self._reports: List[ActivityReport] = []
+        self._reports: list[ActivityReport] = []
         self._lock = threading.RLock()
         self._notifier = notification_dispatcher or NotificationDispatcher(
             preferences=NotificationPreferences(),
@@ -123,7 +123,7 @@ class ActivityReporter:
         self._dispatch(report)
         return report
 
-    def report_batch(self, results: List[ExecutionResult]) -> List[ActivityReport]:
+    def report_batch(self, results: list[ExecutionResult]) -> list[ActivityReport]:
         """Report a batch of execution results.
 
         Args:
@@ -132,7 +132,7 @@ class ActivityReporter:
         Returns:
             List of generated reports.
         """
-        reports: List[ActivityReport] = []
+        reports: list[ActivityReport] = []
 
         for result in results:
             report = self.report(result)
@@ -140,7 +140,7 @@ class ActivityReporter:
 
         return reports
 
-    def get_summary(self, since: Optional[float] = None) -> Dict[str, Any]:
+    def get_summary(self, since: float | None = None) -> dict[str, Any]:
         """Get a summary of recent autonomous activities.
 
         Args:
@@ -154,7 +154,7 @@ class ActivityReporter:
 
         recent = [r for r in self._reports if r.created_at > since]
 
-        by_severity: Dict[str, int] = {}
+        by_severity: dict[str, int] = {}
         for r in recent:
             by_severity[r.severity.value] = by_severity.get(r.severity.value, 0) + 1
 

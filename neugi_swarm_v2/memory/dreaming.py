@@ -18,18 +18,18 @@ Scheduled via cron (default 3 AM) with ground truth backfill.
 from __future__ import annotations
 
 import logging
-import math
 import re
 import threading
 import time
 from collections import Counter
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any
 
+from memory.memory_core import MemoryEntry, MemorySystem, MemoryTier
 from memory.scopes import ScopePath
-from memory.memory_core import MemorySystem, MemoryEntry, MemoryTier, MemoryError
 
 logger = logging.getLogger(__name__)
 
@@ -269,9 +269,9 @@ class DreamingEngine:
     def __init__(
         self,
         memory_system: MemorySystem,
-        config: Optional[DreamConfig] = None,
-        output_dir: Optional[str] = None,
-        pattern_extractor: Optional[Callable[[list[MemoryEntry]], list[str]]] = None,
+        config: DreamConfig | None = None,
+        output_dir: str | None = None,
+        pattern_extractor: Callable[[list[MemoryEntry]], list[str]] | None = None,
     ) -> None:
         """
         Initialize the dreaming engine.
@@ -295,7 +295,7 @@ class DreamingEngine:
         self._query_lock = threading.Lock()
 
         # Scheduler state
-        self._scheduler_thread: Optional[threading.Thread] = None
+        self._scheduler_thread: threading.Thread | None = None
         self._scheduler_running = False
 
     # -- Query tracking ------------------------------------------------------
@@ -309,7 +309,7 @@ class DreamingEngine:
                 self._query_history = self._query_history[-1000:]
 
     def get_recent_queries(
-        self, hours: Optional[float] = None
+        self, hours: float | None = None
     ) -> list[str]:
         """Get queries from the recent window."""
         hours = hours or self.config.light_sleep_window_hours
@@ -320,7 +320,7 @@ class DreamingEngine:
     # -- Main cycle ----------------------------------------------------------
 
     def run_cycle(
-        self, scope: Optional[ScopePath] = None
+        self, scope: ScopePath | None = None
     ) -> list[DreamResult]:
         """
         Run a complete three-phase dream cycle.
@@ -357,7 +357,7 @@ class DreamingEngine:
     # -- Phase 1: Light Sleep -----------------------------------------------
 
     def _light_sleep(
-        self, scope: Optional[ScopePath] = None
+        self, scope: ScopePath | None = None
     ) -> DreamResult:
         """
         Light Sleep phase: sort recent material, stage candidates,
@@ -668,7 +668,7 @@ class DreamingEngine:
     # -- Grounded Backfill ---------------------------------------------------
 
     def grounded_backfill(
-        self, days: Optional[int] = None, scope: Optional[ScopePath] = None
+        self, days: int | None = None, scope: ScopePath | None = None
     ) -> DreamResult:
         """
         Replay historical daily notes to recover missed promotions.
@@ -750,7 +750,7 @@ class DreamingEngine:
         """Shut down the dreaming engine."""
         self.stop_scheduler()
 
-    def __enter__(self) -> "DreamingEngine":
+    def __enter__(self) -> DreamingEngine:
         return self
 
     def __exit__(self, *args: Any) -> None:

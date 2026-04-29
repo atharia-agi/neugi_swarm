@@ -14,9 +14,9 @@ Usage:
 
 from __future__ import annotations
 
-from neugi_swarm_v2.cli.cli import NeugiCLI, CLICommand, CommandResult
-from neugi_swarm_v2.cli.wizard import SetupWizard, WizardStep, WizardState
-from neugi_swarm_v2.cli.interactive import InteractiveChat, ChatUI, CommandPalette
+from neugi_swarm_v2.cli.cli import CLICommand, CommandResult, NeugiCLI
+from neugi_swarm_v2.cli.interactive import ChatUI, CommandPalette, InteractiveChat
+from neugi_swarm_v2.cli.wizard import SetupWizard, WizardState, WizardStep
 
 __all__ = [
     "NeugiCLI",

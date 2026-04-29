@@ -27,8 +27,7 @@ from __future__ import annotations
 import json
 import logging
 import urllib.request
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +42,7 @@ class ModelCapabilities:
     supports_json_mode: bool = False
     context_length: int = 4096
     detected_via: str = ""  # "probe", "registry", "fallback"
-    
+
     @property
     def is_chat_model(self) -> bool:
         return True  # All models we use are chat models
@@ -56,7 +55,7 @@ class ModelCapabilityDetector:
     NEVER blocks a model — if unknown, assumes basic chat capabilities
     and logs a warning so the user knows features might not work.
     """
-    
+
     # Known model families and their typical capabilities
     # These are HINTS, not hard rules. Actual detection via probing preferred.
     # Updated April 2026 — includes latest releases
@@ -133,11 +132,11 @@ class ModelCapabilityDetector:
         "mistral-large-latest": {"tools": True, "vision": True, "json": True, "ctx": 131072},
         "pixtral": {"tools": True, "vision": True, "json": True, "ctx": 131072},
     }
-    
+
     def __init__(self, ollama_url: str = "http://localhost:11434"):
         self.ollama_url = ollama_url.rstrip("/")
-        self._cache: Dict[str, ModelCapabilities] = {}
-    
+        self._cache: dict[str, ModelCapabilities] = {}
+
     def detect(self, model_name: str, provider: str = "ollama") -> ModelCapabilities:
         """
         Detect capabilities for a model.
@@ -151,9 +150,9 @@ class ModelCapabilityDetector:
         cache_key = f"{provider}/{model_name}"
         if cache_key in self._cache:
             return self._cache[cache_key]
-        
+
         caps = ModelCapabilities(name=model_name, provider=provider)
-        
+
         # Try Ollama API for actual model info
         if provider == "ollama":
             try:
@@ -164,23 +163,23 @@ class ModelCapabilityDetector:
                     return caps
             except Exception as e:
                 logger.debug("Ollama model query failed: %s", e)
-        
+
         # Fall back to heuristic matching
         caps = self._heuristic_detect(model_name, provider)
         self._cache[cache_key] = caps
         return caps
-    
+
     def likely_supports_tools(self, model_name: str) -> bool:
         """Quick check if model likely supports tool use."""
         caps = self.detect(model_name)
         return caps.supports_tools
-    
+
     def likely_supports_vision(self, model_name: str) -> bool:
         """Quick check if model likely supports vision."""
         caps = self.detect(model_name)
         return caps.supports_vision
-    
-    def list_installed(self) -> List[str]:
+
+    def list_installed(self) -> list[str]:
         """List models installed in local Ollama."""
         try:
             req = urllib.request.Request(
@@ -195,17 +194,17 @@ class ModelCapabilityDetector:
         except Exception as e:
             logger.warning("Could not list Ollama models: %s", e)
             return []
-    
+
     def recommend_fallback(self, primary_model: str) -> str:
         """Recommend a fallback model if primary fails."""
         installed = self.list_installed()
         if not installed:
             return "llama3.2:3b"  # Safe default
-        
+
         # Prefer smaller models from same family
         primary_caps = self.detect(primary_model)
         primary_family = self._extract_family(primary_model)
-        
+
         candidates = []
         for name in installed:
             if name == primary_model:
@@ -221,14 +220,14 @@ class ModelCapabilityDetector:
             if caps.context_length <= 8192:
                 score += 3
             candidates.append((name, score))
-        
+
         candidates.sort(key=lambda x: x[1], reverse=True)
         if candidates:
             return candidates[0][0]
-        
+
         return installed[0] if installed else "llama3.2:3b"
-    
-    def _query_ollama_model(self, model_name: str) -> Optional[dict]:
+
+    def _query_ollama_model(self, model_name: str) -> dict | None:
         """Query Ollama API for model info."""
         req = urllib.request.Request(
             f"{self.ollama_url}/api/show",
@@ -238,24 +237,24 @@ class ModelCapabilityDetector:
         )
         with urllib.request.urlopen(req, timeout=5) as resp:
             return json.loads(resp.read().decode())
-    
+
     def _parse_ollama_info(self, model_name: str, info: dict) -> ModelCapabilities:
         """Parse Ollama model info into capabilities."""
         caps = ModelCapabilities(name=model_name, provider="ollama", detected_via="probe")
-        
+
         # Check model file for capabilities
         modelfile = info.get("modelfile", "")
         template = info.get("template", "")
-        
+
         # Tools: check if template has tool/function support
         caps.supports_tools = "tools" in template.lower() or "function" in template.lower()
-        
+
         # Vision: check if model name or modelfile mentions vision
         caps.supports_vision = "vision" in modelfile.lower() or "clip" in modelfile.lower()
-        
+
         # JSON mode: most modern models support this
         caps.supports_json_mode = True
-        
+
         # Context length from parameters
         params = info.get("parameters", "")
         if "num_ctx" in params:
@@ -266,7 +265,7 @@ class ModelCapabilityDetector:
                     caps.context_length = int(match.group(1))
             except Exception:
                 pass
-        
+
         # If probe didn't detect tools, still use heuristic
         if not caps.supports_tools:
             heuristic = self._heuristic_detect(model_name, "ollama")
@@ -274,14 +273,14 @@ class ModelCapabilityDetector:
             caps.supports_vision = caps.supports_vision or heuristic.supports_vision
             if caps.context_length == 4096:
                 caps.context_length = heuristic.context_length
-        
+
         return caps
-    
+
     def _heuristic_detect(self, model_name: str, provider: str) -> ModelCapabilities:
         """Detect capabilities based on model name heuristics."""
         caps = ModelCapabilities(name=model_name, provider=provider, detected_via="heuristic")
         name_lower = model_name.lower()
-        
+
         # Match against known families
         for family, hints in self._FAMILY_HINTS.items():
             if family in name_lower:
@@ -290,13 +289,13 @@ class ModelCapabilityDetector:
                 caps.supports_json_mode = hints["json"]
                 caps.context_length = hints["ctx"]
                 return caps
-        
+
         # Generic fallback: assume tool support for anything with "latest" or numbers
         if any(c.isdigit() for c in model_name):
             # Likely a modern model
             caps.supports_tools = True
             caps.supports_json_mode = True
-        
+
         logger.warning(
             "Unknown model '%s' — assuming basic chat only. "
             "Some features (tools, vision) may not work. "
@@ -304,7 +303,7 @@ class ModelCapabilityDetector:
             model_name,
         )
         return caps
-    
+
     def _extract_family(self, model_name: str) -> str:
         """Extract model family from name."""
         name_lower = model_name.lower()

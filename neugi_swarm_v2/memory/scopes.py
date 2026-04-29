@@ -16,10 +16,9 @@ Scopes define visibility boundaries for memories:
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from enum import Enum
-from pathlib import PurePosixPath
-from typing import Iterable, Optional
 
 
 class ScopeError(Exception):
@@ -112,7 +111,7 @@ class ScopePath:
     # -- Path operations -----------------------------------------------------
 
     @property
-    def level(self) -> Optional[ScopeLevel]:
+    def level(self) -> ScopeLevel | None:
         """Determine the scope level from the first path component."""
         if not self.parts:
             return None
@@ -127,7 +126,7 @@ class ScopePath:
         return len(self.parts) == 0
 
     @property
-    def parent(self) -> Optional[ScopePath]:
+    def parent(self) -> ScopePath | None:
         """Return the parent scope, or None if this is root."""
         if self.is_root:
             return None
@@ -246,8 +245,8 @@ class MemoryScope:
 
     path: ScopePath
     label: str = ""
-    retention_days: Optional[int] = None
-    max_entries: Optional[int] = None
+    retention_days: int | None = None
+    max_entries: int | None = None
     metadata: dict = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -268,13 +267,13 @@ class MemorySlice:
 
     name: str
     scopes: tuple[ScopePath, ...]
-    agent_id: Optional[str] = None
+    agent_id: str | None = None
 
     def __init__(
         self,
         name: str,
         scopes: Iterable[ScopePath],
-        agent_id: Optional[str] = None,
+        agent_id: str | None = None,
     ) -> None:
         object.__setattr__(self, "name", name)
         object.__setattr__(self, "scopes", tuple(scopes))

@@ -16,9 +16,8 @@ import math
 import re
 import string
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Optional
 
 
 @dataclass
@@ -187,13 +186,13 @@ class ScoringEngine:
         # Returns {mem_id: ScoreComponents}
     """
 
-    def __init__(self, config: Optional[ScoreConfig] = None) -> None:
+    def __init__(self, config: ScoreConfig | None = None) -> None:
         self.config = config or ScoreConfig()
         self._doc_tokens: dict[str, list[str]] = {}
         self._access_counts: dict[str, int] = {}
         self._importance: dict[str, float] = {}
         self._indexed_at: dict[str, datetime] = {}
-        self._idf_cache: Optional[dict[str, float]] = None
+        self._idf_cache: dict[str, float] | None = None
 
     # -- Indexing ------------------------------------------------------------
 
@@ -202,7 +201,7 @@ class ScoringEngine:
         mem_id: str,
         content: str,
         importance: float = 0.5,
-        timestamp: Optional[datetime] = None,
+        timestamp: datetime | None = None,
     ) -> None:
         """
         Register a memory entry for scoring.
@@ -274,7 +273,7 @@ class ScoringEngine:
 
         return _cosine_similarity(query_vec, doc_vec)
 
-    def _recency_score(self, mem_id: str, now: Optional[datetime] = None) -> float:
+    def _recency_score(self, mem_id: str, now: datetime | None = None) -> float:
         """
         Exponential decay based on age.
 
@@ -309,7 +308,7 @@ class ScoringEngine:
         return math.log(1 + min(accesses, cap)) / math.log(1 + cap)
 
     def score(
-        self, query: str, mem_id: str, now: Optional[datetime] = None
+        self, query: str, mem_id: str, now: datetime | None = None
     ) -> ScoreComponents:
         """
         Compute all score components for a single memory against a query.
@@ -328,8 +327,8 @@ class ScoringEngine:
     def score_all(
         self,
         query: str,
-        mem_ids: Optional[Iterable[str]] = None,
-        now: Optional[datetime] = None,
+        mem_ids: Iterable[str] | None = None,
+        now: datetime | None = None,
         min_score: float = 0.0,
     ) -> list[tuple[str, float, ScoreComponents]]:
         """
@@ -359,8 +358,8 @@ class ScoringEngine:
         self,
         query: str,
         k: int = 10,
-        mem_ids: Optional[Iterable[str]] = None,
-        now: Optional[datetime] = None,
+        mem_ids: Iterable[str] | None = None,
+        now: datetime | None = None,
         min_score: float = 0.0,
     ) -> list[tuple[str, float, ScoreComponents]]:
         """Return the top-k scored memories for a query."""

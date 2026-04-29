@@ -6,13 +6,13 @@ parallel, and consensus execution with state machine transitions.
 import logging
 import time
 import uuid
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
-from .agent import Agent, AgentStatus
 from .agent_manager import AgentManager
 
 logger = logging.getLogger(__name__)
@@ -33,15 +33,15 @@ class ProcessStep:
     """A single step within a process."""
     id: str
     name: str
-    agent_id: Optional[str]
-    agent_name: Optional[str]
+    agent_id: str | None
+    agent_name: str | None
     task: str
     status: str = "pending"
     output: Any = None
-    error: Optional[str] = None
+    error: str | None = None
     duration_seconds: float = 0.0
-    started_at: Optional[str] = None
-    completed_at: Optional[str] = None
+    started_at: str | None = None
+    completed_at: str | None = None
 
 
 @dataclass
@@ -50,7 +50,7 @@ class ProcessResult:
     process_id: str
     process_type: str
     status: str
-    steps: List[ProcessStep]
+    steps: list[ProcessStep]
     final_output: Any
     total_duration_seconds: float
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
@@ -70,13 +70,13 @@ class Process:
         self.name = name
         self.manager = manager
         self.status = ProcessStatus.PENDING
-        self.steps: List[ProcessStep] = []
+        self.steps: list[ProcessStep] = []
         self.final_output: Any = None
         self.created_at = datetime.now(timezone.utc).isoformat()
-        self.started_at: Optional[str] = None
-        self.completed_at: Optional[str] = None
-        self.error: Optional[str] = None
-        self._on_step_complete: Optional[Callable[[ProcessStep], None]] = None
+        self.started_at: str | None = None
+        self.completed_at: str | None = None
+        self.error: str | None = None
+        self._on_step_complete: Callable[[ProcessStep], None] | None = None
 
     def on_step_complete(self, callback: Callable[[ProcessStep], None]) -> None:
         """Register a callback invoked after each step completes."""
@@ -166,7 +166,7 @@ class Process:
             total_duration_seconds=round(time.monotonic() - start_time, 3),
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "name": self.name,
@@ -196,7 +196,7 @@ class SequentialProcess(Process):
     to complete before starting. Output from one step can feed the next.
     """
 
-    def run(self, context: Optional[Dict[str, Any]] = None) -> ProcessResult:
+    def run(self, context: dict[str, Any] | None = None) -> ProcessResult:
         self._transition(ProcessStatus.RUNNING)
         self.started_at = datetime.now(timezone.utc).isoformat()
         start = time.monotonic()
@@ -241,12 +241,12 @@ class HierarchicalProcess(Process):
     ) -> None:
         super().__init__(name, manager)
         self.manager_agent_id = manager_agent_id
-        self.worker_agents: List[str] = []
+        self.worker_agents: list[str] = []
 
     def add_worker(self, agent_id: str) -> None:
         self.worker_agents.append(agent_id)
 
-    def run(self, context: Optional[Dict[str, Any]] = None) -> ProcessResult:
+    def run(self, context: dict[str, Any] | None = None) -> ProcessResult:
         self._transition(ProcessStatus.RUNNING)
         self.started_at = datetime.now(timezone.utc).isoformat()
         start = time.monotonic()
@@ -300,7 +300,7 @@ class HierarchicalProcess(Process):
         self.completed_at = datetime.now(timezone.utc).isoformat()
         return self._build_result(start)
 
-    def _extract_subtasks(self, decomposition: Dict[str, Any]) -> List[str]:
+    def _extract_subtasks(self, decomposition: dict[str, Any]) -> list[str]:
         output = decomposition.get("output", "")
         if isinstance(output, str):
             return [line.strip() for line in output.split("\n") if line.strip()]
@@ -322,7 +322,7 @@ class ParallelProcess(Process):
         super().__init__(name, manager)
         self.sync_barrier = sync_barrier
 
-    def run(self, context: Optional[Dict[str, Any]] = None) -> ProcessResult:
+    def run(self, context: dict[str, Any] | None = None) -> ProcessResult:
         self._transition(ProcessStatus.RUNNING)
         self.started_at = datetime.now(timezone.utc).isoformat()
         start = time.monotonic()
@@ -359,13 +359,13 @@ class ConsensusProcess(Process):
         name: str,
         manager: AgentManager,
         agreement_threshold: float = 0.6,
-        voting_agent_id: Optional[str] = None,
+        voting_agent_id: str | None = None,
     ) -> None:
         super().__init__(name, manager)
         self.agreement_threshold = agreement_threshold
         self.voting_agent_id = voting_agent_id
 
-    def run(self, context: Optional[Dict[str, Any]] = None) -> ProcessResult:
+    def run(self, context: dict[str, Any] | None = None) -> ProcessResult:
         self._transition(ProcessStatus.RUNNING)
         self.started_at = datetime.now(timezone.utc).isoformat()
         start = time.monotonic()

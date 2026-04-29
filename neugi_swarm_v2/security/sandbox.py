@@ -28,19 +28,18 @@ import logging
 import os
 import platform
 import re
+
 try:
     import resource
 except ImportError:
     resource = None
 import shutil
-import signal
 import subprocess
-import sys
 import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -201,11 +200,11 @@ class ExecutionSandbox:
     7. Environment sanitization (strip sensitive vars)
     """
 
-    def __init__(self, config: Optional[SandboxConfig] = None) -> None:
+    def __init__(self, config: SandboxConfig | None = None) -> None:
         self.config = config or SandboxConfig()
         self._compiled_deny_rules: list[tuple[str, re.Pattern[str]]] = []
         self._compiled_deny_patterns: list[re.Pattern[str]] = []
-        self._tmp_dir: Optional[tempfile.TemporaryDirectory] = None
+        self._tmp_dir: tempfile.TemporaryDirectory | None = None
         self._execution_log: list[dict[str, Any]] = []
         self._init_compiled_rules()
         self._init_tmp_dir()
@@ -269,7 +268,7 @@ class ExecutionSandbox:
         # Check path deny patterns
         for pattern in self._compiled_deny_patterns:
             if pattern.search(full_cmd):
-                return False, f"Command accesses restricted path"
+                return False, "Command accesses restricted path"
 
         # Check path restrictions
         if self.config.enable_filesystem:
@@ -371,8 +370,8 @@ class ExecutionSandbox:
     def execute(
         self,
         command: list[str],
-        timeout: Optional[float] = None,
-        cwd: Optional[str] = None,
+        timeout: float | None = None,
+        cwd: str | None = None,
     ) -> SandboxResult:
         """Execute a command within the sandbox.
 
@@ -457,7 +456,7 @@ class ExecutionSandbox:
         memory_kb = 0
         try:
             if platform.system() != "Windows" and proc.pid:
-                with open(f"/proc/{proc.pid}/status", "r") as f:
+                with open(f"/proc/{proc.pid}/status") as f:
                     for line in f:
                         if line.startswith("VmHWM:"):
                             memory_kb = int(line.split()[1])
@@ -482,7 +481,7 @@ class ExecutionSandbox:
         self._log_execution(command, result=result)
         return result
 
-    def execute_safe(self, command: list[str], **kwargs: Any) -> Optional[SandboxResult]:
+    def execute_safe(self, command: list[str], **kwargs: Any) -> SandboxResult | None:
         """Execute with graceful degradation — never raises.
 
         Args:
@@ -537,8 +536,8 @@ class ExecutionSandbox:
     def _log_execution(
         self,
         command: list[str],
-        result: Optional[SandboxResult] = None,
-        violation: Optional[str] = None,
+        result: SandboxResult | None = None,
+        violation: str | None = None,
     ) -> None:
         """Log execution for audit trail.
 

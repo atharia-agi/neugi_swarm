@@ -34,11 +34,11 @@ import logging
 import sqlite3
 import time
 import uuid
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +76,7 @@ class PlanPhase(Enum):
 class PlanError(Exception):
     """Error in strategic planning operations."""
 
-    def __init__(self, message: str, plan_id: Optional[str] = None) -> None:
+    def __init__(self, message: str, plan_id: str | None = None) -> None:
         super().__init__(message)
         self.plan_id = plan_id
 
@@ -106,14 +106,14 @@ class Milestone:
     title: str = ""
     description: str = ""
     target_day: int = 0
-    actual_day: Optional[int] = None
+    actual_day: int | None = None
     status: str = "pending"
-    deliverables: List[str] = field(default_factory=list)
-    dependencies: List[str] = field(default_factory=list)
+    deliverables: list[str] = field(default_factory=list)
+    dependencies: list[str] = field(default_factory=list)
     progress: float = 0.0
     notes: str = ""
     created_at: float = field(default_factory=time.time)
-    completed_at: Optional[float] = None
+    completed_at: float | None = None
 
     @property
     def is_overdue(self) -> bool:
@@ -130,7 +130,7 @@ class Milestone:
             return self.progress >= expected_progress * 0.8
         return True
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "plan_id": self.plan_id,
@@ -148,7 +148,7 @@ class Milestone:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Milestone":
+    def from_dict(cls, data: dict[str, Any]) -> Milestone:
         def _parse_json(key: str, default: Any = None) -> Any:
             val = data.get(key)
             if val is None:
@@ -246,7 +246,7 @@ class RiskAssessment:
         probability: float,
         impact: float,
         **kwargs,
-    ) -> "RiskAssessment":
+    ) -> RiskAssessment:
         score = probability * impact
         if score >= 0.7:
             level = RiskLevel.CRITICAL
@@ -266,7 +266,7 @@ class RiskAssessment:
             **kwargs,
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "risk_id": self.risk_id,
             "plan_id": self.plan_id,
@@ -283,7 +283,7 @@ class RiskAssessment:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "RiskAssessment":
+    def from_dict(cls, data: dict[str, Any]) -> RiskAssessment:
         level_str = data.get("risk_level", "low")
         try:
             level = RiskLevel(level_str)
@@ -334,13 +334,13 @@ class StrategicPlan:
     horizon_days: int = 30
     start_date: float = field(default_factory=time.time)
     current_day: int = 0
-    milestones: List[Milestone] = field(default_factory=list)
-    resources: List[ResourceAllocation] = field(default_factory=list)
-    risks: List[RiskAssessment] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    milestones: list[Milestone] = field(default_factory=list)
+    resources: list[ResourceAllocation] = field(default_factory=list)
+    risks: list[RiskAssessment] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
     created_at: float = field(default_factory=time.time)
     updated_at: float = field(default_factory=time.time)
-    completed_at: Optional[float] = None
+    completed_at: float | None = None
 
     @property
     def progress(self) -> float:
@@ -384,8 +384,8 @@ class PlanQualityReport:
     risk_coverage: float = 0.0
     resource_alignment: float = 0.0
     milestone_spacing: float = 0.0
-    issues: List[str] = field(default_factory=list)
-    recommendations: List[str] = field(default_factory=list)
+    issues: list[str] = field(default_factory=list)
+    recommendations: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -425,7 +425,7 @@ class StrategicPlanner:
     ) -> None:
         self.llm_callback = llm_callback
         self.db_path = db_path
-        self._plan_cache: Dict[str, StrategicPlan] = {}
+        self._plan_cache: dict[str, StrategicPlan] = {}
         self._init_db()
 
     def _init_db(self) -> None:
@@ -515,9 +515,9 @@ class StrategicPlanner:
         title: str,
         description: str = "",
         horizon_days: int = 30,
-        milestones: Optional[List[Dict[str, Any]]] = None,
-        resources: Optional[List[ResourceAllocation]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        milestones: list[dict[str, Any]] | None = None,
+        resources: list[ResourceAllocation] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> StrategicPlan:
         """Create a new strategic plan.
 
@@ -611,9 +611,7 @@ class StrategicPlanner:
         objective: str,
         context: str = "",
         horizon_days: int = 30,
-        custom_generator: Optional[
-            Callable[[str, str, int], Awaitable[Dict[str, Any]]]
-        ] = None,
+        custom_generator: Callable[[str, str, int], Awaitable[dict[str, Any]]] | None = None,
     ) -> StrategicPlan:
         """Generate a strategic plan from an objective using LLM.
 
@@ -680,8 +678,8 @@ class StrategicPlanner:
         title: str,
         target_day: int,
         description: str = "",
-        deliverables: Optional[List[str]] = None,
-        dependencies: Optional[List[str]] = None,
+        deliverables: list[str] | None = None,
+        dependencies: list[str] | None = None,
     ) -> Milestone:
         """Add a milestone to a plan.
 
@@ -718,7 +716,7 @@ class StrategicPlanner:
 
     async def update_milestone_progress(
         self, milestone_id: str, progress: float
-    ) -> Optional[Milestone]:
+    ) -> Milestone | None:
         """Update milestone progress.
 
         Args:
@@ -741,7 +739,7 @@ class StrategicPlanner:
         self._save_milestone(milestone)
         return milestone
 
-    async def advance_day(self, plan_id: str, days: int = 1) -> Optional[StrategicPlan]:
+    async def advance_day(self, plan_id: str, days: int = 1) -> StrategicPlan | None:
         """Advance the plan's current day.
 
         Args:
@@ -771,10 +769,8 @@ class StrategicPlanner:
     async def assess_risks(
         self,
         plan_id: str,
-        custom_assessor: Optional[
-            Callable[[StrategicPlan], Awaitable[List[Dict[str, Any]]]]
-        ] = None,
-    ) -> List[RiskAssessment]:
+        custom_assessor: Callable[[StrategicPlan], Awaitable[list[dict[str, Any]]]] | None = None,
+    ) -> list[RiskAssessment]:
         """Assess risks for a plan.
 
         Args:
@@ -793,7 +789,7 @@ class StrategicPlanner:
         else:
             risk_data = await self._llm_assess_risks(plan)
 
-        risks: List[RiskAssessment] = []
+        risks: list[RiskAssessment] = []
         for r_data in risk_data:
             risk = RiskAssessment.from_probability_impact(
                 plan_id=plan_id,
@@ -817,10 +813,8 @@ class StrategicPlanner:
         self,
         plan_id: str,
         new_information: str,
-        custom_adapter: Optional[
-            Callable[[StrategicPlan, str], Awaitable[Dict[str, Any]]]
-        ] = None,
-    ) -> Optional[StrategicPlan]:
+        custom_adapter: Callable[[StrategicPlan, str], Awaitable[dict[str, Any]]] | None = None,
+    ) -> StrategicPlan | None:
         """Adapt a plan based on new information.
 
         Args:
@@ -888,7 +882,7 @@ class StrategicPlanner:
         self._update_plan(plan)
         return plan
 
-    def get_plan(self, plan_id: str) -> Optional[StrategicPlan]:
+    def get_plan(self, plan_id: str) -> StrategicPlan | None:
         """Get a plan by ID."""
         if plan_id in self._plan_cache:
             plan = self._plan_cache[plan_id]
@@ -926,8 +920,8 @@ class StrategicPlanner:
         return None
 
     def get_all_plans(
-        self, phase: Optional[PlanPhase] = None, limit: int = 50
-    ) -> List[StrategicPlan]:
+        self, phase: PlanPhase | None = None, limit: int = 50
+    ) -> list[StrategicPlan]:
         """Get all plans with optional filter.
 
         Args:
@@ -938,7 +932,7 @@ class StrategicPlanner:
             List of plans.
         """
         query = "SELECT * FROM plans"
-        params: List[Any] = []
+        params: list[Any] = []
 
         if phase:
             query += " WHERE phase = ?"
@@ -1011,8 +1005,8 @@ class StrategicPlanner:
         if plan is None:
             return PlanQualityReport(plan_id=plan_id)
 
-        issues: List[str] = []
-        recommendations: List[str] = []
+        issues: list[str] = []
+        recommendations: list[str] = []
 
         completeness = self._score_completeness(plan, issues, recommendations)
         specificity = self._score_specificity(plan, issues, recommendations)
@@ -1044,7 +1038,7 @@ class StrategicPlanner:
             recommendations=recommendations,
         )
 
-    def _get_milestones(self, plan_id: str) -> List[Milestone]:
+    def _get_milestones(self, plan_id: str) -> list[Milestone]:
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             rows = conn.execute(
@@ -1053,7 +1047,7 @@ class StrategicPlanner:
             ).fetchall()
         return [Milestone.from_dict(dict(r)) for r in rows]
 
-    def _get_milestone(self, milestone_id: str) -> Optional[Milestone]:
+    def _get_milestone(self, milestone_id: str) -> Milestone | None:
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             row = conn.execute(
@@ -1063,7 +1057,7 @@ class StrategicPlanner:
             return Milestone.from_dict(dict(row))
         return None
 
-    def _get_resources(self, plan_id: str) -> List[ResourceAllocation]:
+    def _get_resources(self, plan_id: str) -> list[ResourceAllocation]:
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             rows = conn.execute(
@@ -1087,7 +1081,7 @@ class StrategicPlanner:
             )
         return resources
 
-    def _get_risks(self, plan_id: str) -> List[RiskAssessment]:
+    def _get_risks(self, plan_id: str) -> list[RiskAssessment]:
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             rows = conn.execute(
@@ -1096,7 +1090,7 @@ class StrategicPlanner:
             ).fetchall()
         return [RiskAssessment.from_dict(dict(r)) for r in rows]
 
-    def _get_risk(self, risk_id: str) -> Optional[RiskAssessment]:
+    def _get_risk(self, risk_id: str) -> RiskAssessment | None:
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             row = conn.execute(
@@ -1187,7 +1181,7 @@ class StrategicPlanner:
 
     async def _llm_generate_plan(
         self, objective: str, context: str, horizon_days: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         prompt = (
             f"Objective: {objective}\n\n"
             f"Context: {context}\n\n"
@@ -1223,7 +1217,7 @@ class StrategicPlanner:
 
     async def _llm_assess_risks(
         self, plan: StrategicPlan
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         milestones_text = "\n".join(
             f"  Day {m.target_day}: {m.title}" for m in plan.milestones
         )
@@ -1255,7 +1249,7 @@ class StrategicPlanner:
 
     async def _llm_adapt_plan(
         self, plan: StrategicPlan, new_information: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         prompt = (
             f"Current plan: {plan.title}\n"
             f"Current day: {plan.current_day}/{plan.horizon_days}\n"
@@ -1326,13 +1320,13 @@ class StrategicPlanner:
 
         critical_risks = [r for r in plan.risks if r.risk_level in (RiskLevel.HIGH, RiskLevel.CRITICAL)]
         if critical_risks:
-            lines.append(f"\nCritical Risks:")
+            lines.append("\nCritical Risks:")
             for r in critical_risks:
                 lines.append(f"  [{r.risk_level.value.upper()}] {r.description[:60]}")
 
         blocked = [m for m in plan.milestones if m.status == "blocked"]
         if blocked:
-            lines.append(f"\nBlocked Milestones:")
+            lines.append("\nBlocked Milestones:")
             for m in blocked:
                 lines.append(f"  - {m.title}: {m.notes or 'No reason given'}")
 
@@ -1363,8 +1357,8 @@ class StrategicPlanner:
     def _score_completeness(
         self,
         plan: StrategicPlan,
-        issues: List[str],
-        recommendations: List[str],
+        issues: list[str],
+        recommendations: list[str],
     ) -> float:
         score = 0.3
 
@@ -1397,8 +1391,8 @@ class StrategicPlanner:
     def _score_specificity(
         self,
         plan: StrategicPlan,
-        issues: List[str],
-        recommendations: List[str],
+        issues: list[str],
+        recommendations: list[str],
     ) -> float:
         if not plan.milestones:
             return 0.0
@@ -1428,8 +1422,8 @@ class StrategicPlanner:
     def _score_risk_coverage(
         self,
         plan: StrategicPlan,
-        issues: List[str],
-        recommendations: List[str],
+        issues: list[str],
+        recommendations: list[str],
     ) -> float:
         if not plan.risks:
             issues.append("No risks identified")
@@ -1459,8 +1453,8 @@ class StrategicPlanner:
     def _score_resource_alignment(
         self,
         plan: StrategicPlan,
-        issues: List[str],
-        recommendations: List[str],
+        issues: list[str],
+        recommendations: list[str],
     ) -> float:
         if not plan.resources:
             return 0.3
@@ -1482,8 +1476,8 @@ class StrategicPlanner:
     def _score_milestone_spacing(
         self,
         plan: StrategicPlan,
-        issues: List[str],
-        recommendations: List[str],
+        issues: list[str],
+        recommendations: list[str],
     ) -> float:
         if len(plan.milestones) < 2:
             return 0.5
@@ -1511,7 +1505,7 @@ class StrategicPlanner:
             recommendations.append("Distribute milestones more evenly across the timeline")
             return 0.4
 
-    def _parse_json_response(self, text: str) -> Dict[str, Any]:
+    def _parse_json_response(self, text: str) -> dict[str, Any]:
         text = text.strip()
 
         if text.startswith("```json"):

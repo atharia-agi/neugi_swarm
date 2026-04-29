@@ -4,9 +4,7 @@ import os
 import tempfile
 from pathlib import Path
 
-import pytest
-
-from cli.rescue_wizard import RescueWizard, WizardError
+from cli.rescue_wizard import RescueWizard
 
 
 class TestRescueWizard:

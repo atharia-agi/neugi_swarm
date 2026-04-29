@@ -10,10 +10,9 @@ from __future__ import annotations
 import enum
 import logging
 import time
-import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -104,15 +103,15 @@ class UserIdentity:
 
     id: str
     name: str
-    avatar_url: Optional[str] = None
-    role: Optional[str] = None
+    avatar_url: str | None = None
+    role: str | None = None
     is_bot: bool = False
-    platform_id: Optional[str] = None
-    platform_username: Optional[str] = None
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    locale: Optional[str] = None
-    timezone: Optional[str] = None
+    platform_id: str | None = None
+    platform_username: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    locale: str | None = None
+    timezone: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def display_name(self) -> str:
@@ -141,13 +140,13 @@ class Attachment:
     """File attachment associated with a message."""
 
     url: str
-    filename: Optional[str] = None
-    mime_type: Optional[str] = None
-    size_bytes: Optional[int] = None
-    width: Optional[int] = None
-    height: Optional[int] = None
-    duration_ms: Optional[int] = None
-    local_path: Optional[str] = None
+    filename: str | None = None
+    mime_type: str | None = None
+    size_bytes: int | None = None
+    width: int | None = None
+    height: int | None = None
+    duration_ms: int | None = None
+    local_path: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
@@ -161,9 +160,9 @@ class IncomingMessage:
     content: str
     message_type: MessageType = MessageType.TEXT
     conversation_type: ConversationType = ConversationType.DM
-    conversation_id: Optional[str] = None
-    thread_id: Optional[str] = None
-    reply_to_message_id: Optional[str] = None
+    conversation_id: str | None = None
+    thread_id: str | None = None
+    reply_to_message_id: str | None = None
     attachments: list[Attachment] = field(default_factory=list)
     timestamp: float = field(default_factory=time.time)
     raw_payload: dict[str, Any] = field(default_factory=dict)
@@ -175,7 +174,7 @@ class IncomingMessage:
         return self.content.startswith(("/", "!"))
 
     @property
-    def command_name(self) -> Optional[str]:
+    def command_name(self) -> str | None:
         """Extract command name from message content."""
         if not self.is_command:
             return None
@@ -206,8 +205,8 @@ class OutgoingMessage:
     channel_type: ChannelType
     conversation_id: str
     message_type: MessageType = MessageType.TEXT
-    thread_id: Optional[str] = None
-    reply_to_message_id: Optional[str] = None
+    thread_id: str | None = None
+    reply_to_message_id: str | None = None
     format: MessageFormat = MessageFormat.PLAIN
     attachments: list[Attachment] = field(default_factory=list)
     buttons: list[dict[str, Any]] = field(default_factory=list)
@@ -234,14 +233,14 @@ class ChannelHealth:
     channel_type: ChannelType
     is_healthy: bool = True
     last_check: float = field(default_factory=time.time)
-    response_time_ms: Optional[float] = None
+    response_time_ms: float | None = None
     error_count: int = 0
-    last_error: Optional[str] = None
+    last_error: str | None = None
     uptime_seconds: float = 0.0
     messages_sent: int = 0
     messages_received: int = 0
-    rate_limit_remaining: Optional[int] = None
-    rate_limit_reset: Optional[float] = None
+    rate_limit_remaining: int | None = None
+    rate_limit_reset: float | None = None
     connection_state: str = "connected"
 
     @property
@@ -350,14 +349,14 @@ class BaseChannel(ABC):
     def __init__(
         self,
         token: str,
-        bot_name: Optional[str] = None,
+        bot_name: str | None = None,
         health_check_interval: int = 60,
     ) -> None:
         self._token = token
         self._bot_name = bot_name or self.__class__.__name__
         self._is_running = False
         self._health = ChannelHealth(channel_type=self.channel_type)
-        self._start_time: Optional[float] = None
+        self._start_time: float | None = None
         self._health_check_interval = health_check_interval
         self._capabilities = self._build_capabilities()
         self._message_handlers: list = []
@@ -378,7 +377,7 @@ class BaseChannel(ABC):
         """Gracefully disconnect from the messaging platform."""
 
     @abstractmethod
-    async def send_message(self, message: OutgoingMessage) -> Optional[str]:
+    async def send_message(self, message: OutgoingMessage) -> str | None:
         """
         Send a message to the platform.
 
@@ -427,7 +426,7 @@ class BaseChannel(ABC):
             self._logger.error("Error stopping %s: %s", self.channel_type.value, exc)
             self._health.record_error(str(exc))
 
-    async def receive_message(self, raw_data: dict[str, Any]) -> Optional[IncomingMessage]:
+    async def receive_message(self, raw_data: dict[str, Any]) -> IncomingMessage | None:
         """
         Convert raw platform data into a normalized IncomingMessage.
 
@@ -449,7 +448,7 @@ class BaseChannel(ABC):
             return None
 
     @abstractmethod
-    async def _parse_message(self, raw_data: dict[str, Any]) -> Optional[IncomingMessage]:
+    async def _parse_message(self, raw_data: dict[str, Any]) -> IncomingMessage | None:
         """Parse raw platform data into IncomingMessage."""
 
     async def send_text(
@@ -457,9 +456,9 @@ class BaseChannel(ABC):
         conversation_id: str,
         text: str,
         format: MessageFormat = MessageFormat.PLAIN,
-        thread_id: Optional[str] = None,
-        reply_to_message_id: Optional[str] = None,
-    ) -> Optional[str]:
+        thread_id: str | None = None,
+        reply_to_message_id: str | None = None,
+    ) -> str | None:
         """Convenience method to send a text message."""
         message = OutgoingMessage(
             content=text,
@@ -476,9 +475,9 @@ class BaseChannel(ABC):
         self,
         conversation_id: str,
         image_url: str,
-        caption: Optional[str] = None,
-        thread_id: Optional[str] = None,
-    ) -> Optional[str]:
+        caption: str | None = None,
+        thread_id: str | None = None,
+    ) -> str | None:
         """Convenience method to send an image."""
         attachment = Attachment(url=image_url)
         message = OutgoingMessage(
@@ -495,10 +494,10 @@ class BaseChannel(ABC):
         self,
         conversation_id: str,
         file_url: str,
-        filename: Optional[str] = None,
-        caption: Optional[str] = None,
-        thread_id: Optional[str] = None,
-    ) -> Optional[str]:
+        filename: str | None = None,
+        caption: str | None = None,
+        thread_id: str | None = None,
+    ) -> str | None:
         """Convenience method to send a file."""
         attachment = Attachment(url=file_url, filename=filename)
         message = OutgoingMessage(
@@ -541,12 +540,12 @@ class BaseChannel(ABC):
         self._logger.warning("Message deletion not supported on %s", self.channel_type.value)
         return False
 
-    async def get_user(self, user_id: str) -> Optional[UserIdentity]:
+    async def get_user(self, user_id: str) -> UserIdentity | None:
         """Fetch user information from the platform."""
         self._logger.warning("User lookup not implemented for %s", self.channel_type.value)
         return None
 
-    async def get_chat_info(self, chat_id: str) -> Optional[dict[str, Any]]:
+    async def get_chat_info(self, chat_id: str) -> dict[str, Any] | None:
         """Fetch chat/conversation information."""
         self._logger.warning("Chat info not implemented for %s", self.channel_type.value)
         return None

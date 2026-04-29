@@ -26,14 +26,13 @@ import json
 import os
 import platform
 import shutil
-import socket
 import subprocess
 import sys
 import time
 import urllib.request
 import webbrowser
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 
 class Colors:
@@ -82,29 +81,29 @@ class GeniusWizard:
         self._print_logo()
         self._typewrite("Hi! I'm the NEUGI Setup Wizard. I'll get you running in minutes.")
         self._typewrite("I don't need any AI to work — I already know everything about your computer.")
-        
+
         # Phase 1: Deep System Scan
         self._section("Scanning Your System")
         state = self._deep_scan()
         self._show_scan_summary(state)
-        
+
         # Phase 2: Smart Decision Engine
         self._section("Deciding Best Setup")
         plan = self._create_setup_plan(state)
         self._explain_plan(plan)
-        
+
         if not self._confirm("Does this look good?"):
             plan = self._manual_override(state)
-        
+
         # Phase 3: Execute
         self._section("Setting Up")
         success = self._execute_plan(plan, state)
-        
+
         # Phase 4: Verify
         if success:
             self._section("Final Check")
             self._verify_setup(plan)
-        
+
         return success
 
     def rescue(self) -> bool:
@@ -112,29 +111,29 @@ class GeniusWizard:
         self._clear_screen()
         self._print_logo()
         self._typewrite("Rescue Mode — I'll find and fix all problems automatically.")
-        
+
         state = self._deep_scan()
         self._show_scan_summary(state)
-        
+
         # Auto-fix loop
         self._section("Auto-Fixing Issues")
-        
+
         if not state["python_ok"]:
             self._error("Python too old. This must be fixed manually.")
             self._show_python_guide()
             return False
-        
+
         if state["config_missing"]:
             self._fix("Creating missing config file...")
             self._create_default_config(state)
         elif state["config_broken"]:
             self._fix("Config corrupted. Restoring defaults...")
             self._create_default_config(state)
-        
+
         if state["dirs_missing"]:
             self._fix("Creating required folders...")
             self._ensure_directories()
-        
+
         if state["ollama_installed"] and not state["ollama_running"]:
             self._fix("Starting Ollama...")
             if self._start_ollama():
@@ -142,7 +141,7 @@ class GeniusWizard:
             else:
                 self._warning("Couldn't auto-start Ollama.")
                 self._show_ollama_start_guide()
-        
+
         if state["model_missing"] and state["ollama_running"]:
             model = state["configured_model"] or "qwen2.5-coder:7b"
             self._fix(f"Downloading model {model}...")
@@ -154,25 +153,25 @@ class GeniusWizard:
                     fallback = state["available_models"][0]
                     self._fix(f"Switching to available model: {fallback}")
                     self._update_config_model(fallback)
-        
+
         # Final report
         self._section("Rescue Complete")
         if self.issues_fixed:
             self._success(f"Fixed {len(self.issues_fixed)} issue(s):")
             for issue in self.issues_fixed:
                 print(f"   ✓ {issue}")
-        
+
         if self.issues_manual:
             self._warning(f"{len(self.issues_manual)} issue(s) need manual fix:")
             for issue in self.issues_manual:
                 print(f"   ⚠ {issue}")
-        
+
         if not self.issues_fixed and not self.issues_manual:
             self._success("No issues found! Everything looks good.")
-        
+
         return len([i for i in self.issues_manual if "CRITICAL" in i]) == 0
 
-    def check(self) -> Dict[str, Any]:
+    def check(self) -> dict[str, Any]:
         """System check only — returns report dict."""
         state = self._deep_scan()
         report = {
@@ -183,20 +182,20 @@ class GeniusWizard:
             "model_ready": not state["model_missing"],
             "recommendation": self._create_setup_plan(state)["description"],
         }
-        
+
         critical = []
         if not state["python_ok"]:
             critical.append("Python version too old")
         if state["config_broken"]:
             critical.append("Config file corrupted")
-        
+
         report["healthy"] = len(critical) == 0
         report["critical_issues"] = critical
         return report
 
     # ==================== THE BRAIN: DEEP SCAN ====================
 
-    def _deep_scan(self) -> Dict[str, Any]:
+    def _deep_scan(self) -> dict[str, Any]:
         """
         Comprehensive system scan. This is the wizard's 'eyes'.
         Detects everything without asking the user.
@@ -206,18 +205,18 @@ class GeniusWizard:
             "python_ok": False,
             "python_version": "",
             "python_path": sys.executable,
-            
+
             # OS
             "os": self.os_name,
             "is_wsl": self.is_wsl,
-            
+
             # Ollama
             "ollama_installed": False,
             "ollama_version": "",
             "ollama_running": False,
             "ollama_models": [],
             "ollama_path": None,
-            
+
             # Config
             "config_exists": False,
             "config_valid": False,
@@ -226,11 +225,11 @@ class GeniusWizard:
             "configured_provider": "",
             "configured_model": "",
             "configured_url": "",
-            
+
             # Directories
             "dirs_missing": False,
             "missing_dirs": [],
-            
+
             # Cloud providers
             "has_openai_key": False,
             "has_anthropic_key": False,
@@ -337,7 +336,7 @@ class GeniusWizard:
         ("ollama", "qwen2.5-coder:7b", "llama3.2:3b"),
     ]
 
-    def _create_setup_plan(self, state: Dict[str, Any]) -> Dict[str, Any]:
+    def _create_setup_plan(self, state: dict[str, Any]) -> dict[str, Any]:
         """
         Zero-effort setup: auto-pick primary + fallback.
         User just presses Enter.
@@ -383,7 +382,7 @@ class GeniusWizard:
 
         return plan
 
-    def _rank_providers(self, state: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _rank_providers(self, state: dict[str, Any]) -> list[dict[str, Any]]:
         """Rank all detected providers by capability. Returns list of candidates."""
         candidates = []
 
@@ -477,10 +476,10 @@ class GeniusWizard:
         candidates.sort(key=lambda x: x["rank"])
         return candidates
 
-    def _explain_plan(self, plan: Dict[str, Any]) -> None:
+    def _explain_plan(self, plan: dict[str, Any]) -> None:
         """Explain the plan in human language."""
         self._typewrite(f"\nI recommend: {plan['description']}")
-        
+
         if plan["mode"] == "local_ready":
             self._typewrite("This is perfect — you'll have a fully private AI that works offline.")
         elif plan["mode"].startswith("local"):
@@ -492,7 +491,7 @@ class GeniusWizard:
         elif plan["mode"] == "fresh_local":
             self._typewrite("You'll need to download about 4GB for the AI model. This is a one-time download.")
 
-    def _manual_override(self, state: Dict[str, Any]) -> Dict[str, Any]:
+    def _manual_override(self, state: dict[str, Any]) -> dict[str, Any]:
         """Interactive provider & model selection with capability preview."""
         self._typewrite("\nLet's pick your AI provider and model.")
         self._typewrite("I only show models that run NEUGI well. Use 'Custom' for anything else.")
@@ -571,7 +570,7 @@ class GeniusWizard:
             "needs_download": is_ollama and model not in state.get("ollama_models", []),
         }
 
-    def _build_provider_menu(self, state: Dict[str, Any]) -> List[Tuple[str, str]]:
+    def _build_provider_menu(self, state: dict[str, Any]) -> list[tuple[str, str]]:
         """Build provider menu dynamically from catalog."""
         from provider_catalog import get_all_providers
 
@@ -595,7 +594,7 @@ class GeniusWizard:
         menu.append(("anthropic_compatible", "Anthropic-compatible — custom endpoint"))
         return menu
 
-    def _pick_model_interactive(self, provider: str, state: Dict[str, Any]) -> Tuple[str, str]:
+    def _pick_model_interactive(self, provider: str, state: dict[str, Any]) -> tuple[str, str]:
         """Let user pick a model from the provider catalog."""
         from provider_catalog import get_models_for_provider
 
@@ -651,16 +650,16 @@ class GeniusWizard:
         print(f"   Model: {model}")
         print(f"   Provider: {provider}")
         print(f"   Estimated tier: {tier}")
-        print(f"   NEUGI will auto-adapt prompts, tools, and memory for this model.")
+        print("   NEUGI will auto-adapt prompts, tools, and memory for this model.")
 
     # ==================== EXECUTION ENGINE ====================
 
-    def _execute_plan(self, plan: Dict[str, Any], state: Dict[str, Any]) -> bool:
+    def _execute_plan(self, plan: dict[str, Any], state: dict[str, Any]) -> bool:
         """Execute the setup plan step by step."""
-        
+
         # Step 1: Ensure directories
         self._ensure_directories()
-        
+
         # Step 2: Execute actions
         for action in plan["actions"]:
             if action == "install_ollama":
@@ -675,7 +674,7 @@ class GeniusWizard:
                     self._show_ollama_install_guide()
                     if not self._confirm("Continue after installing Ollama?"):
                         return False
-            
+
             elif action == "start_ollama":
                 self._typewrite("\n🚀 Starting Ollama...")
                 if self._start_ollama():
@@ -687,7 +686,7 @@ class GeniusWizard:
                     self._show_ollama_start_guide()
                     if not self._confirm("Continue after starting Ollama?"):
                         return False
-            
+
             elif action == "pull_model":
                 model = plan["model"]
                 self._typewrite(f"\n📥 Downloading {model}...")
@@ -700,14 +699,14 @@ class GeniusWizard:
                         fallback = state["ollama_models"][0]
                         plan["model"] = fallback
                         self._typewrite(f"Using existing model: {fallback}")
-            
+
             elif action == "save_config":
                 self._save_config(plan)
                 self._success("Configuration saved!")
-        
+
         return True
 
-    def _verify_setup(self, plan: Dict[str, Any]) -> None:
+    def _verify_setup(self, plan: dict[str, Any]) -> None:
         """Final verification."""
         provider = plan["provider"]
         model = plan["model"]
@@ -739,13 +738,13 @@ class GeniusWizard:
 
     # ==================== SYSTEM OPERATIONS ====================
 
-    def _find_ollama_binary(self) -> Optional[Path]:
+    def _find_ollama_binary(self) -> Path | None:
         """Find Ollama executable across different install methods."""
         # Check PATH first
         ollama_exe = "ollama.exe" if self.is_windows else "ollama"
         if shutil.which(ollama_exe):
             return Path(shutil.which(ollama_exe))
-        
+
         # Check common install locations
         paths = []
         if self.is_windows:
@@ -765,14 +764,14 @@ class GeniusWizard:
                 Path("/usr/bin/ollama"),
                 self.home / ".local" / "bin" / "ollama",
             ]
-        
+
         for path in paths:
             if path.exists():
                 return path
-        
+
         return None
 
-    def _query_ollama_models(self) -> Tuple[bool, List[str]]:
+    def _query_ollama_models(self) -> tuple[bool, list[str]]:
         """Query Ollama API for running status and models."""
         try:
             req = urllib.request.Request("http://localhost:11434/api/tags", method="GET")
@@ -789,24 +788,24 @@ class GeniusWizard:
             binary = self._find_ollama_binary()
             if not binary:
                 return False
-            
+
             # Start in background
             kwargs = {}
             if self.is_windows:
                 kwargs["creationflags"] = subprocess.CREATE_NEW_CONSOLE if hasattr(subprocess, "CREATE_NEW_CONSOLE") else 0
-            
-            subprocess.Popen([str(binary), "serve"], 
-                stdout=subprocess.DEVNULL, 
+
+            subprocess.Popen([str(binary), "serve"],
+                stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 **kwargs)
-            
+
             # Wait and verify
             for _ in range(10):
                 time.sleep(1)
                 running, _ = self._query_ollama_models()
                 if running:
                     return True
-            
+
             return False
         except Exception:
             return False
@@ -826,19 +825,19 @@ class GeniusWizard:
                     self._typewrite("Opening Ollama download page...")
                     webbrowser.open("https://ollama.com/download/windows")
                     return False
-            
+
             elif self.is_mac:
                 if shutil.which("brew"):
                     self._typewrite("Installing Ollama via Homebrew...")
                     subprocess.run(["brew", "install", "ollama"], timeout=120, check=False)
                     return True
-            
+
             else:  # Linux
                 self._typewrite("Installing Ollama...")
                 subprocess.run("curl -fsSL https://ollama.com/install.sh | sh",
                     shell=True, timeout=180, check=False)
                 return True
-        
+
         except Exception:
             return False
 
@@ -853,7 +852,7 @@ class GeniusWizard:
         except Exception:
             return False
 
-    def _save_config(self, plan: Dict[str, Any]) -> None:
+    def _save_config(self, plan: dict[str, Any]) -> None:
         """Save NEUGI configuration — one simple JSON file."""
         provider = plan["provider"]
         model = plan["model"]
@@ -954,7 +953,7 @@ class GeniusWizard:
     def _update_config_model(self, model: str) -> None:
         """Update just the model in config."""
         try:
-            with open(self.config_path, "r", encoding="utf-8") as f:
+            with open(self.config_path, encoding="utf-8") as f:
                 cfg = json.load(f)
             cfg["llm"]["model"] = model
             with open(self.config_path, "w", encoding="utf-8") as f:
@@ -967,7 +966,7 @@ class GeniusWizard:
         for name in ["skills", "memory", "sessions", "agents", "plugins", "workflows"]:
             (self.neugi_dir / name).mkdir(parents=True, exist_ok=True)
 
-    def _pick_best_model(self, models: List[str]) -> str:
+    def _pick_best_model(self, models: list[str]) -> str:
         """Pick the best model from available list."""
         priority = ["qwen3.5", "qwen2.5-coder", "deepseek-coder", "llama3.2", "llama3.1", "mistral"]
         for pref in priority:
@@ -976,24 +975,24 @@ class GeniusWizard:
                     return m
         return models[0] if models else "qwen2.5-coder:7b"
 
-    def _setup_cloud_manual(self) -> Dict[str, Any]:
+    def _setup_cloud_manual(self) -> dict[str, Any]:
         """Manual cloud setup."""
         self._typewrite("\nCloud Setup:")
         self._typewrite("Get API key from:")
         self._typewrite("  OpenAI: https://platform.openai.com/api-keys")
         self._typewrite("  Anthropic: https://console.anthropic.com/settings/keys")
-        
+
         providers = ["OpenAI", "Anthropic"]
         choice = self._ask_number("Select provider", 1, 2)
         provider_key = "openai" if choice == 1 else "anthropic"
         model = "gpt-4o-mini" if choice == 1 else "claude-3-5-sonnet-20241022"
-        
+
         key = getpass.getpass("   Paste your API key: ").strip()
         if provider_key == "openai":
             os.environ["OPENAI_API_KEY"] = key
         else:
             os.environ["ANTHROPIC_API_KEY"] = key
-        
+
         return {
             "mode": f"cloud_{provider_key}",
             "provider": provider_key,
@@ -1061,7 +1060,7 @@ class GeniusWizard:
                 pass
             print("Please enter a valid number.")
 
-    def _show_scan_summary(self, state: Dict[str, Any]) -> None:
+    def _show_scan_summary(self, state: dict[str, Any]) -> None:
         """Display scan results in a nice format."""
         print()
 
@@ -1101,7 +1100,7 @@ class GeniusWizard:
             print(f"  {Colors.YELLOW}⚠ Missing folders: {', '.join(state['missing_dirs'])}{Colors.END}")
         else:
             print(f"  {Colors.GREEN}✓ All folders present{Colors.END}")
-        
+
         # Model
         if state["model_missing"]:
             print(f"  {Colors.YELLOW}⚠ Configured model not downloaded{Colors.END}")
@@ -1148,7 +1147,7 @@ class GeniusWizard:
 
 def main():
     wizard = GeniusWizard()
-    
+
     if len(sys.argv) > 1:
         cmd = sys.argv[1].lower()
         if cmd == "rescue":

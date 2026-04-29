@@ -9,10 +9,11 @@ timeout protection, and transcript hygiene.
 import logging
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -58,12 +59,12 @@ class CompactionResult:
     messages_before: int
     messages_after: int
     strategy_used: str
-    summary: Optional[str] = None
-    preserved_facts: List[str] = field(default_factory=list)
-    error: Optional[str] = None
+    summary: str | None = None
+    preserved_facts: list[str] = field(default_factory=list)
+    error: str | None = None
     duration_seconds: float = 0.0
     timed_out: bool = False
-    checkpoint_id: Optional[str] = None
+    checkpoint_id: str | None = None
 
     @property
     def compression_ratio(self) -> float:
@@ -97,13 +98,13 @@ class CompactionEngine:
         result = engine.compact(session, messages, token_count)
     """
 
-    def __init__(self, config: Optional[CompactionConfig] = None) -> None:
+    def __init__(self, config: CompactionConfig | None = None) -> None:
         self.config = config or CompactionConfig()
-        self._pre_hooks: List[Callable[["CompactionContext"], None]] = []
-        self._post_hooks: List[Callable[["CompactionContext", CompactionResult], None]] = []
-        self._history: List[CompactionResult] = []
-        self._summarizer: Optional[Callable[[List[Dict[str, Any]]], str]] = None
-        self._key_fact_extractor: Optional[Callable[[List[Dict[str, Any]]], List[str]]] = None
+        self._pre_hooks: list[Callable[[CompactionContext], None]] = []
+        self._post_hooks: list[Callable[[CompactionContext, CompactionResult], None]] = []
+        self._history: list[CompactionResult] = []
+        self._summarizer: Callable[[list[dict[str, Any]]], str] | None = None
+        self._key_fact_extractor: Callable[[list[dict[str, Any]]], list[str]] | None = None
 
     def register_pre_hook(self, hook: Callable[["CompactionContext"], None]) -> None:
         """
@@ -120,7 +121,7 @@ class CompactionEngine:
         """Register a hook to run after compaction completes."""
         self._post_hooks.append(hook)
 
-    def set_summarizer(self, func: Callable[[List[Dict[str, Any]]], str]) -> None:
+    def set_summarizer(self, func: Callable[[list[dict[str, Any]]], str]) -> None:
         """
         Set the summarization function.
 
@@ -129,7 +130,7 @@ class CompactionEngine:
         self._summarizer = func
 
     def set_key_fact_extractor(
-        self, func: Callable[[List[Dict[str, Any]]], List[str]]
+        self, func: Callable[[list[dict[str, Any]]], list[str]]
     ) -> None:
         """
         Set the key fact extraction function.
@@ -157,9 +158,9 @@ class CompactionEngine:
     def compact(
         self,
         session: Any,
-        messages: List[Dict[str, Any]],
+        messages: list[dict[str, Any]],
         token_count: int,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
     ) -> CompactionResult:
         """
         Execute compaction on the given messages.
@@ -445,7 +446,7 @@ class CompactionEngine:
 
     def _rebuild_messages_from_result(
         self, ctx: "CompactionContext", result: CompactionResult
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Rebuild message list from a compaction result for further processing."""
         new_messages = []
         if self.config.preserve_system_prompt and ctx.system_prompt:
@@ -462,7 +463,7 @@ class CompactionEngine:
         return new_messages
 
     def _summarize_with_timeout(
-        self, messages: List[Dict[str, Any]], deadline: float
+        self, messages: list[dict[str, Any]], deadline: float
     ) -> str:
         """Run summarization with timeout protection."""
         if self._summarizer is None:
@@ -513,7 +514,7 @@ class CompactionEngine:
         except Exception:
             logger.exception("Transcript hygiene failed")
 
-    def _estimate_tokens(self, messages: List[Dict[str, Any]]) -> int:
+    def _estimate_tokens(self, messages: list[dict[str, Any]]) -> int:
         """
         Estimate token count for a list of messages.
 
@@ -528,11 +529,11 @@ class CompactionEngine:
             total_chars += len(name)
         return max(1, total_chars // 4)
 
-    def get_history(self) -> List[CompactionResult]:
+    def get_history(self) -> list[CompactionResult]:
         """Get the history of compaction operations."""
         return list(self._history)
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get compaction engine statistics."""
         if not self._history:
             return {
@@ -568,7 +569,7 @@ class CompactionContext:
     during compaction operations.
     """
     session: Any
-    messages: List[Dict[str, Any]]
+    messages: list[dict[str, Any]]
     token_count: int
-    system_prompt: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    system_prompt: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)

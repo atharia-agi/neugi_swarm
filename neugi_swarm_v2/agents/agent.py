@@ -8,11 +8,12 @@ import logging
 import sqlite3
 import time
 import uuid
-from dataclasses import dataclass, field
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -49,11 +50,11 @@ class AgentState:
     level: int
     tasks_completed: int
     tasks_failed: int
-    current_task_id: Optional[str]
-    current_task_context: Optional[Dict[str, Any]]
-    last_heartbeat: Optional[str]
+    current_task_id: str | None
+    current_task_context: dict[str, Any] | None
+    last_heartbeat: str | None
     error_count: int
-    last_error: Optional[str]
+    last_error: str | None
     memory_entries: int
     created_at: str
     updated_at: str
@@ -83,9 +84,9 @@ class Agent:
         role: AgentRole,
         goal: str = "",
         backstory: str = "",
-        tools: Optional[Dict[str, Callable]] = None,
-        allowed_tools: Optional[Set[str]] = None,
-        allowed_skills: Optional[Set[str]] = None,
+        tools: dict[str, Callable] | None = None,
+        allowed_tools: set[str] | None = None,
+        allowed_skills: set[str] | None = None,
         db_path: str = ":memory:",
     ) -> None:
         self.id = f"{role.value}-{uuid.uuid4().hex[:8]}"
@@ -100,18 +101,18 @@ class Agent:
         self.tasks_completed = 0
         self.tasks_failed = 0
 
-        self._tools: Dict[str, Callable] = tools or {}
-        self.allowed_tools: Set[str] = allowed_tools or set(self._tools.keys())
-        self.allowed_skills: Set[str] = allowed_skills or set()
+        self._tools: dict[str, Callable] = tools or {}
+        self.allowed_tools: set[str] = allowed_tools or set(self._tools.keys())
+        self.allowed_skills: set[str] = allowed_skills or set()
 
-        self._memory: List[Dict[str, Any]] = []
-        self._skills: Dict[str, Any] = {}
+        self._memory: list[dict[str, Any]] = []
+        self._skills: dict[str, Any] = {}
 
-        self.current_task_id: Optional[str] = None
-        self.current_task_context: Optional[Dict[str, Any]] = None
-        self.last_heartbeat: Optional[datetime] = None
+        self.current_task_id: str | None = None
+        self.current_task_context: dict[str, Any] | None = None
+        self.last_heartbeat: datetime | None = None
         self.error_count = 0
-        self.last_error: Optional[str] = None
+        self.last_error: str | None = None
 
         self.created_at = datetime.now(timezone.utc).isoformat()
         self.updated_at = self.created_at
@@ -139,7 +140,7 @@ class Agent:
     # Perceive-Think-Act cycle
     # ------------------------------------------------------------------
 
-    def perceive(self, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def perceive(self, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Gather all available context: agent memory, recent messages,
         environment state, and external input.
@@ -163,8 +164,8 @@ class Agent:
     def think(
         self,
         task: str,
-        perception: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        perception: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Plan the next action given a task and current perception.
         Returns a plan dict with steps, tool choices, and confidence.
@@ -187,8 +188,8 @@ class Agent:
     def act(
         self,
         task: str,
-        plan: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        plan: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Execute the plan by invoking allowed tools.
         Returns result dict with output, metrics, and any errors.
@@ -201,7 +202,7 @@ class Agent:
         self.current_task_context = {"task": task, "plan": plan}
         self._heartbeat()
 
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "task": task,
             "agent_id": self.id,
             "agent_name": self.name,
@@ -250,7 +251,7 @@ class Agent:
 
         return result
 
-    def execute(self, task: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def execute(self, task: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """Full perceive-think-act pipeline for a single task."""
         perception = self.perceive(context)
         plan = self.think(task, perception)
@@ -283,7 +284,7 @@ class Agent:
         self._tools.pop(name, None)
         self.allowed_tools.discard(name)
 
-    def _invoke_tool(self, name: str, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+    def _invoke_tool(self, name: str, *args: Any, **kwargs: Any) -> dict[str, Any]:
         """Safely invoke a tool if it is allowed."""
         if name not in self.allowed_tools:
             return {"tool": name, "output": "", "error": f"Tool '{name}' not allowed"}
@@ -305,7 +306,7 @@ class Agent:
         if name in self.allowed_skills or not self.allowed_skills:
             self._skills[name] = data
 
-    def get_skill(self, name: str) -> Optional[Any]:
+    def get_skill(self, name: str) -> Any | None:
         return self._skills.get(name)
 
     # ------------------------------------------------------------------
@@ -328,9 +329,9 @@ class Agent:
 
     def get_memory(
         self,
-        entry_type: Optional[str] = None,
+        entry_type: str | None = None,
         limit: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Retrieve memory entries, optionally filtered by type."""
         entries = self._memory
         if entry_type:
@@ -340,8 +341,8 @@ class Agent:
     def clear_memory(self) -> None:
         self._memory.clear()
 
-    def _summarize_memory(self) -> Dict[str, int]:
-        counts: Dict[str, int] = {}
+    def _summarize_memory(self) -> dict[str, int]:
+        counts: dict[str, int] = {}
         for entry in self._memory:
             counts[entry["type"]] = counts.get(entry["type"], 0) + 1
         return counts
@@ -440,7 +441,7 @@ class Agent:
         self._from_row(dict(row))
         return True
 
-    def _to_row(self) -> Dict[str, Any]:
+    def _to_row(self) -> dict[str, Any]:
         return {
             "agent_id": self.id,
             "name": self.name,
@@ -466,7 +467,7 @@ class Agent:
             "updated_at": self.updated_at,
         }
 
-    def _from_row(self, row: Dict[str, Any]) -> None:
+    def _from_row(self, row: dict[str, Any]) -> None:
         self.id = row["agent_id"]
         self.name = row["name"]
         self.role = AgentRole(row["role"])
@@ -533,14 +534,14 @@ class Agent:
         }
         return strategies.get(self.role, "analyze_execute")
 
-    def _select_tools(self, task: str) -> List[str]:
+    def _select_tools(self, task: str) -> list[str]:
         return list(self.allowed_tools)[:3]
 
-    def _plan_steps(self, task: str) -> List[str]:
+    def _plan_steps(self, task: str) -> list[str]:
         return [
             f"Step 1: Analyze task via {self.role.value} lens",
             f"Step 2: Apply {self._select_strategy(task)}",
-            f"Step 3: Validate and record outcome",
+            "Step 3: Validate and record outcome",
         ]
 
     def _estimate_confidence(self, task: str) -> float:
@@ -560,7 +561,7 @@ class Agent:
             f"level={self.level}, status={self.status.value})"
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "name": self.name,
