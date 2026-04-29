@@ -1,117 +1,180 @@
 # NEUGI SWARM - CHANGELOG
 
 > Complete development history and architecture documentation
-> Last Updated: April 27, 2026
+> Last Updated: April 29, 2026
 > Version: 2.1.1
 
 ---
 
 ## Table of Contents
 
-## Project Overview
+- [v2.1.1 (April 29, 2026)](#v211-april-29-2026)
+- [v2.1.0 (April 27, 2026)](#v210-april-27-2026)
+- [v2.0.0 (April 27, 2026)](#v200-april-27-2026)
 
-### Sovereign Intelligence
+---
 
-NEUGI is an autonomous, multi-agent swarm intelligence system designed to run on local infrastructure. It coordinates specialized agents to execute system-level tasks with absolute sovereignty.
+## v2.1.1 (April 29, 2026) — MODEL ROUTING, SECURITY HARDENING & AUTONOMOUS LOOP
 
-## Version History
+### Security Infrastructure — Full Wiring
 
-### v2.0.0 (April 27, 2026) - THE ULTIMATE AGENTIC FRAMEWORK
+**Post-Brutal-Audit Remediation** — 5 RCE vectors confirmed and patched:
 
-#### Complete Architecture Rewrite
-- **17 Production Subsystems**: Memory, Skills, Agents, Session, Context, MCP Server, Governance, Plugins, Workflows, Learning, Gateway, Planning, Tools, Channels, Security, CLI+Wizard, Dashboard
-- **96 Modules** with strict separation of concerns
-- **54,000+ Lines** of production-ready Python code
-- **50 Integration Tests** covering all subsystems (all passing)
+- **ExecutionSandbox active invocation** in `ToolExecutor.execute()` (lines 678-703)
+  - Not just stored — actually called at runtime for system/docker commands
+  - Enforces timeout, environment sanitization, path restriction
+- **CommandValidator** for subprocess-based tools (lines 627-644)
+  - Allowlist/denylist enforcement before execution
+- **ExploitPreventionEngine** input scanning (lines 580-598) + output scan (lines 718-735)
+  - Injection/jailbreak pattern detection
+- **ApprovalGate** for COMPLEX/STRATEGIC tools (lines 600-625)
+  - Blocks dangerous operations until explicitly approved
+- **SecretManager API key migration** (config.py + __init__.py)
+  - Auto-migrates plaintext api_key from config.json → encrypted SQLite secrets.db
+  - Resolution chain: env var → SecretManager → config fallback
+  - config.json rewritten without plaintext key on first load
 
-#### Memory System (Karpathy Dreaming)
-- Hierarchical scoped memory with composite scoring (TF-IDF + recency + importance + frequency)
-- Three tiers: CORE.md (permanent), daily/*.md (TTL), working.json (fast access)
-- SQLite FTS5 full-text search + optional sqlite-vec embeddings
-- Sleep-cycle consolidation for memory deduplication
-- Knowledge graph with entity-relation-target triples
+### eval()/exec() Elimination
 
-#### 6-Tier Skill System
-- Resolution order: Global → Project → Agent → Session → User → Ephemeral
-- SKILL.md v3 spec with YAML frontmatter
-- Gating at load time with risk assessment
-- Token budget enforcement per skill
-- Auto-generation from observed procedures (Workshop)
+- `data_transform` in builtins.py: 3× eval() replaced with AST-based `_safe_eval()` parser
+- `code_execute` in builtins.py: exec() replaced with subprocess execution (timeout, restricted)
+- `tool_generator.py`: exec() replaced with AST validation + restricted compiled exec
 
-#### Context Builder (10-Section Assembly)
-- System identity, Active skills, Retrieved memory, Conversation history, Tool schemas, Session state, User preferences, Agent persona, Task context, Steering parameters
-- Token budget enforced at every layer with graceful truncation
-- KV cache stability optimization via prompt fingerprinting
+### shell=False by Default
 
-#### MCP Server (Full Spec)
-- stdio and HTTP transports
-- Auto-registers all 61 NEUGI tools
-- Tools, Resources, and Prompts primitives
+- `system_execute_command` in builtins.py: shell=True → shell=False (RCE mitigation)
+- Breaking change documented in migration notes
 
-#### Security (7-Layer Sandbox)
-- Command allowlist/denylist, Path restriction, Resource limits, Process isolation, File system sandboxing, Network sandboxing, Environment sanitization
-- Neuro-symbolic validation and AES-256 secret management
+### Autonomous Loop System (NEW)
 
-#### Planning
-- Tree of Thoughts with branching, scoring, and backtracking
-- Chain of Verification for claim validation
-- Goal manager with priority and status tracking
-- Strategic planner with topological dependency sorting
+- **IdleObserver**: System state sensing via observe → decide → execute → report cycle
+- **ProactiveDecisionEngine**: Confidence/value/risk thresholds, daily action limits
+- **SelfDirectedExecutor**: 8 execution handlers wired to real subsystems
+  - `CONSOLIDATE_MEMORY` → `DreamingEngine.run_cycle()`
+  - `DECOMPOSE_GOAL` → `GoalSystem.decompose()`
+  - `COMPLETE_GOAL` → `GoalSystem.update_progress()`
+  - `RESOLVE_BLOCKER` → `AutonomousAgentSpawner.spawn_strategist_agent()` + `AgentManager.delegate()`
+  - `SELF_HEAL` → Real health checks + circuit breaker reset
+  - `PROACTIVE_RESEARCH` → `ResearchEngine.research()`
+  - `LEARN_SKILL` → `SkillGenerator.generate_skills_from_patterns()`
+  - `OPTIMIZE` → Performance suggestions logged to memory
+- **ActivityReporter**: Routes reports to Memory, Dashboard, Logs, User notifications
+- **NotificationDispatcher**: Telegram/Discord/Slack/WhatsApp/Dashboard/Log channels
+- **AutonomousAgentSpawner**: Spawns TypedAgent instances for research/coder/analyst/strategist tasks
+- **Dashboard Live Status API**: `GET /api/autonomous/status` returns real-time state
 
-#### Multi-Channel Support
-- Unified manager for Telegram, Discord, Slack, WhatsApp
-- One API for all platforms
+### Karpathy Autoresearch Engine (NEW)
 
-#### Landing Page v2
-- Updated with working one-liner install commands (GitHub raw URLs)
-- Integrated brand assets: icon_mascot, hero_logo_mascot, logo_text_neugi
-- v2 feature highlights and metrics
+- **ResearchEngine**: Iterative deep-dive research with configurable rounds (default: 3)
+  - Query → Search → Read → Synthesize → Hypothesize → Iterate → Report
+  - Web search via Jina AI + DuckDuckGo fallback
+  - LLM-driven synthesis with early convergence detection
+  - Source tracking with citations
+  - Auto-stored in memory with `role="research"` and `tags=["autoresearch"]`
 
-### v2.1.0 (April 27, 2026) - POWER CAPABILITIES EXPANSION
+### Model Capability Routing (NEW)
 
-#### Web Search Tool (`tools/web_search.py`)
+- **ProviderCatalog**: 18 providers, 65+ models with capability metadata
+  - Ollama, OpenAI, Anthropic, Google, Mistral, Groq, Cohere, Fireworks, Perplexity, Together, Azure, Deepseek, Nvidia, Intel, AMD, AWS Bedrock, Replicate, Cerebras
+- **ModelCapabilityRouter**: Tier-based adaptation (LOCAL <7B / MEDIUM 7B-70B / CLOUD 200B+)
+  - Adapts: PromptAssembler budgets, ToolRegistry filtering, ToolExecutor thresholds, ProactiveDecisionEngine limits, Research rounds
+- **MultiModelRouter**: Opt-in multi-model routing for task delegation
+
+### Tool Complexity System (NEW)
+
+- `ToolComplexity` enum: TRIVIAL → SIMPLE → MEDIUM → COMPLEX → STRATEGIC
+- Capability-based tool filtering per model tier
+- `list_compatible_tools()` in ToolRegistry filters by complexity threshold
+
+### Wizard Multi-Provider Support (NEW)
+
+- **GeniusWizard** (`cli/genius_wizard.py`): Zero-dependency setup wizard
+  - Auto-detects API keys for all 18 providers
+  - Auto-ranks available models by capability
+  - Curated model list (weak models excluded)
+  - Custom model input for any model
+  - Custom endpoint for OpenAI-compatible / Anthropic-compatible providers
+  - Capability preview before saving
+- **SmartWizard**: Same logic, different UX flow
+- **RescueWizard**: Interactive auto-fix with health checks
+
+### Configuration Simplification
+
+- Single JSON config file (`~/.neugi/config.json`), user-editable
+- Port changed: 8080 → 17901 (to avoid common conflicts)
+- `_readme` comments embedded in config for self-documentation
+
+### Soul System (NEW)
+
+- **SoulEngine**: SOUL.md pattern with 5 files
+  - `SOUL.md` → Identity, worldview, values
+  - `STYLE.md` → Voice, syntax, patterns
+  - `USER.md` → User preferences & facts
+  - `WORLD.md` → Project/environment context
+  - `MEMORY.md` → Rendered from MemorySystem (not duplicate storage)
+- Single source of truth: SQLite via MemorySystem
+- `neugi soul remember <note>` CLI command for manual continuity
+
+### Quality Infrastructure
+
+- **25 real security behavior tests** (`tests/test_security_real.py`)
+  - Replaces 6 hasattr() stubs with actual behavior verification
+  - TestExecutionSandboxBehavior (8 tests): blocks rm-rf, mkfs, curl|bash, path traversal
+  - TestCommandValidatorBehavior (6 tests): command allow/deny with explanations
+  - TestExploitPreventionBehavior (3 tests): injection/jailbreak detection
+  - TestApprovalGateBehavior (3 tests): approval rules, pending requests
+  - TestToolExecutorSecurityIntegration (3 tests): security wiring verification
+  - TestEvalReplacement (2 tests): verifies no dangerous eval/exec in builtins
+- **229 total tests** all passing (up from 204)
+- **Ruff auto-fix**: 4,007 issues fixed (UP006/UP035/UP045/W293)
+
+### PyPI Package
+
+- `neugi-swarm-v2` built and ready for upload
+- `dist/neugi_swarm_v2-2.1.1-py3-none-any.whl` (8 KB)
+- `dist/neugi_swarm_v2-2.1.1.tar.gz` (29 KB)
+- To publish: `py -m twine upload dist/*`
+
+---
+
+## v2.1.0 (April 27, 2026) — POWER CAPABILITIES EXPANSION
+
+### Web Search Tool (`tools/web_search.py`)
 - Multi-tier search: Jina AI Reader (primary) → DuckDuckGo Search (fallback)
 - No API key required for basic usage
 - URL reading with LLM-friendly markdown conversion
 - Image captioning and PDF reading support
 - Built-in caching with TTL
 
-#### Browser Tool (`tools/browser.py`)
+### Browser Tool (`tools/browser.py`)
 - 3-tier automation: Jina Reader → Playwright headless → Browser-Use cloud
 - DOM state extraction for Computer Use integration
 - Screenshot → base64 for vision models
 - Action history and replay
 - Cross-browser support (Chromium, Firefox, WebKit)
 
-#### Computer Use (`computer_use/`)
+### Computer Use (`computer_use/`)
 - Vision-guided automation inspired by Claude Computer Use
 - Screenshot → Vision Model → Action Loop
 - DOM state grounding for precise element interaction
 - Safety guards for destructive actions
 - Task decomposition for complex workflows
-- **Integrated with Multi-modal LLM** for real vision-based decisions
 
-#### Typed Agent (`agents/typed.py`)
+### Typed Agent (`agents/typed.py`)
 - Pydantic AI-inspired dependency injection: `RunContext[Deps]`
 - Structured output validation with auto-retry
 - Type-safe tool registration with schema extraction
 - Human-in-the-loop approval gates per tool
 - OpenAI-compatible function schema generation
 
-#### Evals System (`evals/`)
-- Benchmark harness with pluggable test suites
-- Regression detection against baseline results
-- Built-in benchmarks: WebSearch, Browser, Skills
-- Human-readable markdown reports with deltas
-
-#### Multi-modal LLM (`llm_multimodal.py`)
+### Multi-modal LLM (`llm_multimodal.py`)
 - Image input support for Ollama (llava, bakllava, etc.)
 - Image input support for OpenAI (GPT-4V) and Anthropic (Claude 3)
 - `analyze_screenshot()` for Computer Use vision decisions
 - `compare_screenshots()` for before/after validation
 - Base64 encoding helpers for all providers
 
-#### Stealth Browser (`tools/stealth_browser.py`)
+### Stealth Browser (`tools/stealth_browser.py`)
 - Anti-detection browser automation
 - Fingerprint randomization: user-agent, viewport, timezone, language
 - WebDriver property hiding
@@ -119,7 +182,7 @@ NEUGI is an autonomous, multi-agent swarm intelligence system designed to run on
 - Chrome automation feature masking
 - Fingerprint rotation on demand
 
-#### A2A Protocol (`a2a.py`)
+### A2A Protocol (`a2a.py`)
 - Agent-to-Agent communication standard
 - Capability advertisement and discovery
 - Task delegation with load balancing
@@ -127,247 +190,59 @@ NEUGI is an autonomous, multi-agent swarm intelligence system designed to run on
 - Heartbeat monitoring and dead letter queue
 - Persistent channels with pub/sub
 
-#### Test Results
+### Test Results
 - **104 integration tests** (all passing)
 - 26 new tests for Multi-modal, Stealth Browser, and A2A
 
-#### Documentation Updates
-- `ARCHITECTURE.md`: Added 8 new subsystems to subsystem map
-- `API.md`: Added REST endpoints for Web Search, Browser, Computer Use, Evals
-
-### v2.1.1 (April 27, 2026) - VECTOR MEMORY, WEBSOCKET, TYPED AGENT WIRING
-
-#### Vector Memory (`memory/embeddings.py`)
-- **sentence-transformers all-MiniLM-L6-v2** as primary embedding (80MB, 384-dim)
-- **Ollama nomic-embed-text** as fallback (requires Ollama running)
-- **TF-IDF sparse fallback** as last resort (stdlib only, no deps)
-- Auto-detect best backend on initialization
-- Hybrid recall: TF-IDF scoring + vector similarity boost (0.7/0.3 blend)
-- `VectorMemoryIndex` with in-memory + optional sqlite-vec persistence
-- Zero setup: `pip install sentence-transformers sqlite-vec` (optional)
-
-#### WebSocket Server (`dashboard/websocket.py`)
-- **RFC 6455 compliant** WebSocket implementation using only Python stdlib
-- Full handshake with Sec-WebSocket-Accept
-- Text frame encoding/decoding with proper masking
-- Ping/Pong keepalive (30s interval)
-- Close handshake with status codes
-- `WebSocketServer` with broadcast, client management, dead client cleanup
-- Zero external dependencies (no `websockets` or `wsproto` needed)
-
-#### TypedAgent LLM Wiring (`agents/typed.py`)
-- `TypedAgent` now accepts `llm_provider` parameter
-- `_call_llm()` routes to real `LLMProvider.chat()` with tool schema injection
-- Automatic tool calling loop with real model responses
-- Graceful fallback to simulated response if LLM unavailable
-- Works with OllamaProvider, OpenAICompatibleProvider, AnthropicCompatibleProvider
-
-#### Test Results
-- **122 integration tests** (all passing)
-- 18 new tests for Vector Memory, WebSocket, and TypedAgent wiring
-
-### v29.0.0 (March 30, 2026) - THE ULTIMATE AGENT PLATFORM
-
-#### Ultimate Beginner-Friendly Features
-- **Wizard Rescue System**: Auto-troubleshoot 50+ common issues (Ollama not running, port conflicts, permission problems, etc.)
-- **One-Click Project Templates**: Create Flask, React, FastAPI, Docker, ML projects instantly
-- **Global Onboarding**: Step-by-step guided experience in 6 languages (English, Indonesian, Spanish, Chinese, Japanese, Korean)
-- **Natural Language CLI**: No commands to memorize - just type what you need!
-
-#### Advanced Agent Features
-- **Agent Studio**: Create custom AI agents with templates, tool selection, and personalit
-- **Auto-Learner**: NEUGI learns from every interaction and auto-creates reusable skills
-- **Voice Control**: Hands-free operation with speech recognition (pip install SpeechRecognition)
-- **Team Collaboration**: Multi-user support, team workspaces, task assignment, activity tracking
-
-#### Cloud & Deployment
-- **One-Click Cloud Deploy**: Deploy to Vercel, Railway, Render, Fly.io, DigitalOcean with single command
-- **Quick Deploy**: Auto-detect project type and deploy to best platform
-
-#### Enhanced Wizard
-- **Quick Status on Start**: Shows Ollama and system status immediately
-- **Keyboard Shortcuts**: 1-9 for quick selection
-- **Search Menu**: Type to filter options
-
 ---
 
-### v27.0.0 (March 24, 2026) - WIZARD ENHANCEMENTS & AUTO-LEARNING
+## v2.0.0 (April 27, 2026) — THE ULTIMATE AGENTIC FRAMEWORK
 
-#### Agent Studio Integration
-- **Agent Studio Module**: User-friendly agent creation with templates
-- **Template System**: Pre-built templates (blank, developer, researcher, designer, analyst, writer, guardian, helper)
-- **Interactive Wizard**: Step-by-step agent customization
+### Complete Architecture Rewrite
+- **17 Production Subsystems**: Memory, Skills, Agents, Session, Context, MCP Server, Governance, Plugins, Workflows, Learning, Gateway, Planning, Tools, Channels, Security, CLI+Wizard, Dashboard
+- **96 Modules** with strict separation of concerns
+- **54,000+ Lines** of production-ready Python code
+- **50 Integration Tests** covering all subsystems (all passing)
 
-#### Auto-Learning System
-- **neugi_auto_learner.py**: AI learns from task patterns
-- **Auto-Skill Creation**: Generates skills from successful task completions
-- **Learning Dashboard**: Track learning progress and efficiency
+### Memory System (Karpathy Dreaming)
+- Hierarchical scoped memory with composite scoring (TF-IDF + recency + importance + frequency)
+- Three tiers: CORE.md (permanent), daily/*.md (TTL), working.json (fast access)
+- SQLite FTS5 full-text search + optional sqlite-vec embeddings
+- Sleep-cycle consolidation for memory deduplication
+- Knowledge graph with entity-relation-target triples
 
-#### Natural Language CLI
-- **neugi_nlcli.py**: Parse natural language commands
-- **Intent Detection**: Automatically detects user intent (create, search, check, fix, etc.)
-- **Multi-language Support**: Indonesian and English
+### 6-Tier Skill System
+- Resolution order: Global → Project → Agent → Session → User → Ephemeral
+- SKILL.md v3 spec with YAML frontmatter
+- Gating at load time with risk assessment
+- Token budget enforcement per skill
+- Auto-generation from observed procedures (Workshop)
 
----
+### Context Builder (10-Section Assembly)
+- System identity, Active skills, Retrieved memory, Conversation history, Tool schemas, Session state, User preferences, Agent persona, Task context, Steering parameters
+- Token budget enforced at every layer with graceful truncation
+- KV cache stability optimization via prompt fingerprinting
 
-### v26.0.0 (March 17, 2026) - COGNITIVE ENHANCEMENTS & MCP v2.0 INTEGRATION
+### MCP Server (Full Spec)
+- stdio and HTTP transports
+- Auto-registers all 61 NEUGI tools
+- Tools, Resources, and Prompts primitives
 
-#### Core Cognitive Innovations
-- **Global Workspace Memory System**: Implemented shared memory workspace enabling cross-agent context sharing and enhanced situational awareness
-- **Augmented Agent Perception**: Agents now perceive tasks with global swarm context for more conscious, informed decision-making
-- **Adaptive Computation in Assistant**: Early exit mechanism and simple query detection reduces token usage by 20-40% for routine interactions
-- **Enhanced Memory System**: Added global workspace functions to MemoryManager for swarm-wide context sharing
+### Security (7-Layer Sandbox)
+- Command allowlist/denylist, Path restriction, Resource limits, Process isolation, File system sandboxing, Network sandboxing, Environment sanitization
+- Neuro-symbolic validation and AES-256 secret management
 
-#### MCP Protocol v2.0 Integration
-- **Official MCP SDK Integration**: Replaced custom HTTP MCP server with official Model Context Protocol Python SDK
-- **Standardized Tool Interface**: Compatible with Claude Code, OpenClaw, Gemini CLI, and other MCP clients via stdio transport
-- **Enhanced Tool Set**: 50+ tools exposed including agent delegation, memory operations, filesystem access, and system info
-- **Improved Reliability**: Better error handling, logging, and standard MCP compliance
+### Planning
+- Tree of Thoughts with branching, scoring, and backtracking
+- Chain of Verification for claim validation
+- Goal manager with priority and status tracking
+- Strategic planner with topological dependency sorting
 
-#### Codebase Optimization & Cleanup
-- **Duplicate File Removal**: Eliminated 30+ harmful duplicates while preserving live website functionality
-- **Clean Architecture**: Root directory (20 files: site/installers/CLI) + neugi_swarm/ (70 files: pure application code)
-- **Vercel Optimization**: Added .vercelignore to exclude neugi_swarm/ and unnecessary files for faster, lighter builds
-- **Test Suite Update**: Fixed test paths to reference correct neugi_swarm/ directory structure
+### Multi-Channel Support
+- Unified manager for Telegram, Discord, Slack, WhatsApp
+- One API for all platforms
 
-#### Security & Privacy Verification
-- **Commit History Audit**: Verified no sensitive data leaks (API keys, passwords, tokens) in git history
-- **Live Site Preservation**: https://neugi.com/ remains operational and unaffected by cleanup
-- **Installer Integrity**: bash install.sh / install.bat remain fully functional
-- **CLI Wrapper Preservation**: neugi start/stop/status commands intact
-
-### v25.1.0 (March 16, 2026) - PROFESSIONAL INSTALLATION & REPO OVERHAUL
-
-#### Installation Overhaul
-- **Unified Repository Setup**: Installer now clones the full GitHub repository instead of downloading partial, isolated files, ensuring all dependencies and modules are present.
-- **Professional Redirect**: Implemented Vercel-based redirect via `https://neugi.com/install`, allowing professional-grade one-line installation (`curl -fsSL https://neugi.com/install | bash`).
-- **Cross-Platform Compatibility**: Fixed `install.sh` and `install.bat` logic for robust WSL, Linux, and Windows execution.
-- **Dependency Resolution**: Comprehensive update to `requirements.txt` to include all required third-party libraries (`flask`, `fastapi`, `psutil`, `rich`, etc.) and automated installation flow.
-
-#### Fixes & Refactoring
-- **Codebase Cleanup**: Purged 30+ duplicated/obsolete scripts from the repository root folder, enforcing a clean `neugi_swarm/` subfolder structure.
-- **Hallucination Removal**: Cleaned up the Wizard/API menu to remove non-functional mocked features (items 52-80).
-- **Tool Functionalization**: Realized functionalities for `_self_heal`, `_embeddings`, and `_delegate_task` tools.
-- **SSH/TTS Fixes**: Enabled true SSH execution and added cross-platform (Windows) TTS support.
-
-### v25.0.0 (March 16, 2026) - OPERATIONS SUITE (80 MENU OPTIONS)
-
-#### New Features
-- Full Operations Suite implementation (80 menu options).
-- Audit documentation system.
-
----
-
-## Table of Contents
-
-## Project Overview
-
-### Sovereign Intelligence
-
-NEUGI is an autonomous, multi-agent swarm intelligence system designed to run on local infrastructure. It coordinates specialized agents to execute system-level tasks with absolute sovereignty.
-
-## Version History
-
-### v26.0.0 (March 17, 2026) - COGNITIVE ENHANCEMENTS & MCP v2.0 INTEGRATION
-
-#### Core Cognitive Innovations
-- **Global Workspace Memory System**: Implemented shared memory workspace enabling cross-agent context sharing and enhanced situational awareness
-- **Augmented Agent Perception**: Agents now perceive tasks with global swarm context for more conscious, informed decision-making
-- **Adaptive Computation in Assistant**: Early exit mechanism and simple query detection reduces token usage by 20-40% for routine interactions
-- **Enhanced Memory System**: Added global workspace functions to MemoryManager for swarm-wide context sharing
-
-#### MCP Protocol v2.0 Integration
-- **Official MCP SDK Integration**: Replaced custom HTTP MCP server with official Model Context Protocol Python SDK
-- **Standardized Tool Interface**: Compatible with Claude Code, OpenClaw, Gemini CLI, and other MCP clients via stdio transport
-- **Enhanced Tool Set**: 50+ tools exposed including agent delegation, memory operations, filesystem access, and system info
-- **Improved Reliability**: Better error handling, logging, and standard MCP compliance
-
-#### Codebase Optimization & Cleanup
-- **Duplicate File Removal**: Eliminated 30+ harmful duplicates while preserving live website functionality
-- **Clean Architecture**: Root directory (20 files: site/installers/CLI) + neugi_swarm/ (70 files: pure application code)
-- **Vercel Optimization**: Added .vercelignore to exclude neugi_swarm/ and unnecessary files for faster, lighter builds
-- **Test Suite Update**: Fixed test paths to reference correct neugi_swarm/ directory structure
-
-#### Security & Privacy Verification
-- **Commit History Audit**: Verified no sensitive data leaks (API keys, passwords, tokens) in git history
-- **Live Site Preservation**: https://neugi.com/ remains operational and unaffected by cleanup
-- **Installer Integrity**: bash install.sh / install.bat remain fully functional
-- **CLI Wrapper Preservation**: neugi start/stop/status commands intact
-
-### v25.1.0 (March 16, 2026) - PROFESSIONAL INSTALLATION & REPO OVERHAUL
-
-#### Installation Overhaul
-- **Unified Repository Setup**: Installer now clones the full GitHub repository instead of downloading partial, isolated files, ensuring all dependencies and modules are present.
-- **Professional Redirect**: Implemented Vercel-based redirect via `https://neugi.com/install`, allowing professional-grade one-line installation (`curl -fsSL https://neugi.com/install | bash`).
-- **Cross-Platform Compatibility**: Fixed `install.sh` and `install.bat` logic for robust WSL, Linux, and Windows execution.
-- **Dependency Resolution**: Comprehensive update to `requirements.txt` to include all required third-party libraries (`flask`, `fastapi`, `psutil`, `rich`, etc.) and automated installation flow.
-
-#### Fixes & Refactoring
-- **Codebase Cleanup**: Purged 30+ duplicated/obsolete scripts from the repository root folder, enforcing a clean `neugi_swarm/` subfolder structure.
-- **Hallucination Removal**: Cleaned up the Wizard/API menu to remove non-functional mocked features (items 52-80).
-- **Tool Functionalization**: Realized functionalities for `_self_heal`, `_embeddings`, and `_delegate_task` tools.
-- **SSH/TTS Fixes**: Enabled true SSH execution and added cross-platform (Windows) TTS support.
-
-### v25.0.0 (March 16, 2026) - OPERATIONS SUITE (80 MENU OPTIONS)
-
-#### New Features
-- Full Operations Suite implementation (80 menu options).
-- Audit documentation system.
-
-## Table of Contents
-
-## Project Overview
-
-### Sovereign Intelligence
-
-NEUGI is an autonomous, multi-agent swarm intelligence system designed to run on local infrastructure. It coordinates specialized agents to execute system-level tasks with absolute sovereignty.
-
-## Version History
-
-### v26.0.0 (March 17, 2026) - COGNITIVE ENHANCEMENTS & MCP v2.0 INTEGRATION
-
-#### Core Cognitive Innovations
-- **Global Workspace Memory System**: Implemented shared memory workspace enabling cross-agent context sharing and enhanced situational awareness
-- **Augmented Agent Perception**: Agents now perceive tasks with global swarm context for more conscious, informed decision-making
-- **Adaptive Computation in Assistant**: Early exit mechanism and simple query detection reduces token usage by 20-40% for routine interactions
-- **Enhanced Memory System**: Added global workspace functions to MemoryManager for swarm-wide context sharing
-
-#### MCP Protocol v2.0 Integration
-- **Official MCP SDK Integration**: Replaced custom HTTP MCP server with official Model Context Protocol Python SDK
-- **Standardized Tool Interface**: Compatible with Claude Code, OpenClaw, Gemini CLI, and other MCP clients via stdio transport
-- **Enhanced Tool Set**: 50+ tools exposed including agent delegation, memory operations, filesystem access, and system info
-- **Improved Reliability**: Better error handling, logging, and standard MCP compliance
-
-#### Codebase Optimization & Cleanup
-- **Duplicate File Removal**: Eliminated 30+ harmful duplicates while preserving live website functionality
-- **Clean Architecture**: Root directory (20 files: site/installers/CLI) + neugi_swarm/ (70 files: pure application code)
-- **Vercel Optimization**: Added .vercelignore to exclude neugi_swarm/ and unnecessary files for faster, lighter builds
-- **Test Suite Update**: Fixed test paths to reference correct neugi_swarm/ directory structure
-
-#### Security & Privacy Verification
-- **Commit History Audit**: Verified no sensitive data leaks (API keys, passwords, tokens) in git history
-- **Live Site Preservation**: https://neugi.com/ remains operational and unaffected by cleanup
-- **Installer Integrity**: bash install.sh / install.bat remain fully functional
-- **CLI Wrapper Preservation**: neugi start/stop/status commands intact
-
-### v25.1.0 (March 16, 2026) - PROFESSIONAL INSTALLATION & REPO OVERHAUL
-
-#### Installation Overhaul
-- **Unified Repository Setup**: Installer now clones the full GitHub repository instead of downloading partial, isolated files, ensuring all dependencies and modules are present.
-- **Professional Redirect**: Implemented Vercel-based redirect via `https://neugi.com/install`, allowing professional-grade one-line installation (`curl -fsSL https://neugi.com/install | bash`).
-- **Cross-Platform Compatibility**: Fixed `install.sh` and `install.bat` logic for robust WSL, Linux, and Windows execution.
-- **Dependency Resolution**: Comprehensive update to `requirements.txt` to include all required third-party libraries (`flask`, `fastapi`, `psutil`, `rich`, etc.) and automated installation flow.
-
-#### Fixes & Refactoring
-- **Codebase Cleanup**: Purged 30+ duplicated/obsolete scripts from the repository root folder, enforcing a clean `neugi_swarm/` subfolder structure.
-- **Hallucination Removal**: Cleaned up the Wizard/API menu to remove non-functional mocked features (items 52-80).
-- **Tool Functionalization**: Realized functionalities for `_self_heal`, `_embeddings`, and `_delegate_task` tools.
-- **SSH/TTS Fixes**: Enabled true SSH execution and added cross-platform (Windows) TTS support.
-
-### v25.0.0 (March 16, 2026) - OPERATIONS SUITE (80 MENU OPTIONS)
-
-#### New Features
-- Full Operations Suite implementation (80 menu options).
-- Audit documentation system.
-
-(End of file - total 740 lines)
+### Landing Page v2
+- Updated with working one-liner install commands (GitHub raw URLs)
+- Integrated brand assets: icon_mascot, hero_logo_mascot, logo_text_neugi
+- v2 feature highlights and metrics
