@@ -11,9 +11,9 @@
   <img src="assets/hero_logo_mascot.png" width="640" alt="NEUGI Agent Swarm">
 </p>
 
-> **25 Subsystems | 108+ Modules | 60,000+ Lines | 61 Built-in Tools | 122 Tests Passing**
+> **29 Subsystems | 120+ Modules | 65,000+ Lines | 61 Built-in Tools | 204 Tests Passing**
 
-NEUGI Swarm v2 is the most advanced open-source agentic AI framework ever built. A deterministic multi-agent state machine designed for production-grade reliability at scale.
+NEUGI Swarm v2 is the most advanced open-source agentic AI framework ever built. **Sovereign autonomous infrastructure** that observes, decides, executes, and reports — even during idle periods.
 
 ---
 
@@ -39,6 +39,7 @@ cd neugi_swarm/neugi_swarm_v2
 pip install -e .
 neugi wizard    # Interactive setup
 neugi chat      # Start chatting
+neugi soul init # Initialize agent identity (SOUL.md)
 ```
 
 ---
@@ -72,6 +73,10 @@ neugi chat      # Start chatting
 | **Multimodal** | Vision input, screenshot analysis, computer use |
 | **A2A Protocol** | Agent-to-agent mesh, capability discovery, heartbeat |
 | **Web Search** | Jina Reader + DuckDuckGo fallback with caching |
+| **Autoresearch** | Karpathy-style iterative research: query → search → synthesize → hypothesize |
+| **Autonomous** | Pro-active idle loop: observe → decide → execute → report (dreaming, goals, agents, skills) |
+| **Agent Spawner** | Dynamic TypedAgent spawning for research/coder/analyst/strategist tasks |
+| **Notifications** | Pro-active Telegram/Discord/Slack dispatch with digest mode & quiet hours |
 | **Browser** | 3-tier automation: requests, Playwright, stealth browser |
 | **Vector Memory** | all-MiniLM-L6-v2 embeddings with TF-IDF fallback |
 | **WebSocket** | RFC 6455 stdlib server, real-time event streaming |
@@ -83,11 +88,12 @@ neugi chat      # Start chatting
 
 | Metric | Value |
 |--------|-------|
-| Subsystems | 25 |
-| Python Modules | 108+ |
-| Lines of Code | 60,000+ |
+| Subsystems | 29 |
+| Python Modules | 120+ |
+| Lines of Code | 65,000+ |
 | Built-in Tools | 61 |
-| Integration Tests | 122 (all passing) |
+| Integration Tests | 204 (all passing) |
+| AI Providers Supported | 20+ (OpenAI, Anthropic, Gemini, Groq, DeepSeek, etc.) |
 | Cold Start | < 500ms |
 | Memory Query | < 50ms |
 
@@ -137,14 +143,62 @@ All documentation lives in `neugi_swarm_v2/docs/`:
 
 ---
 
+## Soul System — Agent Identity & Continuity
+
+NEUGI implements the **SOUL.md pattern** (Hermes Agent / OpenClaw / Aeon) for persistent agent personality:
+
+```bash
+neugi soul init              # Create identity files
+neugi soul show              # View current identity prompt
+neugi soul edit SOUL.md      # Customize personality
+neugi soul remember "User prefers Vim over Emacs"
+```
+
+**Files managed in `~/.neugi/soul/`:**
+
+| File | Purpose | Storage |
+|------|---------|---------|
+| `SOUL.md` | Identity, worldview, values | Static file |
+| `STYLE.md` | Voice, syntax, patterns | Static file |
+| `USER.md` | User preferences & facts | Static file + MemorySystem sync |
+| `WORLD.md` | Project/environment context | Static file |
+| `MEMORY.md` | Continuity snapshot | **Rendered from MemorySystem** |
+
+**Architecture note:** `SoulEngine` is a *view layer*, not duplicate storage. Episodic memory lives in `MemorySystem` (SQLite). `MEMORY.md` is regenerated from MemorySystem recall on each prompt assembly. This ensures single source of truth while giving the LLM rich identity context.
+
+---
+
+## Model Capability Routing
+
+NEUGI **adapts its entire behavior** based on the connected model's capability:
+
+```
+User selects model → CapabilityProfile auto-built → All subsystems adapt
+```
+
+**Three tiers:**
+- **LOCAL** (<7B): Fragile, needs maximal prompting, 1 tool/call, 5 autonomous actions/day
+- **MEDIUM** (7B-70B): Balanced, 3 tools/call, 20 actions/day
+- **CLOUD** (200B+): Native function calling, 10 tools/call, 50 actions/day
+
+**Adaptive surfaces:**
+- Prompt budgets, memory entries, tool complexity filtering
+- Research depth (1–3 rounds), retry logic, circuit breaker thresholds
+- Proactive decision confidence thresholds
+
+**20+ Providers Supported:**
+OpenAI, Anthropic, Google Gemini, xAI Grok, DeepSeek, Groq, Mistral AI, Cohere, Perplexity, Together AI, Fireworks AI, Moonshot (Kimi), Alibaba (Qwen), ZhipuAI (GLM), StepFun, Baidu (ERNIE), iFlytek (Spark), MiniMax, NVIDIA NIM, and any OpenAI/Anthropic-compatible endpoint.
+
+---
+
 ## Testing
 
 ```bash
 cd neugi_swarm_v2
-python -m unittest discover -s tests -v
+python -m pytest tests/ -q --tb=short -p no:anchorpy
 ```
 
-**Current status:** 122/122 tests passing
+**Current status:** 204/204 tests passing
 
 ---
 

@@ -2,7 +2,7 @@
 
 ## REST API (Dashboard Server)
 
-Base URL: `http://localhost:8080/api/v2`
+Base URL: `http://localhost:17901/api/v2`
 
 ### Agents
 
@@ -101,7 +101,7 @@ Base URL: `http://localhost:8080/api/v2`
 
 ## WebSocket Events
 
-Connect to `ws://localhost:8080/ws`
+Connect to `ws://localhost:17901/ws`
 
 **Client → Server:**
 ```json

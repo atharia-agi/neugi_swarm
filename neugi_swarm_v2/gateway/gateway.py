@@ -581,7 +581,7 @@ class GatewayServer:
             "tokens": {t: did for t, did in self._device_tokens.items()},
         }
         try:
-            with open(path, "w") as f:
+            with open(path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
         except Exception as e:
             logger.error(f"Failed to save devices: {e}")
@@ -593,7 +593,7 @@ class GatewayServer:
             return
 
         try:
-            with open(path, "r") as f:
+            with open(path, "r", encoding="utf-8") as f:
                 data = json.load(f)
 
             for did, ddata in data.get("devices", {}).items():

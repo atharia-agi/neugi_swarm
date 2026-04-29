@@ -42,6 +42,16 @@ class ToolCategory(str, Enum):
     GENERATED = "generated"
 
 
+class ToolComplexity(str, Enum):
+    """Cognitive complexity of a tool — how hard it is for a model to use correctly."""
+
+    TRIVIAL = "trivial"   # 0 params, deterministic (e.g., get_time)
+    SIMPLE = "simple"     # 1-2 params, no side effects (e.g., web_search)
+    MEDIUM = "medium"     # Multi-param, stateful (e.g., file_write)
+    COMPLEX = "complex"   # Multi-step reasoning, dangerous side effects (e.g., docker_run)
+    STRATEGIC = "strategic"  # Requires planning, high risk (e.g., git_push, security_scan)
+
+
 @dataclass
 class ToolSchema:
     """Typed schema describing a tool's interface."""
@@ -61,6 +71,8 @@ class ToolSchema:
     rate_limit_per_minute: int = 60
     cacheable: bool = True
     side_effects: bool = False
+    complexity: ToolComplexity = ToolComplexity.SIMPLE
+    required_capabilities: List[str] = field(default_factory=list)
 
     def validate_params(self, kwargs: Dict[str, Any]) -> List[str]:
         """Validate parameters against schema. Returns list of errors."""
@@ -228,6 +240,8 @@ class ToolRegistry:
         rate_limit_per_minute: int = 60,
         cacheable: bool = True,
         side_effects: bool = False,
+        complexity: ToolComplexity = ToolComplexity.SIMPLE,
+        required_capabilities: Optional[List[str]] = None,
         author: str = "system",
         source: str = "builtin",
     ) -> ToolSchema:
@@ -251,6 +265,8 @@ class ToolRegistry:
             rate_limit_per_minute: Max calls per minute.
             cacheable: Whether results can be cached.
             side_effects: Whether the tool has side effects.
+            complexity: Cognitive complexity of the tool.
+            required_capabilities: List of capability names required to use this tool.
             author: Tool author.
             source: Tool source (builtin, generated, composed, etc.).
 
@@ -280,6 +296,8 @@ class ToolRegistry:
                 rate_limit_per_minute=rate_limit_per_minute,
                 cacheable=cacheable,
                 side_effects=side_effects,
+                complexity=complexity,
+                required_capabilities=required_capabilities or [],
             )
 
             metadata = ToolMetadata(
@@ -370,6 +388,7 @@ class ToolRegistry:
         category: Optional[ToolCategory] = None,
         tags: Optional[List[str]] = None,
         include_deprecated: bool = False,
+        capability_profile: Optional[Any] = None,
     ) -> List[ToolSchema]:
         """
         List registered tools with optional filters.
@@ -378,6 +397,7 @@ class ToolRegistry:
             category: Filter by category.
             tags: Filter by tags (must match all).
             include_deprecated: Whether to include deprecated tools.
+            capability_profile: If provided, only return tools compatible with this model.
 
         Returns:
             List of matching ToolSchema objects.
@@ -394,7 +414,70 @@ class ToolRegistry:
                     for t in tools
                     if all(tag in t.schema.tags for tag in tags)
                 ]
+            if capability_profile is not None:
+                tools = [
+                    t for t in tools
+                    if self._is_tool_compatible(t.schema, capability_profile)
+                ]
             return [t.schema for t in tools]
+
+    def list_compatible_tools(
+        self,
+        capability_profile: Any,
+        category: Optional[ToolCategory] = None,
+    ) -> List[ToolSchema]:
+        """List only tools compatible with the given capability profile."""
+        return self.list_tools(
+            category=category,
+            capability_profile=capability_profile,
+        )
+
+    @staticmethod
+    def _is_tool_compatible(schema: ToolSchema, capability_profile: Any) -> bool:
+        """Check if a tool is compatible with a capability profile.
+
+        Compatibility rules:
+        - LOCAL tier: only TRIVIAL and SIMPLE tools
+        - MEDIUM tier: up to MEDIUM complexity
+        - CLOUD tier: all complexities
+        - Required capabilities must all be present in profile
+        """
+        # Import here to avoid circular dependency
+        try:
+            from model_capability_router import ModelTier
+        except ImportError:
+            return True  # Can't check, allow all
+
+        tier = getattr(capability_profile, "tier", None)
+        if tier is None:
+            return True
+
+        tier_value = tier.value if hasattr(tier, "value") else str(tier)
+        complexity_order = {
+            "trivial": 0,
+            "simple": 1,
+            "medium": 2,
+            "complex": 3,
+            "strategic": 4,
+        }
+        tool_level = complexity_order.get(schema.complexity.value, 1)
+
+        if tier_value == "local" and tool_level > 1:
+            return False
+        if tier_value == "medium" and tool_level > 2:
+            return False
+
+        # Check required capabilities
+        profile_caps = getattr(capability_profile, "required_capabilities", [])
+        if isinstance(profile_caps, list):
+            profile_caps_set = set(profile_caps)
+        else:
+            profile_caps_set = set()
+        for cap in schema.required_capabilities:
+            if cap not in profile_caps_set:
+                return False
+
+        return True
 
     def search_tools(self, query: str) -> List[ToolSchema]:
         """

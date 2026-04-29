@@ -42,6 +42,7 @@ from neugi_swarm_v2.llm_provider import (
     ToolCall,
     ErrorType,
 )
+from neugi_swarm_v2.model_registry import ModelCapabilityDetector
 
 
 class NeugiAssistantV2:
@@ -57,9 +58,11 @@ class NeugiAssistantV2:
         sessions: Optional[SessionManager] = None,
         prompt_assembler: Optional[PromptAssembler] = None,
         token_budget: Optional[TokenBudget] = None,
+        on_user_interaction: Optional[Callable[[], None]] = None,
     ):
         self.config = config or NeugiConfig()
         self.session_id = session_id
+        self._on_user_interaction = on_user_interaction
 
         # Initialize subsystems (injectable for shared instances)
         self.memory = memory or MemorySystem(
@@ -98,6 +101,15 @@ class NeugiAssistantV2:
         # Tool registry
         self._tools: Dict[str, Callable] = {}
         self._register_default_tools()
+
+        # Model capability detection
+        self._model_detector = ModelCapabilityDetector(
+            ollama_url=getattr(self.config.llm, 'ollama_url', 'http://localhost:11434')
+        )
+        self._model_caps = self._model_detector.detect(
+            self.llm.config.default_model,
+            provider=self.llm.config.provider_type.value if hasattr(self.llm.config.provider_type, 'value') else 'ollama',
+        )
 
         # Execution config
         self.max_tool_iterations = self.config.max_tool_iterations
@@ -274,8 +286,29 @@ class NeugiAssistantV2:
 
     # ========== Main Chat Interface ==========
 
-    def chat(self, message: str, stream: bool = False) -> str:
-        """Send a message and get a response with full agentic loop."""
+    def chat(self, message: str, stream: bool = False, structured: bool = False):
+        """Send a message and get a response with full agentic loop.
+
+        Args:
+            message: User message.
+            stream: If True, return a generator for streaming.
+            structured: If True, return a StructuredResponse with metadata.
+
+        Returns:
+            str or StructuredResponse depending on structured parameter.
+        """
+        import time as time_module
+        from response_format import ResponseFormatter, StructuredResponse, ResponseMetadata
+
+        start_time = time_module.time()
+        total_tokens = 0
+        skills_used = []
+        all_tool_calls = []
+
+        # Notify autonomous loop that user is active (resets idle timer)
+        if self._on_user_interaction:
+            self._on_user_interaction()
+
         # Save user message to session
         self.sessions.add_message(self.session_id, "user", message)
 
@@ -309,6 +342,7 @@ class NeugiAssistantV2:
                     temperature=0.7,
                     max_tokens=4096,
                 )
+                total_tokens += getattr(response, 'tokens_used', 0) or 0
             except Exception as e:
                 # Try fallback
                 if self.fallback_llm:
@@ -319,6 +353,7 @@ class NeugiAssistantV2:
                             temperature=0.7,
                             max_tokens=4096,
                         )
+                        total_tokens += getattr(response, 'tokens_used', 0) or 0
                     except Exception:
                         response = LLMResponse(content=f"Error: {str(e)}")
                 else:
@@ -341,8 +376,12 @@ class NeugiAssistantV2:
 
             # Execute tool calls
             if response.tool_calls:
+                all_tool_calls.extend(response.tool_calls)
                 for tool_call in response.tool_calls:
                     tool_result = self._execute_tool(tool_call)
+                    # Track skills used
+                    if tool_call.function and tool_call.function.name:
+                        skills_used.append(tool_call.function.name)
                     messages.append({
                         "role": "tool",
                         "content": tool_result,
@@ -359,6 +398,22 @@ class NeugiAssistantV2:
         # Auto-save to memory if important
         if len(full_response) > 100:
             self.memory.save(content=full_response[:500], scope=f"/session/{self.session_id}/", importance=2)
+
+        if structured:
+            formatter = ResponseFormatter()
+            gen_time = time_module.time() - start_time
+            return formatter.format(
+                text=full_response,
+                tool_calls=all_tool_calls,
+                model=self.llm.config.default_model,
+                provider=self.llm.config.provider_type.value if hasattr(self.llm.config.provider_type, 'value') else str(self.llm.config.provider_type),
+                metadata={
+                    "tokens_used": total_tokens,
+                    "generation_time": gen_time,
+                    "skills_used": list(set(skills_used)),
+                    "tool_iterations": tool_iterations,
+                },
+            )
 
         return full_response
 

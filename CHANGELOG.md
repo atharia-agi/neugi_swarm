@@ -2,7 +2,7 @@
 
 > Complete development history and architecture documentation
 > Last Updated: April 27, 2026
-> Version: 2.0.0
+> Version: 2.1.1
 
 ---
 

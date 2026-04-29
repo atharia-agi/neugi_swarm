@@ -207,8 +207,8 @@ class TelegramChannel(BaseChannel):
         if self._mode == "webhook":
             try:
                 await self._call_api("deleteWebhook", {"drop_pending_updates": True})
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Failed to delete webhook on disconnect: %s", e)
         
         logger.info("Telegram channel disconnected")
 

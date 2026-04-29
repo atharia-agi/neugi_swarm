@@ -9,7 +9,7 @@ system administration through a beautiful glass-morphism UI.
 Usage:
     from neugi_swarm_v2.dashboard import DashboardServer
 
-    server = DashboardServer(swarm_instance, host="0.0.0.0", port=8080)
+    server = DashboardServer(swarm_instance, host="0.0.0.0", port=17901)
     server.start()
 """
 

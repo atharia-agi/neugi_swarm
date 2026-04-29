@@ -6,12 +6,9 @@ and API specifications. Includes quality validation, testing, and documentation.
 """
 
 import ast
-import inspect
-import json
 import re
 import time
 import logging
-import hashlib
 from dataclasses import dataclass, field
 from typing import (
     Any,
@@ -19,14 +16,12 @@ from typing import (
     Dict,
     List,
     Optional,
-    Set,
     Tuple,
 )
 
 from tools.tool_registry import (
     ToolCategory,
     ToolRegistry,
-    ToolSchema,
     ToolNotFoundError,
 )
 
@@ -705,7 +700,7 @@ class ToolGenerator:
         param_list = ", ".join(f"{p}" for p in params.keys())
         code = f"def {name}({param_list}):\n"
         code += f'    """{tool_def["description"]}"""\n'
-        code += f"    import requests\n"
+        code += "    import requests\n"
         code += f"    url = f'{base_url}{path}'\n"
 
         path_params = [p for p, info in params.items() if info.get("in") == "path"]
@@ -715,29 +710,48 @@ class ToolGenerator:
             code += f"    url = url.replace('{{{{{pp}}}}}', str({pp}))\n"
 
         if query_params:
-            code += f"    params = {{\n"
+            code += "    params = {\n"
             for qp in query_params:
                 code += f"        '{qp}': {qp},\n"
-            code += f"    }}\n"
+            code += "    }\n"
             code += f"    response = requests.{method.lower()}(url, params=params)\n"
         else:
             code += f"    response = requests.{method.lower()}(url)\n"
 
-        code += f"    response.raise_for_status()\n"
-        code += f"    return response.json()\n"
+        code += "    response.raise_for_status()\n"
+        code += "    return response.json()\n"
 
         return code
 
     def _compile_tool(self, tool: GeneratedTool) -> Callable:
         """Compile tool code into a callable function."""
+        import ast
         try:
-            namespace = {}
-            exec(tool.code, {"__builtins__": {k: __builtins__[k] for k in self._safe_builtins if k in __builtins__}}, namespace)
+            # SECURITY: Parse AST first to validate no dangerous nodes
+            tree = ast.parse(tool.code)
+            dangerous_nodes = (ast.__dict__.get(n) for n in (
+                "Exec", "Delete", "Global", "Nonlocal", "ClassDef",
+                "Import", "ImportFrom",
+            ) if hasattr(ast, n))
+            dangerous_nodes = tuple(n for n in dangerous_nodes if n is not None)
+
+            for node in ast.walk(tree):
+                if isinstance(node, dangerous_nodes):
+                    raise ToolQualityError(
+                        f"Generated tool '{tool.name}' contains unsafe AST node: {type(node).__name__}"
+                    )
+
+            # Compile with restricted builtins
+            namespace = {"__builtins__": {k: __builtins__[k] for k in self._safe_builtins if k in __builtins__}}
+            code_obj = compile(tree, f"<generated_tool:{tool.name}>", "exec")
+            exec(code_obj, namespace)
             func = namespace.get(tool.name)
             if func is None:
                 raise ToolQualityError(f"Could not compile tool '{tool.name}'")
             return func
         except Exception as e:
+            if isinstance(e, ToolQualityError):
+                raise
             raise ToolQualityError(f"Compilation failed for '{tool.name}': {str(e)}")
 
     def _validate_quality(self, tool: GeneratedTool) -> ToolQualityReport:

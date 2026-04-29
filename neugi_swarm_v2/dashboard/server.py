@@ -58,7 +58,7 @@ class DashboardConfig:
     """
 
     host: str = "0.0.0.0"
-    port: int = 8080
+    port: int = 17901
     api_key: str = ""
     session_token_ttl: int = 3600
     rate_limit_requests: int = 100
@@ -212,6 +212,7 @@ class DashboardServer:
             "POST /api/auth/logout": self.api.logout,
             "GET /api/config": self.api.get_config,
             "PUT /api/config": self.api.update_config,
+            "GET /api/autonomous/status": self.api.autonomous_status,
         }
 
         self._api_routes.update(routes)

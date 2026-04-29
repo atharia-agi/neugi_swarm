@@ -21,9 +21,9 @@ from typing import (
 )
 
 from tools.tool_registry import (
-    ToolCategory,
     ToolRegistry,
     ToolSchema,
+    ToolCategory,
     ToolNotFoundError,
 )
 from tools.tool_executor import ToolExecutor, ExecutionResult

@@ -10,7 +10,7 @@ Usage:
     python -m neugi_swarm_v2.mcp.mcp_server
 
     # Streamable HTTP transport (secondary)
-    python -m neugi_swarm_v2.mcp.mcp_server --transport http --port 8080
+    python -m neugi_swarm_v2.mcp.mcp_server --transport http --port 17901
 """
 
 from __future__ import annotations

@@ -674,3 +674,21 @@ class DashboardAPI:
                 return _error(f"Config update failed: {e}")
 
         return _ok({"message": "Configuration queued for update"})
+
+    # -- Autonomous Loop -------------------------------------------------------
+
+    def autonomous_status(self, handler, body, query_params) -> dict:
+        """GET /api/autonomous/status - Live autonomous loop state."""
+        swarm = self.server.swarm
+        if not swarm or not hasattr(swarm, "autonomous_loop") or swarm.autonomous_loop is None:
+            return _ok({
+                "enabled": False,
+                "state": "not_initialized",
+                "message": "Autonomous loop is not active",
+            })
+
+        try:
+            status = swarm.autonomous_loop.get_live_status()
+            return _ok(status)
+        except Exception as e:
+            return _error(f"Failed to get autonomous status: {e}", code=500)

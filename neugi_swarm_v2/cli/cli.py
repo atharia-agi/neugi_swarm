@@ -690,6 +690,29 @@ class NeugiCLI:
                     CLICommand("dream", "Trigger dreaming consolidation", self._cmd_memory_dream),
                 ],
             ),
+            "soul": CLICommand(
+                name="soul",
+                description="Manage agent identity, personality, and continuity",
+                handler=self._cmd_soul,
+                subcommands=[
+                    CLICommand("init", "Initialize default soul files", self._cmd_soul_init),
+                    CLICommand("show", "Display current soul identity", self._cmd_soul_show),
+                    CLICommand("edit", "Open soul files in editor", self._cmd_soul_edit),
+                    CLICommand("remember", "Add a continuity memory note", self._cmd_soul_remember),
+                    CLICommand("stats", "Show soul file statistics", self._cmd_soul_stats),
+                ],
+            ),
+            "autonomous": CLICommand(
+                name="autonomous",
+                description="Control pro-active autonomous behavior",
+                handler=self._cmd_autonomous,
+                subcommands=[
+                    CLICommand("start", "Start the autonomous loop", self._cmd_autonomous_start),
+                    CLICommand("stop", "Stop the autonomous loop", self._cmd_autonomous_stop),
+                    CLICommand("status", "Show autonomous loop status and stats", self._cmd_autonomous_status),
+                    CLICommand("once", "Run one autonomous tick immediately", self._cmd_autonomous_once),
+                ],
+            ),
             "sessions": CLICommand(
                 name="sessions",
                 description="List, reset, and export sessions",
@@ -1288,6 +1311,236 @@ class NeugiCLI:
 
         console.print("[success]Dreaming complete! Memories consolidated.[/success]")
         return CommandResult(status=CommandStatus.SUCCESS, message="Dreaming complete")
+
+    # -- Soul Commands -------------------------------------------------------
+
+    def _cmd_soul(self, args: list[str]) -> CommandResult:
+        """Handle soul command."""
+        if not args:
+            return self._cmd_soul_show(args)
+
+        subcommand = args[0]
+        sub_args = args[1:]
+
+        for cmd in self._commands["soul"].subcommands:
+            if cmd.name == subcommand:
+                return cmd.handler(sub_args)
+
+        console.print(f"[error]Unknown subcommand: {subcommand}[/error]")
+        return CommandResult(status=CommandStatus.ERROR, message=f"Unknown subcommand: {subcommand}")
+
+    def _cmd_soul_init(self, args: list[str]) -> CommandResult:
+        """Initialize default soul files."""
+        from neugi_swarm_v2.context.soul_engine import SoulEngine
+
+        engine = SoulEngine(base_dir=str(self.base_dir))
+        created = engine.init_defaults(overwrite="--force" in args)
+
+        table = Table(title="[primary]Soul Files[/primary]", box=ROUNDED, border_style="cyan")
+        table.add_column("File", style="primary")
+        table.add_column("Status", style="success")
+
+        for path in created:
+            table.add_row(path.name, "created" if path.exists() else "missing")
+
+        console.print(table)
+        console.print(f"\n[info]Soul directory: {engine.soul_dir}[/info]")
+        console.print("[dim]Edit these files to customize NEUGI's identity and personality.[/dim]")
+        return CommandResult(status=CommandStatus.SUCCESS, message="Soul initialized")
+
+    def _cmd_soul_show(self, args: list[str]) -> CommandResult:
+        """Display current soul identity prompt."""
+        from neugi_swarm_v2.context.soul_engine import SoulEngine
+
+        engine = SoulEngine(base_dir=str(self.base_dir))
+        if not engine.exists():
+            console.print("[warning]No soul files found. Run 'neugi soul init' first.[/warning]")
+            return CommandResult(status=CommandStatus.WARNING, message="Soul not initialized")
+
+        prompt = engine.get_identity_prompt(max_chars=8000)
+        console.print(Panel(Markdown(prompt), title="[primary]SOUL Identity Prompt[/primary]", border_style="cyan"))
+        console.print(f"\n[dim]Fingerprint: {engine.get_fingerprint()}[/dim]")
+        return CommandResult(status=CommandStatus.SUCCESS, message="Soul displayed")
+
+    def _cmd_soul_edit(self, args: list[str]) -> CommandResult:
+        """Open soul files in default editor."""
+        from neugi_swarm_v2.context.soul_engine import SoulEngine
+
+        engine = SoulEngine(base_dir=str(self.base_dir))
+        if not engine.exists():
+            engine.init_defaults()
+
+        file_names = args if args else ["SOUL.md"]
+        for name in file_names:
+            path = engine.soul_dir / name
+            if path.exists():
+                editor = os.environ.get("EDITOR", "notepad" if os.name == "nt" else "nano")
+                console.print(f"[info]Opening {path} in {editor}...[/info]")
+                os.system(f'{editor} "{path}"')
+            else:
+                console.print(f"[warning]{name} not found.[/warning]")
+
+        return CommandResult(status=CommandStatus.SUCCESS, message="Editor opened")
+
+    def _cmd_soul_remember(self, args: list[str]) -> CommandResult:
+        """Add a continuity memory note."""
+        from neugi_swarm_v2.context.soul_engine import SoulEngine
+
+        if not args:
+            console.print("[error]Usage: neugi soul remember <note>[/error]")
+            return CommandResult(status=CommandStatus.ERROR, message="Missing note")
+
+        note = " ".join(args)
+        engine = SoulEngine(base_dir=str(self.base_dir))
+        if not engine.exists():
+            engine.init_defaults()
+
+        engine.append_memory(note)
+        console.print(f"[success]Remembered:[/success] {note}")
+        return CommandResult(status=CommandStatus.SUCCESS, message="Memory appended")
+
+    def _cmd_soul_stats(self, args: list[str]) -> CommandResult:
+        """Show soul file statistics."""
+        from neugi_swarm_v2.context.soul_engine import SoulEngine
+
+        engine = SoulEngine(base_dir=str(self.base_dir))
+        stats = engine.stats()
+
+        table = Table(title="[primary]Soul Statistics[/primary]", box=ROUNDED, border_style="cyan")
+        table.add_column("File", style="primary")
+        table.add_column("Exists", style="success")
+        table.add_column("Size (bytes)", style="dim")
+
+        for name, info in stats["files"].items():
+            table.add_row(
+                name,
+                "yes" if info["exists"] else "no",
+                str(info["size"]),
+            )
+
+        console.print(table)
+        console.print(f"\n[dim]Fingerprint: {stats['fingerprint']}[/dim]")
+        return CommandResult(status=CommandStatus.SUCCESS, message="Stats displayed")
+
+    # -- Autonomous commands ---------------------------------------------------
+
+    def _cmd_autonomous(self, args: list[str]) -> CommandResult:
+        """Handle autonomous command."""
+        if not args:
+            return self._cmd_autonomous_status(args)
+
+        subcommand = args[0]
+        subcommands = self._commands["autonomous"].subcommands or []
+        for cmd in subcommands:
+            if cmd.name == subcommand:
+                return cmd.handler(args[1:])
+
+        console.print(f"[error]Unknown autonomous subcommand: {subcommand}[/error]")
+        return CommandResult(status=CommandStatus.ERROR, message=f"Unknown subcommand: {subcommand}")
+
+    def _cmd_autonomous_start(self, args: list[str]) -> CommandResult:
+        """Start the autonomous loop."""
+        from neugi_swarm_v2 import NeugiSwarmV2
+
+        try:
+            swarm = NeugiSwarmV2(base_dir=str(self.base_dir))
+            success = swarm.start_autonomous()
+            if success:
+                console.print("[success]Autonomous loop started[/success]")
+                console.print("[dim]NEUGI will now act pro-actively during idle periods.[/dim]")
+                return CommandResult(status=CommandStatus.SUCCESS, message="Autonomous loop started")
+            else:
+                console.print("[error]Failed to start autonomous loop[/error]")
+                return CommandResult(status=CommandStatus.ERROR, message="Failed to start")
+        except Exception as e:
+            console.print(f"[error]Error: {e}[/error]")
+            return CommandResult(status=CommandStatus.ERROR, message=str(e))
+
+    def _cmd_autonomous_stop(self, args: list[str]) -> CommandResult:
+        """Stop the autonomous loop."""
+        from neugi_swarm_v2 import NeugiSwarmV2
+
+        try:
+            swarm = NeugiSwarmV2(base_dir=str(self.base_dir))
+            swarm.stop_autonomous()
+            console.print("[success]Autonomous loop stopped[/success]")
+            return CommandResult(status=CommandStatus.SUCCESS, message="Autonomous loop stopped")
+        except Exception as e:
+            console.print(f"[error]Error: {e}[/error]")
+            return CommandResult(status=CommandStatus.ERROR, message=str(e))
+
+    def _cmd_autonomous_status(self, args: list[str]) -> CommandResult:
+        """Show autonomous loop status and stats."""
+        from neugi_swarm_v2 import NeugiSwarmV2
+
+        try:
+            swarm = NeugiSwarmV2(base_dir=str(self.base_dir))
+
+            if swarm.autonomous_loop:
+                stats = swarm.autonomous_loop.get_stats()
+
+                console.print("\n[primary]Autonomous Loop Status[/primary]\n")
+
+                state = stats.get("state", "unknown")
+                state_style = "success" if state == "running" else "warning" if state == "paused" else "dim"
+                console.print(f"  State:        [{state_style}]{state}[/{state_style}]")
+                console.print(f"  Ticks:        {stats.get('tick_count', 0)}")
+                console.print(f"  Actions today: {stats.get('action_count_today', 0)}")
+                console.print(f"  Failures:     {stats.get('failure_count', 0)}")
+                console.print(f"  Circuit open: {'yes' if stats.get('circuit_open') else 'no'}")
+
+                cfg = stats.get("config", {})
+                console.print(f"\n[dim]Config:[/dim]")
+                console.print(f"  Tick interval:     {cfg.get('tick_interval', 0):.0f}s")
+                console.print(f"  Idle threshold:    {cfg.get('idle_threshold', 0):.0f}s")
+                console.print(f"  Max actions/tick:  {cfg.get('max_actions_per_tick', 0)}")
+                console.print(f"  Max actions/day:   {cfg.get('max_actions_per_day', 0)}")
+                console.print(f"  Dry run:           {'yes' if cfg.get('dry_run') else 'no'}")
+
+                # Show recent signals
+                observer = stats.get("observer", {})
+                if observer:
+                    console.print(f"\n[dim]Latest Signals:[/dim]")
+                    for key, val in observer.items():
+                        if isinstance(val, dict):
+                            console.print(f"  {key}: {len(val)} items")
+                        else:
+                            console.print(f"  {key}: {val}")
+            else:
+                console.print("[warning]Autonomous loop not initialized[/warning]")
+                console.print("[dim]Run `neugi autonomous start` to enable pro-active behavior.[/dim]")
+
+            return CommandResult(status=CommandStatus.SUCCESS, message="Status displayed")
+        except Exception as e:
+            console.print(f"[error]Error: {e}[/error]")
+            return CommandResult(status=CommandStatus.ERROR, message=str(e))
+
+    def _cmd_autonomous_once(self, args: list[str]) -> CommandResult:
+        """Run one autonomous tick immediately (for testing)."""
+        from neugi_swarm_v2 import NeugiSwarmV2
+
+        try:
+            swarm = NeugiSwarmV2(base_dir=str(self.base_dir))
+            if not swarm.autonomous_loop:
+                console.print("[error]Autonomous loop not initialized[/error]")
+                return CommandResult(status=CommandStatus.ERROR, message="Not initialized")
+
+            console.print("[info]Running one autonomous tick...[/info]")
+            # Force a tick by temporarily lowering idle threshold
+            old_threshold = swarm.autonomous_loop.config.idle_threshold_seconds
+            swarm.autonomous_loop.config.idle_threshold_seconds = 0
+            result = swarm.autonomous_loop._tick()
+            swarm.autonomous_loop.config.idle_threshold_seconds = old_threshold
+
+            console.print(f"[success]Tick complete[/success]")
+            console.print(f"  Observations: {result.observations}")
+            console.print(f"  Decisions:    {result.decisions}")
+            console.print(f"  Executions:   {result.executions}")
+            console.print(f"  Duration:     {result.duration_ms:.0f}ms")
+            return CommandResult(status=CommandStatus.SUCCESS, message="Tick completed")
+        except Exception as e:
+            console.print(f"[error]Error: {e}[/error]")
+            return CommandResult(status=CommandStatus.ERROR, message=str(e))
 
     def _cmd_sessions(self, args: list[str]) -> CommandResult:
         """Handle sessions command."""
@@ -1898,6 +2151,16 @@ def _format_size(size_bytes: int) -> str:
 
 def main() -> int:
     """Main entry point for the neugi CLI."""
+    import signal
+
+    def _signal_handler(sig, frame):
+        console.print("\n[warning]Interrupted. Shutting down gracefully...[/warning]")
+        sys.exit(130)
+
+    signal.signal(signal.SIGINT, _signal_handler)
+    if hasattr(signal, 'SIGTERM'):
+        signal.signal(signal.SIGTERM, _signal_handler)
+
     cli = NeugiCLI()
     return cli.run()
 

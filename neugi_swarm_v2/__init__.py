@@ -20,6 +20,17 @@ Usage:
 
 from __future__ import annotations
 
+import logging
+import os
+import sys
+
+logger = logging.getLogger(__name__)
+
+# Ensure package submodules are importable when running as `python -m neugi_swarm_v2.*`
+_PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
+if _PACKAGE_DIR not in sys.path:
+    sys.path.insert(0, _PACKAGE_DIR)
+
 __version__ = "2.1.1"
 __author__ = "NEUGI Team"
 
@@ -109,6 +120,16 @@ from neugi_swarm_v2.context import (
     InjectionError,
     ContextScope,
 )
+from neugi_swarm_v2.context.soul_engine import SoulEngine
+
+from neugi_swarm_v2.model_capability_router import (
+    CapabilityProfile,
+    CapabilityProfileBuilder,
+    CapabilityRouter,
+    TaskComplexity,
+    ModelTier,
+)
+from neugi_swarm_v2.model_registry import ModelCapabilityDetector, ModelCapabilities
 
 from neugi_swarm_v2.agents import (
     Agent,
@@ -247,6 +268,36 @@ from neugi_swarm_v2.dashboard.websocket import (
     WebSocketHandler,
     WebSocketServer,
 )
+from neugi_swarm_v2.autonomous import (
+    AutonomousLoop,
+    LoopConfig,
+    LoopState,
+    LoopError,
+    LoopResult,
+    AutonomousActivity,
+    ActivityType,
+    ActivityPriority,
+    ActivityStatus,
+    IdleObserver,
+    Observation,
+    ObservationType,
+    ProactiveDecisionEngine,
+    Decision,
+    DecisionType,
+    DecisionOutcome,
+    DecisionCriteria,
+    RiskAssessment,
+    ValueAssessment,
+    SelfDirectedExecutor,
+    ExecutionResult,
+    ExecutionType,
+    ExecutionContext,
+    ActionResult,
+    ActivityReporter,
+    ActivityReport,
+    ReportChannel,
+    ReportSeverity,
+)
 
 # -- Unified Entry Point -----------------------------------------------------
 
@@ -285,6 +336,12 @@ class NeugiSwarmV2:
         else:
             self.llm = self._create_llm_provider()
 
+        # Build capability profile from config or auto-detect
+        self.capability_profile = self._build_capability_profile()
+
+        # Multi-model routing (optional — configured in config.json)
+        self.model_router = self._init_model_router()
+
         self.memory = MemorySystem(
             base_dir=str(self.config.memory_dir),
             daily_ttl_days=self.config.memory.daily_ttl_days,
@@ -306,6 +363,15 @@ class NeugiSwarmV2:
             registry_db_path=str(self.config.sessions_dir / "session_registry.db"),
         )
 
+        # Soul / identity engine (SOUL.md pattern)
+        # Pass memory_system so soul uses SQLite as single source of truth
+        self.soul = SoulEngine(
+            base_dir=str(self.config.neugi_dir),
+            memory_system=self.memory,
+        )
+        if not self.soul.exists():
+            self.soul.init_defaults()
+
         self.prompt_assembler = ContextPromptAssembler(
             base_dir=str(self.config.neugi_dir),
             agent_id="neugi",
@@ -314,6 +380,8 @@ class NeugiSwarmV2:
             model_max_chars=self.config.context.max_chars,
             skill_injector=self._inject_skills,
             memory_injector=self._inject_memory,
+            soul_engine=self.soul,
+            capability_profile=self.capability_profile,
         )
 
         self.token_budget = TokenBudget(
@@ -323,6 +391,52 @@ class NeugiSwarmV2:
         )
 
         self._setup_compaction()
+
+        # Autonomous loop (pro-active behavior during idle)
+        # Auto-starts by default (configurable via autonomous=False kwarg)
+        self.autonomous_loop: AutonomousLoop | None = None
+        self._init_autonomous_loop(
+            enabled=kwargs.get("autonomous", True),
+            autostart=kwargs.get("autostart", True),
+        )
+
+    def _init_autonomous_loop(self, enabled: bool = True, autostart: bool = True) -> None:
+        """Initialize the autonomous loop for pro-active behavior.
+
+        By default, the loop auto-starts in a daemon thread. No manual trigger needed.
+        Call swarm.stop_autonomous() to disable, or pass autonomous=False on init.
+        """
+        if not enabled:
+            logger.info("AutonomousLoop disabled by user")
+            return
+        try:
+            config = LoopConfig(enabled=True, autostart=autostart)
+            self.autonomous_loop = AutonomousLoop(swarm=self, config=config)
+            logger.info("AutonomousLoop initialized and auto-started")
+        except Exception as e:
+            logger.warning("Failed to initialize AutonomousLoop: %s", e)
+            self.autonomous_loop = None
+
+    def start_autonomous(self) -> bool:
+        """Explicitly start the autonomous loop (idempotent)."""
+        if self.autonomous_loop is None:
+            self._init_autonomous_loop()
+        if self.autonomous_loop:
+            self.autonomous_loop.start()
+            return True
+        return False
+
+    def stop_autonomous(self) -> None:
+        """Stop the autonomous loop."""
+        if self.autonomous_loop:
+            self.autonomous_loop.stop()
+
+    @property
+    def is_autonomous_running(self) -> bool:
+        """Whether the autonomous loop is currently running."""
+        if self.autonomous_loop:
+            return self.autonomous_loop.state == LoopState.RUNNING
+        return False
 
     def chat(
         self,
@@ -344,6 +458,19 @@ class NeugiSwarmV2:
         """
         from neugi_swarm_v2.assistant import NeugiAssistantV2
 
+        # Touch autonomous loop to reset idle timer (user is active)
+        if self.autonomous_loop:
+            self.autonomous_loop.touch()
+
+        # Log model routing decision if router is active
+        if self.model_router is not None:
+            route = self.model_router.pick_model(message)
+            if route is not None:
+                logger.info(
+                    "Model routing: task -> %s (provider=%s, model=%s, tier=%s)",
+                    route.name, route.provider, route.model, route.tier
+                )
+
         assistant = NeugiAssistantV2(
             config=self.config,
             llm=self.llm,
@@ -352,37 +479,137 @@ class NeugiSwarmV2:
             session_manager=self.session_manager,
             prompt_assembler=self.prompt_assembler,
             token_budget=self.token_budget,
+            on_user_interaction=(
+                self.autonomous_loop.touch if self.autonomous_loop else None
+            ),
         )
 
         return assistant.chat(message, session_id=session_id, streaming=streaming, **kwargs)
 
     def close(self) -> None:
         """Shut down all subsystems gracefully."""
+        if self.autonomous_loop:
+            self.autonomous_loop.stop()
         self.memory.close()
         self.session_manager.sync()
 
+    def remember(self, note: str, category: str = "Recent Events") -> None:
+        """Persist a continuity note to the agent's soul memory."""
+        if hasattr(self, "soul"):
+            self.soul.append_memory(note, category=category)
+
+    def _init_model_router(self) -> Any:
+        """Initialize multi-model router from config if routing is configured."""
+        try:
+            from neugi_swarm_v2.multi_model_router import MultiModelRouter
+            # Load raw config dict to check for routing section
+            config_path = self.config.neugi_dir / "config.json"
+            if config_path.exists():
+                import json
+                with open(config_path, encoding="utf-8") as f:
+                    raw = json.load(f)
+                if raw.get("routing", {}).get("enabled", False):
+                    return MultiModelRouter.from_config(raw)
+        except Exception:
+            pass
+        return None
+
+    def _build_capability_profile(self) -> CapabilityProfile:
+        """Build capability profile from config or auto-detect from model."""
+        cp_cfg = self.config.capability_profile
+        if cp_cfg.name:
+            # User has explicitly configured a capability profile
+            return CapabilityProfile(
+                name=cp_cfg.name,
+                provider=cp_cfg.provider,
+                tier=ModelTier(cp_cfg.tier) if cp_cfg.tier in ("local", "medium", "cloud") else ModelTier.MEDIUM,
+                context_length=cp_cfg.context_length,
+                supports_tools=cp_cfg.supports_tools,
+                supports_vision=cp_cfg.supports_vision,
+                supports_json_mode=cp_cfg.supports_json_mode,
+                max_tools_per_call=cp_cfg.max_tools_per_call,
+                effective_context_ratio=cp_cfg.effective_context_ratio,
+                max_memory_entries=cp_cfg.max_memory_entries,
+                recommended_prompt_tier=PromptTier(cp_cfg.recommended_prompt_tier) if cp_cfg.recommended_prompt_tier in ("minimal", "standard", "maximal") else PromptTier.STANDARD,
+            )
+
+        # Auto-detect from configured model
+        llm_cfg = self.config.llm
+        detector = ModelCapabilityDetector()
+        caps = detector.detect(
+            model_name=llm_cfg.model,
+            provider=llm_cfg.provider,
+        )
+        return CapabilityProfileBuilder.build(caps)
+
+    def _resolve_api_key(self) -> str:
+        """Resolve API key from env var, SecretManager, or config (in that order)."""
+        # 1. Environment variable (highest priority)
+        env_key = os.environ.get("NEUGI_LLM_API_KEY", "")
+        if env_key:
+            return env_key
+
+        # 2. SecretManager (encrypted storage)
+        try:
+            from security.secret_manager import SecretManager
+            secrets_db = self.config.neugi_dir / "secrets.db"
+            if secrets_db.exists():
+                manager = SecretManager(db_path=str(secrets_db))
+                entry = manager.get_secret("llm_api_key")
+                if entry and entry.value:
+                    return entry.value
+        except Exception:
+            pass
+
+        # 3. Config fallback (legacy, will be empty after migration)
+        return self.config.llm.api_key
+
     def _create_llm_provider(self) -> LLMProvider:
         """Create an LLM provider from config."""
+        from neugi_swarm_v2.llm_provider import (
+            OllamaProvider, OpenAICompatibleProvider, AnthropicCompatibleProvider,
+            ProviderConfig, ProviderType,
+        )
         llm_cfg = self.config.llm
-        if llm_cfg.provider == "ollama":
-            return OllamaProvider(
-                base_url=llm_cfg.ollama_url,
-                model=llm_cfg.model,
-                fallback_model=llm_cfg.fallback_model,
-            )
-        elif llm_cfg.provider == "anthropic":
-            return AnthropicCompatibleProvider(
-                api_key=llm_cfg.api_key,
-                model=llm_cfg.model,
-                fallback_model=llm_cfg.fallback_model,
-            )
+        provider_type_map = {
+            "ollama": ProviderType.OLLAMA,
+            "openai": ProviderType.OPENAI_COMPATIBLE,
+            "anthropic": ProviderType.ANTHROPIC_COMPATIBLE,
+            "gemini": ProviderType.OPENAI_COMPATIBLE,
+            "grok": ProviderType.OPENAI_COMPATIBLE,
+            "deepseek": ProviderType.OPENAI_COMPATIBLE,
+            "groq": ProviderType.OPENAI_COMPATIBLE,
+            "mistral": ProviderType.OPENAI_COMPATIBLE,
+            "cohere": ProviderType.OPENAI_COMPATIBLE,
+            "perplexity": ProviderType.OPENAI_COMPATIBLE,
+            "together": ProviderType.OPENAI_COMPATIBLE,
+            "fireworks": ProviderType.OPENAI_COMPATIBLE,
+            "moonshot": ProviderType.OPENAI_COMPATIBLE,
+            "alibaba": ProviderType.OPENAI_COMPATIBLE,
+            "zhipu": ProviderType.OPENAI_COMPATIBLE,
+            "stepfun": ProviderType.OPENAI_COMPATIBLE,
+            "baidu": ProviderType.OPENAI_COMPATIBLE,
+            "iflytek": ProviderType.OPENAI_COMPATIBLE,
+            "minimax": ProviderType.OPENAI_COMPATIBLE,
+            "nvidia": ProviderType.OPENAI_COMPATIBLE,
+        }
+        ptype = provider_type_map.get(llm_cfg.provider, ProviderType.OPENAI_COMPATIBLE)
+        api_key = self._resolve_api_key()
+        cfg = ProviderConfig(
+            provider_type=ptype,
+            base_url=llm_cfg.ollama_url or llm_cfg.base_url or "http://localhost:11434",
+            api_key=api_key,
+            default_model=llm_cfg.model,
+            fallback_model=llm_cfg.fallback_model,
+            timeout=int(llm_cfg.timeout_seconds),
+            max_retries=llm_cfg.max_retries,
+        )
+        if ptype == ProviderType.OLLAMA:
+            return OllamaProvider(cfg)
+        elif ptype == ProviderType.ANTHROPIC_COMPATIBLE:
+            return AnthropicCompatibleProvider(cfg)
         else:
-            return OpenAICompatibleProvider(
-                api_key=llm_cfg.api_key,
-                base_url=llm_cfg.base_url,
-                model=llm_cfg.model,
-                fallback_model=llm_cfg.fallback_model,
-            )
+            return OpenAICompatibleProvider(cfg)
 
     def _resolve_skill_tier(self, path: str) -> "SkillTier":
         """Resolve a skill directory path to a SkillTier."""
@@ -521,6 +748,7 @@ __all__ = [
     "InjectionResult",
     "InjectionError",
     "ContextScope",
+    "SoulEngine",
     "Agent",
     "AgentRole",
     "AgentStatus",
@@ -615,6 +843,35 @@ __all__ = [
     "ResponseSection",
     "StructuredResponse",
     "ThinkingBlock",
+    # Autonomous Loop
+    "AutonomousLoop",
+    "LoopConfig",
+    "LoopState",
+    "LoopError",
+    "LoopResult",
+    "AutonomousActivity",
+    "ActivityType",
+    "ActivityPriority",
+    "ActivityStatus",
+    "IdleObserver",
+    "Observation",
+    "ObservationType",
+    "ProactiveDecisionEngine",
+    "Decision",
+    "DecisionType",
+    "DecisionOutcome",
+    "DecisionCriteria",
+    "RiskAssessment",
+    "ValueAssessment",
+    "SelfDirectedExecutor",
+    "ExecutionResult",
+    "ExecutionType",
+    "ExecutionContext",
+    "ActionResult",
+    "ActivityReporter",
+    "ActivityReport",
+    "ReportChannel",
+    "ReportSeverity",
     # Rescue Wizard
     "RescueWizard",
     "WizardError",

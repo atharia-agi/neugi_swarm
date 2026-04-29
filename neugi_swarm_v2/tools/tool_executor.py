@@ -22,7 +22,22 @@ from typing import (
     Tuple,
 )
 
-from tools.tool_registry import ToolRegistry, ToolNotFoundError
+from tools.tool_registry import ToolRegistry, ToolComplexity
+
+try:
+    from security import ExecutionSandbox, SandboxViolation
+    from security import CommandValidator
+    from security import ExploitPreventionEngine
+except ImportError:
+    ExecutionSandbox = None  # type: ignore
+    SandboxViolation = None  # type: ignore
+    CommandValidator = None  # type: ignore
+    ExploitPreventionEngine = None  # type: ignore
+
+try:
+    from governance import ApprovalGate
+except ImportError:
+    ApprovalGate = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -394,21 +409,88 @@ class ToolExecutor:
         cache_max_size: int = 10000,
         circuit_failure_threshold: int = 5,
         circuit_recovery_timeout: float = 30.0,
+        capability_profile: Optional[Any] = None,
+        sandbox: Optional[Any] = None,
+        command_validator: Optional[Any] = None,
+        exploit_prevention: Optional[Any] = None,
+        approval_gate: Optional[Any] = None,
     ):
         self.registry = registry
-        self.max_retries = max_retries
-        self.base_backoff = base_backoff
-        self.max_backoff = max_backoff
+        self.capability_profile = capability_profile
+        self.sandbox = sandbox
+        self.command_validator = command_validator
+        self.exploit_prevention = exploit_prevention
+        self.approval_gate = approval_gate
         self.cache_enabled = cache_enabled
         self.cache = CacheBackend(max_size=cache_max_size, default_ttl=cache_ttl)
         self.rate_limiter = RateLimiter()
-        self.circuit_breaker = CircuitBreaker(
-            failure_threshold=circuit_failure_threshold,
-            recovery_timeout=circuit_recovery_timeout,
-        )
         self._traces: Dict[str, ExecutionTrace] = {}
         self._transformers: Dict[str, Callable] = {}
         self._lock = threading.Lock()
+
+        # Adapt execution parameters based on model capability
+        adapted = self._adapt_execution_params(
+            max_retries, base_backoff, max_backoff,
+            circuit_failure_threshold, circuit_recovery_timeout,
+        )
+        self.max_retries = adapted["max_retries"]
+        self.base_backoff = adapted["base_backoff"]
+        self.max_backoff = adapted["max_backoff"]
+        self.circuit_breaker = CircuitBreaker(
+            failure_threshold=adapted["circuit_failure_threshold"],
+            recovery_timeout=adapted["circuit_recovery_timeout"],
+        )
+
+    def _adapt_execution_params(
+        self,
+        max_retries: int,
+        base_backoff: float,
+        max_backoff: float,
+        circuit_failure_threshold: int,
+        circuit_recovery_timeout: float,
+    ) -> Dict[str, Any]:
+        """Adapt execution parameters based on model capability profile.
+
+        LOCAL tier: fail fast, low retries (weak models struggle with recovery)
+        MEDIUM tier: balanced
+        CLOUD tier: more retries, longer recovery (complex tools worth retrying)
+        """
+        if self.capability_profile is None:
+            return {
+                "max_retries": max_retries,
+                "base_backoff": base_backoff,
+                "max_backoff": max_backoff,
+                "circuit_failure_threshold": circuit_failure_threshold,
+                "circuit_recovery_timeout": circuit_recovery_timeout,
+            }
+
+        tier = getattr(self.capability_profile, "tier", None)
+        tier_value = tier.value if hasattr(tier, "value") else str(tier) if tier else "medium"
+
+        if tier_value == "local":
+            return {
+                "max_retries": 1,
+                "base_backoff": 0.05,
+                "max_backoff": 2.0,
+                "circuit_failure_threshold": 3,
+                "circuit_recovery_timeout": 15.0,
+            }
+        elif tier_value == "cloud":
+            return {
+                "max_retries": max(3, max_retries),
+                "base_backoff": base_backoff,
+                "max_backoff": max_backoff,
+                "circuit_failure_threshold": circuit_failure_threshold,
+                "circuit_recovery_timeout": circuit_recovery_timeout,
+            }
+        else:
+            return {
+                "max_retries": max_retries,
+                "base_backoff": base_backoff,
+                "max_backoff": max_backoff,
+                "circuit_failure_threshold": circuit_failure_threshold,
+                "circuit_recovery_timeout": circuit_recovery_timeout,
+            }
 
     def set_rate_limit(self, tool_name: str, calls_per_minute: int):
         """Set rate limit for a tool."""
@@ -421,6 +503,33 @@ class ToolExecutor:
         The transformer receives the raw result and returns a transformed result.
         """
         self._transformers[tool_name] = transformer
+
+    def _adapt_timeout(self, base_timeout: float, complexity: Any) -> float:
+        """Adapt tool timeout based on model capability and tool complexity.
+
+        LOCAL tier: shorter timeouts for complex tools (fail fast)
+        CLOUD tier: longer timeouts for complex tools (worth waiting)
+        """
+        if self.capability_profile is None:
+            return base_timeout
+
+        tier = getattr(self.capability_profile, "tier", None)
+        tier_value = tier.value if hasattr(tier, "value") else str(tier) if tier else "medium"
+        complexity_value = complexity.value if hasattr(complexity, "value") else str(complexity)
+
+        if tier_value == "local":
+            # Fail fast on complex tools
+            if complexity_value in ("complex", "strategic"):
+                return min(base_timeout, 10.0)
+            return min(base_timeout, 15.0)
+        elif tier_value == "cloud":
+            # More patience for complex tools on capable models
+            if complexity_value == "strategic":
+                return max(base_timeout, 60.0)
+            if complexity_value == "complex":
+                return max(base_timeout, 45.0)
+            return base_timeout
+        return base_timeout
 
     def execute(
         self,
@@ -467,6 +576,72 @@ class ToolExecutor:
                     trace_id=trace_id or "",
                 )
 
+            # -- Security: Exploit Prevention (input scan) ------------------
+            if self.exploit_prevention:
+                try:
+                    reports = self.exploit_prevention.analyze_input(
+                        str(kwargs), source=f"tool:{tool_name}"
+                    )
+                    critical_reports = [r for r in reports if getattr(r, "severity", "") == "critical"]
+                    if critical_reports:
+                        reason = critical_reports[0].description if hasattr(critical_reports[0], "description") else "Critical threat detected"
+                        logger.warning("Security blocked tool %s: %s", tool_name, reason)
+                        return ExecutionResult(
+                            tool_name=tool_name,
+                            success=False,
+                            error=f"Security blocked: {reason}",
+                            latency_ms=(time.time() - start_time) * 1000,
+                            trace_id=trace_id or "",
+                        )
+                except Exception as e:
+                    logger.warning("Exploit prevention scan failed for %s: %s", tool_name, e)
+
+            # -- Security: Approval Gate (complex/strategic tools) ----------
+            if self.approval_gate and schema.complexity in (ToolComplexity.COMPLEX, ToolComplexity.STRATEGIC):
+                try:
+                    from governance.approval import RiskLevel
+                    needs_approval, _ = self.approval_gate.requires_approval(
+                        action_type=tool_name,
+                        risk_level=RiskLevel.HIGH,
+                    )
+                    if needs_approval:
+                        request = self.approval_gate.request_approval(
+                            agent_id="neugi",
+                            action=tool_name,
+                            description=f"Tool '{tool_name}' (complexity: {schema.complexity.value}) requires approval",
+                            risk_level=RiskLevel.HIGH,
+                        )
+                        if hasattr(request, "status") and request.status.value != "auto_approved":
+                            logger.warning("Approval required for tool %s (request: %s)", tool_name, getattr(request, "request_id", "?"))
+                            return ExecutionResult(
+                                tool_name=tool_name,
+                                success=False,
+                                error=f"Approval required for '{tool_name}'. Request ID: {getattr(request, 'request_id', '?')}",
+                                latency_ms=(time.time() - start_time) * 1000,
+                                trace_id=trace_id or "",
+                            )
+                except Exception as e:
+                    logger.warning("Approval gate check failed for %s: %s", tool_name, e)
+
+            # -- Security: Command Validator (subprocess-based tools) -------
+            if self.command_validator and tool_name in ("system_execute_command", "docker_run", "docker_exec", "docker_compose_up"):
+                try:
+                    command = kwargs.get("command", "")
+                    if command:
+                        verdict = self.command_validator.validate(str(command))
+                        if hasattr(verdict, "is_safe") and not verdict.is_safe:
+                            explanation = getattr(verdict, "explanation", "Command validation failed")
+                            logger.warning("Command validator blocked %s: %s", tool_name, explanation)
+                            return ExecutionResult(
+                                tool_name=tool_name,
+                                success=False,
+                                error=f"Command blocked: {explanation}",
+                                latency_ms=(time.time() - start_time) * 1000,
+                                trace_id=trace_id or "",
+                            )
+                except Exception as e:
+                    logger.warning("Command validation failed for %s: %s", tool_name, e)
+
             if self.circuit_breaker.is_open(tool_name):
                 raise CircuitOpenError(
                     tool_name,
@@ -494,31 +669,81 @@ class ToolExecutor:
                         trace_id=trace_id or "",
                     )
 
-            timeout = timeout_override or schema.timeout_seconds
+            # Adapt timeout based on tool complexity and model capability
+            base_timeout = timeout_override or schema.timeout_seconds
+            timeout = self._adapt_timeout(base_timeout, schema.complexity)
             result = None
 
-            for attempt in range(self.max_retries + 1):
+            # -- Security: ExecutionSandbox (subprocess-based tools) --------
+            sandbox_executed = False
+            if self.sandbox and tool_name in ("system_execute_command", "docker_run", "docker_exec", "docker_compose_up"):
                 try:
-                    result = self._execute_with_timeout(func, kwargs, timeout)
-                    break
+                    command = self._build_command_for_sandbox(tool_name, kwargs)
+                    if command:
+                        sb_result = self.sandbox.execute(command, timeout=timeout)
+                        result = {
+                            "stdout": sb_result.stdout,
+                            "stderr": sb_result.stderr,
+                            "returncode": sb_result.returncode,
+                            "killed": sb_result.killed,
+                            "kill_reason": sb_result.kill_reason,
+                        }
+                        sandbox_executed = True
+                except SandboxViolation as e:
+                    logger.warning("Sandbox blocked %s: %s", tool_name, e)
+                    return ExecutionResult(
+                        tool_name=tool_name,
+                        success=False,
+                        error=f"Sandbox blocked: {e}",
+                        latency_ms=(time.time() - start_time) * 1000,
+                        trace_id=trace_id or "",
+                    )
                 except Exception as e:
-                    last_error = str(e)
-                    retries = attempt
-                    if attempt < self.max_retries:
-                        backoff = min(
-                            self.base_backoff * (2**attempt), self.max_backoff
-                        )
-                        time.sleep(backoff)
-                        logger.warning(
-                            f"Tool '{tool_name}' attempt {attempt + 1} failed: {e}, "
-                            f"retrying in {backoff:.2f}s"
-                        )
+                    logger.warning("Sandbox execution failed for %s: %s", tool_name, e)
+
+            if not sandbox_executed:
+                for attempt in range(self.max_retries + 1):
+                    try:
+                        result = self._execute_with_timeout(func, kwargs, timeout)
+                        break
+                    except Exception as e:
+                        last_error = str(e)
+                        retries = attempt
+                        if attempt < self.max_retries:
+                            backoff = min(
+                                self.base_backoff * (2**attempt), self.max_backoff
+                            )
+                            time.sleep(backoff)
+                            logger.warning(
+                                f"Tool '{tool_name}' attempt {attempt + 1} failed: {e}, "
+                                f"retrying in {backoff:.2f}s"
+                            )
 
             if result is None and last_error:
                 raise ExecutionError(tool_name, last_error)
 
             if tool_name in self._transformers:
                 result = self._transformers[tool_name](result)
+
+            # -- Security: Exploit Prevention (output scan) -----------------
+            if self.exploit_prevention and result is not None:
+                try:
+                    reports = self.exploit_prevention.analyze_tool_result(
+                        str(result), tool_name=tool_name
+                    )
+                    critical_reports = [r for r in reports if getattr(r, "severity", "") == "critical"]
+                    if critical_reports:
+                        reason = critical_reports[0].description if hasattr(critical_reports[0], "description") else "Critical threat in output"
+                        logger.warning("Security blocked output from %s: %s", tool_name, reason)
+                        return ExecutionResult(
+                            tool_name=tool_name,
+                            success=False,
+                            error=f"Security blocked output: {reason}",
+                            latency_ms=(time.time() - start_time) * 1000,
+                            trace_id=trace_id or "",
+                        )
+                except Exception as e:
+                    logger.warning("Exploit prevention output scan failed for %s: %s", tool_name, e)
 
             latency = (time.time() - start_time) * 1000
 
@@ -595,6 +820,55 @@ class ToolExecutor:
                     "unknown",
                     f"Tool execution timed out after {timeout}s",
                 )
+
+    def _build_command_for_sandbox(
+        self, tool_name: str, kwargs: Dict[str, Any]
+    ) -> Optional[List[str]]:
+        """Build a command list for sandbox execution from tool kwargs.
+
+        Args:
+            tool_name: Name of the tool.
+            kwargs: Tool parameters.
+
+        Returns:
+            Command list for sandbox.execute(), or None if not applicable.
+        """
+        if tool_name == "system_execute_command":
+            command = kwargs.get("command", "")
+            shell = kwargs.get("shell", False)
+            if shell:
+                return ["sh", "-c", str(command)]
+            if isinstance(command, list):
+                return [str(c) for c in command]
+            if isinstance(command, str):
+                return command.split()
+            return None
+
+        if tool_name == "docker_run":
+            image = kwargs.get("image", "")
+            cmd = kwargs.get("command", "")
+            args = kwargs.get("args", [])
+            command = ["docker", "run"]
+            if kwargs.get("detached"):
+                command.append("-d")
+            if kwargs.get("remove"):
+                command.append("--rm")
+            command.append(str(image))
+            if cmd:
+                command.append(str(cmd))
+            command.extend([str(a) for a in args])
+            return command
+
+        if tool_name == "docker_exec":
+            container = kwargs.get("container", "")
+            cmd = kwargs.get("command", "")
+            return ["docker", "exec", str(container), str(cmd)]
+
+        if tool_name == "docker_compose_up":
+            file_path = kwargs.get("file", "docker-compose.yml")
+            return ["docker-compose", "-f", str(file_path), "up", "-d"]
+
+        return None
 
     def execute_batch(
         self,

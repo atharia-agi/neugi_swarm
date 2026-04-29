@@ -2,7 +2,7 @@
 set -e
 
 echo "========================================="
-echo "  NEUGI Swarm V2 - Installer"
+echo "  NEUGI Swarm V2.1.1 - Installer"
 echo "========================================="
 
 # Colors
@@ -31,6 +31,24 @@ fi
 
 echo -e "${GREEN}✓ Python $PYTHON_VERSION detected${NC}"
 
+# Check Ollama
+if ! command -v ollama &> /dev/null; then
+    echo -e "${YELLOW}⚠ Ollama not found. NEUGI needs it for local AI.${NC}"
+    echo "Options:"
+    echo "  1. Install Ollama now (curl -fsSL https://ollama.com/install.sh | sh)"
+    echo "  2. Skip and use cloud API later"
+    read -p "Install Ollama? [Y/n]: " choice
+    if [[ ! "$choice" =~ ^[Nn]$ ]]; then
+        echo -e "${YELLOW}Installing Ollama...${NC}"
+        curl -fsSL https://ollama.com/install.sh | sh
+        echo -e "${GREEN}✓ Ollama installed${NC}"
+    else
+        echo -e "${YELLOW}Skipping Ollama. Run 'neugi wizard' later to set up cloud API.${NC}"
+    fi
+else
+    echo -e "${GREEN}✓ Ollama found${NC}"
+fi
+
 # Create installation directory
 INSTALL_DIR="${NEUGI_INSTALL_DIR:-$HOME/.neugi}"
 echo -e "${YELLOW}Installing to: $INSTALL_DIR${NC}"
@@ -45,9 +63,9 @@ if [ -d ".git" ]; then
 else
     echo -e "${YELLOW}Downloading NEUGI Swarm V2...${NC}"
     if command -v curl &> /dev/null; then
-        curl -fsSL https://github.com/neugi-ai/neugi-swarm-v2/archive/refs/heads/main.tar.gz | tar xz --strip-components=1
+        curl -fsSL https://github.com/atharia-agi/neugi_swarm/archive/refs/heads/master.tar.gz | tar xz --strip-components=1
     elif command -v wget &> /dev/null; then
-        wget -qO- https://github.com/neugi-ai/neugi-swarm-v2/archive/refs/heads/main.tar.gz | tar xz --strip-components=1
+        wget -qO- https://github.com/atharia-agi/neugi_swarm/archive/refs/heads/master.tar.gz | tar xz --strip-components=1
     else
         echo -e "${RED}Error: curl or wget is required${NC}"
         exit 1

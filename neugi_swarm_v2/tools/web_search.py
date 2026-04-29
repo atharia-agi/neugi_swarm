@@ -27,8 +27,16 @@ import logging
 import time
 import urllib.parse
 import urllib.request
+import warnings
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
+
+# Suppress duckduckgo_search rename warning (ddgs is the new package name)
+warnings.filterwarnings(
+    "ignore",
+    message=r".*duckduckgo_search.*renamed.*ddgs.*",
+    category=RuntimeWarning,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -228,18 +236,38 @@ class WebSearch:
         try:
             from ddgs import DDGS
         except ImportError:
-            from duckduckgo_search import DDGS
-        
+            import warnings
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", RuntimeWarning)
+                from duckduckgo_search import DDGS
+
         results = []
-        with DDGS() as ddgs:
-            ddgs_results = ddgs.text(query, max_results=max_results)
-            for r in ddgs_results:
-                results.append(SearchResult(
-                    title=r.get("title", "Untitled"),
-                    url=r.get("href", ""),
-                    content=r.get("body", ""),
-                    source="ddgs"
-                ))
+        import warnings
+
+        # The duckduckgo_search package calls warnings.simplefilter("always")
+        # inside DDGS.__init__ and then warns, which bypasses normal filtering.
+        # We monkey-patch warnings.warn to silence this specific message.
+        _orig_warn = warnings.warn
+
+        def _silenced_warn(message, category=None, **kwargs):
+            msg = str(message)
+            if category is RuntimeWarning and "duckduckgo_search" in msg and "ddgs" in msg:
+                return
+            _orig_warn(message, category, **kwargs)
+
+        warnings.warn = _silenced_warn
+        try:
+            with DDGS() as ddgs:
+                ddgs_results = ddgs.text(query, max_results=max_results)
+                for r in ddgs_results:
+                    results.append(SearchResult(
+                        title=r.get("title", "Untitled"),
+                        url=r.get("href", ""),
+                        content=r.get("body", ""),
+                        source="ddgs"
+                    ))
+        finally:
+            warnings.warn = _orig_warn
         return results
 
     def search_and_summarize(self, query: str, max_results: int = 3) -> str:

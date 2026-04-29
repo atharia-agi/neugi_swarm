@@ -281,6 +281,11 @@
                     <button class="copy-btn" onclick="copyCode(this)">Copy</button>
                 </div>
 
+                <div class="tip">
+                    <div class="tip-title">Windows Users — No WSL Required!</div>
+                    <p style="margin:0; color:var(--text-secondary);">Ollama has a native Windows installer. Just download the .exe from <a href="https://ollama.com/download/windows">ollama.com/download/windows</a>, double-click, and you're done. The <code>ollama</code> command works directly in Command Prompt and PowerShell. WSL is only needed if you specifically want to run Ollama inside Linux.</p>
+                </div>
+
                 <h3>Manual Install</h3>
                 <div class="cmd-block">
                     <code>git clone https://github.com/atharia-agi/neugi_swarm.git
@@ -325,7 +330,7 @@ pip install -e ".[dev]"</code>
                     <code>neugi start</code>
                     <button class="copy-btn" onclick="copyCode(this)">Copy</button>
                 </div>
-                <p>Then open <a href="dashboard.html">http://localhost:8080</a> for the web dashboard.</p>
+                <p>Then open <a href="dashboard.html">http://localhost:17901</a> for the web dashboard.</p>
 
                 <div class="warning">
                     <div class="warning-title">First-Time Users</div>
@@ -496,7 +501,7 @@ class MyAgent(TypedAgent):
             <section id="api" class="page-section">
                 <div class="badge">REST + WebSocket</div>
                 <h1>REST API</h1>
-                <p>The Neugi gateway exposes REST API endpoints on the configured dashboard port (default 8080).</p>
+                <p>The Neugi gateway exposes REST API endpoints on the configured dashboard port (default 17901).</p>
 
                 <h3>Agent Operations</h3>
                 <table>
@@ -518,7 +523,7 @@ class MyAgent(TypedAgent):
                 </table>
 
                 <h3>WebSocket Events</h3>
-                <p>Connect to <code>ws://localhost:8080/ws</code> for real-time events:</p>
+                <p>Connect to <code>ws://localhost:17901/ws</code> for real-time events:</p>
                 <ul style="color:var(--text-secondary); margin-left:20px; margin-bottom:20px;">
                     <li><code>agent_status</code> — Agent state changes</li>
                     <li><code>memory_event</code> — Memory writes/recalls</li>

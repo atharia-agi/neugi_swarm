@@ -36,7 +36,7 @@ irm https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_swarm_v
 
 ```bash
 docker build -t neugi:v2 .
-docker run -p 8080:8080 -v neugi-data:/data neugi:v2
+docker run -p 17901:17901 -v neugi-data:/data neugi:v2
 ```
 
 ### Docker Compose (Full Stack)
@@ -103,7 +103,7 @@ systemctl enable --now neugi
 | `NEUGI_LLM_MODEL` | `qwen2.5-coder:7b` | Default model |
 | `NEUGI_OLLAMA_URL` | `http://localhost:11434` | Ollama endpoint |
 | `NEUGI_API_KEY` | — | Cloud provider key |
-| `NEUGI_DASHBOARD_PORT` | `8080` | Dashboard port |
+| `NEUGI_DASHBOARD_PORT` | `17901` | Dashboard port |
 | `NEUGI_LOG_LEVEL` | `INFO` | Logging level |
 | `NEUGI_SANDBOX_ENABLED` | `true` | Enable sandbox |
 
@@ -161,7 +161,7 @@ neugi gateway --port 8082 --mode secondary --primary ws://host1:8081
 
 ```bash
 # CLI
-curl http://localhost:8080/api/v2/health
+curl http://localhost:17901/api/v2/health
 
 # Expected response
 {"status": "ok", "version": "2.0.0", "subsystems": 17}

@@ -268,6 +268,8 @@ class PromptAssembler:
         skill_injector: Optional[Callable[[], str]] = None,
         memory_injector: Optional[Callable[[], str]] = None,
         tools_injector: Optional[Callable[[], str]] = None,
+        soul_engine: Optional[Any] = None,
+        capability_profile: Optional[Any] = None,
     ) -> None:
         """
         Initialize the prompt assembler.
@@ -288,12 +290,15 @@ class PromptAssembler:
                 Signature: () -> str
             tools_injector: Custom tools content injector function.
                 Signature: () -> str
+            soul_engine: Optional SoulEngine for identity/personality injection.
+            capability_profile: Optional CapabilityProfile for adaptive prompting.
         """
         self.base_dir = Path(base_dir)
         self.agent_id = agent_id
         self.agent_name = agent_name
         self.agent_role = agent_role
         self.model_max_chars = model_max_chars
+        self._capability_profile = capability_profile
 
         # Merge section configs
         self._section_configs: dict[PromptSection, SectionConfig] = {}
@@ -307,10 +312,76 @@ class PromptAssembler:
         self._skill_injector = skill_injector
         self._memory_injector = memory_injector
         self._tools_injector = tools_injector
+        self._soul_engine = soul_engine
+
+        # Apply capability-based adaptations (after injectors are set)
+        if capability_profile:
+            self._adapt_to_capability_profile()
 
         # Section content cache
         self._section_content: dict[str, str] = {}
         self._last_assembly: Optional[PromptResult] = None
+
+    def _adapt_to_capability_profile(self) -> None:
+        """Adapt section budgets and behavior based on model capability profile."""
+        profile = self._capability_profile
+        if not profile:
+            return
+
+        # Adapt total budget based on effective context length
+        # Rough estimate: 1 token ≈ 4 chars
+        effective_chars = int(getattr(profile, "effective_context_length", 4096) * 4)
+        if effective_chars < self.model_max_chars:
+            self.model_max_chars = effective_chars
+
+        # Adapt section budgets by tier
+        tier = getattr(profile, "tier", None)
+        if tier:
+            tier_value = tier.value if hasattr(tier, "value") else str(tier)
+            if tier_value == "local":
+                # Aggressive truncation for local models
+                multipliers = {
+                    PromptSection.IDENTITY: 0.5,
+                    PromptSection.HEARTBEAT: 0.5,
+                    PromptSection.SKILLS: 0.3,
+                    PromptSection.MEMORY: 0.3,
+                    PromptSection.PROJECT_CONTEXT: 0.3,
+                    PromptSection.VOICE_TONE: 0.5,
+                    PromptSection.BOOTSTRAP: 0.3,
+                    PromptSection.TOOLS: 0.4,
+                }
+                for section, mult in multipliers.items():
+                    cfg = self._section_configs.get(section)
+                    if cfg and cfg.max_chars:
+                        cfg.max_chars = int(cfg.max_chars * mult)
+            elif tier_value == "cloud":
+                # Generous budgets for cloud models
+                multipliers = {
+                    PromptSection.MEMORY: 1.5,
+                    PromptSection.SKILLS: 1.5,
+                    PromptSection.PROJECT_CONTEXT: 1.5,
+                }
+                for section, mult in multipliers.items():
+                    cfg = self._section_configs.get(section)
+                    if cfg and cfg.max_chars:
+                        cfg.max_chars = int(cfg.max_chars * mult)
+
+        # Adapt memory injector if profile specifies max entries
+        max_mem = getattr(profile, "max_memory_entries", None)
+        if max_mem is not None and self._memory_injector:
+            original_injector = self._memory_injector
+            def _limited_memory_injector():
+                content = original_injector()
+                if not content:
+                    return content
+                # Simple heuristic: truncate to roughly max_mem entries
+                lines = content.split("\n")
+                if len(lines) > max_mem * 3:
+                    truncated = "\n".join(lines[:max_mem * 3])
+                    truncated += f"\n\n... [{len(lines) - max_mem * 3} lines omitted for context budget]"
+                    return truncated
+                return content
+            self._memory_injector = _limited_memory_injector
 
     # -- Public API: Assemble ------------------------------------------------
 
@@ -487,7 +558,23 @@ class PromptAssembler:
             return ""
 
     def _build_identity(self, agent_id: str) -> str:
-        """Build the identity section."""
+        """Build the identity section.
+
+        If a SoulEngine is configured and has soul files, use them for
+        rich identity. Otherwise fall back to the basic identity stub.
+        """
+        if self._soul_engine is not None and self._soul_engine.exists():
+            try:
+                identity = self._soul_engine.get_identity_prompt(
+                    max_chars=self._section_configs[PromptSection.IDENTITY].max_chars
+                )
+                # Append capability awareness if profile exists
+                if self._capability_profile:
+                    identity += self._build_capability_note()
+                return identity
+            except Exception as e:
+                logger.warning("SoulEngine identity injection failed: %s", e)
+
         lines = [
             f"# Identity",
             f"",
@@ -495,9 +582,46 @@ class PromptAssembler:
             f"Role: {self.agent_role}",
             f"Agent ID: {agent_id}",
             f"System: NEUGI v2 Autonomous Agent Framework",
-            f"",
         ]
+        if self._capability_profile:
+            lines.append(self._build_capability_note().strip())
+        lines.append("")
         return "\n".join(lines)
+
+    def _build_capability_note(self) -> str:
+        """Build a brief capability note for the identity section."""
+        profile = self._capability_profile
+        if not profile:
+            return ""
+
+        tier = getattr(profile, "tier", "unknown")
+        tier_value = tier.value if hasattr(tier, "value") else str(tier)
+        reasoning = getattr(profile, "reasoning_depth", "unknown")
+        reasoning_value = reasoning.value if hasattr(reasoning, "value") else str(reasoning)
+        tools = getattr(profile, "tool_use_reliability", "unknown")
+        tools_value = tools.value if hasattr(tools, "value") else str(tools)
+        max_tools = getattr(profile, "max_tools_per_call", 3)
+
+        if tier_value == "local":
+            return (
+                f"\n# Model Context\n"
+                f"You are running on a LOCAL model ({getattr(profile, 'name', 'unknown')}). "
+                f"Work step-by-step, use at most {max_tools} tools per response, "
+                f"and keep responses concise. Reasoning depth: {reasoning_value}.\n"
+            )
+        elif tier_value == "cloud":
+            return (
+                f"\n# Model Context\n"
+                f"You are running on a CLOUD SOTA model ({getattr(profile, 'name', 'unknown')}). "
+                f"You have native tool calling, deep reasoning, and long context. "
+                f"Max tools per call: {max_tools}. Reasoning: {reasoning_value}.\n"
+            )
+        return (
+            f"\n# Model Context\n"
+            f"Model: {getattr(profile, 'name', 'unknown')}. "
+            f"Tier: {tier_value}. Tool use: {tools_value}. "
+            f"Max tools: {max_tools}.\n"
+        )
 
     def _default_heartbeat(self) -> str:
         """Generate default heartbeat content."""

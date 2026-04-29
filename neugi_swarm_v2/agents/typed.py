@@ -137,6 +137,7 @@ class TypedAgent(Generic[DepsT, OutputT]):
         deps_type: Optional[Type[DepsT]] = None,
         retries: int = 2,
         llm_provider: Optional[Any] = None,
+        capability_profile: Optional[Any] = None,
     ):
         self.model = model
         self.instructions = instructions
@@ -144,6 +145,7 @@ class TypedAgent(Generic[DepsT, OutputT]):
         self.deps_type = deps_type
         self.retries = retries
         self._llm = llm_provider
+        self.capability_profile = capability_profile
         self._tools: Dict[str, ToolDef] = {}
         self._instructions_func: Optional[Callable] = None
         self._approval_gate: Optional[Callable[[str, Dict], bool]] = None

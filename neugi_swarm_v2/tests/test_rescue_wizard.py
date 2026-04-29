@@ -37,7 +37,7 @@ class TestRescueWizard:
         with tempfile.TemporaryDirectory() as tmpdir:
             wizard = RescueWizard(base_dir=tmpdir)
             wizard.base_dir.mkdir(parents=True, exist_ok=True)
-            with open(wizard.config_path, "w") as f:
+            with open(wizard.config_path, "w", encoding="utf-8") as f:
                 json.dump({"llm": {"provider": "ollama"}}, f)
             cfg = wizard._load_current_config()
             assert cfg["llm"]["provider"] == "ollama"
@@ -46,7 +46,7 @@ class TestRescueWizard:
         with tempfile.TemporaryDirectory() as tmpdir:
             wizard = RescueWizard(base_dir=tmpdir)
             wizard.base_dir.mkdir(parents=True, exist_ok=True)
-            with open(wizard.config_path, "w") as f:
+            with open(wizard.config_path, "w", encoding="utf-8") as f:
                 f.write("not json {{[")
             cfg = wizard._load_current_config()
             assert cfg == {}

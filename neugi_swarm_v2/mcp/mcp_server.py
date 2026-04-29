@@ -11,7 +11,7 @@ Usage:
     python -m neugi_swarm_v2.mcp.mcp_server
 
     # Streamable HTTP transport (secondary)
-    python -m neugi_swarm_v2.mcp.mcp_server --transport http --port 8080
+    python -m neugi_swarm_v2.mcp.mcp_server --transport http --port 17901
 
     # With custom server info
     python -m neugi_swarm_v2.mcp.mcp_server --name "NEUGI" --version "2.0.0"
@@ -131,7 +131,7 @@ class MCPServer:
         server.run_stdio()
 
         # Or run with HTTP
-        server.run_http(port=8080)
+        server.run_http(port=17901)
     """
 
     def __init__(
@@ -513,7 +513,7 @@ class MCPServer:
 
     # -- Transport: Streamable HTTP ------------------------------------------
 
-    def run_http(self, host: str = "0.0.0.0", port: int = 8080) -> None:
+    def run_http(self, host: str = "0.0.0.0", port: int = 17901) -> None:
         """Run the server using Streamable HTTP transport.
 
         Implements the MCP Streamable HTTP transport spec:
@@ -672,7 +672,7 @@ def main() -> None:
         help="Transport mode (default: stdio)",
     )
     parser.add_argument("--host", default="0.0.0.0", help="HTTP bind host")
-    parser.add_argument("--port", type=int, default=8080, help="HTTP bind port")
+    parser.add_argument("--port", type=int, default=17901, help="HTTP bind port")
     parser.add_argument("--name", default=SERVER_NAME, help="Server name")
     parser.add_argument("--version", default=SERVER_VERSION, help="Server version")
     parser.add_argument(

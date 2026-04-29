@@ -16,10 +16,18 @@ Usage:
 from __future__ import annotations
 
 import json
-import os
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
+
+try:
+    from security.secret_manager import SecretManager, SecretClass
+except ImportError:
+    SecretManager = None  # type: ignore
+    SecretClass = None  # type: ignore
+
+logger = logging.getLogger(__name__)
 
 
 # -- LLM Provider Configuration ----------------------------------------------
@@ -123,6 +131,60 @@ class MemoryConfig:
     def from_dict(cls, data: dict[str, Any]) -> MemoryConfig:
         known = {k: v for k, v in data.items() if k in cls.__dataclass_fields__}
         return cls(**known)
+
+
+# -- Capability Profile Configuration ----------------------------------------
+
+@dataclass
+class CapabilityProfileConfig:
+    """Model capability profile configuration (auto-detected, editable).
+
+    Attributes:
+        name: Model name.
+        provider: Provider name.
+        tier: Model tier (local/medium/cloud).
+        context_length: Context window size.
+        supports_tools: Whether model supports tool use.
+        supports_vision: Whether model supports vision.
+        supports_json_mode: Whether model supports JSON mode.
+        max_tools_per_call: Max tools per LLM call.
+        effective_context_ratio: Usable context fraction.
+        max_memory_entries: Max memory entries to inject.
+        recommended_prompt_tier: minimal/standard/maximal.
+    """
+
+    name: str = ""
+    provider: str = ""
+    tier: str = "medium"
+    context_length: int = 4096
+    supports_tools: bool = False
+    supports_vision: bool = False
+    supports_json_mode: bool = False
+    max_tools_per_call: int = 3
+    effective_context_ratio: float = 0.75
+    max_memory_entries: int = 10
+    recommended_prompt_tier: str = "standard"
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "CapabilityProfileConfig":
+        known = {k: v for k, v in data.items() if k in cls.__dataclass_fields__}
+        return cls(**known)
+
+    def to_profile_dict(self) -> dict[str, Any]:
+        """Convert to dict for CapabilityProfile construction."""
+        return {
+            "name": self.name,
+            "provider": self.provider,
+            "tier": self.tier,
+            "context_length": self.context_length,
+            "supports_tools": self.supports_tools,
+            "supports_vision": self.supports_vision,
+            "supports_json_mode": self.supports_json_mode,
+            "max_tools_per_call": self.max_tools_per_call,
+            "effective_context_ratio": self.effective_context_ratio,
+            "max_memory_entries": self.max_memory_entries,
+            "recommended_prompt_tier": self.recommended_prompt_tier,
+        }
 
 
 # -- Skill Configuration -----------------------------------------------------
@@ -255,6 +317,7 @@ class NeugiConfig:
     skill: SkillConfig = field(default_factory=SkillConfig)
     agent: AgentConfig = field(default_factory=AgentConfig)
     context: ContextConfig = field(default_factory=ContextConfig)
+    capability_profile: CapabilityProfileConfig = field(default_factory=CapabilityProfileConfig)
 
     def ensure_dirs(self) -> None:
         """Create all configured directories if they don't exist."""
@@ -312,6 +375,8 @@ class NeugiConfig:
             config.agent = AgentConfig.from_dict(data["agent"])
         if "context" in data:
             config.context = ContextConfig.from_dict(data["context"])
+        if "capability_profile" in data:
+            config.capability_profile = CapabilityProfileConfig.from_dict(data["capability_profile"])
 
         return config
 
@@ -365,10 +430,23 @@ class NeugiConfig:
                 "max_chars": self.context.max_chars,
                 "safety_margin": self.context.safety_margin,
             },
+            "capability_profile": {
+                "name": self.capability_profile.name,
+                "provider": self.capability_profile.provider,
+                "tier": self.capability_profile.tier,
+                "context_length": self.capability_profile.context_length,
+                "supports_tools": self.capability_profile.supports_tools,
+                "supports_vision": self.capability_profile.supports_vision,
+                "supports_json_mode": self.capability_profile.supports_json_mode,
+                "max_tools_per_call": self.capability_profile.max_tools_per_call,
+                "effective_context_ratio": self.capability_profile.effective_context_ratio,
+                "max_memory_entries": self.capability_profile.max_memory_entries,
+                "recommended_prompt_tier": self.capability_profile.recommended_prompt_tier,
+            },
         }
 
 
-# -- Config Loading ----------------------------------------------------------
+# -- Config Loading (Simple) -------------------------------------------------
 
 def load_config(
     base_dir: str | None = None,
@@ -377,23 +455,19 @@ def load_config(
 ) -> NeugiConfig:
     """Load NEUGI v2 configuration.
 
-    Resolution order:
-    1. Explicit config_path if provided
-    2. base_dir/config.json if base_dir provided
-    3. ~/.neugi/config.json
-    4. ./config.json (current directory)
-    5. Defaults
+    Simple: one JSON file, auto-generated by wizard, user-editable.
 
     Args:
-        base_dir: Root directory to look for config.json.
+        base_dir: Root directory. Defaults to ~/.neugi.
         config_path: Explicit path to config.json.
-        **overrides: Override any config field (dot-notation: 'llm.model').
+        **overrides: Override any field (dot-notation: llm.model='gpt-4o').
 
     Returns:
         NeugiConfig instance.
     """
     config = NeugiConfig()
 
+    # Set paths
     if base_dir:
         config.neugi_dir = Path(base_dir)
         config.data_dir = config.neugi_dir / "data"
@@ -401,6 +475,7 @@ def load_config(
         config.skills_dir = config.data_dir / "skills"
         config.sessions_dir = config.data_dir / "sessions"
 
+    # Find and load config.json
     if config_path is None:
         config_path = _find_config(config.neugi_dir)
 
@@ -408,16 +483,25 @@ def load_config(
         try:
             with open(config_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
+
+            # SECURITY: Migrate API key from plaintext config to SecretManager
+            _migrate_api_key_to_secrets(data, config.neugi_dir, config_path)
+
             config = NeugiConfig.from_dict(data)
+            # Re-apply paths if base_dir was explicit
+            if base_dir:
+                config.neugi_dir = Path(base_dir)
+                config.data_dir = config.neugi_dir / "data"
+                config.memory_dir = config.data_dir / "memory"
+                config.skills_dir = config.data_dir / "skills"
+                config.sessions_dir = config.data_dir / "sessions"
         except (json.JSONDecodeError, OSError) as e:
-            import logging
-            logging.getLogger(__name__).warning(
+            logger.warning(
                 "Failed to load config from %s: %s, using defaults", config_path, e
             )
 
     config.ensure_dirs()
     _apply_overrides(config, overrides)
-
     return config
 
 
@@ -445,3 +529,51 @@ def _apply_overrides(config: NeugiConfig, overrides: dict[str, Any]) -> None:
                 setattr(section_obj, field_name, value)
         elif len(parts) == 1 and hasattr(config, parts[0]):
             setattr(config, parts[0], value)
+
+
+def _migrate_api_key_to_secrets(
+    data: dict[str, Any], neugi_dir: Path, config_path: str
+) -> None:
+    """Migrate API key from plaintext config.json to SecretManager.
+
+    If an api_key is found in the loaded JSON, it is moved to an encrypted
+    SecretManager database and removed from the config file.
+    """
+    llm_data = data.get("llm", {})
+    api_key = llm_data.get("api_key", "")
+    if not api_key:
+        return
+
+    # Store in SecretManager if available
+    if SecretManager is not None:
+        try:
+            secrets_db = neugi_dir / "secrets.db"
+            manager = SecretManager(db_path=str(secrets_db))
+            manager.add_secret(
+                name="llm_api_key",
+                value=api_key,
+                secret_class=SecretClass.API_KEY,
+                description="LLM provider API key (auto-migrated from config.json)",
+            )
+            logger.info("API key migrated to encrypted storage: %s", secrets_db)
+        except Exception as e:
+            logger.warning("Failed to migrate API key to SecretManager: %s", e)
+            return  # Leave key in config if migration fails
+    else:
+        logger.warning(
+            "SecretManager not available — API key remains in config.json. "
+            "Set NEUGI_LLM_API_KEY environment variable instead."
+        )
+        return
+
+    # Remove from config data
+    del llm_data["api_key"]
+    data["llm"] = llm_data
+
+    # Rewrite config.json without the API key
+    try:
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+        logger.info("config.json rewritten without plaintext API key")
+    except OSError as e:
+        logger.warning("Failed to rewrite config.json after key migration: %s", e)

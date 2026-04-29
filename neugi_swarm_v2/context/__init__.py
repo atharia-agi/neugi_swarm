@@ -43,6 +43,7 @@ from context.context_injector import (
     InjectionError,
     ContextScope,
 )
+from context.soul_engine import SoulEngine, SoulFile
 
 __all__ = [
     # Prompt assembler
@@ -72,4 +73,6 @@ __all__ = [
     "InjectionResult",
     "InjectionError",
     "ContextScope",
+    "SoulEngine",
+    "SoulFile",
 ]

@@ -504,7 +504,7 @@ class Session:
 
         checkpoint_path = checkpoint_dir / f"{checkpoint.checkpoint_id}.json"
         try:
-            with open(checkpoint_path, "w") as f:
+            with open(checkpoint_path, "w", encoding="utf-8") as f:
                 json.dump(checkpoint.to_dict(), f, indent=2)
             logger.debug("Checkpoint %s created (%s)", checkpoint.checkpoint_id, kind)
         except OSError as e:
@@ -541,7 +541,7 @@ class Session:
         """Persist session metadata to disk."""
         metadata_path = self._session_dir / "metadata.json"
         try:
-            with open(metadata_path, "w") as f:
+            with open(metadata_path, "w", encoding="utf-8") as f:
                 json.dump(self.metadata.to_dict(), f, indent=2)
                 f.flush()
                 os.fsync(f.fileno())

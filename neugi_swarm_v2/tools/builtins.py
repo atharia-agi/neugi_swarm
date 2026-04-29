@@ -27,10 +27,9 @@ import sys
 import tempfile
 import time
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
-from tools.tool_registry import ToolCategory, ToolRegistry
+from tools.tool_registry import ToolCategory, ToolRegistry, ToolComplexity
 
 logger = logging.getLogger(__name__)
 
@@ -254,29 +253,34 @@ class CodeTools:
         if language != "python":
             return {"error": f"Language '{language}' not supported"}
 
+        # SECURITY: Never use exec() directly. Run via subprocess sandbox.
+        import subprocess
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+            f.write(code)
+            temp_path = f.name
+
         try:
-            output = io.StringIO()
-            old_stdout = sys.stdout
-            sys.stdout = output
-
-            exec(compile(code, "<exec>", "exec"), {"__builtins__": {
-                "print": print, "len": len, "str": str, "int": int,
-                "float": float, "list": list, "dict": dict, "set": set,
-                "tuple": tuple, "range": range, "enumerate": enumerate,
-                "zip": zip, "map": map, "filter": filter, "sorted": sorted,
-                "sum": sum, "min": min, "max": max, "abs": abs,
-                "True": True, "False": False, "None": None,
-            }})
-
-            sys.stdout = old_stdout
+            proc = subprocess.run(
+                [sys.executable, "-c",
+                 "import sys; exec(open(sys.argv[1]).read(), {'__builtins__': {}})",
+                 temp_path],
+                capture_output=True, text=True, timeout=30,
+            )
             return {
-                "stdout": output.getvalue(),
-                "stderr": "",
-                "return_code": 0,
+                "stdout": proc.stdout,
+                "stderr": proc.stderr,
+                "return_code": proc.returncode,
             }
+        except subprocess.TimeoutExpired:
+            return {"stdout": "", "stderr": "Execution timeout (30s)", "return_code": -1}
         except Exception as e:
-            sys.stdout = old_stdout
             return {"stdout": "", "stderr": str(e), "return_code": 1}
+        finally:
+            try:
+                os.unlink(temp_path)
+            except OSError:
+                pass
 
     @staticmethod
     def code_lint(code: str, language: str = "python") -> Dict[str, Any]:
@@ -556,7 +560,7 @@ class FileTools:
             Dict with diff output.
         """
         try:
-            with open(file1, "r") as f1, open(file2, "r") as f2:
+            with open(file1, "r", encoding="utf-8") as f1, open(file2, "r", encoding="utf-8") as f2:
                 diff = list(difflib.unified_diff(
                     f1.readlines(), f2.readlines(),
                     fromfile=file1, tofile=file2, n=context,
@@ -686,15 +690,59 @@ class DataTools:
         if not isinstance(data, list):
             return {"error": "Input must be a list"}
 
+        import ast
+
+        def _safe_eval(expr: str, item: Any) -> Any:
+            """Safely evaluate a simple expression using ast."""
+            try:
+                tree = ast.parse(expr, mode="eval")
+            except SyntaxError as e:
+                raise ValueError(f"Invalid expression: {e}")
+
+            # Whitelist of safe node types
+            allowed_nodes = (
+                ast.Expression, ast.BinOp, ast.UnaryOp, ast.Constant,
+                ast.Name, ast.Load, ast.Add, ast.Sub, ast.Mult, ast.Div,
+                ast.Mod, ast.Pow, ast.USub, ast.UAdd, ast.Compare,
+                ast.Eq, ast.NotEq, ast.Lt, ast.LtE, ast.Gt, ast.GtE,
+                ast.In, ast.NotIn, ast.Is, ast.IsNot, ast.BoolOp,
+                ast.And, ast.Or, ast.Not, ast.Attribute, ast.Subscript,
+                ast.Index, ast.List, ast.Tuple, ast.Dict, ast.Str,
+                ast.Num, ast.Call, ast.keyword,
+            )
+            for node in ast.walk(tree):
+                if not isinstance(node, allowed_nodes):
+                    raise ValueError(f"Unsafe expression node: {type(node).__name__}")
+
+            # Check function calls — only allow safe builtins
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Call):
+                    if isinstance(node.func, ast.Name):
+                        if node.func.id not in ("len", "str", "int", "float", "abs", "min", "max", "sum", "round", "type", "isinstance"):
+                            raise ValueError(f"Unsafe function call: {node.func.id}")
+                    else:
+                        raise ValueError("Only simple function calls allowed")
+
+            return eval(compile(tree, "<safe>", "eval"), {"__builtins__": {}}, {"item": item})
+
         result = data
         for op in operations:
             op_type = op.get("type")
             if op_type == "filter" and "condition" in op:
-                result = [item for item in result if eval(op["condition"], {"item": item})]
+                try:
+                    result = [item for item in result if _safe_eval(op["condition"], item)]
+                except ValueError as e:
+                    return {"error": str(e)}
             elif op_type == "map" and "expression" in op:
-                result = [eval(op["expression"], {"item": item}) for item in result]
+                try:
+                    result = [_safe_eval(op["expression"], item) for item in result]
+                except ValueError as e:
+                    return {"error": str(e)}
             elif op_type == "sort" and "key" in op:
-                result = sorted(result, key=lambda x: eval(op["key"], {"item": x}))
+                try:
+                    result = sorted(result, key=lambda x: _safe_eval(op["key"], x))
+                except ValueError as e:
+                    return {"error": str(e)}
             elif op_type == "take":
                 result = result[:op.get("count", 10)]
             elif op_type == "skip":
@@ -1016,13 +1064,17 @@ class SystemTools:
         return {"variables": env, "count": len(env)}
 
     @staticmethod
-    def system_execute_command(command: str, shell: bool = True, timeout: float = 30.0) -> Dict[str, Any]:
+    def system_execute_command(command: str, shell: bool = False, timeout: float = 30.0) -> Dict[str, Any]:
         """
         Execute a system command.
 
+        SECURITY: shell defaults to False. Only enable shell=True if you
+        understand the injection risk. ToolExecutor routes this through
+        CommandValidator + ExecutionSandbox when available.
+
         Args:
-            command: Command to execute.
-            shell: Whether to use shell.
+            command: Command to execute (string or list).
+            shell: Whether to use shell. Defaults to False.
             timeout: Execution timeout.
 
         Returns:
@@ -1286,7 +1338,7 @@ class GitTools:
     @staticmethod
     def git_log(repo_path: str = ".", count: int = 10) -> Dict[str, Any]:
         """Get git log."""
-        return GitTools._run_git(["log", f"--oneline", f"-{count}"], cwd=repo_path)
+        return GitTools._run_git(["log", "--oneline", f"-{count}"], cwd=repo_path)
 
 
 # ============================================================================
@@ -1818,14 +1870,80 @@ def register_builtin_tools(registry: ToolRegistry) -> Dict[str, int]:
         }, ["path"]),
     ]
 
+    # Specific overrides for tools that are more/less complex than their category default
+    complexity_overrides = {
+        # System: execute_command is dangerous
+        "system_execute_command": ToolComplexity.COMPLEX,
+        # Git: push/merge are dangerous; status/diff are simple
+        "git_push": ToolComplexity.COMPLEX,
+        "git_merge": ToolComplexity.COMPLEX,
+        "git_status": ToolComplexity.SIMPLE,
+        "git_diff": ToolComplexity.SIMPLE,
+        "git_log": ToolComplexity.SIMPLE,
+        # Docker: all are complex/strategic
+        "docker_run": ToolComplexity.STRATEGIC,
+        "docker_build": ToolComplexity.COMPLEX,
+        "docker_exec": ToolComplexity.COMPLEX,
+        "docker_compose_up": ToolComplexity.STRATEGIC,
+        # Security: all are complex
+        "security_scan_code": ToolComplexity.COMPLEX,
+        "security_audit_file": ToolComplexity.COMPLEX,
+        "security_encrypt": ToolComplexity.COMPLEX,
+        "security_decrypt": ToolComplexity.COMPLEX,
+        # Code: execute is dangerous
+        "code_execute": ToolComplexity.COMPLEX,
+        # Comm: webhook is simple, email/slack need config
+        "comm_webhook": ToolComplexity.SIMPLE,
+        # Data: transform uses eval — complex
+        "data_transform": ToolComplexity.COMPLEX,
+        # Web: screenshot needs browser — complex
+        "web_screenshot": ToolComplexity.COMPLEX,
+    }
+
+    def _infer_complexity(name: str, category: ToolCategory, params: dict, required: list) -> ToolComplexity:
+        if name in complexity_overrides:
+            return complexity_overrides[name]
+
+        # Base complexity by category
+        category_base = {
+            ToolCategory.WEB: ToolComplexity.SIMPLE,
+            ToolCategory.CODE: ToolComplexity.MEDIUM,
+            ToolCategory.FILE: ToolComplexity.SIMPLE,
+            ToolCategory.DATA: ToolComplexity.SIMPLE,
+            ToolCategory.COMM: ToolComplexity.SIMPLE,
+            ToolCategory.SYSTEM: ToolComplexity.MEDIUM,
+            ToolCategory.AI: ToolComplexity.SIMPLE,
+            ToolCategory.GIT: ToolComplexity.MEDIUM,
+            ToolCategory.DOCKER: ToolComplexity.COMPLEX,
+            ToolCategory.SECURITY: ToolComplexity.COMPLEX,
+        }
+        base = category_base.get(category, ToolComplexity.SIMPLE)
+
+        # Adjust by parameter count
+        param_count = len(params)
+        if param_count == 0:
+            if base == ToolComplexity.SIMPLE:
+                return ToolComplexity.TRIVIAL
+        elif param_count >= 4:
+            if base.value in ("trivial", "simple"):
+                base = ToolComplexity.MEDIUM
+
+        # Adjust by required param count
+        if len(required) >= 3 and base.value in ("trivial", "simple"):
+            base = ToolComplexity.MEDIUM
+
+        return base
+
     for name, func, category, params, required in tool_definitions:
         try:
+            complexity = _infer_complexity(name, category, params, required)
             registry.register_tool(
                 name=name,
                 func=func,
                 category=category,
                 parameters=params,
                 required_params=required,
+                complexity=complexity,
             )
             counts[category.value] = counts.get(category.value, 0) + 1
         except Exception as e:
