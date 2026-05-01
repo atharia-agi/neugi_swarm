@@ -17,6 +17,8 @@ from typing import (
     Any,
 )
 
+from observability import get_event_bus
+
 from tools.tool_registry import ToolComplexity, ToolRegistry
 
 try:
@@ -763,11 +765,39 @@ class ToolExecutor:
             if trace_id:
                 self._record_trace_step(trace_id, tool_name, True, latency, retries=retries)
 
+            # Publish successful tool execution event
+            event_bus = get_event_bus()
+            event_bus.publish(
+                "tool_execution_success",
+                {
+                    "tool_name": tool_name,
+                    "latency_ms": latency,
+                    "retries": retries,
+                    "trace_id": trace_id,
+                    "result_type": type(result).__name__ if result is not None else "None"
+                },
+                source="tool_executor"
+            )
+
             return exec_result
 
         except (CircuitOpenError, RateLimitExceededError) as e:
             latency = (time.time() - start_time) * 1000
             self.registry.record_stats(tool_name, latency, False, str(e))
+            # Publish tool execution failure event
+            event_bus = get_event_bus()
+            event_bus.publish(
+                "tool_execution_failure",
+                {
+                    "tool_name": tool_name,
+                    "error": str(e),
+                    "latency_ms": latency,
+                    "retries": retries,
+                    "trace_id": trace_id,
+                    "failure_type": type(e).__name__
+                },
+                source="tool_executor"
+            )
             return ExecutionResult(
                 tool_name=tool_name,
                 success=False,
@@ -781,6 +811,20 @@ class ToolExecutor:
             latency = (time.time() - start_time) * 1000
             self.registry.record_stats(tool_name, latency, False, str(e))
             self.circuit_breaker.record_failure(tool_name)
+            # Publish tool execution failure event
+            event_bus = get_event_bus()
+            event_bus.publish(
+                "tool_execution_failure",
+                {
+                    "tool_name": tool_name,
+                    "error": str(e),
+                    "latency_ms": latency,
+                    "retries": retries,
+                    "trace_id": trace_id,
+                    "failure_type": type(e).__name__
+                },
+                source="tool_executor"
+            )
             return ExecutionResult(
                 tool_name=tool_name,
                 success=False,
@@ -794,6 +838,20 @@ class ToolExecutor:
             latency = (time.time() - start_time) * 1000
             self.registry.record_stats(tool_name, latency, False, str(e))
             self.circuit_breaker.record_failure(tool_name)
+            # Publish tool execution failure event
+            event_bus = get_event_bus()
+            event_bus.publish(
+                "tool_execution_failure",
+                {
+                    "tool_name": tool_name,
+                    "error": str(e),
+                    "latency_ms": latency,
+                    "retries": retries,
+                    "trace_id": trace_id,
+                    "failure_type": type(e).__name__
+                },
+                source="tool_executor"
+            )
             return ExecutionResult(
                 tool_name=tool_name,
                 success=False,
