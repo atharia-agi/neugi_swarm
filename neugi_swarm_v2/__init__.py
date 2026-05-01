@@ -291,6 +291,12 @@ from neugi_swarm_v2.tools.stealth_browser import (
     StealthConfig,
 )
 
+# -- Observability -----------------------------------------------------------
+from neugi_swarm_v2.observability import (
+    EventBus,
+    get_event_bus,
+)
+
 # -- Unified Entry Point -----------------------------------------------------
 
 
