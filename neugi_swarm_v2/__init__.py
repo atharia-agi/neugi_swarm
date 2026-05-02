@@ -2,7 +2,7 @@
 NEUGI Swarm v2 - Autonomous Multi-Agent Framework
 ==================================================
 
-Version: 2.0.0
+Version: 2.1.2
 
 Production-ready hierarchical multi-agent system combining:
 - Karpathy-style dreaming consolidation memory
@@ -31,7 +31,7 @@ _PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
 if _PACKAGE_DIR not in sys.path:
     sys.path.insert(0, _PACKAGE_DIR)
 
-__version__ = "2.1.1"
+__version__ = "2.1.2"
 __author__ = "NEUGI Team"
 
 # -- Core Systems ------------------------------------------------------------
@@ -294,7 +294,9 @@ from neugi_swarm_v2.tools.stealth_browser import (
 # -- Observability -----------------------------------------------------------
 from neugi_swarm_v2.observability import (
     EventBus,
+    Event,
     get_event_bus,
+    setup_event_bus_persistence,
 )
 
 # -- Unified Entry Point -----------------------------------------------------
@@ -390,6 +392,13 @@ class NeugiSwarmV2:
 
         self._setup_compaction()
 
+        # Observability: event bus persistence
+        self._init_event_bus_persistence()
+
+        # Observability: memory leak monitor
+        self._memory_monitor = None
+        self._init_memory_monitor()
+
         # Autonomous loop (pro-active behavior during idle)
         # Auto-starts by default (configurable via autonomous=False kwarg)
         self.autonomous_loop: AutonomousLoop | None = None
@@ -414,6 +423,42 @@ class NeugiSwarmV2:
         except Exception as e:
             logger.warning("Failed to initialize AutonomousLoop: %s", e)
             self.autonomous_loop = None
+
+    def _init_event_bus_persistence(self) -> None:
+        """Wire event bus persistence from config."""
+        try:
+            from neugi_swarm_v2.observability.event_bus import setup_event_bus_persistence
+            obs = self.config.observability
+            if obs.enabled:
+                db_path = str(self.config.data_dir / "events.db")
+                setup_event_bus_persistence(db_path)
+                logger.info("Event bus persistence enabled: %s", db_path)
+        except Exception as e:
+            logger.debug("Event bus persistence skipped: %s", e)
+
+    def _init_memory_monitor(self) -> None:
+        """Start memory leak detector if observability enabled."""
+        try:
+            obs = self.config.observability
+            if obs.enabled:
+                from neugi_swarm_v2.observability.memory_monitor import setup_memory_monitor
+                self._memory_monitor = setup_memory_monitor(
+                    compaction_callback=self._on_memory_critical,
+                )
+                logger.info("Memory leak monitor started")
+        except Exception as e:
+            logger.debug("Memory monitor skipped: %s", e)
+            self._memory_monitor = None
+
+    def _on_memory_critical(self) -> None:
+        """Callback when memory monitor detects critical usage."""
+        logger.warning("Critical memory usage - triggering compaction")
+        try:
+            if hasattr(self.memory, 'consolidate'):
+                self.memory.consolidate()
+            self._setup_compaction()
+        except Exception as e:
+            logger.error("Memory compaction failed: %s", e)
 
     def start_autonomous(self) -> bool:
         """Explicitly start the autonomous loop (idempotent)."""
@@ -876,4 +921,9 @@ __all__ = [
     # Rescue Wizard
     "RescueWizard",
     "WizardError",
+    # Observability
+    "EventBus",
+    "Event",
+    "get_event_bus",
+    "setup_event_bus_persistence",
 ]

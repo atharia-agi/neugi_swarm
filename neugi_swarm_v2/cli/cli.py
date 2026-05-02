@@ -736,13 +736,15 @@ class NeugiCLI:
             ),
             "plugins": CLICommand(
                 name="plugins",
-                description="List, install, enable, and disable plugins",
+                description="List, install, enable, disable, and inspect plugins",
                 handler=self._cmd_plugins,
                 subcommands=[
                     CLICommand("list", "List all plugins", self._cmd_plugins_list),
                     CLICommand("install", "Install a plugin", self._cmd_plugins_install),
                     CLICommand("enable", "Enable a plugin", self._cmd_plugins_enable),
                     CLICommand("disable", "Disable a plugin", self._cmd_plugins_disable),
+                    CLICommand("deps", "Show plugin dependency graph", self._cmd_plugins_deps),
+                    CLICommand("graph", "Render plugin dependency graph (text/mermaid/dot)", self._cmd_plugins_graph),
                 ],
             ),
             "workflows": CLICommand(
@@ -1724,6 +1726,50 @@ class NeugiCLI:
         plugin_name = args[0] if args else Prompt.ask("[primary]Plugin to enable[/primary]")
         console.print(f"[success]Plugin '{plugin_name}' enabled[/success]")
         return CommandResult(status=CommandStatus.SUCCESS, message=f"Plugin '{plugin_name}' enabled")
+
+    def _cmd_plugins_deps(self, args: list[str]) -> CommandResult:
+        """Show plugin dependency graph."""
+        try:
+            from neugi_swarm_v2.plugins.plugin_registry import PluginRegistry
+            from neugi_swarm_v2.plugins.plugin_loader import PluginLoader
+
+            plugins_dir = self.base_dir / "data" / "plugins"
+            if not plugins_dir.exists():
+                return CommandResult(status=CommandStatus.WARNING, message="No plugins directory found")
+
+            loader = PluginLoader(str(plugins_dir))
+            registry = PluginRegistry()
+            loader.discover_and_load(registry)
+
+            graph = registry.generate_dependency_graph(format="text")
+            console.print(graph)
+            return CommandResult(status=CommandStatus.SUCCESS, message="Dependency graph displayed")
+        except Exception as e:
+            return CommandResult(status=CommandStatus.ERROR, message=f"Failed to generate graph: {e}")
+
+    def _cmd_plugins_graph(self, args: list[str]) -> CommandResult:
+        """Render plugin dependency graph in various formats."""
+        fmt = args[0] if args else "text"
+        if fmt not in ("text", "mermaid", "dot"):
+            return CommandResult(status=CommandStatus.ERROR, message=f"Unknown format: {fmt}. Use text, mermaid, or dot.")
+
+        try:
+            from neugi_swarm_v2.plugins.plugin_registry import PluginRegistry
+            from neugi_swarm_v2.plugins.plugin_loader import PluginLoader
+
+            plugins_dir = self.base_dir / "data" / "plugins"
+            if not plugins_dir.exists():
+                return CommandResult(status=CommandStatus.WARNING, message="No plugins directory found")
+
+            loader = PluginLoader(str(plugins_dir))
+            registry = PluginRegistry()
+            loader.discover_and_load(registry)
+
+            graph = registry.generate_dependency_graph(format=fmt)
+            console.print(graph)
+            return CommandResult(status=CommandStatus.SUCCESS, message=f"Dependency graph ({fmt}) displayed")
+        except Exception as e:
+            return CommandResult(status=CommandStatus.ERROR, message=f"Failed to generate graph: {e}")
 
     def _cmd_plugins_disable(self, args: list[str]) -> CommandResult:
         """Disable a plugin."""

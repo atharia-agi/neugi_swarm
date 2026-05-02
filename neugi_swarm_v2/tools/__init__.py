@@ -86,6 +86,11 @@ from tools.web_search import (
     WebSearchConfig,
     WebSearchError,
 )
+from tools.plugin_validator import (
+    validate_plugin,
+    validate_plugin_structure,
+    PluginValidationError,
+)
 
 __all__ = [
     # Registry
@@ -148,6 +153,10 @@ __all__ = [
     "BrowserAction",
     "DOMElement",
     "BrowserToolError",
+    # Plugin Validator
+    "validate_plugin",
+    "validate_plugin_structure",
+    "PluginValidationError",
 ]
 
-__version__ = "2.1.1"
+__version__ = "2.1.2"

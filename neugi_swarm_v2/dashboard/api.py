@@ -35,6 +35,7 @@ import json
 import logging
 import time
 import uuid
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -677,6 +678,35 @@ class DashboardAPI:
 
     # -- Autonomous Loop -------------------------------------------------------
 
+    def benchmark_results(self, handler, body, query_params) -> dict:
+        """GET /api/benchmarks - List benchmark results."""
+        try:
+            from neugi_swarm_v2.evals.harness import EvalResult
+            results_dir = Path(__file__).parent.parent / "evals" / "results"
+            if results_dir.exists():
+                benchmarks = []
+                for f in sorted(results_dir.glob("*.json"), reverse=True)[:20]:
+                    try:
+                        data = json.loads(f.read_text(encoding="utf-8"))
+                        benchmarks.append({
+                            "file": f.name,
+                            "benchmark_name": data.get("benchmark_name", ""),
+                            "version": data.get("version", ""),
+                            "success_rate": data.get("success_rate", 0),
+                            "total_duration": data.get("total_duration", 0),
+                            "task_count": len(data.get("results", [])),
+                            "timestamp": data.get("timestamp", ""),
+                        })
+                    except Exception:
+                        pass
+                return _ok({
+                    "benchmarks": benchmarks,
+                    "total": len(benchmarks),
+                })
+        except Exception:
+            pass
+        return _ok({"benchmarks": [], "total": 0, "note": "No benchmark results available"})
+
     def autonomous_status(self, handler, body, query_params) -> dict:
         """GET /api/autonomous/status - Live autonomous loop state."""
         swarm = self.server.swarm
@@ -692,3 +722,36 @@ class DashboardAPI:
             return _ok(status)
         except Exception as e:
             return _error(f"Failed to get autonomous status: {e}", code=500)
+
+    # -- Observability -----------------------------------------------------------
+
+    def observability_status(self, handler, body, query_params) -> dict:
+        """GET /api/observability/status - Event bus status and metrics."""
+        try:
+            from neugi_swarm_v2.observability.event_bus import get_event_bus
+            bus = get_event_bus()
+            history = bus.get_history()
+            event_counts = {}
+            for e in history:
+                event_counts[e.name] = event_counts.get(e.name, 0) + 1
+
+            subscriber_counts = {}
+            with bus._lock:
+                for name, subs in bus._subscribers.items():
+                    subscriber_counts[name] = len(subs)
+                middleware_count = len(bus._middleware)
+
+            return _ok({
+                "enabled": True,
+                "total_events": len(history),
+                "subscribers": subscriber_counts,
+                "middleware_count": middleware_count,
+                "event_counts": event_counts,
+                "max_history": bus._max_history,
+            })
+        except Exception as e:
+            return _ok({
+                "enabled": False,
+                "error": str(e),
+                "message": "Observability system not available",
+            })

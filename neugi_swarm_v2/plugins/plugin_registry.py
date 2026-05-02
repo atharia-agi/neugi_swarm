@@ -173,6 +173,74 @@ class PluginRegistry:
         self._hooks: dict[str, list[tuple[int, str, Callable]]] = {}  # event -> [(priority, plugin, handler)]
         self._routes: list[tuple[str, str, Callable, list[str]]] = []  # (path, plugin, handler, methods)
 
+    def generate_dependency_graph(self, format: str = "text") -> str:
+        """Generate a visual dependency graph of all registered plugins.
+
+        Args:
+            format: Output format ('text', 'mermaid', 'dot').
+
+        Returns:
+            Graph representation as string.
+        """
+        with self._lock:
+            plugins = dict(self._plugins)
+
+        if format == "mermaid":
+            return self._graph_to_mermaid(plugins)
+        elif format == "dot":
+            return self._graph_to_dot(plugins)
+        else:
+            return self._graph_to_text(plugins)
+
+    def _graph_to_text(self, plugins: dict[str, "PluginInfo"]) -> str:
+        """Render a text-based dependency tree."""
+        lines = ["Plugin Dependency Graph", "=" * 40, ""]
+        for name, info in sorted(plugins.items()):
+            deps = info.metadata.dependencies if info.metadata else []
+            state = info.status.state.value if info.status else "unknown"
+            if deps:
+                lines.append(f"[{state}] {name} v{info.metadata.version}")
+                for dep in deps:
+                    lines.append(f"  └── depends on: {dep}")
+            else:
+                lines.append(f"[{state}] {name} v{info.metadata.version}  (no deps)")
+            lines.append("")
+        lines.append(f"Total: {len(plugins)} plugin(s)")
+        return "\n".join(lines)
+
+    def _graph_to_mermaid(self, plugins: dict[str, "PluginInfo"]) -> str:
+        """Render a Mermaid.js dependency graph."""
+        lines = ["```mermaid", "graph TD;"]
+        for name, info in sorted(plugins.items()):
+            node_id = name.replace("-", "_").replace(".", "_")
+            lines.append(f"    {node_id}[\"{name}\"];")
+        for name, info in sorted(plugins.items()):
+            deps = info.metadata.dependencies if info.metadata else []
+            node_id = name.replace("-", "_").replace(".", "_")
+            for dep in deps:
+                dep_id = dep.replace("-", "_").replace(".", "_")
+                lines.append(f"    {node_id} -->|depends on| {dep_id};")
+        lines.append("```")
+        return "\n".join(lines)
+
+    def _graph_to_dot(self, plugins: dict[str, "PluginInfo"]) -> str:
+        """Render a Graphviz DOT dependency graph."""
+        lines = ["digraph PluginDeps {", "    rankdir=LR;", "    node [shape=box,style=rounded];", ""]
+        for name, info in sorted(plugins.items()):
+            state = info.status.state.value if info.status else "unknown"
+            color = "green" if state == "enabled" else ("red" if state == "error" else "gray")
+            node_id = name.replace("-", "_").replace(".", "_")
+            lines.append(f'    {node_id} [label="{name}\\n({state})",color={color}];')
+        lines.append("")
+        for name, info in sorted(plugins.items()):
+            deps = info.metadata.dependencies if info.metadata else []
+            node_id = name.replace("-", "_").replace(".", "_")
+            for dep in deps:
+                dep_id = dep.replace("-", "_").replace(".", "_")
+                lines.append(f"    {node_id} -> {dep_id};")
+        lines.append("}")
+        return "\n".join(lines)
+
     def set_system_components(
         self,
         memory_system: Any | None = None,

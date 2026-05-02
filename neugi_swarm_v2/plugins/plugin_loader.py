@@ -327,6 +327,20 @@ class PluginLoader:
 
         return dict(self._loaded)
 
+    def _subscribe_plugin_to_event_bus(self, plugin: Any, name: str) -> None:
+        """Auto-subscribe plugin to event bus if it has event_handlers attribute."""
+        try:
+            handlers = getattr(plugin, "event_handlers", None)
+            if handlers and isinstance(handlers, dict):
+                from neugi_swarm_v2.observability.event_bus import get_event_bus
+                bus = get_event_bus()
+                for event_name, handler_fn in handlers.items():
+                    if callable(handler_fn):
+                        bus.subscribe(event_name, handler_fn)
+                        logger.debug("Plugin %s subscribed to event: %s", name, event_name)
+        except Exception as e:
+            logger.debug("Could not auto-subscribe plugin %s to event bus: %s", name, e)
+
     def _filter_by_neugi_version(
         self, manifests: dict[str, PluginManifest]
     ) -> dict[str, PluginManifest]:
@@ -418,6 +432,9 @@ class PluginLoader:
 
                 # Register with registry
                 registry.register_plugin(name, metadata, ctx)
+
+                # Auto-subscribe plugin to event bus if it has event_handlers
+                self._subscribe_plugin_to_event_bus(plugin, name)
 
                 self._loaded[name] = metadata
                 logger.info(

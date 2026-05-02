@@ -504,4 +504,60 @@ NEUGI now implements the SOUL.md pattern:
 
 ---
 
-Last updated: 2026-04-28
+---
+
+## Observability Event Bus (NEW in v2.1.2)
+
+NEUGI now includes a lightweight, thread-safe event bus:
+
+```
+EventBus (thread-safe, history, middleware)
+  ├── subscribe(event_name, callback)
+  ├── add_middleware(callback)      ← called for ALL events
+  ├── publish(event_name, payload, source)
+  └── get_history(event_name=None)
+```
+
+**Core events** (published by ToolExecutor):
+- `tool_execution_success`: tool name, duration_ms, result
+- `tool_execution_failure`: tool name, error
+
+**Plugin integration**: Use `get_event_bus()` from `observability.event_bus` to subscribe.
+
+Example plugins: `plugins/notification_example/`, `plugins/metrics_example/`
+
+---
+
+## Browser Agent Plugin (NEW in v2.1.2)
+
+Plugin at `plugins/browser_agent/`:
+- `agent.py`: TypedAgent-based LLM-driven browser control
+- `browser_agent.py`: reasoning-loop alternative
+- `README.md`: full documentation
+
+---
+
+## Plugin Validator (NEW in v2.1.2)
+
+`tools/plugin_validator.py`: validates plugin manifest, entry points, hooks before install.
+CLI: `python tools/plugin_validator.py <path>`
+
+---
+
+## Configuration
+
+Added `observability` section to `~/.neugi/config.json`:
+```json
+{
+  "observability": { "enabled": true, "max_history": 1000 }
+}
+```
+
+---
+
+## Version
+Current: **2.1.2** (previously 2.1.1)
+
+---
+
+Last updated: 2026-05-01

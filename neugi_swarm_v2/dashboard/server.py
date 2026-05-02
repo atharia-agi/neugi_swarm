@@ -178,8 +178,23 @@ class DashboardServer:
         if not self.config.static_dir:
             self.config.static_dir = str(Path(__file__).parent)
 
+        # Wire WebSocket event bridge
+        self._ws_bridge = None
+        self._init_ws_bridge()
+
         self._api_routes: dict[str, Callable] = {}
         self._register_routes()
+
+    def _init_ws_bridge(self) -> None:
+        """Initialize event bus to WebSocket bridge."""
+        try:
+            from neugi_swarm_v2.observability.ws_bridge import EventWebSocketBridge
+            self._ws_bridge = EventWebSocketBridge(self.broadcaster)
+            self._ws_bridge.start()
+            logger.info("Event-WebSocket bridge initialized")
+        except Exception as e:
+            logger.debug("WS bridge not available: %s", e)
+            self._ws_bridge = None
 
     def _register_routes(self) -> None:
         """Register API route handlers."""
@@ -210,6 +225,8 @@ class DashboardServer:
             "GET /api/config": self.api.get_config,
             "PUT /api/config": self.api.update_config,
             "GET /api/autonomous/status": self.api.autonomous_status,
+            "GET /api/observability/status": self.api.observability_status,
+            "GET /api/benchmarks": self.api.benchmark_results,
         }
 
         self._api_routes.update(routes)

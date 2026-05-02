@@ -59,7 +59,7 @@ neugi soul init # Initialize agent identity (SOUL.md)
 | **Context** | 10-section prompt assembly, token budget, KV cache |
 | **MCP Server** | Full Model Context Protocol (stdio + HTTP) |
 | **Governance** | Budget tracking, approval gates, immutable audit |
-| **Plugins** | SDK, manifest discovery, topological deps, 8 hooks |
+| **Plugins** | SDK, manifest discovery, topological deps, 8 hooks, browser agent example |
 | **Workflows** | StateGraph, durable checkpoints, human-in-loop |
 | **Learning** | Pattern tracking, auto skill generation, feedback |
 | **Gateway** | WebSocket RPC, device pairing, cron, heartbeat |
@@ -81,6 +81,23 @@ neugi soul init # Initialize agent identity (SOUL.md)
 | **Vector Memory** | all-MiniLM-L6-v2 embeddings with TF-IDF fallback |
 | **WebSocket** | RFC 6455 stdlib server, real-time event streaming |
 | **Computer Use** | Vision-guided browser automation with multimodal LLM |
+| **Observability** | Event bus for tool execution monitoring, plugin extensibility |
+| **Soul System** | Agent identity & continuity via SOUL.md pattern (static files + MemorySystem view) |
+
+---
+
+## New Features in v2.1.1
+
+### Observability Event Bus
+NEUGI now includes a lightweight, thread-safe event bus for monitoring tool executions and enabling plugin extensibility without modifying core components. The event bus publishes `tool_execution_success` and `tool_execution_failure` events that plugins and external systems can subscribe to.
+
+### Browser Agent Plugin
+A new plugin-based browser agent is available in `plugins/browser_agent/` that demonstrates how to extend NEUGI's capabilities without modifying core files. The plugin includes:
+- `BrowserAgent`: A TypedAgent-based implementation that uses LLMs to control the BrowserTool
+- Alternative reasoning-loop implementation
+- Usage examples demonstrating automated web interactions
+
+Both features are opt-in and maintain full backward compatibility with zero core modifications required.
 
 ---
 
@@ -119,13 +136,15 @@ neugi_swarm/
     ├── mcp/                # MCP server implementation
     ├── memory/             # Hierarchical memory + vector embeddings
     ├── planning/           # Strategic planning
-    ├── plugins/            # Plugin SDK
+    ├── plugins/            # Plugin SDK (includes browser_agent example)
     ├── security/           # Sandbox & security
     ├── session/            # Session management
     ├── skills/             # Skill system
     ├── tests/              # Integration tests (122 passing)
     ├── tools/              # Tool registry (web search, browser, etc.)
-    └── workflows/          # Workflow engine
+    ├── observability/      # Event bus for monitoring and extensibility
+    ├── workflows/          # Workflow engine
+    └── autonomous/         # Pro-active autonomous behavior subsystem
 ```
 
 ---
@@ -232,8 +251,6 @@ docker-compose up -d
 ## License
 
 MIT — Atharia AGI
-
----
 
 <p align="center">
   <img src="assets/logo_text_neugi.png" width="200" alt="NEUGI">

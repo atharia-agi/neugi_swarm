@@ -48,6 +48,46 @@ my_plugin/
 | `pre_tool` | Before tool execution | `tool_name`, `params` |
 | `post_tool` | After tool execution | `tool_name`, `result` |
 
+## Event Bus Integration
+
+Plugins can also integrate with NEUGI's observability event bus (available in v2.1.2+):
+
+1. **Subscribe to events**: Use `get_event_bus().subscribe()` to listen for events
+2. **Add middleware**: Use `get_event_bus().add_middleware()` to process all events
+3. **Publish events**: Use `get_event_bus().publish()` to emit custom events
+
+Common events published by NEUGI core:
+- `tool_execution_success`: Published when a tool executes successfully
+- `tool_execution_failure`: Published when a tool execution fails
+- `agent_start`: Published when an agent begins processing
+- `agent_complete`: Published when an agent finishes processing
+
+Example:
+```python
+from neugi_swarm_v2.observability.event_bus import get_event_bus
+
+class MyPlugin(Plugin):
+    def activate(self, context):
+        bus = get_event_bus()
+        # Subscribe to tool execution events
+        bus.subscribe("tool_execution_success", self._on_tool_success)
+        bus.subscribe("tool_execution_failure", self._on_tool_failure)
+        # Add middleware to log all events
+        bus.add_middleware(self._event_logger)
+    
+    def _on_tool_success(self, event):
+        # Handle successful tool execution
+        pass
+    
+    def _on_tool_failure(self, event):
+        # Handle failed tool execution
+        pass
+    
+    def _event_logger(self, event):
+        # Log all events passing through the bus
+        pass
+```
+
 ## Example Plugin
 
 ```python

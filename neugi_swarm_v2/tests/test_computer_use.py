@@ -21,7 +21,7 @@ class TestBrowserTool(unittest.TestCase):
             content = bt.read("https://example.com")
             self.assertIsInstance(content, str)
         except Exception as e:
-            self.skipIf(True, f"Network unavailable: {e}")
+            self.skipTest(f"Network unavailable: {e}")
 
     def test_lazy_playwright(self):
         bt = BrowserTool()

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "neugi-swarm-v2"
-version = "2.1.1"
+version = "2.1.2"
 description = "NEUGI Swarm V2 - Distributed AI Agent Orchestration Platform"
 readme = "README.md"
 license = {text = "MIT"}

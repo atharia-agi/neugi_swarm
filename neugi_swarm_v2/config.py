@@ -288,6 +288,24 @@ class ContextConfig:
 # -- Main Configuration ------------------------------------------------------
 
 @dataclass
+@dataclass
+class ObservabilityConfig:
+    """Observability subsystem configuration.
+
+    Attributes:
+        enabled: Enable the event bus.
+        max_history: Maximum number of events to keep in history.
+    """
+
+    enabled: bool = True
+    max_history: int = 1000
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> ObservabilityConfig:
+        known = {k: v for k, v in data.items() if k in cls.__dataclass_fields__}
+        return cls(**known)
+
+
 class NeugiConfig:
     """Top-level NEUGI v2 configuration.
 
@@ -303,6 +321,7 @@ class NeugiConfig:
         skill: Skills system configuration.
         agent: Multi-agent system configuration.
         context: Context window configuration.
+        observability: Observability event bus configuration.
     """
 
     neugi_dir: Path = field(default_factory=lambda: Path.home() / ".neugi")
@@ -318,6 +337,7 @@ class NeugiConfig:
     agent: AgentConfig = field(default_factory=AgentConfig)
     context: ContextConfig = field(default_factory=ContextConfig)
     capability_profile: CapabilityProfileConfig = field(default_factory=CapabilityProfileConfig)
+    observability: ObservabilityConfig = field(default_factory=ObservabilityConfig)
 
     def ensure_dirs(self) -> None:
         """Create all configured directories if they don't exist."""
@@ -377,6 +397,8 @@ class NeugiConfig:
             config.context = ContextConfig.from_dict(data["context"])
         if "capability_profile" in data:
             config.capability_profile = CapabilityProfileConfig.from_dict(data["capability_profile"])
+        if "observability" in data:
+            config.observability = ObservabilityConfig.from_dict(data["observability"])
 
         return config
 
@@ -442,6 +464,10 @@ class NeugiConfig:
                 "effective_context_ratio": self.capability_profile.effective_context_ratio,
                 "max_memory_entries": self.capability_profile.max_memory_entries,
                 "recommended_prompt_tier": self.capability_profile.recommended_prompt_tier,
+            },
+            "observability": {
+                "enabled": self.observability.enabled,
+                "max_history": self.observability.max_history,
             },
         }
 
