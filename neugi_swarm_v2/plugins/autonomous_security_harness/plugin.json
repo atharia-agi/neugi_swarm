@@ -1,0 +1,33 @@
+{
+  "name": "autonomous_security_harness",
+  "version": "1.0.0",
+  "description": "Advanced LangGraph-based autonomous security assessment harness with Docker sandbox, safety middleware, and immutable audit logging",
+  "author": "NEUGI Security Team",
+  "min_neugi_version": "2.1.2",
+  "hooks": [
+    "post_init"
+  ],
+  "entry_point": "autonomous_security_harness:activate",
+  "capabilities": [
+    "autonomous_security_assessment",
+    "multi_agent_workflow",
+    "docker_sandbox_execution",
+    "safety_validation",
+    "compliance_checking",
+    "audit_logging"
+  ],
+  "dependencies": [
+    "langgraph",
+    "docker",
+    "psycopg2-binary",
+    "whoosh",
+    "sentence-transformers"
+  ],
+  "event_handlers": {
+    "tool_execution_success": "_on_tool_success",
+    "tool_execution_failure": "_on_tool_failure",
+    "memory_warning": "_on_memory_warning",
+    "workflow_start": "_on_workflow_start",
+    "workflow_complete": "_on_workflow_complete"
+  }
+}

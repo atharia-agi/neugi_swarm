@@ -1,0 +1,8 @@
+#!/usr/bin/env python3
+"""NEUGI Swarm V2 - Unix CLI entry script."""
+
+import sys
+from neugi_swarm_v2.cli.cli import main
+
+if __name__ == "__main__":
+    sys.exit(main())

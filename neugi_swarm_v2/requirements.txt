@@ -1,0 +1,14 @@
+# Core dependencies
+requests>=2.31.0
+PyYAML>=6.0
+rich>=13.0
+cryptography>=41.0
+
+# Development and testing
+pytest>=7.0
+pytest-asyncio>=0.23
+pytest-cov>=4.0
+
+# Code quality
+ruff>=0.1.0
+mypy>=1.0
