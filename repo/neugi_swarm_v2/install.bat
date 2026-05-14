@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 
 echo =========================================
-echo   NEUGI Swarm V2.1.1 - Windows Installer
+echo   NEUGI Swarm V2.1.3 - Windows Installer
 echo =========================================
 
 REM Check Python installation
@@ -97,6 +97,23 @@ REM Activate and install
 call venv\Scripts\activate.bat
 python -m pip install --upgrade pip -q
 pip install -e ".[dev]" -q
+if %errorlevel% neq 0 (
+    echo [ERROR] pip install failed. Check your internet connection and try again.
+    pause
+    exit /b 1
+)
+
+REM If WindowsApps directory not writable, fall back to user PATH
+set "NEUGI_CMD=%USERPROFILE%\AppData\Local\Microsoft\WindowsApps\neugi.cmd"
+echo @echo off > "%NEUGI_CMD%" 2>nul || (
+    set "NEUGI_CMD=%USERPROFILE%\neugi.cmd"
+    (
+        echo @echo off
+        echo call "%INSTALL_DIR%\neugi_swarm_v2\venv\Scripts\activate.bat"
+        echo python -m neugi_swarm_v2.cli.cli %%*
+    ) > "%NEUGI_CMD%"
+    echo [INFO] Created neugi.cmd in your user folder. Add %%USERPROFILE%% to PATH if needed.
+)
 
 REM Create neugi command shortcut
 set "NEUGI_CMD=%USERPROFILE%\AppData\Local\Microsoft\WindowsApps\neugi.cmd"
@@ -108,7 +125,7 @@ set "NEUGI_CMD=%USERPROFILE%\AppData\Local\Microsoft\WindowsApps\neugi.cmd"
 
 echo.
 echo =========================================
-echo   NEUGI v2.1.1 installed successfully!
+echo   NEUGI v2.1.3 installed successfully!
 echo =========================================
 echo.
 echo Quick start:

@@ -2,7 +2,7 @@
 set -e
 
 echo "========================================="
-echo "  NEUGI Swarm V2.1.1 - Installer"
+echo "  NEUGI Swarm V2.1.3 - Installer"
 echo "========================================="
 
 # Colors

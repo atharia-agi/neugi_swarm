@@ -106,7 +106,7 @@ repo/
 │       ├── rescue_wizard.py  # Auto-fix rescue mode
 │       └── wizard.py         # Original wizard (deprecated)
 │
-├── tests/                    # 165 tests across all subsystems
+├── tests/                    # 326 tests across all subsystems
 ├── assets/                   # Brand images, favicon, hero video
 ├── index.html                # Landing page
 ├── docs.html                 # Documentation site
@@ -123,7 +123,7 @@ repo/
 ```bash
 cd neugi_swarm_v2
 python -m pytest tests/ -q --tb=short -p no:anchorpy
-# Expected: 193 passed, 0 warnings
+# Expected: 326 passed, 0 warnings
 ```
 
 ### Smoke Test CLI
@@ -556,7 +556,7 @@ Added `observability` section to `~/.neugi/config.json`:
 ---
 
 ## Version
-Current: **2.1.2** (previously 2.1.1)
+Current: **2.1.3** (previously 2.1.2)
 
 ---
 

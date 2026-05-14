@@ -2,7 +2,7 @@ FROM python:3.12-slim AS base
 
 LABEL maintainer="NEUGI Team <contact@neugi.ai>"
 LABEL description="NEUGI Swarm V2 - Distributed AI Agent Orchestration Platform"
-LABEL version="2.0.0"
+LABEL version="2.1.3"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
