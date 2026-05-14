@@ -1,7 +1,7 @@
 <p align="center">
   <img src="assets/icon_mascot.png" width="80" alt="NEUGI Mascot">
 </p>
-<h1 align="center">NEUGI Swarm v2.1.1</h1>
+<h1 align="center">NEUGI Swarm v2.1.3</h1>
 
 <p align="center">
   <b>The Ultimate Agentic Framework</b>
@@ -109,7 +109,7 @@ Both features are opt-in and maintain full backward compatibility with zero core
 | Python Modules | 120+ |
 | Lines of Code | 65,000+ |
 | Built-in Tools | 61 |
-| Integration Tests | 204 (all passing) |
+| Integration Tests | 326 (all passing) |
 | AI Providers Supported | 20+ (OpenAI, Anthropic, Gemini, Groq, DeepSeek, etc.) |
 | Cold Start | < 500ms |
 | Memory Query | < 50ms |
