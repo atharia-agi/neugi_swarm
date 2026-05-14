@@ -1,0 +1,52 @@
+name: Deploy Website
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - 'index.html'
+      - 'docs.html'
+      - 'dashboard.html'
+      - 'assets/**'
+      - '*.html'
+      - 'vercel.json'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy-github-pages:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Prepare site files
+        run: |
+          mkdir -p _site
+          cp -r index.html docs.html dashboard.html privacy.html terms.html wizard.html assets _site/
+          cp -r .nojekyll site.webmanifest _site/ 2>/dev/null || true
+          echo "NEUGI Swarm v2.1.3 - Deployed: $(date -u)" > _site/version.txt
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '_site'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
