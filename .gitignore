@@ -64,3 +64,6 @@ htmlcov/
 # Research & Reverse Engineering (Local Only)
 research/
 git_files_browser.py
+
+# Duplicate subdirectory from merge
+repo/
