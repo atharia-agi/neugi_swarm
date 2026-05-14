@@ -1,4 +1,4 @@
-# AGENTS.md — NEUGI Swarm v2.1.1
+# AGENTS.md — NEUGI Swarm v2.1.3
 
 > Agent-facing context for AI coding assistants. Human contributors: see README.md.
 
@@ -9,8 +9,8 @@
 **NEUGI Swarm v2** is a production-grade autonomous multi-agent framework.
 - **Language:** Python 3.10+
 - **Architecture:** 29 subsystems, 117+ modules, ~64K LOC
-- **Test count:** 204 tests, all must pass
-- **Version:** 2.1.1
+- **Test count:** 326 tests (204 original + 122 MCP), all must pass
+- **Version:** 2.1.3
 
 This is NOT a chatbot wrapper. It is **sovereign autonomous infrastructure**:
 - **Autonomous Loop** — pro-active behavior during idle periods (observe → decide → execute → report)

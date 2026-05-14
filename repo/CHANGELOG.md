@@ -1,7 +1,7 @@
 # NEUGI SWARM - CHANGELOG
 
 > Complete development history and architecture documentation
-> Last Updated: May 2, 2026
+> Last Updated: May 14, 2026
 > Version: 2.1.3
 
 ---
@@ -45,6 +45,12 @@
 - 401 Unauthorized response for invalid/missing tokens when auth is enabled
 - Rate limiting silently drops events when bucket exhausted (no error response)
 - Auth can be enabled/disabled at runtime via `HTTPTransport.set_auth_tokens()` / `disable_auth()`
+
+### Code Cleanup & Performance
+- **Removed 5 orphaned MCP files**: `mcp_server.py`, `protocol.py`, `tools.py`, `resources.py`, `prompts.py` — legacy code replaced by refactored `server.py`, `messages.py`, `tool_manager.py`, `resource_manager.py`, `prompt_manager.py`, `transport.py`
+- **Moved MCP to port 17902** in Docker Compose with SSE, rate limit, and auth token configuration
+- **Created `benchmarks/mcp_benchmark.py`**: comprehensive MCP server performance benchmark measuring latency (avg/median/p95/p99), throughput (req/s), and concurrency scaling (1-50 concurrent calls)
+- **Updated AGENTS.md** from v2.1.1 to v2.1.3, test count from 204 to 326
 
 ### Skills System Fix
 - **Fixed `_generate_skill_code` TODO stub** in `skills/improver.py:438` — auto-generated skills now use `context.params` for dynamic execution, have proper f-string templates, and are immediately usable without manual editing
