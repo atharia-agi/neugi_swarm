@@ -1,0 +1,45 @@
+{
+  "nmap": {
+    "command": ["nmap", "-sS", "-p", "{ports}", "{target}"],
+    "required_params": ["target"],
+    "optional_params": ["ports"],
+    "default_params": {
+      "ports": "1-1000"
+    },
+    "memory_limit": "2g",
+    "cpu_limit": 1.0,
+    "capabilities": ["NET_RAW"]
+  },
+  "nuclei": {
+    "command": ["nuclei", "-u", "{target}", "-t", "{templates}", "-json"],
+    "required_params": ["target"],
+    "optional_params": ["templates"],
+    "default_params": {
+      "templates": "/tmp/nuclei-templates"
+    },
+    "memory_limit": "2g",
+    "cpu_limit": 1.0
+  },
+  "sqlmap": {
+    "command": ["sqlmap", "-u", "{url}", "--batch", "--level={level}", "--risk={risk}", "--output-dir={output_dir}"],
+    "required_params": ["url"],
+    "optional_params": ["level", "risk", "output_dir"],
+    "default_params": {
+      "level": "1",
+      "risk": "1",
+      "output_dir": "/tmp/sqlmap_output"
+    },
+    "memory_limit": "2g",
+    "cpu_limit": 1.0
+  },
+  "nikto": {
+    "command": ["nikto", "-h", "{target}", "-output", "{output_file}"],
+    "required_params": ["target"],
+    "optional_params": ["output_file"],
+    "default_params": {
+      "output_file": "/tmp/nikto_output.json"
+    },
+    "memory_limit": "2g",
+    "cpu_limit": 1.0
+  }
+}

@@ -1,0 +1,63 @@
+# Ignore the neugi_swarm directory (the application code)
+neugi_swarm/
+
+# Ignore the test directory
+tests/
+
+# Ignore cache and log files
+.ruff_cache/
+__pycache__/
+*.log
+
+# Ignore pyc files
+*.pyc
+
+# Ignore the CLI wrappers and service files (they are not needed for the static site)
+neugi
+neugi.bat
+neugi.service
+neugi.start.bat
+
+# Ignore the Python files in the root that are not needed for the static site
+# Note: We are keeping the root for the static site, but we don't need these specific files for the Vercel site.
+# However, we cannot ignore them by name without ignoring the entire root? We can ignore by extension if we want, but we have HTML files we need.
+# Instead, we'll ignore specific files we know are not needed for the static site.
+git_files_browser.py
+OLLAMA_EMAIL.txt
+objects.txt
+package.json
+pyproject.toml
+requirements.txt
+# Note: We are keeping the vercel.json, index.html, dashboard.html, docs.html, wizard.html, terms.html, privacy.html, assets/, install.sh, install.bat, neugi, neugi.bat, neugi.service, neugi_start.bat, README.md, LICENSE, CHANGELOG.md, .gitignore
+# But note: we are ignoring the CLI wrappers and service files above, and the Python files and config files below.
+
+# Actually, we are going to ignore the following root files because they are not needed for the static site:
+# (We are keeping the HTML files, assets, installers, and the vercel.json, README, LICENSE, CHANGELOG, .gitignore)
+# Let's list what we want to keep for the static site:
+#   index.html, dashboard.html, docs.html, wizard.html, terms.html, privacy.html, assets/, vercel.json, README.md, LICENSE, CHANGELOG.md, .gitignore, install.sh, install.bat
+# Everything else in the root can be ignored.
+
+# So let's ignore everything in the root except the above.
+
+# But note: .vercelignore does not support whitelisting easily. We'll instead list the files to ignore.
+
+# We'll ignore the following files in the root:
+#   git_files_browser.py
+#   OLLAMA_EMAIL.txt
+#   objects.txt
+#   package.json
+#   pyproject.toml
+#   requirements.txt
+#   And any other files we don't need.
+
+# We already listed some above. Let's also ignore:
+#   Any .py files in the root (except we don't have any that we need to keep? We have neugi and neugi.bat but they are not .py, they are without extension and .bat)
+#   Actually, we have neugi (which is a Python script without extension) and neugi.bat (a batch file). We are ignoring them above as CLI wrappers.
+
+# Let's also ignore any .txt files that we don't need, but we have to keep the HTML files and the vercel.json (which is .json) and the markdown files.
+
+# We'll do a more general ignore and then unkeep? Not possible. We'll stick to listing.
+
+# We'll also ignore the .github directory (unless we need it for Vercel, but we don't)
+.github/
+

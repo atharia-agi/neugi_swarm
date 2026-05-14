@@ -1,0 +1,104 @@
+services:
+  neugi-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: neugi-gateway
+    restart: unless-stopped
+    ports:
+      - "19887:19887"
+      - "19888:19888"
+    volumes:
+      - neugi-data:/app/data
+      - neugi-logs:/app/logs
+      - ./config:/app/config:ro
+    environment:
+      - NEUGI_ENV=production
+      - NEUGI_LOG_LEVEL=info
+      - NEUGI_GATEWAY_HOST=0.0.0.0
+      - NEUGI_GATEWAY_PORT=19887
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:19887/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - neugi-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  neugi-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: neugi-dashboard
+    restart: unless-stopped
+    ports:
+      - "19889:19889"
+    volumes:
+      - neugi-data:/app/data:ro
+      - ./config:/app/config:ro
+    environment:
+      - NEUGI_ENV=production
+      - NEUGI_DASHBOARD_HOST=0.0.0.0
+      - NEUGI_DASHBOARD_PORT=19889
+      - NEUGI_GATEWAY_URL=http://neugi-gateway:19887
+    depends_on:
+      neugi-gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:19889/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - neugi-network
+
+  neugi-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: neugi-mcp
+    restart: unless-stopped
+    ports:
+      - "19890:19890"
+    volumes:
+      - neugi-data:/app/data
+      - neugi-mcp-tools:/app/tools
+      - ./config:/app/config:ro
+    environment:
+      - NEUGI_ENV=production
+      - NEUGI_MCP_HOST=0.0.0.0
+      - NEUGI_MCP_PORT=19890
+      - NEUGI_GATEWAY_URL=http://neugi-gateway:19887
+    depends_on:
+      neugi-gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:19890/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - neugi-network
+
+volumes:
+  neugi-data:
+    driver: local
+  neugi-logs:
+    driver: local
+  neugi-mcp-tools:
+    driver: local
+
+networks:
+  neugi-network:
+    driver: bridge

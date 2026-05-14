@@ -1,0 +1,13 @@
+{
+  "name": "notification_example",
+  "version": "1.0.0",
+  "description": "Example plugin that demonstrates event bus usage for notifications",
+  "author": "NEUGI Community",
+  "requires": {
+    "neugi": ">=2.1.2"
+  },
+  "hooks": [
+    "post_init"
+  ],
+  "entry_point": "notification_example:activate"
+}
