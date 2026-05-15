@@ -249,6 +249,16 @@
             border-radius: 100px;
             background: var(--bg-layer);
             border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            transition: all 0.2s;
+        }
+        .hero-badge:hover {
+            border-color: var(--accent);
+            color: var(--text-primary);
+        }
 
         .hero-video {
             margin-top: 0;
@@ -267,12 +277,6 @@
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
-        }
-            color: var(--text-secondary);
-            font-size: 13px;
-            font-weight: 500;
-            margin-bottom: 32px;
-            letter-spacing: 0.02em;
         }
 
         .hero h1 {
