@@ -249,6 +249,25 @@
             border-radius: 100px;
             background: var(--bg-layer);
             border: 1px solid var(--border-subtle);
+
+        .hero-video {
+            margin-top: 0;
+            margin-bottom: 24px;
+            text-align: center;
+            animation: fadeIn 0.8s ease-out;
+        }
+        .hero-video video {
+            max-width: 480px;
+            width: 100%;
+            height: auto;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
             color: var(--text-secondary);
             font-size: 13px;
             font-weight: 500;
@@ -644,6 +663,14 @@
 
     <main>
         <section class="hero container">
+            <div class="hero-video">
+                <video autoplay loop muted playsinline
+                    poster="assets/hero_logo_mascot.png">
+                    <source src="assets/loop_hero.webm" type="video/webm">
+                    <picture><source srcset="assets/hero_logo_mascot.webp" type="image/webp"><img src="assets/hero_logo_mascot.png" alt="NEUGI Agent Swarm" style="max-width: 480px; width: 100%; height: auto; border-radius: 16px;"></picture>
+                </video>
+            </div>
+
             <div class="hero-badge">🚀 v2.1.3 — The Ultimate Agentic Framework</div>
             <h1>Neural General Intelligence</h1>
             <p>The most advanced open-source agentic AI framework ever built. 29 subsystems. 117+ modules. ~64K lines. Surpassing OpenClaw, CrewAI, AutoGen, LangGraph, and Paperclip combined.</p>
@@ -651,15 +678,6 @@
             <div class="hero-actions">
                 <a href="dashboard.html" class="btn btn-primary">Launch Console</a>
                 <a href="#ecosystem" class="btn btn-secondary">Ecosystem Partners</a>
-            </div>
-
-            <div style="margin-top: 56px; margin-bottom: -32px; text-align: center;">
-                <video autoplay loop muted playsinline
-                    style="max-width: 480px; width: 100%; height: auto; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);"
-                    poster="assets/hero_logo_mascot.png">
-                    <source src="assets/loop_hero.webm" type="video/webm">
-                    <picture><source srcset="assets/hero_logo_mascot.webp" type="image/webp"><img src="assets/hero_logo_mascot.png" alt="NEUGI Agent Swarm" style="max-width: 480px; width: 100%; height: auto; border-radius: 16px;"></picture>
-                </video>
             </div>
 
             <div class="install-box" id="install">
