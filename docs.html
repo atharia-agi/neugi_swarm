@@ -352,7 +352,7 @@ pip install -e ".[dev]"</code>
                     <tr><td><strong>Agents</strong></td><td>6 deterministic archetypes with typed LLM wiring and tool schema injection</td></tr>
                     <tr><td><strong>Session</strong></td><td>4 isolation modes, compaction, steering, write locks</td></tr>
                     <tr><td><strong>Context</strong></td><td>10-section prompt assembly, token budget, KV cache</td></tr>
-                    <tr><td><strong>MCP Server</strong></td><td>Full Model Context Protocol (stdio + HTTP transports)</td></tr>
+                    <tr><td><strong>MCP Server</strong></td><td>Full Model Context Protocol (stdio + HTTP + SSE transports, tool cancellation, rate limiting, auth tokens)</td></tr>
                     <tr><td><strong>Governance</strong></td><td>Budget tracking, approval gates, immutable audit logs</td></tr>
                     <tr><td><strong>Plugins</strong></td><td>SDK, manifest discovery, topological deps, 8 lifecycle hooks</td></tr>
                     <tr><td><strong>Workflows</strong></td><td>StateGraph, durable checkpoints, human-in-the-loop</td></tr>
@@ -567,7 +567,7 @@ class MyAgent(TypedAgent):
             <section id="rescue" class="page-section">
                 <div class="badge">Troubleshooting</div>
                 <h1>Rescue & Wizard</h1>
-                <p>Neugi v2.1.1 includes a comprehensive Rescue Wizard designed to help users when things go wrong — no terminal expertise required.</p>
+                <p>Neugi v2.1.3 includes a comprehensive Rescue Wizard designed to help users when things go wrong — no terminal expertise required.</p>
 
                 <h2>Setup Wizard</h2>
                 <p>First-time users can run <code>neugi wizard</code> for guided setup:</p>
