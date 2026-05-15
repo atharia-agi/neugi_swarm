@@ -156,8 +156,8 @@ class MCPBridge:
                 self._event_bus.unsubscribe(
                     "tool_execution_failure", self._on_neugi_tool_failure
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Event bus unsubscribe (non-critical): %s", e)
 
         self._connected = False
         logger.info("MCP-NEUGI bridge disconnected")
@@ -176,7 +176,7 @@ class MCPBridge:
                 "timestamp": datetime.now().isoformat(),
             })
         except Exception:
-            pass
+            logger.warning("Failed to forward tool success event", exc_info=True)
 
     def _on_neugi_tool_failure(self, event: Any) -> None:
         """Forward NEUGI tool failure events to MCP event bus."""
@@ -187,7 +187,7 @@ class MCPBridge:
                 "timestamp": datetime.now().isoformat(),
             })
         except Exception:
-            pass
+            logger.warning("Failed to forward tool failure event", exc_info=True)
 
     def _register_memory_resources(self) -> None:
         """Register NEUGI memory system as MCP resources."""
@@ -238,7 +238,7 @@ class MCPBridge:
                         name=f"SOUL: {soul_file.stem}",
                     )
         except Exception:
-            pass
+            logger.debug("No soul files to register (optional)")
 
     def _auto_register_plugin_tools(self) -> None:
         """Auto-register tools from loaded NEUGI plugins into MCP server."""
