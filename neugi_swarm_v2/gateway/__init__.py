@@ -39,13 +39,13 @@ from .device import (
     DeviceTrustLevel,
 )
 from .gateway import (
-    ConnectionInfo,
-    EventDispatcher,
-    Gateway,
-    GatewayConfig,
-    GatewayError,
-    GatewayState,
-    RPCMethod,
+    Device,
+    DeviceState,
+    DeviceTrustLevel,
+    Event,
+    EventType,
+    Connection,
+    GatewayServer,
     RPCRequest,
     RPCResponse,
 )
@@ -69,13 +69,12 @@ from .router import (
 
 __all__ = [
     # Gateway
-    "Gateway",
-    "GatewayConfig",
-    "GatewayState",
-    "GatewayError",
-    "ConnectionInfo",
-    "EventDispatcher",
-    "RPCMethod",
+    "Device",
+    "DeviceTrustLevel",
+    "Event",
+    "EventType",
+    "Connection",
+    "GatewayServer",
     "RPCRequest",
     "RPCResponse",
     # Router
