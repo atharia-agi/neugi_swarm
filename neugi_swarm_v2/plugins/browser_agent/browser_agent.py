@@ -258,7 +258,7 @@ class BrowserAgent(TypedAgent):
                 logger.error(f"Error in browser agent step {step}: {e}")
                 # If there's an error, we try to finish with what we have
                 thoughts.append(f"Error occurred: {e}")
-                actions.append({"action": "finish", "action_input": {"answer": f"An error occurred: {e}"})
+                actions.append({"action": "finish", "action_input": {"answer": f"An error occurred: {e}"}})
                 observations.append({"error": str(e)})
                 break
 

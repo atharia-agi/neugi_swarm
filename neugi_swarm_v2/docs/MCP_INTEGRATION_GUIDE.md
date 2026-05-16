@@ -11,7 +11,8 @@ NEUGI Swarm v2.1.3 includes a full **Model Context Protocol (MCP) Server** that 
 | Transport | Use Case | Port |
 |-----------|----------|------|
 | **Stdio** | Local CLI, Claude Desktop, Cursor | stdin/stdout |
-| **HTTP + SSE** | Remote clients, browser dashboards | 17902 |
+| **Streamable HTTP-compatible JSON-RPC** | Remote clients and modern MCP clients | 17902 |
+| **SSE event stream** | Browser dashboards and event subscriptions | 17902 |
 
 ---
 
@@ -212,6 +213,10 @@ python -m neugi_swarm_v2.mcp.server.http \
 - Pass via `?token=<value>` query param on SSE connections
 - Unauthorized connections get HTTP 401 response
 - Configure via `--auth-tokens` CLI arg
+
+### Streamable HTTP Compatibility
+
+The HTTP transport returns `Mcp-Session-Id` on JSON-RPC and SSE responses so newer MCP clients can bind follow-up requests to a server-side session. SSE remains available for dashboard-style event subscriptions, while JSON-RPC over HTTP is the primary request/response path.
 
 ---
 

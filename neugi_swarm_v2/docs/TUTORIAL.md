@@ -34,8 +34,8 @@
 **NEUGI (Neural General Intelligence)** is a deterministic multi-agent state machine designed for production-grade reliability at scale. Unlike monolithic chatbots, NEUGI decomposes every task into specialized agent workflows orchestrated by a central director.
 
 ### Key Capabilities
-- **29 subsystems**, 117+ modules, ~64K lines of code
-- **326 tests** passing (204 original + 122 MCP)
+- **29 subsystems**, 120+ modules, ~65K lines of code
+- **367 collected tests** (365 passing, 2 optional browser tests skipped when Playwright is absent)
 - **9 specialized agents** with XP/level progression
 - **Karpathy-style dreaming memory** with 3-tier storage
 - **6-tier skill system** with YAML frontmatter
@@ -54,7 +54,7 @@
 
 ### Windows (PowerShell)
 ```powershell
-irm https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm_v2/install.bat | iex
+irm https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm_v2/install.ps1 | iex
 ```
 
 ### macOS / Linux
@@ -65,10 +65,10 @@ curl -fsSL https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neug
 ### Manual Install
 ```bash
 git clone https://github.com/atharia-agi/neugi_swarm.git
-cd neugi_swarm/neugi_swarm_v2
+cd neugi_swarm
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -e ".[dev]"
+pip install -e "neugi_swarm_v2[dev]"
 ```
 
 ### Verify Installation
@@ -947,7 +947,7 @@ neugi doctor           # Full system diagnostics
 
 ```bash
 # === INSTALL ===
-irm https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm_v2/install.bat | iex
+irm https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm_v2/install.ps1 | iex
 
 # === SETUP ===
 neugi wizard           # Interactive setup
@@ -983,7 +983,7 @@ neugi rescue           # Rescue mode
 
 ---
 
-> **NEUGI v2.1.3** — 29 subsystems, 117+ modules, ~64K LOC, 326 tests
+> **NEUGI v2.1.3** — 29 subsystems, 120+ modules, ~65K LOC, 367 collected tests
 >
 > GitHub: https://github.com/atharia-agi/neugi_swarm
 > Web: https://neugi.com

@@ -47,7 +47,7 @@
 
 2. **Install v2**
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_swarm_v2/install.sh | bash
+   curl -fsSL https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm_v2/install.sh | bash
    ```
 
 3. **Run migration wizard**

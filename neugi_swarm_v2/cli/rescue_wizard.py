@@ -70,6 +70,16 @@ class RescueWizard:
         Returns:
             True if ready to chat
         """
+        try:
+            from neugi_swarm_v2.cli.genius_wizard import GeniusWizard
+
+            wizard = GeniusWizard()
+            wizard.neugi_dir = self.base_dir
+            wizard.config_path = self.config_path
+            return wizard.run()
+        except Exception as exc:
+            self._print_warning(f"Advanced setup wizard unavailable, using rescue setup: {exc}")
+
         self._print_header("NEUGI Setup Wizard")
         self._print("I'll check your system and get NEUGI running. Just press Enter to accept my suggestions.")
 
@@ -287,13 +297,13 @@ class RescueWizard:
         base_url = ""
         ollama_url = "http://localhost:11434"
         if provider == "openai":
-            base_url = "https://api.openai.com/v1"
+            base_url = "https://api.openai.com"
             ollama_url = ""
         elif provider == "anthropic":
             base_url = "https://api.anthropic.com"
             ollama_url = ""
         config = {
-            "version": "2.1.1",
+            "version": "2.1.3",
             "llm": {
                 "provider": provider,
                 "model": model,
@@ -382,7 +392,7 @@ class RescueWizard:
         if ollama_ok:
             options.append(("ollama", "Local Ollama (private, free, works offline)"))
         if has_openai:
-            options.append(("openai", "OpenAI Cloud (GPT-4, requires API key)"))
+            options.append(("openai", "OpenAI Cloud (GPT-5, requires API key)"))
         if has_anthropic:
             options.append(("anthropic", "Anthropic Cloud (Claude, requires API key)"))
 
@@ -402,9 +412,9 @@ class RescueWizard:
             models = self._list_ollama_models()
             model = models[0] if models else "qwen2.5-coder:7b"
         elif provider == "openai":
-            model = "gpt-4o-mini"
+            model = "gpt-5-mini"
         else:
-            model = "claude-3-5-sonnet-20241022"
+            model = "claude-sonnet-4-20250514"
 
         self._save_config(provider, model, {})
         return self._test_and_finish()
@@ -453,11 +463,11 @@ class RescueWizard:
 
         if os.environ.get("OPENAI_API_KEY"):
             provider = "openai"
-            model = "gpt-4o-mini"
+            model = "gpt-5-mini"
             self._print("OPENAI_API_KEY detected in environment")
         elif os.environ.get("ANTHROPIC_API_KEY"):
             provider = "anthropic"
-            model = "claude-3-5-sonnet-20241022"
+            model = "claude-sonnet-4-20250514"
             self._print("ANTHROPIC_API_KEY detected in environment")
         else:
             self._print("\nNo API key found in environment.")
@@ -471,10 +481,10 @@ class RescueWizard:
 
             if provider == "openai":
                 os.environ["OPENAI_API_KEY"] = key
-                model = "gpt-4o-mini"
+                model = "gpt-5-mini"
             else:
                 os.environ["ANTHROPIC_API_KEY"] = key
-                model = "claude-3-5-sonnet-20241022"
+                model = "claude-sonnet-4-20250514"
 
         features = {"memory": True, "skills": True, "dreaming": False}
         self._save_config(provider, model, features)
@@ -672,14 +682,14 @@ class RescueWizard:
         base_url = ""
         ollama_url = "http://localhost:11434"
         if provider == "openai":
-            base_url = "https://api.openai.com/v1"
+            base_url = "https://api.openai.com"
             ollama_url = ""
         elif provider == "anthropic":
             base_url = "https://api.anthropic.com"
             ollama_url = ""
 
         config = {
-            "version": "2.1.1",
+            "version": "2.1.3",
             "llm": {
                 "provider": provider,
                 "model": model,

@@ -8,7 +8,7 @@ Every HTML page includes the following meta tags in `<head>`:
 
 ```html
 <meta property="og:title" content="NEUGI Swarm — Autonomous Multi-Agent Framework" />
-<meta property="og:description" content="Production-grade autonomous multi-agent framework with 29 subsystems, 117+ modules, memory consolidation, and proactive behavior." />
+<meta property="og:description" content="Production-grade autonomous multi-agent framework with 29 subsystems, 120+ modules, memory consolidation, and proactive behavior." />
 <meta property="og:image" content="https://neugi.com/assets/og-image.png" />
 <meta property="og:url" content="https://neugi.com/" />
 <meta property="og:type" content="website" />
@@ -44,7 +44,7 @@ Every HTML page includes the following meta tags in `<head>`:
   "name": "NEUGI Swarm",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Cross-platform",
-  "description": "Production-grade autonomous multi-agent framework with 29 subsystems, 117+ modules, memory consolidation, and proactive behavior.",
+  "description": "Production-grade autonomous multi-agent framework with 29 subsystems, 120+ modules, memory consolidation, and proactive behavior.",
   "url": "https://neugi.com/",
   "author": {
     "@type": "Organization",

@@ -2168,10 +2168,12 @@ class NeugiCLI:
 
     def _cmd_wizard(self, args: list[str]) -> CommandResult:
         """Run interactive setup wizard."""
-        from neugi_swarm_v2.cli.rescue_wizard import RescueWizard
+        from neugi_swarm_v2.cli.genius_wizard import GeniusWizard
 
-        wizard = RescueWizard(base_dir=str(self.base_dir))
-        success = wizard.run_setup()
+        wizard = GeniusWizard()
+        wizard.neugi_dir = self.base_dir
+        wizard.config_path = self.base_dir / "config.json"
+        success = wizard.run()
 
         return CommandResult(
             status=CommandStatus.SUCCESS if success else CommandStatus.WARNING,

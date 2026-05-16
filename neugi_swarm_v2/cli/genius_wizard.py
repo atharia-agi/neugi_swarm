@@ -329,10 +329,10 @@ class GeniusWizard:
 
     # Provider ranking: cloud SOTA > local capable > cloud budget > local light
     _PROVIDER_RANK = [
-        ("openai", "gpt-4o", "gpt-4o-mini"),
-        ("anthropic", "claude-3-5-sonnet-20241022", "claude-3-haiku-20240307"),
+        ("openai", "gpt-5.2", "gpt-5-mini"),
+        ("anthropic", "claude-sonnet-4-20250514", "claude-3-5-haiku-20241022"),
         ("gemini", "gemini-2.5-pro", "gemini-2.5-flash"),
-        ("grok", "grok-3", "grok-3"),
+        ("grok", "grok-4.3", "grok-4.3-latest"),
         ("ollama", "qwen2.5-coder:7b", "llama3.2:3b"),
     ]
 
@@ -390,21 +390,21 @@ class GeniusWizard:
         if state["has_openai_key"]:
             candidates.append({
                 "provider": "openai",
-                "model": "gpt-4o",
-                "fallback_model": "gpt-4o-mini",
-                "base_url": "https://api.openai.com/v1",
+                "model": "gpt-5.2",
+                "fallback_model": "gpt-5-mini",
+                "base_url": "https://api.openai.com",
                 "mode": "cloud_openai",
-                "description": "OpenAI GPT-4o — smartest, fastest setup",
+                "description": "OpenAI GPT-5.2 - strongest agentic default",
                 "rank": 1,
             })
         if state["has_anthropic_key"]:
             candidates.append({
                 "provider": "anthropic",
-                "model": "claude-3-5-sonnet-20241022",
-                "fallback_model": "claude-3-haiku-20240307",
+                "model": "claude-sonnet-4-20250514",
+                "fallback_model": "claude-3-5-haiku-20241022",
                 "base_url": "https://api.anthropic.com",
                 "mode": "cloud_anthropic",
-                "description": "Anthropic Claude 3.5 Sonnet — excellent reasoning",
+                "description": "Anthropic Claude Sonnet 4 - excellent reasoning",
                 "rank": 2,
             })
         if state["has_gemini_key"]:
@@ -412,19 +412,19 @@ class GeniusWizard:
                 "provider": "gemini",
                 "model": "gemini-2.5-pro",
                 "fallback_model": "gemini-2.5-flash",
-                "base_url": "https://generativelanguage.googleapis.com/v1",
+                "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
                 "mode": "cloud_gemini",
-                "description": "Google Gemini 2.5 Pro — 1M context",
+                "description": "Google Gemini 2.5 Pro - 1M context",
                 "rank": 3,
             })
         if state["has_grok_key"]:
             candidates.append({
                 "provider": "grok",
-                "model": "grok-3",
-                "fallback_model": "grok-3",
-                "base_url": "https://api.x.ai/v1",
+                "model": "grok-4.3",
+                "fallback_model": "grok-4.3-latest",
+                "base_url": "https://api.x.ai",
                 "mode": "cloud_grok",
-                "description": "xAI Grok 3 — real-time aware",
+                "description": "xAI Grok 4.3 - agentic tool calling",
                 "rank": 4,
             })
 
@@ -518,37 +518,35 @@ class GeniusWizard:
 
         provider_key, _ = providers[p_choice - 1]
 
-        # Step 2: Pick model
-        model, custom_name = self._pick_model_interactive(provider_key, state)
+        from neugi_swarm_v2.provider_catalog import get_provider, normalize_base_url
 
-        # Step 3: For compatible providers, ask endpoint
+        provider_info = get_provider(provider_key)
+
+        # Step 2: For compatible providers, ask endpoint
         base_url = ""
         if provider_key == "openai_compatible":
             base_url = input("   Custom base URL (e.g., https://api.groq.com/openai/v1): ").strip()
             if not base_url:
-                base_url = "https://api.openai.com/v1"
+                base_url = "https://api.openai.com"
         elif provider_key == "anthropic_compatible":
             base_url = input("   Custom base URL (e.g., https://api.anthropic.com): ").strip()
             if not base_url:
                 base_url = "https://api.anthropic.com"
+        elif provider_info:
+            base_url = provider_info.get_base_url()
+        base_url = normalize_base_url(base_url)
 
-        # Step 4: API key if needed and not in env
-        if provider_key in ("openai", "openai_compatible") and not state["has_openai_key"]:
-            key = getpass.getpass("   OpenAI API key: ").strip()
-            if key:
-                os.environ["OPENAI_API_KEY"] = key
-        elif provider_key in ("anthropic", "anthropic_compatible") and not state["has_anthropic_key"]:
-            key = getpass.getpass("   Anthropic API key: ").strip()
-            if key:
-                os.environ["ANTHROPIC_API_KEY"] = key
-        elif provider_key == "gemini" and not state["has_gemini_key"]:
-            key = getpass.getpass("   Gemini API key: ").strip()
-            if key:
-                os.environ["GEMINI_API_KEY"] = key
-        elif provider_key == "grok" and not state["has_grok_key"]:
-            key = getpass.getpass("   Grok API key: ").strip()
-            if key:
-                os.environ["XAI_API_KEY"] = key
+        # Step 3: API key if needed and not in env
+        api_key = ""
+        env_vars = provider_info.env_vars if provider_info else []
+        if provider_key != "ollama" and not any(os.environ.get(name) for name in env_vars):
+            label = provider_info.display_name if provider_info else provider_key
+            api_key = getpass.getpass(f"   {label} API key (Enter = set later): ").strip()
+            if api_key and env_vars:
+                os.environ[env_vars[0]] = api_key
+
+        # Step 4: Pick model after credentials so future live model listing can use the key.
+        model, custom_name = self._pick_model_interactive(provider_key, state)
 
         # Step 5: Show capability preview
         self._show_capability_preview(provider_key, model)
@@ -565,6 +563,7 @@ class GeniusWizard:
             "model": model,
             "custom_model_name": custom_name,
             "base_url": base_url,
+            "api_key": api_key,
             "description": f"{provider_key} with {model}",
             "actions": actions,
             "needs_download": is_ollama and model not in state.get("ollama_models", []),
@@ -572,7 +571,7 @@ class GeniusWizard:
 
     def _build_provider_menu(self, state: dict[str, Any]) -> list[tuple[str, str]]:
         """Build provider menu dynamically from catalog."""
-        from provider_catalog import get_all_providers
+        from neugi_swarm_v2.provider_catalog import get_all_providers
 
         menu = []
         # Ollama first (special handling for local install status)
@@ -596,9 +595,13 @@ class GeniusWizard:
 
     def _pick_model_interactive(self, provider: str, state: dict[str, Any]) -> tuple[str, str]:
         """Let user pick a model from the provider catalog."""
-        from provider_catalog import get_models_for_provider
+        from neugi_swarm_v2.provider_catalog import search_models
 
-        models = get_models_for_provider(provider)
+        query = ""
+        if provider not in ("openai_compatible", "anthropic_compatible"):
+            query = input("   Search models (Enter = recommended list): ").strip()
+        models = search_models(provider, query, limit=20)
+        live_model_ids = self._fetch_live_model_ids(provider, query, limit=20)
 
         # For Ollama, mark installed models
         if provider == "ollama":
@@ -612,9 +615,15 @@ class GeniusWizard:
             items = [("custom", "Custom model — you type the name")]
         else:
             items = [(m.id, f"{m.name} — {m.description}") for m in models]
+            known_ids = {m.id for m in models}
+            for model_id in live_model_ids:
+                if model_id not in known_ids:
+                    items.append((model_id, f"{model_id} — live from provider"))
             items.append(("custom", "Custom model — you type the name"))
 
         print(f"\n  Models for {provider}:")
+        if query and not items:
+            print("   No curated match. You can still enter a custom model name.")
         for i, (mid, desc) in enumerate(items, 1):
             print(f"   {i}. {desc}")
         print(f"   {len(items)+1}. I'll enter a custom model name")
@@ -629,6 +638,50 @@ class GeniusWizard:
         else:
             custom = input("   Enter model name: ").strip()
             return custom, custom
+
+    def _fetch_live_model_ids(self, provider: str, query: str = "", limit: int = 20) -> list[str]:
+        """Fetch live model IDs when the provider exposes a models endpoint."""
+        if provider in ("ollama", "openai_compatible", "anthropic_compatible"):
+            return []
+        try:
+            from neugi_swarm_v2.provider_catalog import get_provider
+
+            info = get_provider(provider)
+            if not info or not info.model_list_url:
+                return []
+            api_key = ""
+            for env_var in info.env_vars:
+                api_key = os.environ.get(env_var, "")
+                if api_key:
+                    break
+            if not api_key and provider != "openrouter":
+                return []
+
+            headers = {"Accept": "application/json"}
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+            request = urllib.request.Request(info.model_list_url, headers=headers, method="GET")
+            with urllib.request.urlopen(request, timeout=5) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+            data = payload.get("data", payload.get("models", []))
+            model_ids = []
+            q = (query or "").strip().lower()
+            for item in data:
+                if isinstance(item, dict):
+                    model_id = item.get("id") or item.get("name") or ""
+                else:
+                    model_id = str(item)
+                if not model_id:
+                    continue
+                model_id = model_id.replace("models/", "")
+                if q and q not in model_id.lower():
+                    continue
+                model_ids.append(model_id)
+                if len(model_ids) >= limit:
+                    break
+            return model_ids
+        except Exception:
+            return []
 
     def _show_capability_preview(self, provider: str, model: str) -> None:
         """Show a quick capability preview for the selected model."""
@@ -854,46 +907,36 @@ class GeniusWizard:
 
     def _save_config(self, plan: dict[str, Any]) -> None:
         """Save NEUGI configuration — one simple JSON file."""
-        provider = plan["provider"]
+        from neugi_swarm_v2.provider_catalog import (
+            default_fallback_model,
+            get_provider,
+            normalize_base_url,
+            provider_to_runtime,
+        )
+
+        provider_key = plan["provider"]
+        provider = provider_to_runtime(provider_key)
         model = plan["model"]
-        base_url = plan.get("base_url", "")
+        base_url = normalize_base_url(plan.get("base_url", ""))
+        api_key = plan.get("api_key", "")
         ollama_url = "http://localhost:11434"
 
-        # Normalize provider names for config
-        if provider in ("openai_compatible", "openai"):
-            provider = "openai"
-            if not base_url:
-                base_url = "https://api.openai.com/v1"
-            ollama_url = ""
-        elif provider in ("anthropic_compatible", "anthropic"):
-            provider = "anthropic"
-            if not base_url:
-                base_url = "https://api.anthropic.com"
-            ollama_url = ""
-        elif provider == "gemini":
-            base_url = "https://generativelanguage.googleapis.com/v1"
-            ollama_url = ""
-        elif provider == "grok":
-            base_url = "https://api.x.ai/v1"
-            ollama_url = ""
-        elif provider == "ollama":
+        provider_info = get_provider(provider_key) or get_provider(provider)
+        if provider == "ollama":
             base_url = ""
             ollama_url = "http://localhost:11434"
+        else:
+            if not base_url and provider_info:
+                base_url = provider_info.get_base_url()
+            ollama_url = ""
 
         # Pick fallback model
-        fallback_map = {
-            "ollama": "llama3.2:3b",
-            "openai": "gpt-4o-mini",
-            "anthropic": "claude-3-5-sonnet-20241022",
-            "gemini": "gemini-2.5-flash",
-            "grok": "grok-3",
-        }
-        fallback = fallback_map.get(provider, "")
+        fallback = default_fallback_model(provider)
 
         # User-friendly config with self-documenting comments
         config = {
             "_readme": "NEUGI Config — Edit this file to change your AI setup",
-            "version": "2.1.1",
+            "version": "2.1.3",
             "llm": {
                 "_comment": "Your AI provider and model",
                 "provider": provider,
@@ -901,7 +944,7 @@ class GeniusWizard:
                 "fallback_model": fallback,
                 "base_url": base_url,
                 "ollama_url": ollama_url,
-                "api_key": "",
+                "api_key": api_key,
                 "temperature": 0.7,
                 "max_tokens": 4096,
             },
@@ -937,7 +980,7 @@ class GeniusWizard:
                     {
                         "name": "cloud",
                         "provider": "openai",
-                        "model": "gpt-4o",
+                        "model": "gpt-5-mini",
                         "api_key": "",
                         "tier": "cloud",
                         "enabled": False
@@ -978,29 +1021,8 @@ class GeniusWizard:
     def _setup_cloud_manual(self) -> dict[str, Any]:
         """Manual cloud setup."""
         self._typewrite("\nCloud Setup:")
-        self._typewrite("Get API key from:")
-        self._typewrite("  OpenAI: https://platform.openai.com/api-keys")
-        self._typewrite("  Anthropic: https://console.anthropic.com/settings/keys")
-
-        providers = ["OpenAI", "Anthropic"]
-        choice = self._ask_number("Select provider", 1, 2)
-        provider_key = "openai" if choice == 1 else "anthropic"
-        model = "gpt-4o-mini" if choice == 1 else "claude-3-5-sonnet-20241022"
-
-        key = getpass.getpass("   Paste your API key: ").strip()
-        if provider_key == "openai":
-            os.environ["OPENAI_API_KEY"] = key
-        else:
-            os.environ["ANTHROPIC_API_KEY"] = key
-
-        return {
-            "mode": f"cloud_{provider_key}",
-            "provider": provider_key,
-            "model": model,
-            "description": f"Use {providers[choice-1]} cloud API",
-            "actions": ["save_config"],
-            "needs_download": False,
-        }
+        self._typewrite("Pick a provider, paste one API key, then search/select a model.")
+        return self._manual_override(self._deep_scan())
 
     # ==================== DISPLAY HELPERS ====================
 
@@ -1015,7 +1037,7 @@ class GeniusWizard:
 {Colors.CYAN}  ██║╚██╗██║██╔══╝   ██╔██╗ ██║   ██║╚════██║{Colors.END}
 {Colors.CYAN}  ██║ ╚████║███████╗██╔╝ ██╗╚██████╔╝███████║{Colors.END}
 {Colors.CYAN}  ╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝{Colors.END}
-{Colors.DIM}        Setup Wizard v2.1.1 — Zero-Dependency{Colors.END}
+{Colors.DIM}        Setup Wizard v2.1.3 — Provider Search Edition{Colors.END}
         """)
 
     def _typewrite(self, text: str, delay: float = 0.01) -> None:

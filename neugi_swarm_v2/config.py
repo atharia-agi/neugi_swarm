@@ -53,7 +53,7 @@ class LLMConfig:
     provider: str = "ollama"
     model: str = "qwen2.5-coder:7b"
     fallback_model: str = "llama3.2:3b"
-    base_url: str = "https://api.openai.com/v1"
+    base_url: str = "https://api.openai.com"
     ollama_url: str = "http://localhost:11434"
     api_key: str = ""
     temperature: float = 0.7
@@ -288,7 +288,6 @@ class ContextConfig:
 # -- Main Configuration ------------------------------------------------------
 
 @dataclass
-@dataclass
 class ObservabilityConfig:
     """Observability subsystem configuration.
 
@@ -306,6 +305,7 @@ class ObservabilityConfig:
         return cls(**known)
 
 
+@dataclass
 class NeugiConfig:
     """Top-level NEUGI v2 configuration.
 
@@ -486,7 +486,7 @@ def load_config(
     Args:
         base_dir: Root directory. Defaults to ~/.neugi.
         config_path: Explicit path to config.json.
-        **overrides: Override any field (dot-notation: llm.model='gpt-4o').
+        **overrides: Override any field (dot-notation: llm.model='gpt-5-mini').
 
     Returns:
         NeugiConfig instance.

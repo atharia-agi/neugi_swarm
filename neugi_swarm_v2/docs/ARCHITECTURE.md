@@ -2,7 +2,7 @@
 
 ## Overview
 
-NEUGI Swarm v2 is a deterministic multi-agent state machine with **22 subsystems**, **108 modules**, and **54,000+ lines** of production-ready code. It surpasses OpenClaw, CrewAI, AutoGen, LangGraph, and Paperclip combined in capability, modularity, and scale.
+NEUGI Swarm v2 is a deterministic multi-agent state machine with **29 subsystems**, **120+ modules**, and **65,000+ lines** of production-ready code. It is designed as sovereign autonomous infrastructure: memory, skills, agents, workflows, MCP, A2A, governance, observability, and proactive execution all wired through one framework.
 
 ## Design Principles
 

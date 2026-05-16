@@ -432,6 +432,7 @@ class HTTPConnection(asyncio.Protocol):
                 "Content-Type: text/event-stream\r\n"
                 "Cache-Control: no-cache\r\n"
                 "Connection: keep-alive\r\n"
+                f"Mcp-Session-Id: {self._session_id}\r\n"
                 f"Access-Control-Allow-Origin: {self.transport.cors_origins[0] if self.transport.cors_origins else '*'}\r\n"
                 "\r\n"
             )
@@ -487,6 +488,7 @@ class HTTPConnection(asyncio.Protocol):
             "HTTP/1.1 200 OK\r\n"
             "Content-Type: application/json\r\n"
             f"Content-Length: {len(body)}\r\n"
+            f"Mcp-Session-Id: {self._session_id}\r\n"
             f"Access-Control-Allow-Origin: {self.transport.cors_origins[0] if self.transport.cors_origins else '*'}\r\n"
             "\r\n"
         ).encode("utf-8") + body

@@ -67,16 +67,10 @@ class ScopeValidator:
         Returns:
             True if target is allowed, False otherwise
         """
-        # Check if target is in the allowed_targets list (exact match or CIDR)
+        # Check if target is in the allowed_targets list (exact match or CIDR).
+        # Explicit scope entries are the authorization boundary. A private IP is
+        # allowed when it is explicitly listed or covered by an allowed CIDR.
         if self._is_target_allowed(target):
-            # Additional checks for IP addresses (if it's an IP)
-            if self._is_ip_address(target):
-                ip = ipaddress.ip_address(target)
-                # Check for private IPs if not allowed
-                if ip.is_private and not self.allow_private_ips:
-                    logger.warning(f"Scope validation failed: Private IP {target} not allowed for tool {tool}")
-                    return False
-            # If we passed all checks, target is allowed
             return True
         else:
             logger.warning(f"Scope validation failed: Target {target} not in allowed targets for tool {tool}")

@@ -36,7 +36,7 @@ class TestBrowserTool(unittest.TestCase):
             self.assertIsInstance(elements, list)
             bt.close()
         except Exception as e:
-            self.skipIf(True, f"Browser unavailable: {e}")
+            self.skipTest(f"Browser unavailable: {e}")
 
     def test_screenshot(self):
         bt = BrowserTool()
@@ -46,7 +46,7 @@ class TestBrowserTool(unittest.TestCase):
             self.assertTrue(len(b64) > 100)
             bt.close()
         except Exception as e:
-            self.skipIf(True, f"Browser unavailable: {e}")
+            self.skipTest(f"Browser unavailable: {e}")
 
     def test_context_manager(self):
         with BrowserTool() as bt:

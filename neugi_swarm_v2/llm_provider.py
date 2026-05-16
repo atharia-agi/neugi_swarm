@@ -363,6 +363,15 @@ class OpenAICompatibleProvider(LLMProvider):
         headers.update(self.config.extra_headers)
         return headers
 
+    def _chat_completions_url(self) -> str:
+        """Build the Chat Completions URL for OpenAI-compatible providers."""
+        base_url = self.config.base_url.rstrip("/")
+        if base_url.endswith("/chat/completions"):
+            return base_url
+        if "generativelanguage.googleapis.com" in base_url and base_url.endswith("/openai"):
+            return f"{base_url}/chat/completions"
+        return f"{base_url}/v1/chat/completions"
+
     def generate(
         self,
         prompt: str,
@@ -401,7 +410,7 @@ class OpenAICompatibleProvider(LLMProvider):
         for attempt in range(self.config.max_retries):
             try:
                 response = requests.post(
-                    f"{self.config.base_url}/v1/chat/completions",
+                    self._chat_completions_url(),
                     json=payload,
                     headers=self._headers(),
                     timeout=self.config.timeout,
@@ -461,7 +470,7 @@ class OpenAICompatibleProvider(LLMProvider):
             payload["tools"] = tools
 
         response = requests.post(
-            f"{self.config.base_url}/v1/chat/completions",
+            self._chat_completions_url(),
             json=payload,
             headers=self._headers(),
             stream=True,

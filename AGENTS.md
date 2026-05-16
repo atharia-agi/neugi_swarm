@@ -8,8 +8,8 @@
 
 **NEUGI Swarm v2** is a production-grade autonomous multi-agent framework.
 - **Language:** Python 3.10+
-- **Architecture:** 29 subsystems, 117+ modules, ~64K LOC
-- **Test count:** 326 tests (204 original + 122 MCP), all must pass
+- **Architecture:** 29 subsystems, 120+ modules, ~65K LOC
+- **Test count:** 367 collected (365 passed, 2 optional browser tests skipped when Playwright is absent), all non-optional tests must pass
 - **Version:** 2.1.3
 
 This is NOT a chatbot wrapper. It is **sovereign autonomous infrastructure**:
@@ -101,12 +101,12 @@ repo/
 │   └── cli/                  # Command-line interface
 │       ├── cli.py            # Main CLI (rich-based)
 │       ├── interactive.py    # Interactive chat REPL
-│       ├── genius_wizard.py  # Zero-dependency setup wizard
-│       ├── smart_wizard.py   # AI-level setup wizard
+│       ├── genius_wizard.py  # Canonical zero-dependency setup wizard
+│       ├── smart_wizard.py   # Deprecated compatibility alias
 │       ├── rescue_wizard.py  # Auto-fix rescue mode
-│       └── wizard.py         # Original wizard (deprecated)
+│       └── wizard.py         # Deprecated compatibility alias
 │
-├── tests/                    # 326 tests across all subsystems
+├── tests/                    # 367 collected tests across all subsystems
 ├── assets/                   # Brand images, favicon, hero video
 ├── index.html                # Landing page
 ├── docs.html                 # Documentation site
@@ -123,7 +123,7 @@ repo/
 ```bash
 cd neugi_swarm_v2
 python -m pytest tests/ -q --tb=short -p no:anchorpy
-# Expected: 326 passed, 0 warnings
+# Expected: 365 passed, 2 skipped when Playwright is absent
 ```
 
 ### Smoke Test CLI
@@ -159,17 +159,18 @@ swarm.remember("User prefers dark mode")
 - `append_memory()` writes to SQLite when `memory_system` attached, else file fallback
 
 ### Wizard Architecture
-- `GeniusWizard` — zero-dependency, pure stdlib, for first-time setup
-- `SmartWizard` — same but with different UX flow
-- `RescueWizard` — interactive auto-fix with health checks
-- All three are maintained; `neugi wizard` uses `RescueWizard`
+- `GeniusWizard` — canonical zero-dependency, pure stdlib, first-time setup wizard
+- `SmartWizard` — compatibility alias for old imports; do not add new setup logic here
+- `SetupWizard` (`cli/wizard.py`) — compatibility alias for old imports; do not add new setup logic here
+- `RescueWizard` — interactive auto-fix with health checks; setup delegation goes to `GeniusWizard`
+- `neugi wizard` uses `GeniusWizard`; `neugi rescue` uses `RescueWizard`
 
 ### Version Bumping
 When changing version, update ALL of:
 - `neugi_swarm_v2/__init__.py` → `__version__`
 - `neugi_swarm_v2/tools/__init__.py` → `__version__`
 - `neugi_swarm_v2/pyproject.toml` → `version`
-- `neugi_swarm_v2/install.bat` / `install.sh` banners
+- `neugi_swarm_v2/install.ps1` / `install.bat` / `install.sh` banners
 - HTML files: `index.html`, `docs.html`, `dashboard.html`
 - `CHANGELOG.md`
 
@@ -444,7 +445,7 @@ NEUGI keeps it simple — **one JSON file** that anyone can edit:
 ```json
 {
   "_readme": "NEUGI Config — Edit this file to change your AI setup",
-  "version": "2.1.1",
+  "version": "2.1.3",
   "llm": {
     "_comment": "Your AI provider and model",
     "provider": "ollama",
@@ -476,7 +477,7 @@ NEUGI keeps it simple — **one JSON file** that anyone can edit:
 ```
 
 **To change your AI:**
-1. Run `neugi setup` again, or
+1. Run `neugi wizard` again, or
 2. Edit `~/.neugi/config.json` with any text editor, or
 3. Use `neugi config set llm.model=gpt-4o`
 

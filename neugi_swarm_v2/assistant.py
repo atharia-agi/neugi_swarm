@@ -1,31 +1,21 @@
 #!/usr/bin/env python3
 """
-NEUGI SWARM V2 - Upgraded Assistant
-=====================================
+NEUGI Swarm V2 Assistant
+========================
 
-Production-ready AI assistant with:
-- Tool-use loop (ReAct pattern)
-- Planning mode
-- Sub-agent spawning
-- Steering mode
-- Memory/skill/context integration
-- Session management
-- Multi-provider LLM support
-- Streaming responses
-- Strict agentic execution contract
-
-Version: 2.0.0
+Runtime-compatible assistant facade for the v2.1.3 subsystem APIs.
 """
 
 from __future__ import annotations
 
 import json
+import time
 from collections.abc import Callable, Generator
+from pathlib import Path
 from typing import Any
 
-from neugi_swarm_v2.agents.agent_manager import AgentManager
 from neugi_swarm_v2.config import NeugiConfig
-from neugi_swarm_v2.context.prompt_assembler import PromptAssembler
+from neugi_swarm_v2.context.prompt_assembler import PromptAssembler, PromptMode
 from neugi_swarm_v2.context.token_budget import TokenBudget
 from neugi_swarm_v2.llm_provider import (
     AnthropicCompatibleProvider,
@@ -38,13 +28,14 @@ from neugi_swarm_v2.llm_provider import (
     ToolCall,
 )
 from neugi_swarm_v2.memory.memory_core import MemorySystem
-from neugi_swarm_v2.model_registry import ModelCapabilityDetector
-from neugi_swarm_v2.session.session_manager import SessionManager
+from neugi_swarm_v2.memory.scopes import ScopePath
+from neugi_swarm_v2.response_format import ResponseFormatter, StructuredResponse
+from neugi_swarm_v2.session.session_manager import Session, SessionManager
 from neugi_swarm_v2.skills.skill_manager import SkillManager
 
 
 class NeugiAssistantV2:
-    """Upgraded NEUGI Assistant with full agentic capabilities."""
+    """Primary chat runtime for NEUGI Swarm v2.1.3."""
 
     def __init__(
         self,
@@ -57,525 +48,463 @@ class NeugiAssistantV2:
         prompt_assembler: PromptAssembler | None = None,
         token_budget: TokenBudget | None = None,
         on_user_interaction: Callable[[], None] | None = None,
-    ):
+        **aliases: Any,
+    ) -> None:
         self.config = config or NeugiConfig()
         self.session_id = session_id
         self._on_user_interaction = on_user_interaction
 
-        # Initialize subsystems (injectable for shared instances)
-        self.memory = memory or MemorySystem(
-            memory_dir=self.config.memory_dir,
-            data_dir=self.config.data_dir,
+        self.memory = memory or aliases.get("memory_system") or MemorySystem(
+            base_dir=str(self.config.memory_dir),
+            daily_ttl_days=self.config.memory.daily_ttl_days,
+            enable_fts=self.config.memory.enable_fts,
+            enable_vec=self.config.memory.enable_vec,
         )
-        self.skills = skills or SkillManager(
-            skills_dirs=self.config.skill_dirs,
-            max_skills_in_prompt=self.config.max_skills_in_prompt,
+        self.skills = skills or aliases.get("skill_manager") or SkillManager(
+            token_budget=self.config.skill.max_tokens_in_prompt,
+            max_skills_in_prompt=self.config.skill.max_skills_in_prompt,
         )
-        self.agents = AgentManager(
-            db_path=self.config.agent_db_path,
-        )
-        self.sessions = sessions or SessionManager(
-            sessions_dir=self.config.sessions_dir,
-            daily_reset_hour=self.config.session_daily_reset_hour,
-            idle_timeout_minutes=self.config.session_idle_timeout,
+        self.sessions = sessions or aliases.get("session_manager") or SessionManager(
+            config=self.config.to_session_config(),
+            registry_db_path=str(self.config.sessions_dir / "session_registry.db"),
         )
         self.prompt_assembler = prompt_assembler or PromptAssembler(
-            max_tokens=self.config.context_max_tokens,
+            base_dir=str(self.config.neugi_dir),
+            model_max_chars=self.config.context.max_chars,
         )
         self.token_budget = token_budget or TokenBudget(
-            max_tokens=self.config.context_max_tokens,
+            model=self.config.llm.model,
+            total_tokens=self.config.context.max_tokens,
+            safety_margin=self.config.context.safety_margin,
         )
 
-        # Initialize LLM provider with failover
         self.llm = llm or self._create_llm_provider()
         self.fallback_llm = self._create_fallback_llm_provider()
+        self.max_tool_iterations = int(getattr(self.config, "max_tool_iterations", 5))
+        self.strict_execution = bool(getattr(self.config, "strict_agentic_execution", False))
 
-        # Session management
-        self.session = self.sessions.get_or_create_session(
-            session_id=session_id,
-            isolation_mode=self.config.session_isolation_mode,
-        )
-
-        # Tool registry
-        self._tools: dict[str, Callable] = {}
+        self._tools: dict[str, Callable[..., str]] = {}
         self._register_default_tools()
-
-        # Model capability detection
-        self._model_detector = ModelCapabilityDetector(
-            ollama_url=getattr(self.config.llm, 'ollama_url', 'http://localhost:11434')
-        )
-        self._model_caps = self._model_detector.detect(
-            self.llm.config.default_model,
-            provider=self.llm.config.provider_type.value if hasattr(self.llm.config.provider_type, 'value') else 'ollama',
-        )
-
-        # Execution config
-        self.max_tool_iterations = self.config.max_tool_iterations
-        self.strict_execution = self.config.strict_agentic_execution
-
-        # Steering
         self._steering_messages: list[str] = []
         self._steering_enabled = False
 
+    # -- Provider setup -----------------------------------------------------
+
     def _create_llm_provider(self) -> LLMProvider:
-        """Create the primary LLM provider from config."""
         cfg = self.config.llm
-
-        # Handle both dict and dataclass access
-        def get_attr(obj, key, default=None):
-            if isinstance(obj, dict):
-                return obj.get(key, default)
-            return getattr(obj, key, default)
-
-        provider_type = get_attr(cfg, "provider", "ollama")
-
-        # Normalize provider names (wizard uses "openai"/"anthropic", provider uses "openai_compatible")
         provider_map = {
             "ollama": ProviderType.OLLAMA,
-            "openai": ProviderType.OPENAI_COMPATIBLE,
-            "openai_compatible": ProviderType.OPENAI_COMPATIBLE,
             "anthropic": ProviderType.ANTHROPIC_COMPATIBLE,
             "anthropic_compatible": ProviderType.ANTHROPIC_COMPATIBLE,
         }
-        pt = provider_map.get(provider_type, ProviderType.OLLAMA)
-
-        # Resolve base_url per provider
-        base_url = get_attr(cfg, "base_url", "")
-        ollama_url = get_attr(cfg, "ollama_url", "http://localhost:11434")
-        if pt == ProviderType.OLLAMA:
-            base_url = ollama_url or base_url or "http://localhost:11434"
-        elif pt == ProviderType.OPENAI_COMPATIBLE and not base_url:
-            base_url = "https://api.openai.com/v1"
-        elif pt == ProviderType.ANTHROPIC_COMPATIBLE and not base_url:
-            base_url = "https://api.anthropic.com"
-
-        config = ProviderConfig(
-            provider_type=pt,
+        provider_type = provider_map.get(cfg.provider, ProviderType.OPENAI_COMPATIBLE)
+        base_url = cfg.ollama_url if provider_type == ProviderType.OLLAMA else cfg.base_url
+        base_url = self._normalize_base_url(base_url)
+        provider_config = ProviderConfig(
+            provider_type=provider_type,
             base_url=base_url,
-            api_key=get_attr(cfg, "api_key", ""),
-            default_model=get_attr(cfg, "model", "qwen2.5-coder:7b"),
-            fallback_model=get_attr(cfg, "fallback_model", "llama3.2:3b"),
-            timeout=get_attr(cfg, "timeout_seconds", 60),
-            max_retries=get_attr(cfg, "max_retries", 3),
+            api_key=cfg.api_key,
+            default_model=cfg.model,
+            fallback_model=cfg.fallback_model,
+            timeout=int(cfg.timeout_seconds),
+            max_retries=cfg.max_retries,
+            retry_delay=cfg.retry_delay_seconds,
         )
+        if provider_type == ProviderType.OLLAMA:
+            return OllamaProvider(provider_config)
+        if provider_type == ProviderType.ANTHROPIC_COMPATIBLE:
+            return AnthropicCompatibleProvider(provider_config)
+        return OpenAICompatibleProvider(provider_config)
 
-        if pt == ProviderType.OLLAMA:
-            return OllamaProvider(config)
-        elif pt == ProviderType.OPENAI_COMPATIBLE:
-            return OpenAICompatibleProvider(config)
-        elif pt == ProviderType.ANTHROPIC_COMPATIBLE:
-            return AnthropicCompatibleProvider(config)
-        else:
-            return OllamaProvider(config)
+    @staticmethod
+    def _normalize_base_url(base_url: str) -> str:
+        cleaned = (base_url or "").rstrip("/")
+        if cleaned.endswith("/v1"):
+            cleaned = cleaned[:-3]
+        return cleaned or "http://localhost:11434"
 
     def _create_fallback_llm_provider(self) -> LLMProvider | None:
-        """Create fallback LLM provider."""
-        cfg = self.config.llm
-
-        def get_attr(obj, key, default=None):
-            if isinstance(obj, dict):
-                return obj.get(key, default)
-            return getattr(obj, key, default)
-
-        fallback_model = get_attr(cfg, "fallback_model", "")
-        default_model = get_attr(cfg, "model", "")
-        if not fallback_model or fallback_model == default_model:
+        fallback = self.llm.config.fallback_model
+        if not fallback or fallback == self.llm.config.default_model:
             return None
-
-        config = ProviderConfig(
+        fallback_config = ProviderConfig(
             provider_type=self.llm.config.provider_type,
             base_url=self.llm.config.base_url,
             api_key=self.llm.config.api_key,
-            default_model=fallback_model,
+            default_model=fallback,
+            fallback_model="",
             timeout=self.llm.config.timeout,
-            max_retries=2,
+            max_retries=1,
+            retry_delay=self.llm.config.retry_delay,
+        )
+        if fallback_config.provider_type == ProviderType.OLLAMA:
+            return OllamaProvider(fallback_config)
+        if fallback_config.provider_type == ProviderType.ANTHROPIC_COMPATIBLE:
+            return AnthropicCompatibleProvider(fallback_config)
+        return OpenAICompatibleProvider(fallback_config)
+
+    # -- Session helpers ----------------------------------------------------
+
+    def _get_session(self, session_id: str | None = None) -> Session:
+        sid = session_id or self.session_id
+        session = self.sessions.get_session(sid)
+        if session is None:
+            session = self.sessions.create_session(session_id=sid)
+        if not session.is_active:
+            session.activate()
+            session.save_metadata()
+        self.session_id = session.session_id
+        return session
+
+    def _append_session_message(self, session: Session, role: str, content: str) -> None:
+        transcript_path = Path(session.metadata.transcript_path or "")
+        transcript_path.parent.mkdir(parents=True, exist_ok=True)
+        record = {
+            "ts": time.time(),
+            "role": role,
+            "content": content,
+        }
+        with open(transcript_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+        session.increment_message_count(max(1, len(content) // 4))
+        session.save_metadata()
+
+    def _recent_messages(self, session: Session, limit: int = 20) -> list[dict[str, str]]:
+        transcript_path = Path(session.metadata.transcript_path or "")
+        if not transcript_path.exists():
+            return []
+        try:
+            lines = transcript_path.read_text(encoding="utf-8").splitlines()[-limit:]
+        except OSError:
+            return []
+        messages: list[dict[str, str]] = []
+        for line in lines:
+            try:
+                item = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            role = item.get("role")
+            content = item.get("content")
+            if role in {"system", "user", "assistant", "tool"} and isinstance(content, str):
+                messages.append({"role": role, "content": content})
+        return messages
+
+    # -- Tools --------------------------------------------------------------
+
+    def _register_default_tools(self) -> None:
+        self._tools.update(
+            {
+                "memory_recall": self._tool_memory_recall,
+                "memory_add": self._tool_memory_add,
+                "read_file": self._tool_read_file,
+                "write_file": self._tool_write_file,
+                "get_skills": self._tool_get_skills,
+            }
         )
 
-        if self.llm.config.provider_type == ProviderType.OLLAMA:
-            return OllamaProvider(config)
-        elif self.llm.config.provider_type == ProviderType.OPENAI_COMPATIBLE:
-            return OpenAICompatibleProvider(config)
-        elif self.llm.config.provider_type == ProviderType.ANTHROPIC_COMPATIBLE:
-            return AnthropicCompatibleProvider(config)
-        return None
+    def _tool_schemas(self) -> list[dict[str, Any]]:
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": "memory_recall",
+                    "description": "Recall relevant NEUGI memories.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {"type": "string"},
+                            "limit": {"type": "integer", "default": 5},
+                        },
+                        "required": ["query"],
+                    },
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "memory_add",
+                    "description": "Persist an important memory.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "content": {"type": "string"},
+                            "importance": {"type": "number", "default": 0.5},
+                        },
+                        "required": ["content"],
+                    },
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_skills",
+                    "description": "List or search loaded skills.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {"query": {"type": "string", "default": ""}},
+                    },
+                },
+            },
+        ]
 
-    def _register_default_tools(self):
-        """Register default tools."""
-        self._tools["memory_recall"] = self._tool_memory_recall
-        self._tools["memory_add"] = self._tool_memory_add
-        self._tools["read_file"] = self._tool_read_file
-        self._tools["write_file"] = self._tool_write_file
-        self._tools["list_agents"] = self._tool_list_agents
-        self._tools["delegate_task"] = self._tool_delegate_task
-        self._tools["get_skills"] = self._tool_get_skills
+    def _tool_memory_recall(self, query: str, limit: int = 5) -> str:
+        results = self.memory.recall(query=query, limit=limit)
+        payload = [
+            {"id": entry.id, "content": entry.content, "score": round(score, 4), "tags": entry.tags}
+            for entry, score, _components in results
+        ]
+        return json.dumps(payload, ensure_ascii=False, indent=2)
 
-    # ========== Tool Implementations ==========
-
-    def _tool_memory_recall(self, query: str, scope: str = "/global/", limit: int = 5) -> str:
-        results = self.memory.recall(query=query, scope=scope, top_k=limit)
-        return json.dumps(results, indent=2)
-
-    def _tool_memory_add(self, content: str, scope: str = "/global/", importance: int = 5) -> str:
-        mem_id = self.memory.save(content=content, scope=scope, importance=importance)
-        return f"Memory saved with ID: {mem_id}"
+    def _tool_memory_add(self, content: str, importance: float = 0.5) -> str:
+        entry = self.memory.save(
+            content=content,
+            scope=ScopePath.user_scope("default"),
+            importance=max(0.0, min(1.0, float(importance))),
+            source="assistant",
+        )
+        return f"Memory saved with ID: {entry.id}"
 
     def _tool_read_file(self, path: str) -> str:
-        import os
-        full_path = os.path.join(self.config.workspace_dir, path)
-        if not os.path.exists(full_path):
-            return f"Error: File not found: {path}"
-        try:
-            with open(full_path, encoding="utf-8") as f:
-                return f.read()
-        except Exception as e:
-            return f"Error reading file: {e}"
+        base = Path.cwd().resolve()
+        target = (base / path).resolve()
+        if not str(target).startswith(str(base)):
+            return "Error: path escapes workspace"
+        if not target.exists() or not target.is_file():
+            return f"Error: file not found: {path}"
+        return target.read_text(encoding="utf-8")
 
     def _tool_write_file(self, path: str, content: str) -> str:
-        import os
-        full_path = os.path.join(self.config.workspace_dir, path)
-        os.makedirs(os.path.dirname(full_path), exist_ok=True)
-        try:
-            with open(full_path, "w", encoding="utf-8") as f:
-                f.write(content)
-            return f"File written: {path}"
-        except Exception as e:
-            return f"Error writing file: {e}"
-
-    def _tool_list_agents(self) -> str:
-        agents = self.agents.list_agents()
-        return json.dumps([{"id": a.id, "name": a.name, "role": a.role.value, "status": a.status.value} for a in agents], indent=2)
-
-    def _tool_delegate_task(self, agent_id: str, task: str) -> str:
-        result = self.agents.delegate_task(agent_id=agent_id, task=task)
-        return json.dumps(result, indent=2)
+        base = Path.cwd().resolve()
+        target = (base / path).resolve()
+        if not str(target).startswith(str(base)):
+            return "Error: path escapes workspace"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+        return f"File written: {path}"
 
     def _tool_get_skills(self, query: str = "") -> str:
         if query:
-            matches = self.skills.match_skill(query, top_k=5)
-            return json.dumps([{"name": m.name, "description": m.description} for m in matches], indent=2)
-        skills = self.skills.list_skills()
-        return json.dumps([{"name": s.name, "description": s.description} for s in skills], indent=2)
+            matches = self.skills.match(query, top_n=5)
+            payload = [
+                {
+                    "name": match.skill.name,
+                    "description": match.skill.frontmatter.description,
+                    "score": round(match.score, 4),
+                }
+                for match in matches
+            ]
+        else:
+            payload = [
+                {"name": skill.name, "description": skill.frontmatter.description}
+                for skill in self.skills.get_enabled()
+            ]
+        return json.dumps(payload, ensure_ascii=False, indent=2)
 
-    def register_tool(self, name: str, func: Callable):
-        """Register a custom tool."""
+    def register_tool(self, name: str, func: Callable[..., str]) -> None:
         self._tools[name] = func
 
-    # ========== Steering ==========
+    # -- Public controls ----------------------------------------------------
 
-    def enable_steering(self):
-        """Enable steering mode for real-time course correction."""
+    def enable_steering(self) -> None:
         self._steering_enabled = True
 
-    def disable_steering(self):
-        """Disable steering mode."""
+    def disable_steering(self) -> None:
         self._steering_enabled = False
 
-    def send_steering_message(self, message: str):
-        """Send a steering message to the running agent."""
+    def send_steering_message(self, message: str) -> None:
         if self._steering_enabled:
             self._steering_messages.append(message)
 
     def _check_steering(self) -> str | None:
-        """Check for pending steering messages."""
         if self._steering_messages:
-            msg = self._steering_messages.pop(0)
-            return f"\n[STEERING] {msg}"
+            return f"[STEERING] {self._steering_messages.pop(0)}"
         return None
 
-    # ========== Main Chat Interface ==========
+    # -- Chat ---------------------------------------------------------------
 
-    def chat(self, message: str, stream: bool = False, structured: bool = False):
-        """Send a message and get a response with full agentic loop.
-
-        Args:
-            message: User message.
-            stream: If True, return a generator for streaming.
-            structured: If True, return a StructuredResponse with metadata.
-
-        Returns:
-            str or StructuredResponse depending on structured parameter.
-        """
-        import time as time_module
-
-        from response_format import ResponseFormatter
-
-        start_time = time_module.time()
-        total_tokens = 0
-        skills_used = []
-        all_tool_calls = []
-
-        # Notify autonomous loop that user is active (resets idle timer)
+    def chat(
+        self,
+        message: str,
+        session_id: str | None = None,
+        streaming: bool = False,
+        stream: bool | None = None,
+        structured: bool = True,
+        **_: Any,
+    ) -> StructuredResponse | str:
+        start_time = time.time()
         if self._on_user_interaction:
             self._on_user_interaction()
 
-        # Save user message to session
-        self.sessions.add_message(self.session_id, "user", message)
+        session = self._get_session(session_id)
+        self._append_session_message(session, "user", message)
+        self.memory.save(
+            content=message,
+            scope=ScopePath.user_scope("default"),
+            importance=0.4,
+            source="user",
+            extract_triples=False,
+        )
 
-        # Save to memory
-        self.memory.save(content=message, scope="/user/", importance=3)
+        if streaming or stream:
+            text = "".join(self.chat_stream(message, session_id=session.session_id))
+            return self._format_response(text, [], start_time, structured)
 
-        if stream:
-            return self._chat_stream(message)
+        messages = self._build_messages(message, session)
+        all_tool_calls: list[ToolCall] = []
+        final_text = ""
+        iterations = 0
 
-        # Build the agentic loop
-        full_response = ""
-        tool_iterations = 0
-        messages = self._build_messages(message)
-
-        while tool_iterations < self.max_tool_iterations:
-            # Check for steering
+        while iterations <= self.max_tool_iterations:
             steering = self._check_steering()
             if steering:
                 messages.append({"role": "user", "content": steering})
 
-            # Check if session needs compaction
-            if self.sessions.needs_compaction(self.session_id):
-                self._pre_compaction_flush()
-                self.sessions.compact_session(self.session_id)
-                messages = self._build_messages(message)
-
-            try:
-                response = self.llm.chat(
-                    messages=messages,
-                    model=self.llm.config.default_model,
-                    temperature=0.7,
-                    max_tokens=4096,
-                )
-                total_tokens += getattr(response, 'tokens_used', 0) or 0
-            except Exception as e:
-                # Try fallback
-                if self.fallback_llm:
-                    try:
-                        response = self.fallback_llm.chat(
-                            messages=messages,
-                            model=self.fallback_llm.config.default_model,
-                            temperature=0.7,
-                            max_tokens=4096,
-                        )
-                        total_tokens += getattr(response, 'tokens_used', 0) or 0
-                    except Exception:
-                        response = LLMResponse(content=f"Error: {str(e)}")
-                else:
-                    response = LLMResponse(content=f"Error: {str(e)}")
-
-            # Check strict execution: if no tool calls and just planning, force action
-            if self.strict_execution and not response.tool_calls and tool_iterations == 0:
-                if self._is_planning_only(response.content):
-                    messages.append({"role": "assistant", "content": response.content})
-                    messages.append({
-                        "role": "user",
-                        "content": "Stop planning. Take action now using available tools.",
-                    })
-                    tool_iterations += 1
-                    continue
-
-            # Add assistant response to messages
+            response = self._call_llm(messages)
+            final_text = response.content
             messages.append({"role": "assistant", "content": response.content})
-            full_response = response.content
 
-            # Execute tool calls
-            if response.tool_calls:
-                all_tool_calls.extend(response.tool_calls)
-                for tool_call in response.tool_calls:
-                    tool_result = self._execute_tool(tool_call)
-                    # Track skills used
-                    if tool_call.function and tool_call.function.name:
-                        skills_used.append(tool_call.function.name)
-                    messages.append({
-                        "role": "tool",
-                        "content": tool_result,
-                        "tool_call_id": tool_call.id,
-                    })
-                tool_iterations += 1
-            else:
-                # No tool calls, we're done
+            if not response.tool_calls:
+                if self.strict_execution and iterations == 0 and self._is_planning_only(response.content):
+                    messages.append(
+                        {
+                            "role": "user",
+                            "content": "Stop planning. Use an available tool or provide the concrete result.",
+                        }
+                    )
+                    iterations += 1
+                    continue
                 break
 
-        # Save assistant response
-        self.sessions.add_message(self.session_id, "assistant", full_response)
+            all_tool_calls.extend(response.tool_calls)
+            for tool_call in response.tool_calls:
+                tool_result = self._execute_tool(tool_call)
+                messages.append({"role": "tool", "content": tool_result})
+            iterations += 1
 
-        # Auto-save to memory if important
-        if len(full_response) > 100:
-            self.memory.save(content=full_response[:500], scope=f"/session/{self.session_id}/", importance=2)
-
-        if structured:
-            formatter = ResponseFormatter()
-            gen_time = time_module.time() - start_time
-            return formatter.format(
-                text=full_response,
-                tool_calls=all_tool_calls,
-                model=self.llm.config.default_model,
-                provider=self.llm.config.provider_type.value if hasattr(self.llm.config.provider_type, 'value') else str(self.llm.config.provider_type),
-                metadata={
-                    "tokens_used": total_tokens,
-                    "generation_time": gen_time,
-                    "skills_used": list(set(skills_used)),
-                    "tool_iterations": tool_iterations,
-                },
+        self._append_session_message(session, "assistant", final_text)
+        if final_text:
+            self.memory.save(
+                content=final_text[:1000],
+                scope=ScopePath.from_string(f"/session/{session.session_id}/"),
+                importance=0.3,
+                source="assistant",
+                extract_triples=False,
             )
 
-        return full_response
+        return self._format_response(final_text, all_tool_calls, start_time, structured)
 
-    def chat_stream(self, message: str) -> Generator[str, None, None]:
-        """Stream chat responses."""
-        self.sessions.add_message(self.session_id, "user", message)
-        self.memory.save(content=message, scope="/user/", importance=3)
-
-        messages = self._build_messages(message)
+    def chat_stream(
+        self,
+        message: str,
+        session_id: str | None = None,
+    ) -> Generator[str, None, None]:
+        session = self._get_session(session_id)
+        messages = self._build_messages(message, session)
         full_response = ""
-
         try:
             for chunk in self.llm.stream_chat(
                 messages=messages,
                 model=self.llm.config.default_model,
-                temperature=0.7,
-                max_tokens=4096,
+                temperature=self.config.llm.temperature,
+                max_tokens=self.config.llm.max_tokens,
+                tools=self._tool_schemas(),
             ):
                 full_response += chunk
                 yield chunk
-        except Exception as e:
-            if self.fallback_llm:
-                try:
-                    for chunk in self.fallback_llm.stream_chat(
-                        messages=messages,
-                        model=self.fallback_llm.config.default_model,
-                        temperature=0.7,
-                        max_tokens=4096,
-                    ):
-                        full_response += chunk
-                        yield chunk
-                except Exception:
-                    yield f"Error: {str(e)}"
-            else:
-                yield f"Error: {str(e)}"
+        except Exception as exc:
+            yield f"Error: {exc}"
+        finally:
+            if full_response:
+                self._append_session_message(session, "assistant", full_response)
 
-        self.sessions.add_message(self.session_id, "assistant", full_response)
-
-    def _chat_stream(self, message: str) -> str:
-        """Collect streamed response into a string."""
-        full_response = ""
-        for chunk in self.chat_stream(message):
-            full_response += chunk
-        return full_response
-
-    # ========== Message Building ==========
-
-    def _build_messages(self, user_message: str) -> list[dict[str, str]]:
-        """Build message list with system prompt, memory, skills, and context."""
-        # Assemble system prompt
-        system_prompt = self.prompt_assembler.assemble(
-            identity=self._get_identity(),
-            memory=self.memory.read_core()[:2000],
-            skills=self.skills.get_prompt_text(max_tokens=3000),
-            conversation=self.sessions.get_recent_messages(self.session_id, limit=10),
-            mode="full",
-        )
-
-        # Build messages
-        messages = [{"role": "system", "content": system_prompt}]
-
-        # Add recent conversation from session
-        recent = self.sessions.get_recent_messages(self.session_id, limit=20)
-        for msg in recent:
-            messages.append({"role": msg["role"], "content": msg["content"]})
-
-        # Add current user message
-        messages.append({"role": "user", "content": user_message})
-
+    def _build_messages(self, user_message: str, session: Session) -> list[dict[str, str]]:
+        prompt = self.prompt_assembler.assemble(mode=PromptMode.FULL).system_prompt
+        messages = [{"role": "system", "content": prompt}]
+        messages.extend(self._recent_messages(session, limit=20))
+        if not messages or messages[-1].get("content") != user_message:
+            messages.append({"role": "user", "content": user_message})
         return messages
 
-    def _get_identity(self) -> dict[str, str]:
-        """Get agent identity info."""
-        return {
-            "name": "NEUGI",
-            "role": "Autonomous AI Assistant",
-            "version": "2.0.0",
-            "description": "A powerful AI assistant with a swarm of specialized agents, skills, and memory.",
-        }
-
-    # ========== Tool Execution ==========
+    def _call_llm(self, messages: list[dict[str, str]]) -> LLMResponse:
+        try:
+            return self.llm.chat(
+                messages=messages,
+                model=self.llm.config.default_model,
+                temperature=self.config.llm.temperature,
+                max_tokens=self.config.llm.max_tokens,
+                tools=self._tool_schemas(),
+            )
+        except Exception as exc:
+            if self.fallback_llm:
+                try:
+                    return self.fallback_llm.chat(
+                        messages=messages,
+                        model=self.fallback_llm.config.default_model,
+                        temperature=self.config.llm.temperature,
+                        max_tokens=self.config.llm.max_tokens,
+                        tools=self._tool_schemas(),
+                    )
+                except Exception:
+                    pass
+            return LLMResponse(content=f"Error: {exc}")
 
     def _execute_tool(self, tool_call: ToolCall) -> str:
-        """Execute a tool call and return the result."""
-        tool_name = tool_call.name
-        tool_args = tool_call.parsed_arguments
-
-        if tool_name not in self._tools:
-            return f"Error: Unknown tool '{tool_name}'. Available tools: {', '.join(self._tools.keys())}"
-
+        tool = self._tools.get(tool_call.name)
+        if tool is None:
+            return f"Error: unknown tool '{tool_call.name}'"
         try:
-            result = self._tools[tool_name](**tool_args)
-            return str(result)
-        except Exception as e:
-            return f"Error executing tool '{tool_name}': {str(e)}"
+            return str(tool(**tool_call.parsed_arguments))
+        except Exception as exc:
+            return f"Error executing tool '{tool_call.name}': {exc}"
 
-    # ========== Pre-compaction Memory Flush ==========
-
-    def _pre_compaction_flush(self):
-        """Save important context to memory before compaction."""
-        recent = self.sessions.get_recent_messages(self.session_id, limit=50)
-        important_content = []
-        for msg in recent:
-            if msg["role"] == "assistant" and len(msg["content"]) > 200:
-                important_content.append(msg["content"][:300])
-
-        if important_content:
-            self.memory.save(
-                content="\n---\n".join(important_content[:5]),
-                scope=f"/session/{self.session_id}/summary/",
-                importance=6,
-            )
-
-    # ========== Strict Execution Contract ==========
+    def _format_response(
+        self,
+        text: str,
+        tool_calls: list[ToolCall],
+        start_time: float,
+        structured: bool,
+    ) -> StructuredResponse | str:
+        if not structured:
+            return text
+        formatter = ResponseFormatter()
+        usage = getattr(self.llm, "total_tokens_used", 0)
+        return formatter.format(
+            text=text,
+            tool_calls=tool_calls,
+            model=self.llm.config.default_model,
+            provider=self.llm.config.provider_type.value,
+            metadata={
+                "tokens_used": usage,
+                "generation_time": time.time() - start_time,
+                "tool_iterations": len(tool_calls),
+            },
+        )
 
     def _is_planning_only(self, content: str) -> bool:
-        """Detect if response is planning-only without taking action."""
-        content_lower = content.lower()
-
-        # Indicators of planning-only
-        planning_indicators = [
-            "here's how i would",
-            "i would approach this by",
-            "the steps would be",
+        lowered = content.lower()
+        indicators = (
             "here's a plan",
-            "let me outline",
-            "i can help you by",
-            "i'll need to",
+            "i would approach",
+            "the steps would be",
             "first, i would",
-        ]
+            "let me outline",
+        )
+        return sum(indicator in lowered for indicator in indicators) >= 2
 
-        # Check for planning language
-        planning_count = sum(1 for indicator in planning_indicators if indicator in content_lower)
-
-        # Check for actual tool usage mentions
-        tool_mentions = sum(1 for tool_name in self._tools if tool_name in content_lower)
-
-        # If heavy planning language but no tool mentions, likely planning-only
-        return planning_count >= 2 and tool_mentions == 0
-
-    # ========== Utility Methods ==========
+    # -- Diagnostics --------------------------------------------------------
 
     def get_session_info(self) -> dict[str, Any]:
-        """Get current session information."""
-        return self.sessions.get_session_info(self.session_id)
+        return self._get_session().to_dict()
 
     def get_memory_stats(self) -> dict[str, Any]:
-        """Get memory system statistics."""
-        return self.memory.get_stats()
+        return self.memory.stats
 
     def get_skill_count(self) -> int:
-        """Get number of loaded skills."""
-        return len(self.skills.list_skills())
+        return len(self.skills.get_enabled())
 
-    def get_agent_count(self) -> int:
-        """Get number of registered agents."""
-        return len(self.agents.list_agents())
-
-    def reset_session(self):
-        """Reset the current session."""
+    def reset_session(self) -> None:
         self.sessions.reset_session(self.session_id)
         self._steering_messages.clear()
 
-    def clear_memory(self):
-        """Clear conversation memory (not core memory)."""
-        self.sessions.reset_session(self.session_id)
+    def clear_memory(self) -> None:
+        self.reset_session()

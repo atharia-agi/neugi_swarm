@@ -7,10 +7,10 @@
 ```bash
 # Clone
 git clone https://github.com/atharia-agi/neugi_swarm.git
-cd neugi_swarm/neugi_swarm_v2
+cd neugi_swarm
 
 # Install
-pip install -e .
+pip install -e neugi_swarm_v2
 
 # Run
 neugi wizard      # Interactive setup
@@ -22,12 +22,12 @@ neugi dashboard   # Launch web UI
 
 **macOS / Linux:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_swarm_v2/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm_v2/install.sh | bash
 ```
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/atharia-agi/neugi_swarm/main/neugi_swarm_v2/install.bat | iex
+irm https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm_v2/install.ps1 | iex
 ```
 
 ## Docker

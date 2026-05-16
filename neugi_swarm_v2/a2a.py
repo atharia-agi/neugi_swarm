@@ -383,7 +383,8 @@ class A2AProtocol:
     def heartbeat(self, agent_id: str) -> None:
         """Update agent heartbeat."""
         if agent_id in self._agents:
-            self._agents[agent_id].last_heartbeat = time.time()
+            agent = self._agents[agent_id]
+            agent.last_heartbeat = max(time.time(), agent.last_heartbeat + 1e-6)
 
     def get_agent_status(self, agent_id: str) -> dict[str, Any] | None:
         """Get agent status info."""

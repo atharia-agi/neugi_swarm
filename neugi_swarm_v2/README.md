@@ -1,6 +1,6 @@
 # NEUGI SWARM V2 — The Ultimate Agentic AI Framework
 
-> **53,871 lines. 96 files. 16 subsystems. Zero compromises.**
+> **65,000+ lines. 120+ modules. 29 subsystems. Zero compromises.**
 
 The most advanced open-source agentic AI framework ever built. Surpassing OpenClaw, CrewAI, AutoGen, LangGraph, and Paperclip combined.
 
@@ -262,7 +262,7 @@ neugi start
 neugi chat
 
 # Open dashboard
-# http://localhost:19888
+# http://localhost:17901
 ```
 
 ## Comparison
@@ -283,7 +283,7 @@ neugi chat
 | Auto-Learning | 4 systems | 1 | 0 | 0 | 0 | 0 |
 | CLI Commands | 17 | 12 | 3 | 2 | 1 | 5 |
 | Dashboard | Full web UI | Basic | None | None | None | None |
-| Lines of Code | 53,871 | ~200K | ~15K | ~50K | ~30K | ~40K |
+| Lines of Code | 65,000+ | ~200K | ~15K | ~50K | ~30K | ~40K |
 
 ## License
 

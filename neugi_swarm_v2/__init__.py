@@ -2,7 +2,7 @@
 NEUGI Swarm v2 - Autonomous Multi-Agent Framework
 ==================================================
 
-Version: 2.1.2
+Version: 2.1.3
 
 Production-ready hierarchical multi-agent system combining:
 - Karpathy-style dreaming consolidation memory
@@ -31,7 +31,7 @@ _PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
 if _PACKAGE_DIR not in sys.path:
     sys.path.insert(0, _PACKAGE_DIR)
 
-__version__ = "2.1.2"
+__version__ = "2.1.3"
 __author__ = "NEUGI Team"
 
 # -- Core Systems ------------------------------------------------------------
@@ -592,6 +592,18 @@ class NeugiSwarmV2:
         if env_key:
             return env_key
 
+        try:
+            from neugi_swarm_v2.provider_catalog import get_provider
+
+            provider_info = get_provider(self.config.llm.provider)
+            if provider_info:
+                for env_var in provider_info.env_vars:
+                    env_key = os.environ.get(env_var, "")
+                    if env_key:
+                        return env_key
+        except Exception:
+            pass
+
         # 2. SecretManager (encrypted storage)
         try:
             from security.secret_manager import SecretManager
@@ -643,7 +655,9 @@ class NeugiSwarmV2:
         api_key = self._resolve_api_key()
         cfg = ProviderConfig(
             provider_type=ptype,
-            base_url=llm_cfg.ollama_url or llm_cfg.base_url or "http://localhost:11434",
+            base_url=self._normalize_base_url(
+                llm_cfg.ollama_url if ptype == ProviderType.OLLAMA else llm_cfg.base_url
+            ),
             api_key=api_key,
             default_model=llm_cfg.model,
             fallback_model=llm_cfg.fallback_model,
@@ -656,6 +670,13 @@ class NeugiSwarmV2:
             return AnthropicCompatibleProvider(cfg)
         else:
             return OpenAICompatibleProvider(cfg)
+
+    def _normalize_base_url(self, base_url: str) -> str:
+        """Normalize provider base URLs before provider-specific paths are appended."""
+        cleaned = (base_url or "").rstrip("/")
+        if cleaned.endswith("/v1"):
+            cleaned = cleaned[:-3]
+        return cleaned or "http://localhost:11434"
 
     def _resolve_skill_tier(self, path: str) -> SkillTier:
         """Resolve a skill directory path to a SkillTier."""
@@ -676,11 +697,33 @@ class NeugiSwarmV2:
 
     def _inject_skills(self) -> str:
         """Inject matched skills into the prompt."""
-        return ""
+        try:
+            result = self.skill_manager.assemble_prompt(tier=PromptTier.FULL)
+            return result.content
+        except Exception as e:
+            logger.debug("Skill prompt injection skipped: %s", e)
+            return ""
 
     def _inject_memory(self) -> str:
         """Inject core memory into the prompt."""
-        return ""
+        try:
+            store = getattr(self.memory, "_store", {})
+            entries = list(store.values())
+            entries.sort(
+                key=lambda entry: (
+                    getattr(entry, "importance", 0.0),
+                    getattr(entry, "updated_at", getattr(entry, "created_at", None)),
+                ),
+                reverse=True,
+            )
+            lines = []
+            for entry in entries[: self.capability_profile.max_memory_entries]:
+                tags = ", ".join(getattr(entry, "tags", []) or [])
+                lines.append(f"- [{entry.tier.value}] {entry.content} (tags: {tags})")
+            return "\n".join(lines)
+        except Exception as e:
+            logger.debug("Memory prompt injection skipped: %s", e)
+            return ""
 
     def _setup_compaction(self) -> None:
         """Configure compaction engine with memory flush hooks."""

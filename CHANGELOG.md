@@ -1,13 +1,37 @@
 # NEUGI SWARM - CHANGELOG
 
 > Complete development history and architecture documentation
-> Last Updated: May 14, 2026
+> Last Updated: May 16, 2026
 > Version: 2.1.3
+
+## v2.1.3 (May 16, 2026) - SETUP CONSOLIDATION, PROVIDER CATALOG & TEST PARITY
+
+### Setup & Install Parity
+- `neugi wizard` now uses the canonical `GeniusWizard` setup flow directly.
+- `SmartWizard` and legacy `SetupWizard` are compatibility aliases only; new setup logic belongs in `GeniusWizard`.
+- `RescueWizard` remains the recovery/repair tool and delegates first-time setup to `GeniusWizard`.
+- Added `neugi_swarm_v2/install.ps1` for the Windows PowerShell one-liner. Website and docs now point PowerShell users to `install.ps1` instead of piping a `.bat` file into `iex`.
+- Fixed Unix installer pathing: source installs to `~/neugi_swarm`, while runtime config remains in `~/.neugi`.
+
+### Provider Configuration UX
+- Rebuilt `provider_catalog.py` as a curated provider/model setup catalog with provider API-key URLs, model-list URLs, env-var mappings, and custom provider support.
+- Wizard flow is now provider-first, API-key-aware, searchable by model, and still allows custom provider/base URL/model entry.
+- Runtime API-key resolution now checks provider-specific env vars such as `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `GROQ_API_KEY`, etc.
+
+### Verification
+- Full suite verified on Python 3.12.10: **367 collected, 365 passed, 2 skipped, 8 warnings**.
+- Fixed test/runtime issues found during verification:
+  - Explicit security-scope CIDRs now authorize covered private IPs.
+  - A2A heartbeat updates are monotonic even within the same clock tick.
+  - Optional browser tests skip cleanly when Playwright is not installed.
+  - Fixed a syntax error in the browser agent plugin.
 
 ---
 
 ## Table of Contents
 
+- [v2.1.3 (May 16, 2026)](#v213-may-16-2026---setup-consolidation-provider-catalog--test-parity)
+- [v2.1.3 (May 14, 2026)](#v213-may-14-2026--mcp-production-hardening--comprehensive-testing)
 - [v2.1.1 (April 29, 2026)](#v211-april-29-2026)
 - [v2.1.0 (April 27, 2026)](#v210-april-27-2026)
 - [v2.0.0 (April 27, 2026)](#v200-april-27-2026)
@@ -50,7 +74,7 @@
 - **Removed 5 orphaned MCP files**: `mcp_server.py`, `protocol.py`, `tools.py`, `resources.py`, `prompts.py` — legacy code replaced by refactored `server.py`, `messages.py`, `tool_manager.py`, `resource_manager.py`, `prompt_manager.py`, `transport.py`
 - **Moved MCP to port 17902** in Docker Compose with SSE, rate limit, and auth token configuration
 - **Created `benchmarks/mcp_benchmark.py`**: comprehensive MCP server performance benchmark measuring latency (avg/median/p95/p99), throughput (req/s), and concurrency scaling (1-50 concurrent calls)
-- **Updated AGENTS.md** from v2.1.1 to v2.1.3, test count from 204 to 326
+- **Updated AGENTS.md** from v2.1.1 to v2.1.3 and expanded MCP/security test coverage
 
 ### Skills System Fix
 - **Fixed `_generate_skill_code` TODO stub** in `skills/improver.py:438` — auto-generated skills now use `context.params` for dynamic execution, have proper f-string templates, and are immediately usable without manual editing
@@ -178,8 +202,8 @@
   - Custom model input for any model
   - Custom endpoint for OpenAI-compatible / Anthropic-compatible providers
   - Capability preview before saving
-- **SmartWizard**: Same logic, different UX flow
-- **RescueWizard**: Interactive auto-fix with health checks
+- **SmartWizard / SetupWizard**: Deprecated compatibility aliases that forward to GeniusWizard
+- **RescueWizard**: Interactive auto-fix with health checks; setup path delegates to GeniusWizard
 
 ### Configuration Simplification
 

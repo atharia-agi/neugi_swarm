@@ -65,7 +65,7 @@ if %errorlevel% neq 0 (
 
 REM Set installation directory
 set "INSTALL_DIR=%USERPROFILE%\neugi_swarm"
-if defined NEUGI_DIR set "INSTALL_DIR=%NEUGI_DIR%"
+if defined NEUGI_INSTALL_DIR set "INSTALL_DIR=%NEUGI_INSTALL_DIR%"
 
 echo.
 echo Installing NEUGI to: %INSTALL_DIR%

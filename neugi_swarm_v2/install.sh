@@ -49,8 +49,8 @@ else
     echo -e "${GREEN}✓ Ollama found${NC}"
 fi
 
-# Create installation directory
-INSTALL_DIR="${NEUGI_INSTALL_DIR:-$HOME/.neugi}"
+# Create installation directory. Runtime config still lives in ~/.neugi.
+INSTALL_DIR="${NEUGI_INSTALL_DIR:-$HOME/neugi_swarm}"
 echo -e "${YELLOW}Installing to: $INSTALL_DIR${NC}"
 
 mkdir -p "$INSTALL_DIR"
@@ -74,20 +74,21 @@ fi
 
 # Create virtual environment
 echo -e "${YELLOW}Creating virtual environment...${NC}"
-python3 -m venv venv
-source venv/bin/activate
+PACKAGE_DIR="$INSTALL_DIR/neugi_swarm_v2"
+python3 -m venv "$PACKAGE_DIR/venv"
+source "$PACKAGE_DIR/venv/bin/activate"
 
 # Install dependencies
 echo -e "${YELLOW}Installing dependencies...${NC}"
 pip install --upgrade pip
-pip install -e .
+pip install -e "$PACKAGE_DIR"
 
 # Create symlink for CLI
 echo -e "${YELLOW}Creating CLI symlink...${NC}"
 if [ -w "/usr/local/bin" ]; then
-    ln -sf "$INSTALL_DIR/venv/bin/neugi" /usr/local/bin/neugi
+    ln -sf "$PACKAGE_DIR/venv/bin/neugi" /usr/local/bin/neugi
 else
-    ln -sf "$INSTALL_DIR/venv/bin/neugi" "$INSTALL_DIR/neugi"
+    ln -sf "$PACKAGE_DIR/venv/bin/neugi" "$INSTALL_DIR/neugi"
     echo -e "${YELLOW}Add to PATH: export PATH=\"$INSTALL_DIR:\$PATH\"${NC}"
 fi
 
@@ -97,8 +98,8 @@ echo -e "${GREEN}  NEUGI Swarm V2 installed successfully!${NC}"
 echo -e "${GREEN}=========================================${NC}"
 echo ""
 echo "Quick start:"
-echo "  neugi init        # Initialize configuration"
-echo "  neugi start       # Start the gateway"
-echo "  neugi status      # Check status"
+echo "  neugi wizard      # Pick provider, enter API key, choose model"
+echo "  neugi chat        # Start chatting"
+echo "  neugi status      # Check system health"
 echo ""
-echo "Documentation: https://docs.neugi.ai"
+echo "Documentation: https://neugi.com/docs.html"

@@ -31,7 +31,7 @@
 | Model Capability Router | ✅ Only NEUGI | Auto-adapts 1B-200B models |
 | Deterministic Orchestration | ✅ Only NEUGI | Fully logged, predictable |
 | TypedAgent (Pydantic) | ✅ Only NEUGI | Type-safe agent output |
-| SSOLL.md Identity System | ✅ Only NEUGI | Persistent agent personality |
+| SOUL.md Identity System | ✅ Only NEUGI | Persistent agent personality |
 | Zero-Dependency Core | ⚠️ Rare | stdlib + sqlite3 only |
 
 ---

@@ -11,7 +11,7 @@
   <img src="assets/hero_logo_mascot.png" width="640" alt="NEUGI Agent Swarm">
 </p>
 
-> **29 Subsystems | 120+ Modules | 65,000+ Lines | 61 Built-in Tools | 204 Tests Passing**
+> **29 Subsystems | 120+ Modules | 65,000+ Lines | 61 Built-in Tools | 365 Tests Passing**
 
 NEUGI Swarm v2 is the most advanced open-source agentic AI framework ever built. **Sovereign autonomous infrastructure** that observes, decides, executes, and reports — even during idle periods.
 
@@ -28,15 +28,15 @@ curl -fsSL https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neug
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm_v2/install.bat | iex
+irm https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm_v2/install.ps1 | iex
 ```
 
 ### Manual Setup
 
 ```bash
 git clone https://github.com/atharia-agi/neugi_swarm.git
-cd neugi_swarm/neugi_swarm_v2
-pip install -e .
+cd neugi_swarm
+pip install -e neugi_swarm_v2
 neugi wizard    # Interactive setup
 neugi chat      # Start chatting
 neugi soul init # Initialize agent identity (SOUL.md)
@@ -67,7 +67,7 @@ neugi soul init # Initialize agent identity (SOUL.md)
 | **Tools** | 61 builtins across 10 categories, web search, browser automation |
 | **Channels** | Telegram, Discord, Slack, WhatsApp unified |
 | **Security** | 7-layer sandbox, neuro-symbolic, AES-256 secrets |
-| **CLI+Wizard** | 17 commands, 8-step setup, interactive chat, rescue mode |
+| **CLI+Wizard** | 17 commands, one canonical provider/model setup wizard, interactive chat, rescue mode |
 | **Dashboard** | Glass-morphism HTML, 20 REST endpoints, WebSocket, vector memory |
 | **Evals** | Benchmark harness, regression detection, skill scoring |
 | **Multimodal** | Vision input, screenshot analysis, computer use |
@@ -86,7 +86,7 @@ neugi soul init # Initialize agent identity (SOUL.md)
 
 ---
 
-## New Features in v2.1.1
+## New Features in v2.1.3
 
 ### Observability Event Bus
 NEUGI now includes a lightweight, thread-safe event bus for monitoring tool executions and enabling plugin extensibility without modifying core components. The event bus publishes `tool_execution_success` and `tool_execution_failure` events that plugins and external systems can subscribe to.
@@ -109,7 +109,7 @@ Both features are opt-in and maintain full backward compatibility with zero core
 | Python Modules | 120+ |
 | Lines of Code | 65,000+ |
 | Built-in Tools | 61 |
-| Integration Tests | 326 (all passing) |
+| Integration Tests | 367 collected (365 passed, 2 optional browser tests skipped without Playwright) |
 | AI Providers Supported | 20+ (OpenAI, Anthropic, Gemini, Groq, DeepSeek, etc.) |
 | Cold Start | < 500ms |
 | Memory Query | < 50ms |
@@ -126,7 +126,7 @@ neugi_swarm/
 └── neugi_swarm_v2/         # V2 Framework (this is where the magic happens)
     ├── agents/             # Agent orchestration
     ├── channels/           # Multi-platform messaging
-    ├── cli/                # Command-line interface + rescue wizard
+    ├── cli/                # Command-line interface + canonical setup/rescue wizard
     ├── context/            # Prompt assembly
     ├── dashboard/          # Web dashboard + WebSocket server
     ├── docs/               # Documentation
@@ -140,7 +140,7 @@ neugi_swarm/
     ├── security/           # Sandbox & security
     ├── session/            # Session management
     ├── skills/             # Skill system
-    ├── tests/              # Integration tests (122 passing)
+    ├── tests/              # Integration tests (365 passing, 2 optional skips)
     ├── tools/              # Tool registry (web search, browser, etc.)
     ├── observability/      # Event bus for monitoring and extensibility
     ├── workflows/          # Workflow engine
@@ -159,6 +159,7 @@ All documentation lives in `neugi_swarm_v2/docs/`:
 - [`SKILLS.md`](neugi_swarm_v2/docs/SKILLS.md) — Skill development guide
 - [`PLUGINS.md`](neugi_swarm_v2/docs/PLUGINS.md) — Plugin SDK
 - [`DEPLOYMENT.md`](neugi_swarm_v2/docs/DEPLOYMENT.md) — Docker, cloud, production
+- [`AGENTIC_2026_ALIGNMENT.md`](neugi_swarm_v2/docs/AGENTIC_2026_ALIGNMENT.md) — Jan-May 2026 agentic runtime alignment
 
 ---
 
@@ -217,7 +218,7 @@ cd neugi_swarm_v2
 python -m pytest tests/ -q --tb=short -p no:anchorpy
 ```
 
-**Current status:** 204/204 tests passing
+**Current status:** 365 passed, 2 skipped, 8 warnings on Python 3.12.10
 
 ---
 
