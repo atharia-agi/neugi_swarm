@@ -22,10 +22,12 @@
 - Added a first-run `Setup` tab to both the runtime dashboard and `neugi.com/dashboard.html`.
 - Dashboard users can now choose provider, search/select model, enter API key, set base URL, fallback model, temperature, and max tokens without using the CLI wizard.
 - Added `/api/providers` for the dashboard provider/model catalog and made `/api/config` recursively merge nested config updates instead of replacing dataclass sections with dictionaries.
+- Added `/api/config/test-llm` plus a dashboard `Test Provider` action so users can verify provider, API key, base URL, and model before saving setup.
 - Fixed dashboard setup persistence to write `~/.neugi/config.json` and preserve plaintext API keys only long enough for the existing SecretManager migration path.
+- Removed legacy `shell=True`/`os.system` paths from the setup wizard and soul editor launch flow.
 
 ### Verification
-- Full suite verified on Python 3.12.10: **372 collected, 370 passed, 2 skipped, 0 warnings**.
+- Full suite verified on Python 3.12.10: **375 collected, 373 passed, 2 skipped, 0 warnings**.
 - Fixed test/runtime issues found during verification:
   - Explicit security-scope CIDRs now authorize covered private IPs.
   - A2A heartbeat updates are monotonic even within the same clock tick.

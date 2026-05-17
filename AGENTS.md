@@ -9,7 +9,7 @@
 **NEUGI Swarm v2** is a production-grade autonomous multi-agent framework.
 - **Language:** Python 3.10+
 - **Architecture:** 29 subsystems, 120+ modules, ~65K LOC
-- **Test count:** 372 collected (370 passed, 2 optional browser tests skipped when Playwright is absent), all non-optional tests must pass
+- **Test count:** 375 collected (373 passed, 2 optional browser tests skipped when Playwright is absent), all non-optional tests must pass
 - **Version:** 2.1.3
 
 This is NOT a chatbot wrapper. It is **sovereign autonomous infrastructure**:
@@ -106,7 +106,7 @@ repo/
 │       ├── rescue_wizard.py  # Auto-fix rescue mode
 │       └── wizard.py         # Deprecated compatibility alias
 │
-├── tests/                    # 372 collected tests across all subsystems
+├── tests/                    # 375 collected tests across all subsystems
 ├── assets/                   # Brand images, favicon, hero video
 ├── index.html                # Landing page
 ├── docs.html                 # Documentation site
@@ -123,7 +123,7 @@ repo/
 ```bash
 cd neugi_swarm_v2
 python -m pytest tests/ -q --tb=short -p no:anchorpy
-# Expected: 370 passed, 2 skipped when Playwright is absent
+# Expected: 373 passed, 2 skipped when Playwright is absent
 ```
 
 ### Smoke Test CLI
@@ -198,7 +198,7 @@ When changing version, update ALL of:
 ## Common Gotchas
 
 1. **pytest anchorpy plugin conflict** — always run with `-p no:anchorpy`
-2. **Windows `os.system("cls")`** — still in `genius_wizard.py`, safe but ideally use `subprocess`
+2. **Terminal clearing** — `genius_wizard.py` uses `subprocess.run(..., shell=False)` for clear-screen behavior
 3. **Circular imports** — `memory_core.py` imports `scopes.py` imports `memory_core.py`? No, it doesn't. But be careful with `assistant.py` importing `NeugiSwarmV2`.
 4. **PromptAssembler `_build_identity`** — now checks `soul_engine.exists()` first; if soul files present, uses them instead of basic stub
 5. **MemorySystem lazy init** — `EmbeddingEngine` is lazy-loaded; don't assume vectors work without `sentence-transformers` or Ollama

@@ -19,8 +19,10 @@ from __future__ import annotations
 import json
 import os
 import platform
+import shlex
 import shutil
 import signal
+import subprocess
 import sys
 import time
 from collections.abc import Callable
@@ -1378,7 +1380,8 @@ class NeugiCLI:
             if path.exists():
                 editor = os.environ.get("EDITOR", "notepad" if os.name == "nt" else "nano")
                 console.print(f"[info]Opening {path} in {editor}...[/info]")
-                os.system(f'{editor} "{path}"')
+                command = shlex.split(editor, posix=os.name != "nt") + [str(path)]
+                subprocess.run(command, check=False)
             else:
                 console.print(f"[warning]{name} not found.[/warning]")
 

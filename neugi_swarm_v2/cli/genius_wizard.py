@@ -28,6 +28,7 @@ import platform
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.request
 import webbrowser
@@ -887,9 +888,19 @@ class GeniusWizard:
 
             else:  # Linux
                 self._typewrite("Installing Ollama...")
-                subprocess.run("curl -fsSL https://ollama.com/install.sh | sh",
-                    shell=True, timeout=180, check=False)
-                return True
+                with urllib.request.urlopen("https://ollama.com/install.sh", timeout=30) as response:
+                    script = response.read()
+                with tempfile.NamedTemporaryFile("wb", delete=False, suffix=".sh") as tmp:
+                    tmp.write(script)
+                    script_path = tmp.name
+                try:
+                    subprocess.run(["sh", script_path], timeout=180, check=False)
+                    return True
+                finally:
+                    try:
+                        Path(script_path).unlink()
+                    except OSError:
+                        pass
 
         except Exception:
             return False
@@ -1027,7 +1038,8 @@ class GeniusWizard:
     # ==================== DISPLAY HELPERS ====================
 
     def _clear_screen(self) -> None:
-        os.system("cls" if self.is_windows else "clear")
+        command = ["cmd", "/c", "cls"] if self.is_windows else ["clear"]
+        subprocess.run(command, check=False)
 
     def _print_logo(self) -> None:
         print(f"""

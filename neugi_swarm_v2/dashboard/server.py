@@ -225,6 +225,7 @@ class DashboardServer:
             "GET /api/providers": self.api.provider_catalog,
             "GET /api/config": self.api.get_config,
             "PUT /api/config": self.api.update_config,
+            "POST /api/config/test-llm": self.api.test_llm_config,
             "GET /api/autonomous/status": self.api.autonomous_status,
             "GET /api/observability/status": self.api.observability_status,
             "GET /api/benchmarks": self.api.benchmark_results,

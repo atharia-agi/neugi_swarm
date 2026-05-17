@@ -28,12 +28,14 @@ Endpoints:
 - GET  /api/providers                 - Provider and model catalog
 - GET  /api/config                    - Get configuration
 - PUT  /api/config                    - Update configuration
+- POST /api/config/test-llm           - Test a proposed LLM configuration
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import os
 import time
 import uuid
 from dataclasses import asdict, is_dataclass
@@ -753,6 +755,62 @@ class DashboardAPI:
 
         return _ok({"message": "Configuration queued for update"})
 
+    def test_llm_config(self, handler, body, query_params) -> dict:
+        """POST /api/config/test-llm - Test a proposed LLM provider setup."""
+        data = _parse_body(body)
+        llm_data = data.get("llm", data)
+        if not isinstance(llm_data, dict):
+            return _error("LLM configuration is required")
+
+        provider_name = str(llm_data.get("provider") or "").strip() or "ollama"
+        model = str(llm_data.get("model") or "").strip()
+        if not model:
+            return _error("Model is required")
+
+        api_key = str(llm_data.get("api_key") or "").strip()
+        if not api_key:
+            api_key = self._resolve_existing_api_key(provider_name)
+
+        if provider_name != "ollama" and not api_key:
+            return _error("API key is required to test this provider", code=400)
+        if provider_name in {"openai_compatible", "anthropic_compatible"} and not str(llm_data.get("base_url") or "").strip():
+            return _error("Base URL is required for custom providers", code=400)
+
+        try:
+            provider = self._make_test_provider(llm_data, api_key)
+            started = time.monotonic()
+            response = provider.generate(
+                prompt="Reply with exactly: NEUGI_OK",
+                system_prompt="You are testing a provider connection. Reply with exactly NEUGI_OK.",
+                model=model,
+                temperature=0,
+                max_tokens=16,
+            )
+            latency_ms = int((time.monotonic() - started) * 1000)
+            text = getattr(response, "content", "") or ""
+            return _ok({
+                "provider": provider_name,
+                "model": getattr(response, "model", model) or model,
+                "connected": True,
+                "latency_ms": latency_ms,
+                "sample": text[:120],
+                "usage": getattr(response, "usage", {}) or {},
+            }, message="Provider connection verified")
+        except Exception as e:
+            error_type = "unknown"
+            try:
+                error_type = provider.classify_error(e).value  # type: ignore[name-defined]
+            except Exception:
+                pass
+            logger.info("LLM provider test failed for %s/%s: %s", provider_name, model, type(e).__name__)
+            return _ok({
+                "provider": provider_name,
+                "model": model,
+                "connected": False,
+                "error_type": error_type,
+                "error": self._sanitize_provider_error(e),
+            }, message="Provider connection failed")
+
     def _merge_config(self, target: Any, updates: dict[str, Any], allowlist: Any) -> None:
         """Recursively merge dashboard config updates into dataclass config."""
         for key, value in updates.items():
@@ -791,6 +849,88 @@ class DashboardAPI:
             data.setdefault("llm", {})["api_key"] = api_key
         config_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
         return config_path
+
+    def _make_test_provider(self, llm_data: dict[str, Any], api_key: str):
+        """Build a runtime provider from proposed dashboard settings."""
+        from neugi_swarm_v2.llm_provider import (
+            AnthropicCompatibleProvider,
+            OllamaProvider,
+            OpenAICompatibleProvider,
+            ProviderConfig,
+            ProviderType,
+        )
+        from neugi_swarm_v2.provider_catalog import get_provider, normalize_base_url
+
+        provider_name = str(llm_data.get("provider") or "ollama").strip()
+        catalog_provider = get_provider(provider_name)
+        compatibility = getattr(catalog_provider, "compatibility", "") if catalog_provider else ""
+        ptype = ProviderType.OLLAMA
+        if provider_name in {"anthropic", "anthropic_compatible"} or compatibility == "anthropic":
+            ptype = ProviderType.ANTHROPIC_COMPATIBLE
+        elif provider_name != "ollama":
+            ptype = ProviderType.OPENAI_COMPATIBLE
+
+        base_url = str(llm_data.get("base_url") or "").strip()
+        if ptype == ProviderType.OLLAMA:
+            base_url = str(llm_data.get("ollama_url") or base_url or "http://localhost:11434")
+        elif not base_url and catalog_provider:
+            base_url = catalog_provider.get_base_url()
+
+        cfg = ProviderConfig(
+            provider_type=ptype,
+            base_url=normalize_base_url(base_url),
+            api_key=api_key,
+            default_model=str(llm_data.get("model") or "").strip(),
+            fallback_model=str(llm_data.get("fallback_model") or "").strip(),
+            timeout=min(max(int(float(llm_data.get("timeout_seconds", 20))), 3), 30),
+            max_retries=1,
+            retry_delay=0.25,
+        )
+        if ptype == ProviderType.OLLAMA:
+            return OllamaProvider(cfg)
+        if ptype == ProviderType.ANTHROPIC_COMPATIBLE:
+            return AnthropicCompatibleProvider(cfg)
+        return OpenAICompatibleProvider(cfg)
+
+    def _resolve_existing_api_key(self, provider_name: str) -> str:
+        """Resolve an already configured API key without exposing it to the UI."""
+        swarm = self.server.swarm
+        if swarm and hasattr(swarm, "_resolve_api_key"):
+            try:
+                return swarm._resolve_api_key()
+            except Exception:
+                pass
+
+        if swarm and hasattr(swarm, "config"):
+            try:
+                value = getattr(getattr(swarm.config, "llm", None), "api_key", "")
+                if value:
+                    return value
+            except Exception:
+                pass
+
+        try:
+            from neugi_swarm_v2.provider_catalog import get_provider
+
+            provider_info = get_provider(provider_name)
+            env_vars = getattr(provider_info, "env_vars", []) if provider_info else []
+            for env_var in env_vars:
+                value = os.environ.get(env_var, "")
+                if value:
+                    return value
+        except Exception:
+            pass
+        return ""
+
+    def _sanitize_provider_error(self, error: Exception) -> str:
+        """Return a useful provider error without leaking credentials."""
+        text = str(error) or type(error).__name__
+        for marker in ("Authorization:", "Bearer ", "x-api-key:"):
+            if marker in text:
+                text = text.split(marker)[0].rstrip()
+        if len(text) > 300:
+            text = text[:300].rstrip() + "..."
+        return text or type(error).__name__
 
     # -- Autonomous Loop -------------------------------------------------------
 

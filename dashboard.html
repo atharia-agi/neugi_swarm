@@ -1357,6 +1357,7 @@ body::before {
             </div>
             <div class="setup-actions">
               <button class="btn" onclick="loadSetupConfig()">Reload Config</button>
+              <button class="btn" onclick="testSetupProvider()">Test Provider</button>
               <button class="btn btn-primary" onclick="saveSetupConfig()">Save AI Setup</button>
             </div>
             <div class="setup-status" id="setupStatus"></div>
@@ -1976,7 +1977,7 @@ function selectSetupModel(modelId) {
   renderSetupModels();
 }
 
-async function saveSetupConfig() {
+function buildSetupPayload(includeApiKey = true) {
   const provider = getSelectedProvider();
   const customModel = document.getElementById('setupCustomModel').value.trim();
   const model = customModel || state.selectedModel || provider?.models?.[0]?.id || 'custom';
@@ -1993,10 +1994,33 @@ async function saveSetupConfig() {
     },
   };
   const apiKey = document.getElementById('setupApiKey').value.trim();
-  if (apiKey) {
+  if (includeApiKey && apiKey) {
     payload.llm.api_key = apiKey;
   }
+  return payload;
+}
 
+async function testSetupProvider() {
+  try {
+    setSetupStatus('Testing provider connection...');
+    const data = await api('/api/config/test-llm', {
+      method: 'POST',
+      body: JSON.stringify(buildSetupPayload(true)),
+    });
+    const result = data.data || {};
+    if (result.connected) {
+      const latency = result.latency_ms ? ` in ${result.latency_ms}ms` : '';
+      setSetupStatus(`Provider test passed${latency}: ${result.provider}/${result.model}`);
+    } else {
+      setSetupStatus(`Provider test failed (${result.error_type || 'unknown'}): ${result.error || 'No response'}`, true);
+    }
+  } catch (e) {
+    setSetupStatus(`Provider test failed: ${e.message}`, true);
+  }
+}
+
+async function saveSetupConfig() {
+  const payload = buildSetupPayload(true);
   try {
     setSetupStatus('Saving AI setup...');
     const data = await api('/api/config', {
