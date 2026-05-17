@@ -680,6 +680,53 @@ body::before {
   color: var(--text-muted);
 }
 
+.approval-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.approval-item {
+  padding: 0.6rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+}
+
+.approval-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.approval-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.approval-meta {
+  margin-top: 0.15rem;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.approval-desc {
+  margin-top: 0.45rem;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.approval-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+  margin-top: 0.55rem;
+}
+
 @media (max-width: 560px) {
   .setup-grid,
   .setup-actions {
@@ -1445,6 +1492,7 @@ body::before {
           <div class="section-title">
             <span class="icon">&#x1F6E1;</span> Governance
           </div>
+          <span class="section-badge" id="approvalCount">0 pending</span>
         </div>
         <div style="display: flex; flex-direction: column; gap: 0.5rem">
           <div>
@@ -1463,6 +1511,11 @@ body::before {
             </div>
             <div class="progress-bar">
               <div class="progress-fill primary" id="budgetMonthlyBar" style="width: 0%"></div>
+            </div>
+          </div>
+          <div class="approval-list" id="approvalList">
+            <div class="empty-state">
+              <div>No pending approvals</div>
             </div>
           </div>
         </div>
@@ -1541,6 +1594,7 @@ const state = {
   workflows: [],
   plugins: [],
   governance: {},
+  approvals: [],
   providers: [],
   config: null,
   selectedModel: '',
@@ -1812,9 +1866,14 @@ function renderPlugins() {
 // -- Governance -------------------------------------------------------------
 async function fetchGovernance() {
   try {
-    const data = await api('/api/governance/budget');
-    state.governance = data.data;
+    const [budgetData, approvalData] = await Promise.all([
+      api('/api/governance/budget'),
+      api('/api/governance/approvals'),
+    ]);
+    state.governance = budgetData.data;
+    state.approvals = approvalData.data.requests || [];
     updateBudget();
+    renderApprovals();
   } catch (e) {
     console.warn('Failed to fetch governance:', e);
   }
@@ -1832,6 +1891,47 @@ function updateBudget() {
   document.getElementById('budgetMonthlyBar').style.width = `${monthlyPct}%`;
 
   document.getElementById('metricRequests').textContent = g.total_requests || 0;
+}
+
+function renderApprovals() {
+  const list = document.getElementById('approvalList');
+  document.getElementById('approvalCount').textContent = `${state.approvals.length} pending`;
+  if (!state.approvals.length) {
+    list.innerHTML = '<div class="empty-state"><div>No pending approvals</div></div>';
+    return;
+  }
+  list.innerHTML = state.approvals.map(req => `
+    <div class="approval-item">
+      <div class="approval-row">
+        <div>
+          <div class="approval-title">${escapeHtml(req.action || 'Action request')}</div>
+          <div class="approval-meta">${escapeHtml(req.agent_id || 'agent')} &middot; ${escapeHtml(req.risk_level || 'low')} risk &middot; $${Number(req.cost_estimate || 0).toFixed(2)}</div>
+        </div>
+        <span class="section-badge">${escapeHtml(req.status || 'pending')}</span>
+      </div>
+      <div class="approval-desc">${escapeHtml(req.description || 'No description provided.')}</div>
+      <div class="approval-actions">
+        <button class="btn btn-sm" onclick="decideApproval('${escapeAttr(req.request_id)}', 'reject')">Deny</button>
+        <button class="btn btn-primary btn-sm" onclick="decideApproval('${escapeAttr(req.request_id)}', 'approve')">Approve</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function decideApproval(requestId, decision) {
+  try {
+    await api('/api/governance/approvals/decide', {
+      method: 'POST',
+      body: JSON.stringify({
+        request_id: requestId,
+        decision,
+        approver: 'dashboard',
+      }),
+    });
+    await fetchGovernance();
+  } catch (e) {
+    console.warn('Approval decision failed:', e);
+  }
 }
 
 // -- Chat -------------------------------------------------------------------

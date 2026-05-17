@@ -11,7 +11,7 @@
   <img src="assets/hero_logo_mascot.png" width="640" alt="NEUGI Agent Swarm">
 </p>
 
-> **29 Subsystems | 120+ Modules | 65,000+ Lines | 61 Built-in Tools | 373 Tests Passing**
+> **29 Subsystems | 120+ Modules | 65,000+ Lines | 61 Built-in Tools | 377 Tests Passing**
 
 NEUGI Swarm v2 is the most advanced open-source agentic AI framework ever built. **Sovereign autonomous infrastructure** that observes, decides, executes, and reports — even during idle periods.
 
@@ -68,7 +68,7 @@ neugi soul init # Initialize agent identity (SOUL.md)
 | **Channels** | Telegram, Discord, Slack, WhatsApp unified |
 | **Security** | 7-layer sandbox, neuro-symbolic, AES-256 secrets |
 | **CLI+Wizard** | 17 commands, one canonical provider/model setup wizard, interactive chat, rescue mode |
-| **Dashboard** | Glass-morphism HTML, 21 REST endpoints, setup/test provider flow, WebSocket, vector memory |
+| **Dashboard** | Glass-morphism HTML, 28 REST endpoints, setup/test provider flow, approval queue, WebSocket, vector memory |
 | **Evals** | Benchmark harness, regression detection, skill scoring |
 | **Multimodal** | Vision input, screenshot analysis, computer use |
 | **A2A Protocol** | Agent-to-agent mesh, capability discovery, heartbeat |
@@ -109,7 +109,7 @@ Both features are opt-in and maintain full backward compatibility with zero core
 | Python Modules | 120+ |
 | Lines of Code | 65,000+ |
 | Built-in Tools | 61 |
-| Integration Tests | 375 collected (373 passed, 2 optional browser tests skipped without Playwright) |
+| Integration Tests | 379 collected (377 passed, 2 optional browser tests skipped without Playwright) |
 | AI Providers Supported | 20+ (OpenAI, Anthropic, Gemini, Groq, DeepSeek, etc.) |
 | Cold Start | < 500ms |
 | Memory Query | < 50ms |
@@ -218,7 +218,7 @@ cd neugi_swarm_v2
 python -m pytest tests/ -q --tb=short -p no:anchorpy
 ```
 
-**Current status:** 373 passed, 2 skipped, 0 warnings on Python 3.12.10
+**Current status:** 377 passed, 2 skipped, 0 warnings on Python 3.12.10
 
 ---
 

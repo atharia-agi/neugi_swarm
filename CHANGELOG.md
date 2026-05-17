@@ -25,9 +25,11 @@
 - Added `/api/config/test-llm` plus a dashboard `Test Provider` action so users can verify provider, API key, base URL, and model before saving setup.
 - Fixed dashboard setup persistence to write `~/.neugi/config.json` and preserve plaintext API keys only long enough for the existing SecretManager migration path.
 - Removed legacy `shell=True`/`os.system` paths from the setup wizard and soul editor launch flow.
+- Hardened dashboard defaults to bind locally by default and auto-enable API-key auth when users expose it on a network interface.
+- Added dashboard approval queue APIs and UI actions for approving or denying pending agent/governance requests.
 
 ### Verification
-- Full suite verified on Python 3.12.10: **375 collected, 373 passed, 2 skipped, 0 warnings**.
+- Full suite verified on Python 3.12.10: **379 collected, 377 passed, 2 skipped, 0 warnings**.
 - Fixed test/runtime issues found during verification:
   - Explicit security-scope CIDRs now authorize covered private IPs.
   - A2A heartbeat updates are monotonic even within the same clock tick.

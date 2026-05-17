@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 from config import NeugiConfig
 from dashboard.api import DashboardAPI
+from dashboard.server import DashboardConfig
 from llm_provider import LLMResponse
 
 
@@ -146,3 +147,85 @@ class TestDashboardSetupAPI:
         assert response["data"]["connected"] is False
         assert "secret-token" not in response["data"]["error"]
         assert "Bearer" not in response["data"]["error"]
+
+    def test_dashboard_config_defaults_to_local_no_friction(self):
+        config = DashboardConfig()
+
+        assert config.host == "127.0.0.1"
+        assert config.enable_auth is False
+        assert "*" not in config.cors_origins
+
+    def test_dashboard_config_auto_secures_network_bind(self):
+        config = DashboardConfig(host="0.0.0.0", cors_origins=["*"])
+
+        assert config.enable_auth is True
+        assert config.api_key
+        assert "*" not in config.cors_origins
+
+    def test_approval_queue_lists_pending_requests(self):
+        request = SimpleNamespace(
+            request_id="req-1",
+            agent_id="aurora",
+            agent_role="coder",
+            action="system_execute_command",
+            description="Run a migration",
+            cost_estimate=0.25,
+            risk_level="high",
+            status="pending",
+            required_approvals=1,
+            approval_count=0,
+            metadata={},
+            decisions=[],
+        )
+        gate = SimpleNamespace(
+            get_pending_requests=lambda agent_id=None: [request],
+            get_stats=lambda: {"pending": 1},
+        )
+        server = SimpleNamespace(swarm=SimpleNamespace(approval_gate=gate))
+        api = DashboardAPI(server)
+
+        response = api.approval_queue(None, None, {})
+
+        assert response["status"] == "ok"
+        assert response["data"]["total"] == 1
+        item = response["data"]["requests"][0]
+        assert item["request_id"] == request.request_id
+        assert item["risk_level"] == "high"
+        assert item["status"] == "pending"
+
+    def test_approval_decision_approves_request(self):
+        request = SimpleNamespace(
+            request_id="req-1",
+            agent_id="aurora",
+            agent_role="coder",
+            action="system_execute_command",
+            description="",
+            cost_estimate=0.0,
+            risk_level="high",
+            status="approved",
+            required_approvals=1,
+            approval_count=1,
+            metadata={},
+            decisions=[],
+        )
+        gate = SimpleNamespace(
+            approve=lambda request_id, approver, reason: request,
+            get_pending_requests=lambda agent_id=None: [],
+        )
+        events = []
+        server = SimpleNamespace(
+            swarm=SimpleNamespace(approval_gate=gate),
+            broadcast_event=lambda event_type, data: events.append((event_type, data)),
+        )
+        api = DashboardAPI(server)
+        body = json.dumps({
+            "request_id": request.request_id,
+            "decision": "approve",
+            "approver": "owner",
+        }).encode("utf-8")
+
+        response = api.decide_approval(None, body, {})
+
+        assert response["status"] == "ok"
+        assert response["data"]["request"]["status"] == "approved"
+        assert events[0][0] == "approval_approved"

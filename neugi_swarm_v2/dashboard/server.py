@@ -55,18 +55,40 @@ class DashboardConfig:
         max_body_size: Maximum request body size in bytes.
     """
 
-    host: str = "0.0.0.0"
+    host: str = "127.0.0.1"
     port: int = 17901
     api_key: str = ""
     session_token_ttl: int = 3600
     rate_limit_requests: int = 100
     rate_limit_window: int = 60
-    cors_origins: list[str] = field(default_factory=lambda: ["*"])
+    cors_origins: list[str] = field(default_factory=lambda: [
+        "http://localhost:17901",
+        "http://127.0.0.1:17901",
+    ])
     enable_gzip: bool = True
     gzip_min_size: int = 1024
     static_dir: str = ""
     enable_auth: bool = False
     max_body_size: int = 10 * 1024 * 1024  # 10MB
+
+    def __post_init__(self) -> None:
+        """Apply secure defaults for network-exposed dashboards."""
+        if self.cors_origins == ["http://localhost:17901", "http://127.0.0.1:17901"]:
+            self.cors_origins = [
+                f"http://localhost:{self.port}",
+                f"http://127.0.0.1:{self.port}",
+            ]
+        host = (self.host or "").strip().lower()
+        local_hosts = {"127.0.0.1", "localhost", "::1"}
+        if host not in local_hosts:
+            self.enable_auth = True
+            if not self.api_key:
+                self.api_key = secrets.token_urlsafe(32)
+            if "*" in self.cors_origins:
+                self.cors_origins = [
+                    f"http://localhost:{self.port}",
+                    f"http://127.0.0.1:{self.port}",
+                ]
 
 
 # -- Rate Limiter ------------------------------------------------------------
@@ -218,6 +240,8 @@ class DashboardServer:
             "GET /api/plugins": self.api.list_plugins,
             "GET /api/governance/budget": self.api.budget_status,
             "GET /api/governance/audit": self.api.audit_log,
+            "GET /api/governance/approvals": self.api.approval_queue,
+            "POST /api/governance/approvals/decide": self.api.decide_approval,
             "GET /api/learning/stats": self.api.learning_stats,
             "POST /api/steering": self.api.send_steering,
             "POST /api/auth/login": self.api.login,
@@ -445,11 +469,10 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
             return
 
-        if not self._check_auth():
-            self._send_json_response(401, {"error": "Authentication required"})
-            return
-
         if path == "/ws":
+            if not self._check_auth():
+                self._send_json_response(401, {"error": "Authentication required"})
+                return
             self._handle_websocket_upgrade()
             return
 
@@ -457,6 +480,9 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         handler = self.server_instance._api_routes.get(route_key)
 
         if handler:
+            if path != "/api/auth/login" and not self._check_auth():
+                self._send_json_response(401, {"error": "Authentication required"})
+                return
             try:
                 body = None
                 if method in ("POST", "PUT"):

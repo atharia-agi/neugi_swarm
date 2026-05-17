@@ -21,6 +21,8 @@ Endpoints:
 - GET  /api/plugins                   - List plugins
 - GET  /api/governance/budget         - Budget status
 - GET  /api/governance/audit          - Audit log
+- GET  /api/governance/approvals      - Pending approval queue
+- POST /api/governance/approvals/decide - Approve/reject a request
 - GET  /api/learning/stats            - Learning statistics
 - POST /api/steering                  - Send steering message
 - POST /api/auth/login                - Authenticate
@@ -602,6 +604,51 @@ class DashboardAPI:
             "total": len(entries),
         })
 
+    def approval_queue(self, handler, body, query_params) -> dict:
+        """GET /api/governance/approvals - List pending approval requests."""
+        try:
+            gate = self._get_approval_gate()
+            agent_id = query_params.get("agent_id", [None])[0] if query_params else None
+            pending = gate.get_pending_requests(agent_id=agent_id)
+            return _ok({
+                "requests": [self._serialize_approval_request(req) for req in pending],
+                "total": len(pending),
+                "stats": gate.get_stats() if hasattr(gate, "get_stats") else {},
+            })
+        except Exception as e:
+            logger.warning("Failed to get approval queue: %s", e)
+            return _error(f"Approval queue unavailable: {e}", code=500)
+
+    def decide_approval(self, handler, body, query_params) -> dict:
+        """POST /api/governance/approvals/decide - Approve or reject an action."""
+        data = _parse_body(body)
+        request_id = str(data.get("request_id") or "").strip()
+        decision = str(data.get("decision") or "").strip().lower()
+        approver = str(data.get("approver") or "dashboard").strip()
+        reason = str(data.get("reason") or "").strip()
+        if not request_id:
+            return _error("request_id is required")
+        if decision not in {"approve", "approved", "reject", "rejected"}:
+            return _error("decision must be approve or reject")
+
+        try:
+            gate = self._get_approval_gate()
+            if decision.startswith("approve"):
+                request = gate.approve(request_id, approver=approver, reason=reason)
+                event_type = "approval_approved"
+            else:
+                request = gate.reject(request_id, approver=approver, reason=reason)
+                event_type = "approval_rejected"
+            if hasattr(self.server, "broadcast_event"):
+                self.server.broadcast_event(event_type, {
+                    "request_id": request_id,
+                    "approver": approver,
+                    "reason": reason,
+                })
+            return _ok({"request": self._serialize_approval_request(request)})
+        except Exception as e:
+            return _error(f"Approval decision failed: {e}")
+
     # -- Learning --------------------------------------------------------------
 
     def learning_stats(self, handler, body, query_params) -> dict:
@@ -931,6 +978,68 @@ class DashboardAPI:
         if len(text) > 300:
             text = text[:300].rstrip() + "..."
         return text or type(error).__name__
+
+    def _get_approval_gate(self):
+        """Resolve or create the approval gate backing the dashboard queue."""
+        swarm = self.server.swarm
+        candidates = []
+        if swarm is not None:
+            candidates.extend([
+                getattr(swarm, "approval_gate", None),
+                getattr(getattr(swarm, "governance", None), "approval_gate", None),
+                getattr(swarm, "governance", None),
+            ])
+        for candidate in candidates:
+            if candidate and hasattr(candidate, "get_pending_requests"):
+                return candidate
+
+        cached = getattr(self.server, "_approval_gate", None)
+        if cached is not None:
+            return cached
+
+        from neugi_swarm_v2.governance import ApprovalGate
+
+        neugi_dir = Path.home() / ".neugi"
+        if swarm is not None and hasattr(swarm, "config"):
+            neugi_dir = Path(getattr(swarm.config, "neugi_dir", neugi_dir))
+        db_path = neugi_dir / "data" / "governance.db"
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        self.server._approval_gate = ApprovalGate(db_path=str(db_path))
+        return self.server._approval_gate
+
+    def _serialize_approval_request(self, request: Any) -> dict[str, Any]:
+        """Serialize an approval request for dashboard rendering."""
+        decisions = []
+        for decision in getattr(request, "decisions", []) or []:
+            decisions.append({
+                "approver": getattr(decision, "approver", ""),
+                "decision": getattr(decision, "decision", ""),
+                "reason": getattr(decision, "reason", ""),
+                "timestamp": self._iso(getattr(decision, "timestamp", None)),
+            })
+        return {
+            "request_id": getattr(request, "request_id", ""),
+            "agent_id": getattr(request, "agent_id", ""),
+            "agent_role": getattr(request, "agent_role", ""),
+            "action": getattr(request, "action", ""),
+            "description": getattr(request, "description", ""),
+            "cost_estimate": getattr(request, "cost_estimate", 0.0),
+            "risk_level": self._enum_value(getattr(request, "risk_level", "")),
+            "status": self._enum_value(getattr(request, "status", "")),
+            "rule_id": getattr(request, "rule_id", ""),
+            "required_approvals": getattr(request, "required_approvals", 1),
+            "approval_count": getattr(request, "approval_count", 0),
+            "timeout_at": self._iso(getattr(request, "timeout_at", None)),
+            "created_at": self._iso(getattr(request, "created_at", None)),
+            "metadata": getattr(request, "metadata", {}) or {},
+            "decisions": decisions,
+        }
+
+    def _enum_value(self, value: Any) -> str:
+        return getattr(value, "value", value) or ""
+
+    def _iso(self, value: Any) -> str | None:
+        return value.isoformat() if hasattr(value, "isoformat") else value
 
     # -- Autonomous Loop -------------------------------------------------------
 

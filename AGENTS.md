@@ -9,7 +9,7 @@
 **NEUGI Swarm v2** is a production-grade autonomous multi-agent framework.
 - **Language:** Python 3.10+
 - **Architecture:** 29 subsystems, 120+ modules, ~65K LOC
-- **Test count:** 375 collected (373 passed, 2 optional browser tests skipped when Playwright is absent), all non-optional tests must pass
+- **Test count:** 379 collected (377 passed, 2 optional browser tests skipped when Playwright is absent), all non-optional tests must pass
 - **Version:** 2.1.3
 
 This is NOT a chatbot wrapper. It is **sovereign autonomous infrastructure**:
@@ -106,7 +106,7 @@ repo/
 │       ├── rescue_wizard.py  # Auto-fix rescue mode
 │       └── wizard.py         # Deprecated compatibility alias
 │
-├── tests/                    # 375 collected tests across all subsystems
+├── tests/                    # 379 collected tests across all subsystems
 ├── assets/                   # Brand images, favicon, hero video
 ├── index.html                # Landing page
 ├── docs.html                 # Documentation site
@@ -123,7 +123,7 @@ repo/
 ```bash
 cd neugi_swarm_v2
 python -m pytest tests/ -q --tb=short -p no:anchorpy
-# Expected: 373 passed, 2 skipped when Playwright is absent
+# Expected: 377 passed, 2 skipped when Playwright is absent
 ```
 
 ### Smoke Test CLI

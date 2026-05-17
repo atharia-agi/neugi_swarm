@@ -35,7 +35,7 @@
 
 ### Key Capabilities
 - **29 subsystems**, 120+ modules, ~65K lines of code
-- **375 collected tests** (373 passing, 2 optional browser tests skipped when Playwright is absent)
+- **379 collected tests** (377 passing, 2 optional browser tests skipped when Playwright is absent)
 - **9 specialized agents** with XP/level progression
 - **Karpathy-style dreaming memory** with 3-tier storage
 - **6-tier skill system** with YAML frontmatter
@@ -871,6 +871,7 @@ https://neugi.com/dashboard.html
 ### Dashboard Features
 - Subsystem health monitoring
 - Setup tab for provider choice, model search, API-key entry, live provider test, and config save
+- Governance approval queue with approve/deny actions for pending agent requests
 - Agent status and activity
 - Memory usage statistics
 - Event bus real-time feed
@@ -984,7 +985,7 @@ neugi rescue           # Rescue mode
 
 ---
 
-> **NEUGI v2.1.3** — 29 subsystems, 120+ modules, ~65K LOC, 375 collected tests
+> **NEUGI v2.1.3** — 29 subsystems, 120+ modules, ~65K LOC, 379 collected tests
 >
 > GitHub: https://github.com/atharia-agi/neugi_swarm
 > Web: https://neugi.com
