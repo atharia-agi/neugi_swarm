@@ -29,11 +29,11 @@ if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$PYTHON_VERSION" | sort -V | head -n1
     exit 1
 fi
 
-echo -e "${GREEN}✓ Python $PYTHON_VERSION detected${NC}"
+echo -e "${GREEN}[OK] Python $PYTHON_VERSION detected${NC}"
 
 # Check Ollama
 if ! command -v ollama &> /dev/null; then
-    echo -e "${YELLOW}⚠ Ollama not found. NEUGI needs it for local AI.${NC}"
+    echo -e "${YELLOW}[WARN] Ollama not found. NEUGI can use local AI through Ollama.${NC}"
     echo "Options:"
     echo "  1. Install Ollama now (curl -fsSL https://ollama.com/install.sh | sh)"
     echo "  2. Skip and use cloud API later"
@@ -41,12 +41,12 @@ if ! command -v ollama &> /dev/null; then
     if [[ ! "$choice" =~ ^[Nn]$ ]]; then
         echo -e "${YELLOW}Installing Ollama...${NC}"
         curl -fsSL https://ollama.com/install.sh | sh
-        echo -e "${GREEN}✓ Ollama installed${NC}"
+        echo -e "${GREEN}[OK] Ollama installed${NC}"
     else
         echo -e "${YELLOW}Skipping Ollama. Run 'neugi wizard' later to set up cloud API.${NC}"
     fi
 else
-    echo -e "${GREEN}✓ Ollama found${NC}"
+    echo -e "${GREEN}[OK] Ollama found${NC}"
 fi
 
 # Create installation directory. Runtime config still lives in ~/.neugi.
@@ -56,10 +56,10 @@ echo -e "${YELLOW}Installing to: $INSTALL_DIR${NC}"
 mkdir -p "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
-# Clone or copy the repository
+# Clone or update the repository.
 if [ -d ".git" ]; then
     echo -e "${YELLOW}Updating existing installation...${NC}"
-    git pull || true
+    git pull origin master || git pull
 else
     echo -e "${YELLOW}Downloading NEUGI Swarm V2...${NC}"
     if command -v curl &> /dev/null; then
@@ -75,7 +75,9 @@ fi
 # Create virtual environment
 echo -e "${YELLOW}Creating virtual environment...${NC}"
 PACKAGE_DIR="$INSTALL_DIR/neugi_swarm_v2"
-python3 -m venv "$PACKAGE_DIR/venv"
+if [ ! -d "$PACKAGE_DIR/venv" ]; then
+    python3 -m venv "$PACKAGE_DIR/venv"
+fi
 source "$PACKAGE_DIR/venv/bin/activate"
 
 # Install dependencies
