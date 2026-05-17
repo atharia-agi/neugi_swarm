@@ -7,8 +7,11 @@ import os
 from pathlib import Path
 import sys
 
-# Add the package root to the path so we can import the plugin modules
-sys.path.insert(0, 'K:\\neugi_swarm\\repo\\neugi_swarm_v2')
+# Add the active package root to the path so plugin imports never resolve to
+# stale audit/copy directories outside this checkout.
+PACKAGE_ROOT = Path(__file__).resolve().parents[1]
+if str(PACKAGE_ROOT) not in sys.path:
+    sys.path.insert(0, str(PACKAGE_ROOT))
 
 def test_knowledge_indexer_with_vectors():
     """Test that the knowledge indexer can create an index with vector embeddings."""

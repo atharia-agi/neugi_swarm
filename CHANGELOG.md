@@ -1,7 +1,7 @@
 # NEUGI SWARM - CHANGELOG
 
 > Complete development history and architecture documentation
-> Last Updated: May 16, 2026
+> Last Updated: May 17, 2026
 > Version: 2.1.3
 
 ## v2.1.3 (May 16, 2026) - SETUP CONSOLIDATION, PROVIDER CATALOG & TEST PARITY
@@ -18,13 +18,20 @@
 - Wizard flow is now provider-first, API-key-aware, searchable by model, and still allows custom provider/base URL/model entry.
 - Runtime API-key resolution now checks provider-specific env vars such as `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `GROQ_API_KEY`, etc.
 
+### Dashboard Setup UX
+- Added a first-run `Setup` tab to both the runtime dashboard and `neugi.com/dashboard.html`.
+- Dashboard users can now choose provider, search/select model, enter API key, set base URL, fallback model, temperature, and max tokens without using the CLI wizard.
+- Added `/api/providers` for the dashboard provider/model catalog and made `/api/config` recursively merge nested config updates instead of replacing dataclass sections with dictionaries.
+- Fixed dashboard setup persistence to write `~/.neugi/config.json` and preserve plaintext API keys only long enough for the existing SecretManager migration path.
+
 ### Verification
-- Full suite verified on Python 3.12.10: **367 collected, 365 passed, 2 skipped, 8 warnings**.
+- Full suite verified on Python 3.12.10: **369 collected, 367 passed, 2 skipped, 8 warnings**.
 - Fixed test/runtime issues found during verification:
   - Explicit security-scope CIDRs now authorize covered private IPs.
   - A2A heartbeat updates are monotonic even within the same clock tick.
   - Optional browser tests skip cleanly when Playwright is not installed.
   - Fixed a syntax error in the browser agent plugin.
+  - Test modules no longer import stale duplicate code from `repo/neugi_swarm_v2`.
 
 ---
 

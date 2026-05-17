@@ -222,6 +222,7 @@ class DashboardServer:
             "POST /api/steering": self.api.send_steering,
             "POST /api/auth/login": self.api.login,
             "POST /api/auth/logout": self.api.logout,
+            "GET /api/providers": self.api.provider_catalog,
             "GET /api/config": self.api.get_config,
             "PUT /api/config": self.api.update_config,
             "GET /api/autonomous/status": self.api.autonomous_status,

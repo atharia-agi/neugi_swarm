@@ -11,7 +11,7 @@
   <img src="assets/hero_logo_mascot.png" width="640" alt="NEUGI Agent Swarm">
 </p>
 
-> **29 Subsystems | 120+ Modules | 65,000+ Lines | 61 Built-in Tools | 365 Tests Passing**
+> **29 Subsystems | 120+ Modules | 65,000+ Lines | 61 Built-in Tools | 367 Tests Passing**
 
 NEUGI Swarm v2 is the most advanced open-source agentic AI framework ever built. **Sovereign autonomous infrastructure** that observes, decides, executes, and reports — even during idle periods.
 
@@ -109,7 +109,7 @@ Both features are opt-in and maintain full backward compatibility with zero core
 | Python Modules | 120+ |
 | Lines of Code | 65,000+ |
 | Built-in Tools | 61 |
-| Integration Tests | 367 collected (365 passed, 2 optional browser tests skipped without Playwright) |
+| Integration Tests | 369 collected (367 passed, 2 optional browser tests skipped without Playwright) |
 | AI Providers Supported | 20+ (OpenAI, Anthropic, Gemini, Groq, DeepSeek, etc.) |
 | Cold Start | < 500ms |
 | Memory Query | < 50ms |
@@ -218,7 +218,7 @@ cd neugi_swarm_v2
 python -m pytest tests/ -q --tb=short -p no:anchorpy
 ```
 
-**Current status:** 365 passed, 2 skipped, 8 warnings on Python 3.12.10
+**Current status:** 367 passed, 2 skipped, 8 warnings on Python 3.12.10
 
 ---
 

@@ -557,6 +557,7 @@ body::before {
   border: none;
   background: transparent;
   font-family: var(--font-sans);
+  min-width: 0;
 }
 .tab:hover {
   color: var(--text-secondary);
@@ -572,6 +573,118 @@ body::before {
 }
 .tab-content.active {
   display: block;
+}
+
+/* -- Setup Panel ---------------------------------------------------------- */
+.setup-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.setup-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.setup-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.setup-field.full {
+  grid-column: 1 / -1;
+}
+
+.setup-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.setup-input,
+.setup-select {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-family: var(--font-sans);
+  outline: none;
+}
+
+.setup-input:focus,
+.setup-select:focus {
+  border-color: var(--accent-primary);
+}
+
+.model-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.model-option {
+  padding: 0.55rem 0.6rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.model-option:hover,
+.model-option.active {
+  border-color: var(--accent-primary);
+  background: var(--bg-card-hover);
+}
+
+.model-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.model-meta {
+  margin-top: 0.15rem;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.setup-hint {
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background: rgba(99, 102, 241, 0.08);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.setup-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.setup-status {
+  min-height: 1rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+@media (max-width: 560px) {
+  .setup-grid,
+  .setup-actions {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* -- Skills Browser ------------------------------------------------------- */
@@ -1195,15 +1308,63 @@ body::before {
       <!-- Tabbed Panel -->
       <div class="glass-card">
         <div class="tabs">
-          <button class="tab active" onclick="switchTab('skills')">Skills</button>
+          <button class="tab active" onclick="switchTab('setup')">Setup</button>
+          <button class="tab" onclick="switchTab('skills')">Skills</button>
           <button class="tab" onclick="switchTab('memory')">Memory</button>
           <button class="tab" onclick="switchTab('channels')">Channels</button>
-          <button class="tab" onclick="switchTab('workflows')">Workflows</button>
+          <button class="tab" onclick="switchTab('workflows')">Flows</button>
           <button class="tab" onclick="switchTab('plugins')">Plugins</button>
         </div>
 
+        <!-- Setup Tab -->
+        <div class="tab-content active" id="tab-setup">
+          <div class="setup-panel">
+            <div class="setup-hint" id="setupSummary">Loading provider catalog...</div>
+            <div class="setup-grid">
+              <label class="setup-field">
+                <span class="setup-label">Provider</span>
+                <select class="setup-select" id="setupProvider" onchange="handleProviderChange()"></select>
+              </label>
+              <label class="setup-field">
+                <span class="setup-label">Model search</span>
+                <input class="setup-input" id="setupModelSearch" placeholder="Search model..." oninput="renderSetupModels()">
+              </label>
+              <label class="setup-field full">
+                <span class="setup-label">Model</span>
+                <div class="model-picker" id="setupModelPicker"></div>
+                <input class="setup-input" id="setupCustomModel" placeholder="Custom model id" style="display:none; margin-top:0.4rem">
+              </label>
+              <label class="setup-field">
+                <span class="setup-label">Base URL</span>
+                <input class="setup-input" id="setupBaseUrl" placeholder="https://api.provider.com">
+              </label>
+              <label class="setup-field">
+                <span class="setup-label">Fallback model</span>
+                <input class="setup-input" id="setupFallbackModel" placeholder="Optional fallback">
+              </label>
+              <label class="setup-field">
+                <span class="setup-label">API key</span>
+                <input class="setup-input" id="setupApiKey" type="password" placeholder="Paste provider key">
+              </label>
+              <label class="setup-field">
+                <span class="setup-label">Temperature</span>
+                <input class="setup-input" id="setupTemperature" type="number" min="0" max="2" step="0.1" value="0.7">
+              </label>
+              <label class="setup-field">
+                <span class="setup-label">Max tokens</span>
+                <input class="setup-input" id="setupMaxTokens" type="number" min="256" step="256" value="4096">
+              </label>
+            </div>
+            <div class="setup-actions">
+              <button class="btn" onclick="loadSetupConfig()">Reload Config</button>
+              <button class="btn btn-primary" onclick="saveSetupConfig()">Save AI Setup</button>
+            </div>
+            <div class="setup-status" id="setupStatus"></div>
+          </div>
+        </div>
+
         <!-- Skills Tab -->
-        <div class="tab-content active" id="tab-skills">
+        <div class="tab-content" id="tab-skills">
           <div class="skills-list" id="skillsList" style="margin-top: 0.75rem">
             <div class="empty-state">
               <div class="icon">&#x1F4DA;</div>
@@ -1379,6 +1540,9 @@ const state = {
   workflows: [],
   plugins: [],
   governance: {},
+  providers: [],
+  config: null,
+  selectedModel: '',
 };
 
 // -- API Helper -------------------------------------------------------------
@@ -1718,6 +1882,143 @@ function clearChat() {
   `;
 }
 
+// -- Setup ------------------------------------------------------------------
+async function fetchProviderCatalog() {
+  try {
+    const data = await api('/api/providers');
+    state.providers = data.data.providers || [];
+    renderProviderOptions();
+    await loadSetupConfig();
+  } catch (e) {
+    document.getElementById('setupSummary').textContent = `Provider catalog unavailable: ${e.message}`;
+    console.warn('Failed to fetch providers:', e);
+  }
+}
+
+async function loadSetupConfig() {
+  try {
+    const data = await api('/api/config');
+    state.config = data.data || {};
+    const llm = state.config.llm || {};
+    const providerName = llm.provider || 'ollama';
+    const providerSelect = document.getElementById('setupProvider');
+    if (providerSelect.options.length) {
+      providerSelect.value = providerName;
+    }
+    handleProviderChange(false);
+    state.selectedModel = llm.model || state.selectedModel || '';
+    document.getElementById('setupCustomModel').value = state.selectedModel;
+    document.getElementById('setupBaseUrl').value = llm.base_url || llm.ollama_url || '';
+    document.getElementById('setupFallbackModel').value = llm.fallback_model || '';
+    document.getElementById('setupTemperature').value = llm.temperature ?? 0.7;
+    document.getElementById('setupMaxTokens').value = llm.max_tokens || 4096;
+    renderSetupModels();
+    setSetupStatus('Config loaded.');
+  } catch (e) {
+    setSetupStatus(`Config load failed: ${e.message}`, true);
+  }
+}
+
+function renderProviderOptions() {
+  const select = document.getElementById('setupProvider');
+  if (!state.providers.length) {
+    select.innerHTML = '<option value="ollama">Ollama</option>';
+    return;
+  }
+  select.innerHTML = state.providers.map(provider => `
+    <option value="${escapeHtml(provider.name)}">${escapeHtml(provider.display_name || provider.name)}</option>
+  `).join('');
+}
+
+function handleProviderChange(resetModel = true) {
+  const provider = getSelectedProvider();
+  if (!provider) return;
+  if (resetModel) {
+    state.selectedModel = provider.models?.[0]?.id || 'custom';
+    document.getElementById('setupCustomModel').value = state.selectedModel;
+  }
+  document.getElementById('setupBaseUrl').value = provider.base_url || provider.api_endpoint || '';
+  document.getElementById('setupSummary').textContent =
+    `${provider.display_name || provider.name}: ${provider.notes || 'Provider ready.'}`;
+  const customModel = document.getElementById('setupCustomModel');
+  const isCustomProvider = provider.name?.includes('compatible');
+  customModel.style.display = isCustomProvider ? 'block' : 'none';
+  renderSetupModels();
+}
+
+function renderSetupModels() {
+  const provider = getSelectedProvider();
+  const picker = document.getElementById('setupModelPicker');
+  if (!provider) {
+    picker.innerHTML = '<div class="empty-state"><div>No provider selected</div></div>';
+    return;
+  }
+  const query = document.getElementById('setupModelSearch').value.trim().toLowerCase();
+  const models = (provider.models || []).filter(model => {
+    const haystack = `${model.id} ${model.name} ${model.description} ${model.tier} ${model.status}`.toLowerCase();
+    return !query || haystack.includes(query);
+  });
+  if (!models.length) {
+    picker.innerHTML = '<div class="empty-state"><div>No matching models</div></div>';
+    return;
+  }
+  picker.innerHTML = models.map(model => `
+    <div class="model-option ${model.id === state.selectedModel ? 'active' : ''}" onclick="selectSetupModel('${escapeAttr(model.id)}')">
+      <div class="model-name">${escapeHtml(model.name || model.id)}</div>
+      <div class="model-meta">${escapeHtml(model.id)} &middot; ${escapeHtml(model.tier || 'medium')} &middot; ${formatContext(model.context_window)}</div>
+    </div>
+  `).join('');
+}
+
+function selectSetupModel(modelId) {
+  state.selectedModel = modelId;
+  document.getElementById('setupCustomModel').value = modelId;
+  renderSetupModels();
+}
+
+async function saveSetupConfig() {
+  const provider = getSelectedProvider();
+  const customModel = document.getElementById('setupCustomModel').value.trim();
+  const model = customModel || state.selectedModel || provider?.models?.[0]?.id || 'custom';
+  const baseUrl = document.getElementById('setupBaseUrl').value.trim();
+  const payload = {
+    llm: {
+      provider: provider?.name || 'ollama',
+      model,
+      fallback_model: document.getElementById('setupFallbackModel').value.trim(),
+      base_url: baseUrl,
+      ollama_url: provider?.name === 'ollama' ? (baseUrl || 'http://localhost:11434') : 'http://localhost:11434',
+      api_key: document.getElementById('setupApiKey').value.trim(),
+      temperature: Number(document.getElementById('setupTemperature').value || 0.7),
+      max_tokens: Number(document.getElementById('setupMaxTokens').value || 4096),
+    },
+  };
+
+  try {
+    setSetupStatus('Saving AI setup...');
+    const data = await api('/api/config', {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+    state.config = data.data.config || state.config;
+    document.getElementById('setupApiKey').value = '';
+    setSetupStatus(`Saved to ${data.data.saved_path || 'runtime config'}. Restart the running swarm to fully reload provider wiring.`);
+  } catch (e) {
+    setSetupStatus(`Save failed: ${e.message}`, true);
+  }
+}
+
+function getSelectedProvider() {
+  const name = document.getElementById('setupProvider').value;
+  return state.providers.find(provider => provider.name === name) || state.providers[0];
+}
+
+function setSetupStatus(message, isError = false) {
+  const el = document.getElementById('setupStatus');
+  el.textContent = message;
+  el.style.color = isError ? 'var(--error)' : 'var(--text-muted)';
+}
+
 // -- WebSocket --------------------------------------------------------------
 function connectWebSocket() {
   if (!state.useWebSocket) return;
@@ -1912,10 +2213,21 @@ function formatTime(timestamp) {
   return d.toLocaleTimeString();
 }
 
+function formatContext(tokens) {
+  if (!tokens) return 'context unknown';
+  if (tokens >= 1000000) return `${Math.round(tokens / 1000000)}M ctx`;
+  if (tokens >= 1000) return `${Math.round(tokens / 1000)}K ctx`;
+  return `${tokens} ctx`;
+}
+
 function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+function escapeAttr(text) {
+  return String(text).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
 function showNotification(message) {
@@ -1927,6 +2239,7 @@ function showNotification(message) {
 // -- Init -------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
   loadSettings();
+  fetchProviderCatalog();
   refreshAll();
   setupAutoRefresh();
   connectWebSocket();

@@ -25,6 +25,7 @@ Endpoints:
 - POST /api/steering                  - Send steering message
 - POST /api/auth/login                - Authenticate
 - POST /api/auth/logout               - Logout
+- GET  /api/providers                 - Provider and model catalog
 - GET  /api/config                    - Get configuration
 - PUT  /api/config                    - Update configuration
 """
@@ -35,6 +36,7 @@ import json
 import logging
 import time
 import uuid
+from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import Any
 
@@ -643,6 +645,25 @@ class DashboardAPI:
 
     # -- Config ----------------------------------------------------------------
 
+    def provider_catalog(self, handler, body, query_params) -> dict:
+        """GET /api/providers - Provider and model catalog for dashboard setup."""
+        try:
+            from neugi_swarm_v2.provider_catalog import get_all_providers
+
+            providers = []
+            for provider in get_all_providers():
+                provider_data = asdict(provider) if is_dataclass(provider) else dict(provider)
+                provider_data["runtime_provider"] = provider_data.get("name", "")
+                providers.append(provider_data)
+
+            return _ok({
+                "providers": providers,
+                "total": len(providers),
+            })
+        except Exception as e:
+            logger.warning("Provider catalog unavailable: %s", e)
+            return _ok({"providers": [], "total": 0, "error": str(e)})
+
     def get_config(self, handler, body, query_params) -> dict:
         """GET /api/config - Get current configuration."""
         swarm = self.server.swarm
@@ -653,7 +674,15 @@ class DashboardAPI:
                 pass
 
         return _ok({
-            "llm": {"provider": "ollama", "model": "qwen2.5-coder:7b"},
+            "llm": {
+                "provider": "ollama",
+                "model": "qwen2.5-coder:7b",
+                "fallback_model": "llama3.2:3b",
+                "base_url": "http://localhost:11434",
+                "ollama_url": "http://localhost:11434",
+                "temperature": 0.7,
+                "max_tokens": 4096,
+            },
             "memory": {"daily_ttl_days": 30},
             "agent": {"default_agents": ["Aurora", "Cipher", "Nova"]},
         })
@@ -667,14 +696,43 @@ class DashboardAPI:
         swarm = self.server.swarm
         if swarm and hasattr(swarm, "config"):
             try:
-                for key, value in data.items():
-                    if hasattr(swarm.config, key):
-                        setattr(swarm.config, key, value)
-                return _ok({"message": "Configuration updated"})
+                self._merge_config(swarm.config, data)
+                saved_path = self._persist_config(swarm.config)
+                return _ok({
+                    "message": "Configuration updated",
+                    "saved_path": str(saved_path) if saved_path else None,
+                    "config": swarm.config.to_dict() if hasattr(swarm.config, "to_dict") else {},
+                })
             except Exception as e:
                 return _error(f"Config update failed: {e}")
 
         return _ok({"message": "Configuration queued for update"})
+
+    def _merge_config(self, target: Any, updates: dict[str, Any]) -> None:
+        """Recursively merge dashboard config updates into dataclass config."""
+        for key, value in updates.items():
+            if not hasattr(target, key):
+                continue
+            current = getattr(target, key)
+            if isinstance(value, dict) and hasattr(current, "__dataclass_fields__"):
+                self._merge_config(current, value)
+            else:
+                setattr(target, key, value)
+
+    def _persist_config(self, config: Any) -> Path | None:
+        """Persist updated config to ~/.neugi/config.json when possible."""
+        if not hasattr(config, "to_dict"):
+            return None
+
+        neugi_dir = getattr(config, "neugi_dir", None) or (Path.home() / ".neugi")
+        config_path = Path(neugi_dir) / "config.json"
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        data = config.to_dict()
+        api_key = getattr(getattr(config, "llm", None), "api_key", "")
+        if api_key:
+            data.setdefault("llm", {})["api_key"] = api_key
+        config_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        return config_path
 
     # -- Autonomous Loop -------------------------------------------------------
 
