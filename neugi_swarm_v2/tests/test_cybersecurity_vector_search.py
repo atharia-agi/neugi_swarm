@@ -18,8 +18,7 @@ def test_knowledge_indexer_with_vectors():
     try:
         from plugins.cybersecurity_expert.knowledge_indexer import build_knowledge_index
     except ImportError as e:
-        print(f"Failed to import build_knowledge_index: {e}")
-        return False
+        raise AssertionError(f"Failed to import build_knowledge_index: {e}") from e
 
     with tempfile.TemporaryDirectory() as tmpdir:
         kb_path = Path(tmpdir) / 'kb'
@@ -40,13 +39,11 @@ def test_knowledge_indexer_with_vectors():
             result = build_knowledge_index(str(kb_path), str(index_path), use_vectors=True)
             print(f"SUCCESS: Indexed {result} documents with vectors")
         except Exception as e:
-            print(f"ERROR building index: {e}")
-            return False
+            raise AssertionError(f"ERROR building index: {e}") from e
         
         # Check that the index was created
         if not index_path.exists():
-            print("ERROR: Index directory was not created")
-            return False
+            raise AssertionError("ERROR: Index directory was not created")
         
         # Check for either SQLite or Whoosh index files
         sqlite_db = index_path / 'kb_index.db'
@@ -57,18 +54,14 @@ def test_knowledge_indexer_with_vectors():
         elif whoosh_files:
             print(f"SUCCESS: Whoosh index created with {len(whoosh_files)} files")
         else:
-            print("ERROR: No index files found")
-            return False
-    
-    return True
+            raise AssertionError("ERROR: No index files found")
 
 def test_knowledge_searcher_with_vectors():
     """Test that the knowledge searcher can search using vector embeddings."""
     try:
         from plugins.cybersecurity_expert.knowledge_searcher import search_knowledge
     except ImportError as e:
-        print(f"Failed to import search_knowledge: {e}")
-        return False
+        raise AssertionError(f"Failed to import search_knowledge: {e}") from e
 
     with tempfile.TemporaryDirectory() as tmpdir:
         kb_path = Path(tmpdir) / 'kb'
@@ -83,8 +76,7 @@ def test_knowledge_searcher_with_vectors():
             from plugins.cybersecurity_expert.knowledge_indexer import build_knowledge_index
             build_knowledge_index(str(kb_path), str(index_path), use_vectors=True)
         except Exception as e:
-            print(f"ERROR building index for search test: {e}")
-            return False
+            raise AssertionError(f"ERROR building index for search test: {e}") from e
         
         # Test search with a query
         try:
@@ -92,10 +84,10 @@ def test_knowledge_searcher_with_vectors():
             print(f"SUCCESS: Search returned {results['count']} results")
             if results['count'] > 0:
                 print(f"First result: {results['results'][0]['title']} (relevance: {results['results'][0]['relevance']})")
-            return True
         except Exception as e:
-            print(f"ERROR during search: {e}")
-            return False
+            raise AssertionError(f"ERROR during search: {e}") from e
+
+        assert results["count"] >= 0
 
 def test_hybrid_search_scoring():
     """Test that the hybrid search combines vector and keyword scores appropriately."""
@@ -103,10 +95,9 @@ def test_hybrid_search_scoring():
     try:
         from plugins.cybersecurity_expert.knowledge_searcher import search_knowledge
         print("SUCCESS: Hybrid search function is importable")
-        return True
+        assert search_knowledge is not None
     except ImportError as e:
-        print(f"Failed to import search_knowledge: {e}")
-        return False
+        raise AssertionError(f"Failed to import search_knowledge: {e}") from e
 
 if __name__ == "__main__":
     print("Testing Cybersecurity Expert Plugin Vector Embeddings Functionality")
@@ -124,11 +115,12 @@ if __name__ == "__main__":
     for name, test_func in tests:
         print(f"\nTesting: {name}")
         print("-" * 40)
-        if test_func():
+        try:
+            test_func()
             print(f"+ PASSED: {name}")
             passed += 1
-        else:
-            print(f"- FAILED: {name}")
+        except Exception as e:
+            print(f"- FAILED: {name}: {e}")
     
     print("\n" + "=" * 70)
     print(f"Results: {passed}/{total} tests passed")

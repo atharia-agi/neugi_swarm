@@ -4,7 +4,7 @@ Provides write-once, append-only audit trail with hash chaining.
 """
 import json, hashlib, logging
 from pathlib import Path
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ class ImmutableAuditLogger:
         entry_to_log = entry.copy()
         # Add timestamp if not present
         if 'timestamp' not in entry_to_log:
-            entry_to_log['timestamp'] = datetime.utcnow().isoformat()
+            entry_to_log['timestamp'] = datetime.now(UTC).isoformat()
         
         # Convert entry to JSON string for hashing
         entry_str = json.dumps(entry_to_log, sort_keys=True)

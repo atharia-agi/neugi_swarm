@@ -19,25 +19,22 @@ def test_plugin_import():
         from plugins.autonomous_security_harness import AutonomousSecurityHarnessPlugin
         print("SUCCESS: AutonomousSecurityHarnessPlugin imported")
     except Exception as e:
-        print(f"FAILED to import AutonomousSecurityHarnessPlugin: {e}")
-        return False
+        raise AssertionError(f"FAILED to import AutonomousSecurityHarnessPlugin: {e}") from e
 
     try:
         plugin = AutonomousSecurityHarnessPlugin()
         print("SUCCESS: AutonomousSecurityHarnessPlugin instantiated")
     except Exception as e:
-        print(f"FAILED to instantiate AutonomousSecurityHarnessPlugin: {e}")
-        return False
+        raise AssertionError(f"FAILED to instantiate AutonomousSecurityHarnessPlugin: {e}") from e
 
-    return True
+    assert plugin is not None
 
 def test_knowledge_indexer_searcher():
     """Test the knowledge indexer and searcher components."""
     try:
         from plugins.autonomous_security_harness.core.knowledge.indexer import KnowledgeIndexer, KnowledgeSearcher
     except Exception as e:
-        print(f"FAILED to import knowledge indexer/searcher: {e}")
-        return False
+        raise AssertionError(f"FAILED to import knowledge indexer/searcher: {e}") from e
 
     with tempfile.TemporaryDirectory() as tmpdir:
         kb_path = Path(tmpdir) / 'kb'
@@ -52,26 +49,23 @@ def test_knowledge_indexer_searcher():
             count = indexer.build_index()
             print(f"SUCCESS: Indexed {count} documents")
         except Exception as e:
-            print(f"FAILED to build index: {e}")
-            return False
+            raise AssertionError(f"FAILED to build index: {e}") from e
 
         try:
             searcher = KnowledgeSearcher(str(index_path), use_vectors=False)
             results = searcher.search_knowledge("test", limit=5)
             print(f"SUCCESS: Search returned {results['count']} results")
         except Exception as e:
-            print(f"FAILED to search: {e}")
-            return False
+            raise AssertionError(f"FAILED to search: {e}") from e
 
-    return True
+    assert results["count"] >= 0
 
 def test_scope_validator():
     """Test the scope validator."""
     try:
         from plugins.autonomous_security_harness.core.security.scope_validator import ScopeValidator
     except Exception as e:
-        print(f"FAILED to import ScopeValidator: {e}")
-        return False
+        raise AssertionError(f"FAILED to import ScopeValidator: {e}") from e
 
     # Test with a simple scope
     scope = {
@@ -91,15 +85,13 @@ def test_scope_validator():
     # We don't have a public method for port validation in the current ScopeValidator, but we can add one if needed.
     # For now, we'll just test the validate_target method with a tool that doesn't care about ports.
     print("SUCCESS: Scope validator tests passed")
-    return True
 
 def test_audit_logger():
     """Test the audit logger."""
     try:
         from plugins.autonomous_security_harness.core.security.audit_logger import ImmutableAuditLogger
     except Exception as e:
-        print(f"FAILED to import ImmutableAuditLogger: {e}")
-        return False
+        raise AssertionError(f"FAILED to import ImmutableAuditLogger: {e}") from e
 
     with tempfile.TemporaryDirectory() as tmpdir:
         log_path = Path(tmpdir) / 'audit.jsonl'
@@ -125,7 +117,6 @@ def test_audit_logger():
         assert logger.verify_chain() == False
 
         print("SUCCESS: Audit logger tests passed")
-        return True
 
 if __name__ == "__main__":
     print("Testing Autonomous Security Harness Plugin")
@@ -144,11 +135,12 @@ if __name__ == "__main__":
     for name, test_func in tests:
         print(f"\nTesting: {name}")
         print("-" * 30)
-        if test_func():
+        try:
+            test_func()
             print(f"+ PASSED: {name}")
             passed += 1
-        else:
-            print(f"- FAILED: {name}")
+        except Exception as e:
+            print(f"- FAILED: {name}: {e}")
 
     print("\n" + "=" * 50)
     print(f"Results: {passed}/{total} tests passed")

@@ -25,13 +25,14 @@
 - Fixed dashboard setup persistence to write `~/.neugi/config.json` and preserve plaintext API keys only long enough for the existing SecretManager migration path.
 
 ### Verification
-- Full suite verified on Python 3.12.10: **369 collected, 367 passed, 2 skipped, 8 warnings**.
+- Full suite verified on Python 3.12.10: **372 collected, 370 passed, 2 skipped, 0 warnings**.
 - Fixed test/runtime issues found during verification:
   - Explicit security-scope CIDRs now authorize covered private IPs.
   - A2A heartbeat updates are monotonic even within the same clock tick.
   - Optional browser tests skip cleanly when Playwright is not installed.
   - Fixed a syntax error in the browser agent plugin.
   - Test modules no longer import stale duplicate code from `repo/neugi_swarm_v2`.
+  - Test warnings from bool-returning tests and deprecated UTC timestamps were cleaned up.
 
 ---
 

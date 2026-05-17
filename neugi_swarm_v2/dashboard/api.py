@@ -79,6 +79,51 @@ class DashboardAPI:
     Each method signature: (handler, body, query_params) -> dict
     """
 
+    _CONFIG_UPDATE_ALLOWLIST: dict[str, Any] = {
+        "llm": {
+            "provider",
+            "model",
+            "fallback_model",
+            "base_url",
+            "ollama_url",
+            "api_key",
+            "temperature",
+            "max_tokens",
+            "timeout_seconds",
+            "max_retries",
+            "retry_delay_seconds",
+        },
+        "memory": {
+            "daily_ttl_days",
+            "scoring_recency_weight",
+            "scoring_importance_weight",
+            "scoring_frequency_weight",
+            "scoring_relevance_weight",
+            "dreaming_enabled",
+            "dreaming_hour",
+            "dreaming_consolidation_threshold",
+            "enable_fts",
+            "enable_vec",
+        },
+        "skill": {"skill_dirs", "max_skills_in_prompt", "max_tokens_in_prompt", "enable_hot_reload"},
+        "agent": {"default_agents", "xp_threshold", "max_level", "heartbeat_interval_seconds"},
+        "context": {"max_tokens", "max_chars", "safety_margin"},
+        "capability_profile": {
+            "name",
+            "provider",
+            "tier",
+            "context_length",
+            "supports_tools",
+            "supports_vision",
+            "supports_json_mode",
+            "max_tools_per_call",
+            "effective_context_ratio",
+            "max_memory_entries",
+            "recommended_prompt_tier",
+        },
+        "observability": {"enabled", "max_history"},
+    }
+
     def __init__(self, server: Any):
         self.server = server
 
@@ -696,7 +741,7 @@ class DashboardAPI:
         swarm = self.server.swarm
         if swarm and hasattr(swarm, "config"):
             try:
-                self._merge_config(swarm.config, data)
+                self._merge_config(swarm.config, data, self._CONFIG_UPDATE_ALLOWLIST)
                 saved_path = self._persist_config(swarm.config)
                 return _ok({
                     "message": "Configuration updated",
@@ -708,14 +753,27 @@ class DashboardAPI:
 
         return _ok({"message": "Configuration queued for update"})
 
-    def _merge_config(self, target: Any, updates: dict[str, Any]) -> None:
+    def _merge_config(self, target: Any, updates: dict[str, Any], allowlist: Any) -> None:
         """Recursively merge dashboard config updates into dataclass config."""
         for key, value in updates.items():
+            if isinstance(allowlist, dict):
+                if key not in allowlist:
+                    continue
+                allowed_child = allowlist[key]
+            elif isinstance(allowlist, set):
+                if key not in allowlist:
+                    continue
+                allowed_child = None
+            else:
+                continue
+
+            if key == "api_key" and value == "":
+                continue
             if not hasattr(target, key):
                 continue
             current = getattr(target, key)
-            if isinstance(value, dict) and hasattr(current, "__dataclass_fields__"):
-                self._merge_config(current, value)
+            if isinstance(value, dict) and hasattr(current, "__dataclass_fields__") and isinstance(allowed_child, set):
+                self._merge_config(current, value, allowed_child)
             else:
                 setattr(target, key, value)
 

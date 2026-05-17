@@ -1988,11 +1988,14 @@ async function saveSetupConfig() {
       fallback_model: document.getElementById('setupFallbackModel').value.trim(),
       base_url: baseUrl,
       ollama_url: provider?.name === 'ollama' ? (baseUrl || 'http://localhost:11434') : 'http://localhost:11434',
-      api_key: document.getElementById('setupApiKey').value.trim(),
       temperature: Number(document.getElementById('setupTemperature').value || 0.7),
       max_tokens: Number(document.getElementById('setupMaxTokens').value || 4096),
     },
   };
+  const apiKey = document.getElementById('setupApiKey').value.trim();
+  if (apiKey) {
+    payload.llm.api_key = apiKey;
+  }
 
   try {
     setSetupStatus('Saving AI setup...');

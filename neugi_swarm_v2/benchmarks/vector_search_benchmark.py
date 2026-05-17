@@ -9,8 +9,11 @@ from pathlib import Path
 import sys
 import os
 
-# Add the package root to the path so we can import the plugin modules
-sys.path.insert(0, 'K:\\neugi_swarm\\repo\\neugi_swarm_v2')
+# Add the active package root to the path so benchmark imports never resolve
+# to stale audit/copy directories outside this checkout.
+PACKAGE_ROOT = Path(__file__).resolve().parents[1]
+if str(PACKAGE_ROOT) not in sys.path:
+    sys.path.insert(0, str(PACKAGE_ROOT))
 
 def create_test_knowledge_base(num_docs=100):
     """Create a test knowledge base with specified number of documents."""
