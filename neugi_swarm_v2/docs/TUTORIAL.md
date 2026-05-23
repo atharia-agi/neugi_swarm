@@ -34,8 +34,8 @@
 **NEUGI (Neural General Intelligence)** is a deterministic multi-agent state machine designed for production-grade reliability at scale. Unlike monolithic chatbots, NEUGI decomposes every task into specialized agent workflows orchestrated by a central director.
 
 ### Key Capabilities
-- **29 subsystems**, 120+ modules, ~65K lines of code
-- **379 collected tests** (377 passing, 2 optional browser tests skipped when Playwright is absent)
+- **29 subsystems**, 120+ modules, ~71K lines of code
+- **386 collected tests** (384 passing, 2 optional browser tests skipped when Playwright is absent)
 - **9 specialized agents** with XP/level progression
 - **Karpathy-style dreaming memory** with 3-tier storage
 - **6-tier skill system** with YAML frontmatter
@@ -54,12 +54,12 @@
 
 ### Windows (PowerShell)
 ```powershell
-irm https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm_v2/install.ps1 | iex
+irm https://neugi.com/install.ps1 | iex
 ```
 
 ### macOS / Linux
 ```bash
-curl -fsSL https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm_v2/install.sh | bash
+curl -fsSL https://neugi.com/install.sh | bash
 ```
 
 ### Manual Install
@@ -949,7 +949,7 @@ neugi doctor           # Full system diagnostics
 
 ```bash
 # === INSTALL ===
-irm https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm_v2/install.ps1 | iex
+irm https://neugi.com/install.ps1 | iex
 
 # === SETUP ===
 neugi wizard           # Interactive setup
@@ -985,7 +985,7 @@ neugi rescue           # Rescue mode
 
 ---
 
-> **NEUGI v2.1.3** — 29 subsystems, 120+ modules, ~65K LOC, 379 collected tests
+> **NEUGI v2.1.3** — 29 subsystems, 120+ modules, ~71K LOC, 386 collected tests
 >
 > GitHub: https://github.com/atharia-agi/neugi_swarm
 > Web: https://neugi.com

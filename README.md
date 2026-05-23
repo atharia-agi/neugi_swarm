@@ -11,7 +11,7 @@
   <img src="assets/hero_logo_mascot.png" width="640" alt="NEUGI Agent Swarm">
 </p>
 
-> **29 Subsystems | 120+ Modules | 65,000+ Lines | 61 Built-in Tools | 377 Tests Passing**
+> **29 Subsystems | 120+ Modules | 71,000+ Lines | 61 Built-in Tools | 384 Tests Passing (2 skipped)**
 
 NEUGI Swarm v2 is the most advanced open-source agentic AI framework ever built. **Sovereign autonomous infrastructure** that observes, decides, executes, and reports — even during idle periods.
 
@@ -23,12 +23,22 @@ NEUGI Swarm v2 is the most advanced open-source agentic AI framework ever built.
 
 **macOS / Linux:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm_v2/install.sh | bash
+curl -fsSL https://neugi.com/install.sh | bash
 ```
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm_v2/install.ps1 | iex
+irm https://neugi.com/install.ps1 | iex
+```
+
+Then run:
+```bash
+neugi quickstart
+```
+
+CI-equivalent local gate:
+```bash
+powershell -ExecutionPolicy Bypass -File scripts/ci-gate.ps1
 ```
 
 ### Manual Setup
@@ -67,8 +77,8 @@ neugi soul init # Initialize agent identity (SOUL.md)
 | **Tools** | 61 builtins across 10 categories, web search, browser automation |
 | **Channels** | Telegram, Discord, Slack, WhatsApp unified |
 | **Security** | 7-layer sandbox, neuro-symbolic, AES-256 secrets |
-| **CLI+Wizard** | 17 commands, one canonical provider/model setup wizard, interactive chat, rescue mode |
-| **Dashboard** | Glass-morphism HTML, 28 REST endpoints, setup/test provider flow, approval queue, WebSocket, vector memory |
+| **CLI+Wizard** | 24 top-level commands, one canonical provider/model setup wizard, interactive chat, rescue mode |
+| **Dashboard** | Glass-morphism HTML, 32 REST endpoints, setup/test provider flow, approval queue, WebSocket, vector memory |
 | **Evals** | Benchmark harness, regression detection, skill scoring |
 | **Multimodal** | Vision input, screenshot analysis, computer use |
 | **A2A Protocol** | Agent-to-agent mesh, capability discovery, heartbeat |
@@ -107,9 +117,9 @@ Both features are opt-in and maintain full backward compatibility with zero core
 |--------|-------|
 | Subsystems | 29 |
 | Python Modules | 120+ |
-| Lines of Code | 65,000+ |
+| Lines of Code | 71,000+ |
 | Built-in Tools | 61 |
-| Integration Tests | 379 collected (377 passed, 2 optional browser tests skipped without Playwright) |
+| Integration Tests | 386 collected (384 passed, 2 optional browser tests skipped without Playwright) |
 | AI Providers Supported | 20+ (OpenAI, Anthropic, Gemini, Groq, DeepSeek, etc.) |
 | Cold Start | < 500ms |
 | Memory Query | < 50ms |
@@ -140,7 +150,7 @@ neugi_swarm/
     ├── security/           # Sandbox & security
     ├── session/            # Session management
     ├── skills/             # Skill system
-    ├── tests/              # Integration tests (365 passing, 2 optional skips)
+    ├── tests/              # Integration tests (384 passing, 2 optional skips)
     ├── tools/              # Tool registry (web search, browser, etc.)
     ├── observability/      # Event bus for monitoring and extensibility
     ├── workflows/          # Workflow engine
@@ -218,7 +228,7 @@ cd neugi_swarm_v2
 python -m pytest tests/ -q --tb=short -p no:anchorpy
 ```
 
-**Current status:** 377 passed, 2 skipped, 0 warnings on Python 3.12.10
+**Current status:** 384 passed, 2 skipped, 0 warnings on Python 3.12.10
 
 ---
 
