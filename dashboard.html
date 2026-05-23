@@ -4,40 +4,50 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NEUGI v2 Dashboard</title>
+<link rel="icon" type="image/x-icon" href="https://neugi.com/assets/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="https://neugi.com/assets/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://neugi.com/assets/favicon-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://neugi.com/assets/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 /* -- CSS Custom Properties ------------------------------------------------ */
 :root {
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #12121a;
-  --bg-tertiary: #1a1a2e;
-  --bg-card: rgba(26, 26, 46, 0.6);
-  --bg-card-hover: rgba(36, 36, 56, 0.7);
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-glow: rgba(99, 102, 241, 0.3);
-  --text-primary: #f0f0f5;
-  --text-secondary: #a0a0b8;
-  --text-muted: #6b6b80;
-  --accent-primary: #6366f1;
-  --accent-secondary: #8b5cf6;
-  --accent-tertiary: #06b6d4;
+  --bg-primary: #0d0d0d;
+  --bg-secondary: #111111;
+  --bg-tertiary: #151515;
+  --bg-card: #111111;
+  --bg-card-hover: #161616;
+  --border-color: rgba(255, 255, 255, 0.06);
+  --border-glow: rgba(255, 255, 255, 0.11);
+  --text-primary: #f4f4f5;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --accent-primary: #f4f4f5;
+  --accent-secondary: #a1a1aa;
+  --accent-tertiary: #ffffff;
   --success: #10b981;
   --warning: #f59e0b;
   --error: #ef4444;
-  --info: #3b82f6;
-  --gradient-primary: linear-gradient(135deg, #6366f1, #8b5cf6);
-  --gradient-secondary: linear-gradient(135deg, #06b6d4, #3b82f6);
+  --info: #a1a1aa;
+  --severity-info: #60a5fa;
+  --severity-warn: #f59e0b;
+  --severity-critical: #ef4444;
+  --gradient-primary: linear-gradient(135deg, #f4f4f5, #a1a1aa);
+  --gradient-secondary: linear-gradient(135deg, #d4d4d8, #71717a);
   --gradient-success: linear-gradient(135deg, #10b981, #059669);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.2);
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --transition-fast: 150ms ease;
-  --transition-normal: 250ms ease;
-  --transition-slow: 400ms ease;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-glow: none;
+  --radius-sm: 4px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 6px;
+  --transition-fast: 120ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-normal: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-slow: 240ms cubic-bezier(0.16, 1, 0.3, 1);
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
 }
@@ -68,9 +78,9 @@ body::before {
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 80%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 50%, rgba(139, 92, 246, 0.05) 0%, transparent 70%);
+    radial-gradient(ellipse at 20% 20%, rgba(255, 255, 255, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(255, 255, 255, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(255, 255, 255, 0.03) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
 }
@@ -104,7 +114,7 @@ body::before {
 .glass-card:hover {
   background: var(--bg-card-hover);
   border-color: var(--border-glow);
-  box-shadow: var(--shadow-glow);
+  box-shadow: none;
 }
 
 /* -- Layout --------------------------------------------------------------- */
@@ -121,8 +131,9 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.5rem;
-  background: rgba(10, 10, 15, 0.8);
+  min-height: 48px;
+  padding: 0.6rem 1rem;
+  background: rgba(13, 13, 13, 0.96);
   backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border-color);
   position: sticky;
@@ -135,27 +146,54 @@ body::before {
   align-items: center;
   gap: 0.75rem;
 }
+.header-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1rem;
+  max-width: 520px;
+}
+.header-search {
+  flex: 1;
+  height: 34px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  padding: 0 0.85rem;
+  font-size: 0.82rem;
+}
+.workspace-select {
+  height: 34px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  padding: 0 0.6rem;
+  font-size: 0.78rem;
+}
 
 .header-logo {
   width: 40px;
   height: 40px;
-  background: var(--gradient-primary);
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 800;
-  font-size: 1.1rem;
-  box-shadow: var(--shadow-glow);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+.header-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .header-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  background: var(--gradient-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .header-version {
@@ -221,12 +259,13 @@ body::before {
   border-color: var(--accent-primary);
 }
 .btn-primary {
-  background: var(--gradient-primary);
-  border: none;
+  background: var(--accent-primary);
+  border: 1px solid transparent;
+  color: #0d0d0d;
 }
 .btn-primary:hover {
-  opacity: 0.9;
-  box-shadow: var(--shadow-glow);
+  background: var(--accent-tertiary);
+  box-shadow: none;
 }
 .btn-sm {
   padding: 0.35rem 0.75rem;
@@ -241,9 +280,65 @@ body::before {
 /* -- Metrics Bar ---------------------------------------------------------- */
 .metrics-bar {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;
-  padding: 1rem 1.5rem;
+  grid-template-columns: repeat(6, minmax(120px, 1fr));
+  gap: 0.5rem;
+  padding: 0.5rem 1rem 0.35rem;
+}
+.nav-sidebar {
+  position: fixed;
+  top: 49px;
+  left: 0;
+  bottom: 0;
+  width: 240px;
+  background: rgba(13, 13, 13, 0.98);
+  border-right: 1px solid var(--border-color);
+  padding: 0.65rem;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  border: 1px solid transparent;
+}
+.nav-item.active {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--accent-primary);
+  border-color: rgba(255, 255, 255, 0.10);
+}
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.nav-orbit-title {
+  margin-top: 0.7rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.orbit-agent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  padding: 0.36rem 0.45rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+}
+.offline-guide,
+.metrics-bar,
+.main-content {
+  margin-left: 240px;
 }
 
 .metric-card {
@@ -253,37 +348,45 @@ body::before {
 }
 
 .metric-label {
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .metric-value {
-  font-size: 1.5rem;
+  font-size: 1.15rem;
   font-weight: 700;
   font-family: var(--font-mono);
 }
-.metric-value.success { color: var(--success); }
+.metric-value.success { color: var(--text-primary); }
 .metric-value.warning { color: var(--warning); }
 .metric-value.error { color: var(--error); }
 .metric-value.info { color: var(--info); }
 
 .metric-change {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   color: var(--text-muted);
 }
 
 /* -- Main Content --------------------------------------------------------- */
 .main-content {
   display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: 1rem;
-  padding: 0 1.5rem 1.5rem;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 340px);
+  gap: 0.6rem;
+  padding: 0 1rem 0.8rem;
   flex: 1;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 760px) {
+  .nav-sidebar {
+    display: none;
+  }
+  .offline-guide,
+  .metrics-bar,
+  .main-content {
+    margin-left: 0;
+  }
   .main-content {
     grid-template-columns: 1fr;
   }
@@ -293,7 +396,10 @@ body::before {
 .left-column {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.6rem;
+}
+.left-column > .chat-container {
+  order: -1;
 }
 
 /* -- Section Header ------------------------------------------------------- */
@@ -305,7 +411,7 @@ body::before {
 }
 
 .section-title {
-  font-size: 0.95rem;
+  font-size: 0.82rem;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -328,8 +434,8 @@ body::before {
 /* -- Agent Grid ----------------------------------------------------------- */
 .agent-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.55rem;
 }
 
 .agent-card {
@@ -450,7 +556,7 @@ body::before {
 .chat-container {
   display: flex;
   flex-direction: column;
-  height: 400px;
+  min-height: 64vh;
 }
 
 .chat-messages {
@@ -487,10 +593,10 @@ body::before {
 .chat-avatar.assistant { background: var(--gradient-secondary); }
 
 .chat-bubble {
-  padding: 0.6rem 0.85rem;
+  padding: 0.55rem 0.8rem;
   border-radius: var(--radius-md);
-  font-size: 0.85rem;
-  line-height: 1.5;
+  font-size: 0.82rem;
+  line-height: 1.45;
 }
 .chat-message.user .chat-bubble {
   background: var(--gradient-primary);
@@ -520,6 +626,9 @@ body::before {
   font-family: var(--font-sans);
   outline: none;
   transition: border-color var(--transition-fast);
+  resize: none;
+  min-height: 40px;
+  max-height: 140px;
 }
 .chat-input:focus {
   border-color: var(--accent-primary);
@@ -532,7 +641,18 @@ body::before {
 .right-column {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.6rem;
+}
+.panel-collapsible summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+.panel-collapsible summary::-webkit-details-marker {
+  display: none;
+}
+.panel-collapsible .section-title {
+  margin-bottom: 0;
 }
 
 /* -- Tabs ----------------------------------------------------------------- */
@@ -585,8 +705,8 @@ body::before {
 
 .setup-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
+  grid-template-columns: 1fr;
+  gap: 0.55rem;
 }
 
 .setup-field {
@@ -600,10 +720,10 @@ body::before {
 }
 
 .setup-label {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .setup-input,
@@ -662,7 +782,7 @@ body::before {
   padding: 0.65rem 0.75rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-color);
-  background: rgba(99, 102, 241, 0.08);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text-secondary);
   font-size: 0.75rem;
   line-height: 1.45;
@@ -693,6 +813,15 @@ body::before {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   background: var(--bg-tertiary);
+}
+.approval-item.sev-info {
+  border-color: color-mix(in srgb, var(--severity-info) 34%, var(--border-color));
+}
+.approval-item.sev-warn {
+  border-color: color-mix(in srgb, var(--severity-warn) 40%, var(--border-color));
+}
+.approval-item.sev-critical {
+  border-color: color-mix(in srgb, var(--severity-critical) 46%, var(--border-color));
 }
 
 .approval-row {
@@ -1228,9 +1357,468 @@ body::before {
   text-align: center;
 }
 .empty-state .icon {
-  font-size: 2rem;
+  font-size: 13px;
   margin-bottom: 0.5rem;
   opacity: 0.5;
+}
+.offline-guide {
+  margin: 0.75rem 1.5rem 0;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.12);
+  color: #f8ddb0;
+  font-size: 0.82rem;
+  display: none;
+}
+
+/* -- NEUGI v2 Design Spec Override: native IDE, compact, flat ------------ */
+:root {
+  --bg-primary: #0d0d0d;
+  --bg-secondary: #111111;
+  --bg-tertiary: #151515;
+  --bg-card: #111111;
+  --bg-card-hover: #161616;
+  --border-color: rgba(255, 255, 255, 0.06);
+  --border-glow: rgba(255, 255, 255, 0.11);
+  --text-primary: #f4f4f5;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --accent-primary: #e5e7eb;
+  --accent-secondary: #a1a1aa;
+  --accent-tertiary: #fafafa;
+  --radius-sm: 4px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 6px;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-glow: none;
+  --transition-fast: 100ms ease-out;
+  --transition-normal: 150ms ease-out;
+}
+html { font-size: 13px; }
+body {
+  background: #0d0d0d;
+  font-size: 13px;
+  line-height: 1.45;
+  height: 100%;
+  overflow: hidden;
+}
+html { height: 100%; }
+body::before { display: none; }
+.glass-card,
+.agent-card,
+.metric-card,
+.session-item,
+.model-option,
+.skill-item,
+.memory-stat,
+.channel-item,
+.workflow-item,
+.plugin-item,
+.approval-item,
+.modal-content {
+  border-radius: 4px !important;
+  box-shadow: none !important;
+}
+.glass-card {
+  background: #111111;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 10px;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.glass-card:hover {
+  background: #141414;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+}
+.header {
+  min-height: 44px;
+  padding: 6px 10px;
+  background: #0d0d0d;
+  border-bottom-color: rgba(255, 255, 255, 0.07);
+  backdrop-filter: none;
+}
+.header-logo {
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  padding: 2px;
+}
+.header-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.header-title {
+  font-size: 13px;
+  letter-spacing: 0;
+}
+.header-version,
+.header-status,
+.btn,
+.tab,
+.setup-input,
+.setup-select,
+.chat-input,
+.metric-label,
+.metric-change,
+.section-badge {
+  font-size: 12px;
+}
+.header-version {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: #151515;
+}
+.header-search,
+.workspace-select {
+  height: 28px;
+  border-radius: 4px;
+  background: #111111;
+  font-size: 12px;
+}
+.btn {
+  min-height: 28px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #141414;
+  color: #d4d4d8;
+}
+.btn:hover {
+  background: #1a1a1a;
+  border-color: rgba(255, 255, 255, 0.14);
+}
+.btn-primary {
+  background: #f4f4f5;
+  color: #0d0d0d;
+}
+.btn-primary:hover { background: #ffffff; }
+.btn-sm {
+  min-height: 24px;
+  padding: 3px 7px;
+  font-size: 11px;
+}
+.nav-sidebar {
+  top: 45px;
+  width: 340px;
+  padding: 8px;
+  background: #0f0f0f;
+  border-right-color: rgba(255, 255, 255, 0.06);
+  overflow: auto;
+}
+.sidebar-panels {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+.sidebar-panels .panel-collapsible {
+  margin: 0;
+}
+.sidebar-panels .tabs {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.nav-item {
+  min-height: 28px;
+  padding: 5px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  justify-content: flex-start;
+  gap: 8px;
+}
+.nav-top-action {
+  width: 100%;
+  margin-bottom: 6px;
+  justify-content: center;
+}
+.nav-icon {
+  width: 14px;
+  text-align: center;
+  flex: 0 0 14px;
+}
+.nav-label {
+  white-space: nowrap;
+}
+.nav-item.active {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f4f4f5;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.nav-orbit-title {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+.orbit-agent {
+  padding: 5px 7px;
+  border-radius: 4px;
+  background: #141414;
+  font-size: 11px;
+}
+.offline-guide,
+.metrics-bar,
+.main-content {
+  margin-left: 340px;
+}
+.dashboard {
+  height: 100vh;
+  overflow: hidden;
+}
+.metrics-bar {
+  display: flex;
+  gap: 6px;
+  padding: 6px 8px;
+  min-height: 94px;
+  align-items: stretch;
+}
+.metrics-bar[data-mode="idle"] .metric-card {
+  cursor: pointer;
+}
+.metrics-bar[data-mode="expanded"] .metric-card {
+  cursor: pointer;
+}
+.metrics-bar .metric-card:nth-child(n+5) { display: none; }
+.metric-card {
+  flex: 1 1 0;
+  gap: 1px;
+  cursor: pointer;
+  min-height: 82px;
+  height: 82px;
+  overflow: hidden;
+  transition: all var(--transition-fast);
+}
+.metric-card.sev-info {
+  border-color: color-mix(in srgb, var(--severity-info) 30%, var(--border-color));
+}
+.metric-card.sev-warn {
+  border-color: color-mix(in srgb, var(--severity-warn) 36%, var(--border-color));
+}
+.metric-card.sev-critical {
+  border-color: color-mix(in srgb, var(--severity-critical) 42%, var(--border-color));
+}
+.metric-detail {
+  display: none;
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  line-height: 1.35;
+}
+.metric-inline-list {
+  display: none;
+  margin-top: 4px;
+  gap: 2px;
+}
+.metric-inline-item {
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.metrics-bar.has-focus .metric-card {
+  flex: 0 0 10%;
+  opacity: 0.62;
+}
+.metrics-bar.has-focus .metric-card.active {
+  flex: 0 0 70%;
+  opacity: 1;
+}
+.metric-card.active {
+  background: #151515;
+  border-color: rgba(255, 255, 255, 0.11);
+  min-height: 82px;
+  height: 82px;
+}
+.metric-card.active .metric-detail {
+  display: block;
+}
+.metric-card.active .metric-inline-list {
+  display: grid;
+  max-height: 44px;
+  overflow: auto;
+}
+.metric-label {
+  letter-spacing: 0.04em;
+  font-size: 10px;
+}
+.metric-value {
+  font-size: 13px;
+  font-weight: 600;
+}
+.metric-change { font-size: 10px; }
+.metrics-bar[data-mode="idle"] .metric-change {
+  display: inline;
+}
+.metrics-bar[data-mode="expanded"] .metric-card:not(.active) .metric-change {
+  display: inline;
+}
+.main-content {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  padding: 0 8px 8px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.left-column,
+.right-column,
+.setup-panel,
+.tabs,
+.agent-grid,
+.sessions-list,
+.chat-messages {
+  gap: 8px;
+}
+.section-header { margin-bottom: 8px; }
+.section-title {
+  font-size: 12px;
+  gap: 6px;
+}
+.section-title .icon,
+.empty-state .icon {
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+.agent-grid {
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+.agent-card { padding: 8px; }
+.agent-avatar,
+.chat-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  background: #181818 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #d4d4d8;
+}
+.agent-name,
+.feature-title,
+.agent-card h4 { font-size: 12px; }
+.agent-role,
+.agent-stats,
+.agent-status,
+.session-meta { font-size: 11px; }
+.chat-container {
+  min-height: 0;
+  height: 100%;
+}
+.left-column {
+  min-height: 0;
+  overflow: hidden;
+}
+.right-column {
+  min-height: 0;
+  overflow: auto;
+}
+.chat-messages { padding: 8px; }
+.chat-message { gap: 8px; max-width: 78%; }
+.chat-bubble {
+  padding: 7px 9px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.chat-message.user .chat-bubble {
+  background: #f4f4f5;
+  color: #0d0d0d;
+}
+.chat-message.assistant .chat-bubble {
+  background: #151515;
+  border-color: rgba(255, 255, 255, 0.06);
+}
+.chat-input-container {
+  gap: 6px;
+  padding-top: 8px;
+}
+.chat-input {
+  min-height: 30px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: #111111;
+}
+.tabs {
+  padding: 2px;
+  border-radius: 4px;
+  background: #151515;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+.tab {
+  padding: 5px 4px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1;
+  min-height: 26px;
+  white-space: nowrap;
+}
+.tab.active {
+  background: #202020;
+  box-shadow: none;
+}
+body.sidebar-collapsed .nav-sidebar {
+  width: 54px;
+}
+body.sidebar-collapsed .nav-label,
+body.sidebar-collapsed .nav-orbit-title,
+body.sidebar-collapsed .orbit-agent,
+body.sidebar-collapsed .sidebar-panels {
+  display: none;
+}
+body.sidebar-collapsed .nav-top-action span:last-child {
+  display: none;
+}
+body.sidebar-collapsed .offline-guide,
+body.sidebar-collapsed .metrics-bar,
+body.sidebar-collapsed .main-content {
+  margin-left: 54px;
+}
+.setup-grid { gap: 8px; }
+.setup-label {
+  font-size: 11px;
+  color: #a1a1aa;
+}
+.setup-input,
+.setup-select {
+  height: 30px;
+  padding: 5px 7px;
+  border-radius: 4px;
+  background: #111111;
+}
+.empty-state {
+  padding: 16px;
+  font-size: 12px;
+}
+.modal-content {
+  background: #111111;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+@media (max-width: 760px) {
+  body {
+    overflow: auto;
+  }
+  .dashboard {
+    height: auto;
+    overflow: visible;
+  }
+  .offline-guide,
+  .metrics-bar,
+  .main-content { margin-left: 0; }
+  .main-content {
+    overflow: visible;
+  }
+  .right-column {
+    overflow: visible;
+  }
+  .tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 </style>
 </head>
@@ -1239,11 +1827,18 @@ body::before {
   <!-- Header -->
   <header class="header">
     <div class="header-brand">
-      <div class="header-logo">N</div>
+      <div class="header-logo"><img src="/static/icon_mascot.webp" alt="Neugi Mascot"></div>
       <div>
         <div class="header-title">NEUGI Dashboard</div>
         <span class="header-version">v2.1.3</span>
       </div>
+    </div>
+    <div class="header-center">
+      <input class="header-search" id="globalSearch" placeholder="Search (Ctrl+K)">
+      <select class="workspace-select" id="workspaceSelect">
+        <option>Workspace</option>
+        <option>Main</option>
+      </select>
     </div>
     <div class="header-actions">
       <div class="header-status">
@@ -1254,42 +1849,57 @@ body::before {
         <span>&#x21bb;</span> <span>Refresh</span>
       </button>
       <button class="btn btn-sm" onclick="openSettings()" title="Settings">
-        <span>&#x2699;</span>
+        <span>&#9881;</span>
       </button>
     </div>
   </header>
+  <aside class="nav-sidebar">
+    <button class="btn btn-sm nav-top-action" onclick="toggleSidebar()" title="Toggle Sidebar">
+      <span>&#9776;</span> <span>Nav</span>
+    </button>
+    <div class="nav-item active" data-nav="chat" onclick="handleSidebarNav('chat', this)"><span class="nav-icon">&#9675;</span><span class="nav-label">Chat</span></div>
+    <div class="nav-item" data-nav="agents" onclick="handleSidebarNav('agents', this)"><span class="nav-icon">&#9679;</span><span class="nav-label">Agents</span></div>
+    <div class="nav-item" data-nav="skills" onclick="handleSidebarNav('skills', this)"><span class="nav-icon">&#9671;</span><span class="nav-label">Skills</span></div>
+    <div class="nav-item" data-nav="memory" onclick="handleSidebarNav('memory', this)"><span class="nav-icon">&#9638;</span><span class="nav-label">Memory</span></div>
+    <div class="nav-item" data-nav="flows" onclick="handleSidebarNav('flows', this)"><span class="nav-icon">&#10227;</span><span class="nav-label">Flows</span></div>
+    <div class="nav-item" data-nav="plugins" onclick="handleSidebarNav('plugins', this)"><span class="nav-icon">&#9635;</span><span class="nav-label">Plugins</span></div>
+    <div class="nav-item" data-nav="config" onclick="handleSidebarNav('config', this)"><span class="nav-icon">&#9881;</span><span class="nav-label">Config</span></div>
+    <div class="sidebar-panels" id="sidebarPanelsHost"></div>
+  </aside>
+  <div class="offline-guide" id="offlineGuide">
+    NEUGI is offline. Run <code>neugi start</code> once after restart, or enable auto-launch with
+    <code>neugi autostart enable</code> so it starts automatically on login.
+  </div>
 
   <!-- Metrics Bar -->
-  <div class="metrics-bar">
-    <div class="glass-card metric-card">
+  <div class="metrics-bar" data-mode="idle">
+    <div class="glass-card metric-card" data-metric="agents" onclick="focusMetric('agents')">
       <span class="metric-label">Agents</span>
       <span class="metric-value info" id="metricAgents">0</span>
       <span class="metric-change" id="metricAgentsActive">0 active</span>
+      <div class="metric-detail" id="metricAgentsDetail">Click to expand details</div>
+      <div class="metric-inline-list" id="metricAgentsInline"></div>
     </div>
-    <div class="glass-card metric-card">
+    <div class="glass-card metric-card" data-metric="sessions" onclick="focusMetric('sessions')">
       <span class="metric-label">Sessions</span>
       <span class="metric-value success" id="metricSessions">0</span>
       <span class="metric-change" id="metricSessionsActive">0 active</span>
+      <div class="metric-detail" id="metricSessionsDetail">Click to expand details</div>
+      <div class="metric-inline-list" id="metricSessionsInline"></div>
     </div>
-    <div class="glass-card metric-card">
+    <div class="glass-card metric-card" data-metric="skills" onclick="focusMetric('skills')">
       <span class="metric-label">Skills</span>
       <span class="metric-value" id="metricSkills" style="color: var(--accent-secondary)">0</span>
       <span class="metric-change" id="metricSkillsTiers">0 tiers</span>
+      <div class="metric-detail" id="metricSkillsDetail">Click to expand details</div>
+      <div class="metric-inline-list" id="metricSkillsInline"></div>
     </div>
-    <div class="glass-card metric-card">
+    <div class="glass-card metric-card" data-metric="memory" onclick="focusMetric('memory')">
       <span class="metric-label">Memory</span>
       <span class="metric-value warning" id="metricMemory">0</span>
       <span class="metric-change" id="metricMemoryDaily">0 daily</span>
-    </div>
-    <div class="glass-card metric-card">
-      <span class="metric-label">Requests</span>
-      <span class="metric-value info" id="metricRequests">0</span>
-      <span class="metric-change" id="metricRequestsRate">0/min</span>
-    </div>
-    <div class="glass-card metric-card">
-      <span class="metric-label">Uptime</span>
-      <span class="metric-value success" id="metricUptime">0s</span>
-      <span class="metric-change" id="metricWsClients">0 WS clients</span>
+      <div class="metric-detail" id="metricMemoryDetail">Click to expand details</div>
+      <div class="metric-inline-list" id="metricMemoryInline"></div>
     </div>
   </div>
 
@@ -1297,63 +1907,36 @@ body::before {
   <div class="main-content">
     <!-- Left Column -->
     <div class="left-column">
-      <!-- Agent Grid -->
-      <div class="glass-card animate-in">
-        <div class="section-header">
-          <div class="section-title">
-            <span class="icon">&#x1F916;</span> Agents
-          </div>
-          <span class="section-badge" id="agentCount">0 total</span>
-        </div>
-        <div class="agent-grid" id="agentGrid">
-          <div class="empty-state">
-            <div class="icon">&#x1F916;</div>
-            <div>Loading agents...</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Sessions -->
-      <div class="glass-card animate-in" style="animation-delay: 0.1s">
-        <div class="section-header">
-          <div class="section-title">
-            <span class="icon">&#x1F4AC;</span> Active Sessions
-          </div>
-          <span class="section-badge" id="sessionCount">0 total</span>
-        </div>
-        <div class="sessions-list" id="sessionsList">
-          <div class="empty-state">
-            <div class="icon">&#x1F4AC;</div>
-            <div>No active sessions</div>
-          </div>
-        </div>
-      </div>
-
       <!-- Chat -->
-      <div class="glass-card chat-container animate-in" style="animation-delay: 0.2s">
+      <div class="glass-card chat-container animate-in" style="animation-delay: 0.1s">
         <div class="section-header">
           <div class="section-title">
-            <span class="icon">&#x2728;</span> Chat
+            <span class="icon">&#9675;</span> Chat
           </div>
           <button class="btn btn-sm" onclick="clearChat()">Clear</button>
         </div>
         <div class="chat-messages" id="chatMessages">
           <div class="chat-message assistant">
             <div class="chat-avatar assistant">N</div>
-            <div class="chat-bubble">Welcome to NEUGI v2! How can I help you today?</div>
+            <div class="chat-bubble">NEUGI is ready. What would you like to run?</div>
           </div>
         </div>
         <div class="chat-input-container">
-          <input type="text" class="chat-input" id="chatInput" placeholder="Type a message..." onkeydown="handleChatKey(event)">
+          <textarea class="chat-input" id="chatInput" rows="1" placeholder="Type a message, or / for commands" onkeydown="handleChatKey(event)" oninput="handleComposerInput()"></textarea>
           <button class="btn btn-primary btn-sm" onclick="sendChat()">Send</button>
         </div>
+        <div class="setup-status" id="chatHint" style="margin-top:0.5rem"></div>
       </div>
     </div>
 
-    <!-- Right Column -->
-    <div class="right-column">
+    <!-- Right Column (moved to sidebar dynamically) -->
+    <div class="right-column" id="legacyRightColumn">
       <!-- Tabbed Panel -->
-      <div class="glass-card">
+      <details class="glass-card panel-collapsible" id="sidebarControlPanel" open>
+        <summary class="section-header">
+          <div class="section-title"><span class="icon">&#9638;</span> Control Panel</div>
+          <span class="section-badge">Expand/Hide</span>
+        </summary>
         <div class="tabs">
           <button class="tab active" onclick="switchTab('setup')">Setup</button>
           <button class="tab" onclick="switchTab('skills')">Skills</button>
@@ -1405,8 +1988,11 @@ body::before {
             <div class="setup-actions">
               <button class="btn" onclick="loadSetupConfig()">Reload Config</button>
               <button class="btn" onclick="testSetupProvider()">Test Provider</button>
+              <button class="btn" onclick="toggleAutostart(true)">Autostart On</button>
+              <button class="btn" onclick="toggleAutostart(false)">Autostart Off</button>
               <button class="btn btn-primary" onclick="saveSetupConfig()">Save AI Setup</button>
             </div>
+            <div class="setup-hint" id="autostartStatus">Autostart status: checking...</div>
             <div class="setup-status" id="setupStatus"></div>
           </div>
         </div>
@@ -1415,7 +2001,7 @@ body::before {
         <div class="tab-content" id="tab-skills">
           <div class="skills-list" id="skillsList" style="margin-top: 0.75rem">
             <div class="empty-state">
-              <div class="icon">&#x1F4DA;</div>
+              <div class="icon">&#9638;</div>
               <div>Loading skills...</div>
             </div>
           </div>
@@ -1448,7 +2034,7 @@ body::before {
             </div>
             <div class="memory-entries" id="memoryEntries">
               <div class="empty-state">
-                <div class="icon">&#x1F9E0;</div>
+                <div class="icon">&#9679;</div>
                 <div>No memories yet</div>
               </div>
             </div>
@@ -1459,7 +2045,7 @@ body::before {
         <div class="tab-content" id="tab-channels">
           <div class="channels-list" id="channelsList" style="margin-top: 0.75rem">
             <div class="empty-state">
-              <div class="icon">&#x1F4E1;</div>
+              <div class="icon">&#9675;</div>
               <div>No channels configured</div>
             </div>
           </div>
@@ -1469,7 +2055,7 @@ body::before {
         <div class="tab-content" id="tab-workflows">
           <div class="workflows-list" id="workflowsList" style="margin-top: 0.75rem">
             <div class="empty-state">
-              <div class="icon">&#x1F504;</div>
+              <div class="icon">&#10227;</div>
               <div>No workflows defined</div>
             </div>
           </div>
@@ -1479,21 +2065,21 @@ body::before {
         <div class="tab-content" id="tab-plugins">
           <div class="plugins-list" id="pluginsList" style="margin-top: 0.75rem">
             <div class="empty-state">
-              <div class="icon">&#x1F9E9;</div>
+              <div class="icon">&#9635;</div>
               <div>No plugins installed</div>
             </div>
           </div>
         </div>
-      </div>
+      </details>
 
       <!-- Governance -->
-      <div class="glass-card">
-        <div class="section-header">
+      <details class="glass-card panel-collapsible" id="sidebarGovernance">
+        <summary class="section-header">
           <div class="section-title">
-            <span class="icon">&#x1F6E1;</span> Governance
+            <span class="icon">&#9637;</span> Governance
           </div>
           <span class="section-badge" id="approvalCount">0 pending</span>
-        </div>
+        </summary>
         <div style="display: flex; flex-direction: column; gap: 0.5rem">
           <div>
             <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.25rem">
@@ -1519,7 +2105,7 @@ body::before {
             </div>
           </div>
         </div>
-      </div>
+      </details>
     </div>
   </div>
 </div>
@@ -1579,7 +2165,7 @@ body::before {
 <script>
 // -- State ------------------------------------------------------------------
 const state = {
-  baseUrl: 'http://localhost:17901',
+  baseUrl: '',
   apiKey: '',
   autoRefresh: true,
   useWebSocket: true,
@@ -1598,6 +2184,13 @@ const state = {
   providers: [],
   config: null,
   selectedModel: '',
+  apiKeyMasked: false,
+  chatHistory: [],
+  ui: {
+    activeMetric: '',
+    activeTab: 'setup',
+    sidebarCollapsed: false,
+  },
 };
 
 // -- API Helper -------------------------------------------------------------
@@ -1636,39 +2229,42 @@ async function fetchAgents() {
     const data = await api('/api/agents');
     state.agents = data.data.agents || [];
     renderAgents();
-    document.getElementById('agentCount').textContent = `${data.data.total} total`;
     document.getElementById('metricAgents').textContent = data.data.total;
     document.getElementById('metricAgentsActive').textContent = `${data.data.active} active`;
+    const detail = document.getElementById('metricAgentsDetail');
+    if (detail) {
+      detail.textContent = `${state.agents.length} listed | ${data.data.active || 0} active | ${Math.max(0, (data.data.total || 0) - (data.data.active || 0))} idle`;
+    }
+    const total = Number(data.data.total || 0);
+    const active = Number(data.data.active || 0);
+    const ratio = total > 0 ? active / total : 0;
+    setMetricSeverity('agents', ratio < 0.25 ? 'warn' : 'info');
   } catch (e) {
     console.warn('Failed to fetch agents:', e);
   }
 }
 
 function renderAgents() {
-  const grid = document.getElementById('agentGrid');
+  const list = document.getElementById('metricAgentsInline');
+  if (!list) return;
   if (!state.agents.length) {
-    grid.innerHTML = '<div class="empty-state"><div class="icon">&#x1F916;</div><div>No agents available</div></div>';
+    list.innerHTML = '<div class="metric-inline-item">No agents available</div>';
     return;
   }
-  grid.innerHTML = state.agents.map((agent, i) => `
-    <div class="glass-card agent-card animate-in" style="animation-delay: ${i * 0.05}s">
-      <div class="agent-header">
-        <div class="agent-avatar ${agent.role || 'worker'}">${(agent.name || agent.id || '?')[0].toUpperCase()}</div>
-        <div>
-          <div class="agent-name">${agent.name || agent.id}</div>
-          <div class="agent-role">${agent.role || 'worker'}</div>
-        </div>
-      </div>
-      <div class="agent-status">
-        <span class="dot ${agent.status || 'idle'}"></span>
-        <span>${agent.status || 'idle'}</span>
-      </div>
-      <div class="agent-stats">
-        <span>Lvl ${agent.level || 1}</span>
-        <span>${agent.tasks_completed || 0} tasks</span>
-      </div>
-    </div>
-  `).join('');
+  const statusDots = (status) => {
+    if (status === 'active' || status === 'running' || status === 'online') return '&#9679;&#9679;&#9679;';
+    if (status === 'busy' || status === 'processing') return '&#9679;&#9679;&#9675;';
+    if (status === 'idle') return '&#9679;&#9675;&#9675;';
+    return '&#9675;&#9675;&#9675;';
+  };
+  list.innerHTML = state.agents
+    .slice(0, 8)
+    .map((agent) => {
+      const label = agent.name || agent.id || 'Agent';
+      const status = agent.status || 'idle';
+      return `<div class="metric-inline-item">${escapeHtml(label)} · ${escapeHtml(status)} · ${statusDots(status)}</div>`;
+    })
+    .join('');
 }
 
 // -- Sessions ---------------------------------------------------------------
@@ -1677,29 +2273,35 @@ async function fetchSessions() {
     const data = await api('/api/sessions');
     state.sessions = data.data.sessions || [];
     renderSessions();
-    document.getElementById('sessionCount').textContent = `${data.data.total} total`;
     document.getElementById('metricSessions').textContent = data.data.total;
     document.getElementById('metricSessionsActive').textContent = `${data.data.active} active`;
+    const detail = document.getElementById('metricSessionsDetail');
+    if (detail) {
+      detail.textContent = `${data.data.total || 0} total | ${data.data.active || 0} active`;
+    }
+    const active = Number(data.data.active || 0);
+    setMetricSeverity('sessions', active > 0 ? 'info' : 'warn');
   } catch (e) {
     console.warn('Failed to fetch sessions:', e);
   }
 }
 
 function renderSessions() {
-  const list = document.getElementById('sessionsList');
+  const list = document.getElementById('metricSessionsInline');
+  if (!list) return;
   if (!state.sessions.length) {
-    list.innerHTML = '<div class="empty-state"><div class="icon">&#x1F4AC;</div><div>No active sessions</div></div>';
+    list.innerHTML = '<div class="metric-inline-item">No active sessions</div>';
     return;
   }
-  list.innerHTML = state.sessions.map(s => `
-    <div class="session-item">
-      <div class="session-info">
-        <span class="session-id">${s.id.substring(0, 12)}...</span>
-        <span class="session-meta">${s.message_count || 0} messages</span>
-      </div>
-      <span class="session-badge ${s.state || 'idle'}">${s.state || 'idle'}</span>
-    </div>
-  `).join('');
+  list.innerHTML = state.sessions
+    .slice(0, 8)
+    .map((s) => {
+      const id = (s.id || 'session').substring(0, 8);
+      const count = s.message_count || 0;
+      const sessionState = s.state || 'idle';
+      return `<div class="metric-inline-item">${escapeHtml(id)} · ${count} msg · ${escapeHtml(sessionState)}</div>`;
+    })
+    .join('');
 }
 
 // -- Skills -----------------------------------------------------------------
@@ -1710,6 +2312,21 @@ async function fetchSkills() {
     renderSkills();
     document.getElementById('metricSkills').textContent = data.data.total;
     document.getElementById('metricSkillsTiers').textContent = `${(data.data.tiers || []).length} tiers`;
+    const detail = document.getElementById('metricSkillsDetail');
+    if (detail) {
+      detail.textContent = `${data.data.total || 0} loaded | ${(data.data.tiers || []).length} tiers`;
+    }
+    const inline = document.getElementById('metricSkillsInline');
+    if (inline) {
+      const featured = (state.skills || []).slice(0, 8);
+      inline.innerHTML = featured.length
+        ? featured
+            .map((s) => `<div class="metric-inline-item">${escapeHtml(s.name || s.id || 'Skill')} · ${escapeHtml(s.tier || 'workspace')}</div>`)
+            .join('')
+        : '<div class="metric-inline-item">No skills loaded</div>';
+    }
+    const total = Number(data.data.total || 0);
+    setMetricSeverity('skills', total === 0 ? 'warn' : 'info');
   } catch (e) {
     console.warn('Failed to fetch skills:', e);
   }
@@ -1718,7 +2335,7 @@ async function fetchSkills() {
 function renderSkills() {
   const list = document.getElementById('skillsList');
   if (!state.skills.length) {
-    list.innerHTML = '<div class="empty-state"><div class="icon">&#x1F4DA;</div><div>No skills loaded</div></div>';
+    list.innerHTML = '<div class="empty-state"><div class="icon">&#9635;</div><div>No skills loaded</div></div>';
     return;
   }
   list.innerHTML = state.skills.map(s => `
@@ -1743,6 +2360,21 @@ async function fetchMemory() {
     document.getElementById('memSize').textContent = formatBytes(data.data.storage_size_bytes || 0);
     document.getElementById('metricMemory').textContent = data.data.total_entries || 0;
     document.getElementById('metricMemoryDaily').textContent = `${data.data.daily_entries || 0} daily`;
+    const detail = document.getElementById('metricMemoryDetail');
+    if (detail) {
+      detail.textContent = `${data.data.total_entries || 0} total | ${data.data.consolidated_entries || 0} consolidated`;
+    }
+    const inline = document.getElementById('metricMemoryInline');
+    if (inline) {
+      inline.innerHTML = [
+        `<div class="metric-inline-item">Consolidated · ${data.data.consolidated_entries || 0}</div>`,
+        `<div class="metric-inline-item">Daily · ${data.data.daily_entries || 0}</div>`,
+        `<div class="metric-inline-item">Size · ${formatBytes(data.data.storage_size_bytes || 0)}</div>`,
+      ].join('');
+    }
+    const daily = Number(data.data.daily_entries || 0);
+    const consolidated = Number(data.data.consolidated_entries || 0);
+    setMetricSeverity('memory', daily > (consolidated * 2 + 10) ? 'warn' : 'info');
   } catch (e) {
     console.warn('Failed to fetch memory:', e);
   }
@@ -1762,7 +2394,7 @@ async function searchMemory() {
 function renderMemoryEntries(entries) {
   const container = document.getElementById('memoryEntries');
   if (!entries.length) {
-    container.innerHTML = '<div class="empty-state"><div class="icon">&#x1F9E0;</div><div>No results found</div></div>';
+    container.innerHTML = '<div class="empty-state"><div class="icon">&#9679;</div><div>No results found</div></div>';
     return;
   }
   container.innerHTML = entries.map(e => `
@@ -1787,7 +2419,7 @@ async function fetchChannels() {
 function renderChannels() {
   const list = document.getElementById('channelsList');
   if (!state.channels.length) {
-    list.innerHTML = '<div class="empty-state"><div class="icon">&#x1F4E1;</div><div>No channels configured</div></div>';
+    list.innerHTML = '<div class="empty-state"><div class="icon">&#9675;</div><div>No channels configured</div></div>';
     return;
   }
   list.innerHTML = state.channels.map(c => `
@@ -1818,7 +2450,7 @@ async function fetchWorkflows() {
 function renderWorkflows() {
   const list = document.getElementById('workflowsList');
   if (!state.workflows.length) {
-    list.innerHTML = '<div class="empty-state"><div class="icon">&#x1F504;</div><div>No workflows defined</div></div>';
+    list.innerHTML = '<div class="empty-state"><div class="icon">&#10227;</div><div>No workflows defined</div></div>';
     return;
   }
   list.innerHTML = state.workflows.map(w => `
@@ -1846,7 +2478,7 @@ async function fetchPlugins() {
 function renderPlugins() {
   const list = document.getElementById('pluginsList');
   if (!state.plugins.length) {
-    list.innerHTML = '<div class="empty-state"><div class="icon">&#x1F9E9;</div><div>No plugins installed</div></div>';
+    list.innerHTML = '<div class="empty-state"><div class="icon">&#9635;</div><div>No plugins installed</div></div>';
     return;
   }
   list.innerHTML = state.plugins.map(p => `
@@ -1879,6 +2511,27 @@ async function fetchGovernance() {
   }
 }
 
+function dashboardOrigin() {
+  return window.location.origin && window.location.origin !== 'null'
+    ? window.location.origin
+    : 'http://localhost:17901';
+}
+
+function normalizeDashboardBaseUrl(value) {
+  const raw = String(value || '').replace(/\/$/, '');
+  if (!raw) return '';
+  try {
+    const target = new URL(raw);
+    const current = new URL(dashboardOrigin());
+    const localHost = ['localhost', '127.0.0.1', '::1'].includes(target.hostname);
+    const samePort = target.port === current.port;
+    if (localHost && samePort) return '';
+  } catch {
+    return '';
+  }
+  return raw;
+}
+
 function updateBudget() {
   const g = state.governance;
   const dailyPct = g.daily_budget ? Math.round((g.daily_spent / g.daily_budget) * 100) : 0;
@@ -1890,18 +2543,23 @@ function updateBudget() {
   document.getElementById('budgetMonthly').textContent = `${g.monthly_spent || 0} / ${g.monthly_budget || 30000}`;
   document.getElementById('budgetMonthlyBar').style.width = `${monthlyPct}%`;
 
-  document.getElementById('metricRequests').textContent = g.total_requests || 0;
 }
 
 function renderApprovals() {
   const list = document.getElementById('approvalList');
-  document.getElementById('approvalCount').textContent = `${state.approvals.length} pending`;
+  const highRisk = state.approvals.filter((req) => String(req.risk_level || '').toLowerCase() === 'high').length;
+  document.getElementById('approvalCount').textContent = highRisk > 0
+    ? `${state.approvals.length} pending (${highRisk} high)`
+    : `${state.approvals.length} pending`;
   if (!state.approvals.length) {
     list.innerHTML = '<div class="empty-state"><div>No pending approvals</div></div>';
     return;
   }
-  list.innerHTML = state.approvals.map(req => `
-    <div class="approval-item">
+  list.innerHTML = state.approvals.map(req => {
+    const risk = String(req.risk_level || 'low').toLowerCase();
+    const sevClass = risk === 'high' ? 'sev-critical' : (risk === 'medium' ? 'sev-warn' : 'sev-info');
+    return `
+    <div class="approval-item ${sevClass}">
       <div class="approval-row">
         <div>
           <div class="approval-title">${escapeHtml(req.action || 'Action request')}</div>
@@ -1915,7 +2573,8 @@ function renderApprovals() {
         <button class="btn btn-primary btn-sm" onclick="decideApproval('${escapeAttr(req.request_id)}', 'approve')">Approve</button>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 async function decideApproval(requestId, decision) {
@@ -1940,16 +2599,27 @@ async function sendChat() {
   const message = input.value.trim();
   if (!message) return;
 
+  if (handleSlashCommand(message)) {
+    input.value = '';
+    autoResizeComposer();
+    return;
+  }
+
   input.value = '';
+  autoResizeComposer();
   appendChatMessage('user', message);
+  const thinkingId = appendTypingIndicator();
 
   try {
     const data = await api('/api/chat', {
       method: 'POST',
       body: JSON.stringify({ message }),
     });
+    removeTypingIndicator(thinkingId);
     appendChatMessage('assistant', data.data.response || 'No response');
+    state.chatHistory.push(message);
   } catch (e) {
+    removeTypingIndicator(thinkingId);
     appendChatMessage('assistant', `Error: ${e.message}`);
   }
 }
@@ -1961,16 +2631,99 @@ function handleChatKey(event) {
   }
 }
 
+function handleComposerInput() {
+  autoResizeComposer();
+  const message = document.getElementById('chatInput').value.trim();
+  const hint = document.getElementById('chatHint');
+  if (!hint) return;
+  if (!message) {
+    hint.textContent = '';
+    return;
+  }
+  if (message.startsWith('/')) {
+    hint.textContent = 'Commands: /clear, /settings, /model, /agent';
+    return;
+  }
+  if (message.includes('@')) {
+    hint.textContent = 'Tip: mention an agent, example @aurora';
+    return;
+  }
+  hint.textContent = '';
+}
+
+function autoResizeComposer() {
+  const input = document.getElementById('chatInput');
+  if (!input) return;
+  input.style.height = 'auto';
+  input.style.height = `${Math.min(input.scrollHeight, 140)}px`;
+}
+
+function handleSlashCommand(message) {
+  const cmd = message.toLowerCase();
+  if (cmd === '/clear') {
+    clearChat();
+    return true;
+  }
+  if (cmd === '/settings') {
+    openSettings();
+    return true;
+  }
+  if (cmd === '/model') {
+    switchTab('setup');
+    setSetupStatus('Model quick switch: use Setup tab model picker.');
+    return true;
+  }
+  if (cmd === '/agent') {
+    focusMetric('agents');
+    return true;
+  }
+  return false;
+}
+
 function appendChatMessage(role, text) {
   const container = document.getElementById('chatMessages');
   const avatar = role === 'user' ? 'U' : 'N';
+  const ts = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const msgId = `m_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
   container.innerHTML += `
-    <div class="chat-message ${role} animate-slide">
+    <div class="chat-message ${role} animate-slide" id="${msgId}">
       <div class="chat-avatar ${role}">${avatar}</div>
-      <div class="chat-bubble">${escapeHtml(text)}</div>
+      <div>
+        <div class="chat-bubble">${escapeHtml(text)}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;display:flex;gap:10px;align-items:center;">
+          <span>${ts}</span>
+          ${role === 'assistant' ? `<button class="btn btn-sm" style="padding:2px 8px;font-size:11px;" onclick="copyMessage('${msgId}')">Copy</button>` : ''}
+        </div>
+      </div>
     </div>
   `;
   container.scrollTop = container.scrollHeight;
+}
+
+function appendTypingIndicator() {
+  const container = document.getElementById('chatMessages');
+  const id = `typing_${Date.now()}`;
+  container.innerHTML += `
+    <div class="chat-message assistant animate-slide" id="${id}">
+      <div class="chat-avatar assistant">N</div>
+      <div class="chat-bubble">Thinking...</div>
+    </div>
+  `;
+  container.scrollTop = container.scrollHeight;
+  return id;
+}
+
+function removeTypingIndicator(id) {
+  const node = document.getElementById(id);
+  if (node) node.remove();
+}
+
+function copyMessage(messageId) {
+  const node = document.getElementById(messageId);
+  if (!node) return;
+  const bubble = node.querySelector('.chat-bubble');
+  if (!bubble) return;
+  navigator.clipboard.writeText(bubble.textContent || '');
 }
 
 function clearChat() {
@@ -2013,10 +2766,45 @@ async function loadSetupConfig() {
     document.getElementById('setupFallbackModel').value = llm.fallback_model || '';
     document.getElementById('setupTemperature').value = llm.temperature ?? 0.7;
     document.getElementById('setupMaxTokens').value = llm.max_tokens || 4096;
+    const apiKeyInput = document.getElementById('setupApiKey');
+    if (llm.api_key_masked) {
+      apiKeyInput.value = '********';
+      state.apiKeyMasked = true;
+    } else {
+      apiKeyInput.value = '';
+      state.apiKeyMasked = false;
+    }
     renderSetupModels();
     setSetupStatus('Config loaded.');
+    await refreshAutostartStatus();
   } catch (e) {
     setSetupStatus(`Config load failed: ${e.message}`, true);
+  }
+}
+
+async function refreshAutostartStatus() {
+  const el = document.getElementById('autostartStatus');
+  if (!el) return;
+  try {
+    const data = await api('/api/runtime/autostart');
+    const d = data.data || {};
+    el.textContent = `Autostart: ${d.enabled ? 'enabled' : 'disabled'} (${d.platform || 'unknown'})`;
+  } catch (e) {
+    el.textContent = `Autostart status unavailable: ${e.message}`;
+  }
+}
+
+async function toggleAutostart(enable) {
+  try {
+    const action = enable ? 'enable' : 'disable';
+    const data = await api('/api/runtime/autostart', {
+      method: 'POST',
+      body: JSON.stringify({ action }),
+    });
+    setSetupStatus(data.message || `Autostart ${action}d`);
+    await refreshAutostartStatus();
+  } catch (e) {
+    setSetupStatus(`Autostart update failed: ${e.message}`, true);
   }
 }
 
@@ -2094,7 +2882,7 @@ function buildSetupPayload(includeApiKey = true) {
     },
   };
   const apiKey = document.getElementById('setupApiKey').value.trim();
-  if (includeApiKey && apiKey) {
+  if (includeApiKey && apiKey && !(state.apiKeyMasked && apiKey === '********')) {
     payload.llm.api_key = apiKey;
   }
   return payload;
@@ -2128,7 +2916,8 @@ async function saveSetupConfig() {
       body: JSON.stringify(payload),
     });
     state.config = data.data.config || state.config;
-    document.getElementById('setupApiKey').value = '';
+    document.getElementById('setupApiKey').value = '********';
+    state.apiKeyMasked = true;
     setSetupStatus(`Saved to ${data.data.saved_path || 'runtime config'}. Restart the running swarm to fully reload provider wiring.`);
   } catch (e) {
     setSetupStatus(`Save failed: ${e.message}`, true);
@@ -2146,16 +2935,52 @@ function setSetupStatus(message, isError = false) {
   el.style.color = isError ? 'var(--error)' : 'var(--text-muted)';
 }
 
+function togglePanels() {
+  // Deprecated: control panels are now integrated in the left sidebar.
+}
+
+function toggleSidebar() {
+  document.body.classList.toggle('sidebar-collapsed');
+  state.ui.sidebarCollapsed = document.body.classList.contains('sidebar-collapsed');
+  saveUIState();
+}
+
+function focusMetric(metricName) {
+  const cards = document.querySelectorAll('.metrics-bar .metric-card');
+  const current = document.querySelector('.metrics-bar .metric-card.active');
+  const sameMetric = current && current.dataset.metric === metricName;
+  let activeCard = null;
+  cards.forEach((card) => {
+    const isActive = !sameMetric && card.dataset.metric === metricName;
+    card.classList.toggle('active', isActive);
+    card.setAttribute('aria-expanded', isActive ? 'true' : 'false');
+    if (isActive) activeCard = card;
+  });
+  const bar = document.querySelector('.metrics-bar');
+  if (bar) {
+    const hasFocus = cards.length > 0 && Array.from(cards).some((card) => card.classList.contains('active'));
+    bar.classList.toggle('has-focus', hasFocus);
+    bar.dataset.mode = hasFocus ? 'expanded' : 'idle';
+  }
+  state.ui.activeMetric = activeCard ? metricName : '';
+  saveUIState();
+  if (activeCard) {
+    activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }
+}
+
 // -- WebSocket --------------------------------------------------------------
 function connectWebSocket() {
   if (!state.useWebSocket) return;
 
-  const wsUrl = state.baseUrl.replace('http', 'ws') + '/ws';
+  const wsBaseUrl = state.baseUrl || dashboardOrigin();
+  const wsUrl = wsBaseUrl.replace('http', 'ws') + '/ws';
   try {
     state.ws = new WebSocket(wsUrl);
     state.ws.onopen = () => {
       console.log('WebSocket connected');
-      document.getElementById('metricWsClients').textContent = 'WS connected';
+      const wsBadge = document.getElementById('statusText');
+      if (wsBadge) wsBadge.textContent = 'Connected';
     };
     state.ws.onmessage = (event) => {
       try {
@@ -2167,7 +2992,8 @@ function connectWebSocket() {
     };
     state.ws.onclose = () => {
       console.log('WebSocket disconnected, reconnecting in 5s...');
-      document.getElementById('metricWsClients').textContent = 'WS disconnected';
+      const wsBadge = document.getElementById('statusText');
+      if (wsBadge) wsBadge.textContent = 'Disconnected';
       setTimeout(connectWebSocket, 5000);
     };
     state.ws.onerror = () => {
@@ -2207,20 +3033,24 @@ function handleWsEvent(data) {
 function updateStatus(status) {
   const dot = document.getElementById('statusDot');
   const text = document.getElementById('statusText');
+  const guide = document.getElementById('offlineGuide');
   dot.className = 'status-dot';
 
   switch (status) {
     case 'connected':
       text.textContent = 'Connected';
       dot.classList.add('online');
+      if (guide) guide.style.display = 'none';
       break;
     case 'offline':
       text.textContent = 'Offline';
       dot.classList.add('offline');
+      if (guide) guide.style.display = 'block';
       break;
     case 'connecting':
       text.textContent = 'Connecting...';
       dot.classList.add('connecting');
+      if (guide) guide.style.display = 'none';
       break;
   }
 }
@@ -2228,24 +3058,81 @@ function updateStatus(status) {
 // -- Metrics ----------------------------------------------------------------
 function updateMetrics() {
   if (!state.health) return;
-  const uptime = state.health.uptime_seconds || 0;
-  document.getElementById('metricUptime').textContent = formatUptime(uptime);
-  document.getElementById('metricWsClients').textContent = `${state.health.websocket_clients || 0} WS clients`;
+  const memoryInline = document.getElementById('metricMemoryInline');
+  if (memoryInline && memoryInline.children.length === 0) {
+    memoryInline.innerHTML = `<div class="metric-inline-item">Uptime · ${formatUptime(state.health.uptime_seconds || 0)}</div>`;
+  }
+}
+
+function setMetricSeverity(metricName, severity) {
+  const card = document.querySelector(`.metric-card[data-metric="${metricName}"]`);
+  if (!card) return;
+  card.classList.remove('sev-info', 'sev-warn', 'sev-critical');
+  if (severity === 'critical') card.classList.add('sev-critical');
+  else if (severity === 'warn') card.classList.add('sev-warn');
+  else card.classList.add('sev-info');
 }
 
 // -- Tabs -------------------------------------------------------------------
-function switchTab(tabName) {
+function switchTab(tabName, trigger = null) {
+  if (!trigger) {
+    trigger = document.querySelector(`.tab[onclick*="'${tabName}'"]`);
+  }
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-
-  event.target.classList.add('active');
+  if (trigger) {
+    trigger.classList.add('active');
+  }
   document.getElementById(`tab-${tabName}`).classList.add('active');
+  state.ui.activeTab = tabName;
+  saveUIState();
+}
+
+function handleSidebarNav(route, itemEl) {
+  document.querySelectorAll('.nav-sidebar .nav-item').forEach((node) => node.classList.remove('active'));
+  if (itemEl) itemEl.classList.add('active');
+
+  const controlPanel = document.getElementById('sidebarControlPanel');
+  const governancePanel = document.getElementById('sidebarGovernance');
+  if (controlPanel) controlPanel.open = true;
+
+  switch (route) {
+    case 'chat': {
+      const input = document.getElementById('chatInput');
+      if (input) input.focus();
+      break;
+    }
+    case 'agents':
+      focusMetric('agents');
+      break;
+    case 'skills':
+      switchTab('skills');
+      break;
+    case 'memory':
+      switchTab('memory');
+      break;
+    case 'flows':
+      switchTab('workflows');
+      break;
+    case 'plugins':
+      switchTab('plugins');
+      break;
+    case 'config':
+      switchTab('setup');
+      break;
+    case 'governance':
+      if (governancePanel) governancePanel.open = true;
+      governancePanel?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      break;
+    default:
+      break;
+  }
 }
 
 // -- Settings ---------------------------------------------------------------
 function openSettings() {
   document.getElementById('settingsModal').classList.add('active');
-  document.getElementById('settingsHost').value = state.baseUrl;
+  document.getElementById('settingsHost').value = state.baseUrl || dashboardOrigin();
   document.getElementById('settingsApiKey').value = state.apiKey;
   document.getElementById('settingsAutoRefresh').checked = state.autoRefresh;
   document.getElementById('settingsWebSocket').checked = state.useWebSocket;
@@ -2256,13 +3143,13 @@ function closeSettings() {
 }
 
 function saveSettings() {
-  state.baseUrl = document.getElementById('settingsHost').value.replace(/\/$/, '');
+  state.baseUrl = normalizeDashboardBaseUrl(document.getElementById('settingsHost').value);
   state.apiKey = document.getElementById('settingsApiKey').value;
   state.autoRefresh = document.getElementById('settingsAutoRefresh').checked;
   state.useWebSocket = document.getElementById('settingsWebSocket').checked;
 
   localStorage.setItem('neugi_settings', JSON.stringify({
-    baseUrl: state.baseUrl,
+    baseUrl: state.baseUrl || dashboardOrigin(),
     apiKey: state.apiKey,
     autoRefresh: state.autoRefresh,
     useWebSocket: state.useWebSocket,
@@ -2283,7 +3170,7 @@ function loadSettings() {
   try {
     const saved = JSON.parse(localStorage.getItem('neugi_settings'));
     if (saved) {
-      state.baseUrl = saved.baseUrl || state.baseUrl;
+      state.baseUrl = normalizeDashboardBaseUrl(saved.baseUrl || state.baseUrl);
       state.apiKey = saved.apiKey || '';
       state.autoRefresh = saved.autoRefresh !== undefined ? saved.autoRefresh : true;
       state.useWebSocket = saved.useWebSocket !== undefined ? saved.useWebSocket : true;
@@ -2340,6 +3227,35 @@ function formatTime(timestamp) {
   return d.toLocaleTimeString();
 }
 
+function saveUIState() {
+  localStorage.setItem('neugi_ui_state', JSON.stringify(state.ui));
+}
+
+function loadUIState() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('neugi_ui_state') || '{}');
+    state.ui = {
+      activeMetric: saved.activeMetric || '',
+      activeTab: saved.activeTab || 'setup',
+      sidebarCollapsed: Boolean(saved.sidebarCollapsed),
+    };
+  } catch (e) {
+    console.warn('Failed to load UI state:', e);
+  }
+}
+
+function applyUIState() {
+  if (state.ui.sidebarCollapsed) {
+    document.body.classList.add('sidebar-collapsed');
+  }
+  if (state.ui.activeTab) {
+    switchTab(state.ui.activeTab);
+  }
+  if (state.ui.activeMetric) {
+    focusMetric(state.ui.activeMetric);
+  }
+}
+
 function formatContext(tokens) {
   if (!tokens) return 'context unknown';
   if (tokens >= 1000000) return `${Math.round(tokens / 1000000)}M ctx`;
@@ -2365,11 +3281,22 @@ function showNotification(message) {
 
 // -- Init -------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
+  const sidebarPanelsHost = document.getElementById('sidebarPanelsHost');
+  const legacyRightColumn = document.getElementById('legacyRightColumn');
+  if (sidebarPanelsHost && legacyRightColumn) {
+    while (legacyRightColumn.firstChild) {
+      sidebarPanelsHost.appendChild(legacyRightColumn.firstChild);
+    }
+    legacyRightColumn.remove();
+  }
+
+  loadUIState();
   loadSettings();
   fetchProviderCatalog();
   refreshAll();
   setupAutoRefresh();
   connectWebSocket();
+  applyUIState();
 
   // Close modal on overlay click
   document.getElementById('settingsModal').addEventListener('click', (e) => {
@@ -2378,10 +3305,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Keyboard shortcut
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeSettings();
+    if (e.key === 'Escape') {
+      closeSettings();
+      if (state.ui.activeMetric) focusMetric(state.ui.activeMetric);
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      document.getElementById('globalSearch')?.focus();
+    }
     if (e.key === 'r' && e.ctrlKey) {
       e.preventDefault();
       refreshAll();
+    }
+    if (!e.ctrlKey && !e.metaKey && !e.altKey && /^[1-7]$/.test(e.key)) {
+      const map = ['chat', 'agents', 'skills', 'memory', 'flows', 'plugins', 'config'];
+      const route = map[Number(e.key) - 1];
+      const item = document.querySelector(`.nav-sidebar .nav-item[data-nav="${route}"]`);
+      if (route && item) {
+        e.preventDefault();
+        handleSidebarNav(route, item);
+      }
+    }
+    if (!e.ctrlKey && !e.metaKey && !e.altKey && (e.key === '[' || e.key === ']')) {
+      const order = ['setup', 'skills', 'memory', 'channels', 'workflows', 'plugins'];
+      const current = state.ui.activeTab || 'setup';
+      let idx = order.indexOf(current);
+      if (idx < 0) idx = 0;
+      idx = e.key === '[' ? (idx - 1 + order.length) % order.length : (idx + 1) % order.length;
+      switchTab(order[idx]);
+      e.preventDefault();
     }
   });
 });
