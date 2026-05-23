@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Documentation — Neugi v2.1.3</title>
+    <title>Documentation - Neugi v2.1.3</title>
     <meta name="description" content="Complete documentation for NEUGI Swarm v2.1.3. 29 subsystems, 120+ modules, installation, CLI, API, and architecture guides.">
     <style>body{background:#0a0a0f;margin:0}</style>
-    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
-    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
+    <link rel="icon" type="image/x-icon" href="https://neugi.com/assets/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://neugi.com/assets/favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -22,7 +22,7 @@
             --text-tertiary: #71717a;
             --border-subtle: rgba(255,255,255,0.1);
             --border-hover: rgba(255,255,255,0.2);
-            --accent: #6366f1;
+            --accent: #f4f4f5;
             --accent-glow: rgba(99,102,241,0.15);
             --font-sans: 'Inter', -apple-system, sans-serif;
             --font-mono: 'JetBrains Mono', monospace;
@@ -173,6 +173,38 @@
             aside { display:none; }
             main { padding:8px 24px 60px; }
         }
+
+        /* NEUGI native IDE refinement. */
+        :root {
+            --bg-base:#0d0d0d;
+            --bg-elevated:#111111;
+            --bg-layer:rgba(255,255,255,0.035);
+            --bg-code:#0f0f0f;
+            --border-subtle:rgba(255,255,255,0.06);
+            --border-hover:rgba(255,255,255,0.12);
+            --text-primary:#f4f4f5;
+            --text-secondary:#a1a1aa;
+            --text-tertiary:#71717a;
+        }
+        body { font-size:13px; line-height:1.5; background:#0d0d0d; }
+        nav { height:52px; background:#0d0d0d; backdrop-filter:none; }
+        .nav-inner { height:52px; }
+        .brand { font-size:13px; }
+        .brand img { width:22px; height:22px; border-radius:4px; }
+        .nav-links a, aside a, p, li, td, th { font-size:13px; }
+        h1 { font-size:24px; letter-spacing:-0.02em; }
+        h2 { font-size:18px; margin:28px 0 12px; }
+        h3 { font-size:14px; margin:20px 0 8px; }
+        .docs-layout { grid-template-columns:220px 1fr; }
+        aside { padding:18px 12px; }
+        main { padding:18px 32px 52px; }
+        .search-box, pre, .cmd-block, .tip, .warning, .agent-card, code, .copy-btn {
+            border-radius:4px !important;
+            box-shadow:none !important;
+        }
+        pre, .cmd-block, .agent-card { padding:12px; }
+        .copy-btn { padding:3px 7px; font-size:11px; }
+        footer.docs-footer { padding:24px 32px; margin-top:36px; }
     </style>
 </head>
 <body>
@@ -201,7 +233,7 @@
                 <button class="nav-item active" onclick="showPage('intro')">Introduction</button>
                 <button class="nav-item" onclick="showPage('install')">Installation</button>
                 <button class="nav-item" onclick="showPage('quickstart')">Quickstart</button>
-                <a href="https://github.com/atharia-agi/neugi_swarm/blob/master/neugi_swarm_v2/docs/TUTORIAL.md" target="_blank" class="nav-item" style="display:flex; align-items:center; gap:6px; text-decoration:none; padding:8px 12px; border-radius:6px; color:var(--text-secondary); font-size:13px; transition:all 0.15s;">📖 Complete A-Z Tutorial <span style="font-size:10px; opacity:0.6;">↗</span></a>
+                <a href="https://github.com/atharia-agi/neugi_swarm/blob/master/neugi_swarm_v2/docs/TUTORIAL.md" target="_blank" class="nav-item" style="display:flex; align-items:center; gap:6px; text-decoration:none; padding:8px 12px; border-radius:4px; color:var(--text-secondary); font-size:13px; transition:all 0.15s;">Complete A-Z Tutorial <span style="font-size:10px; opacity:0.6;">↗</span></a>
             </div>
 
             <div class="nav-group">
@@ -229,15 +261,30 @@
         <main>
             <!-- INTRODUCTION -->
             <section id="intro" class="page-section active">
-                <div class="badge">v2.1.3 — 29 Subsystems — 377 Tests Passing</div>
+                <div class="badge">v2.1.3 - 29 Subsystems - 384 Tests Passing (2 skipped)</div>
                 <h1>Neugi Documentation</h1>
-                <p>Deploy, manage, and scale a multi-agent neural swarm acting autonomously on your infrastructure. NEUGI v2.1.3 is the most advanced open-source agentic AI framework ever built — 29 subsystems, 120+ modules, ~65K lines of deterministic multi-agent state machine.</p>
+                <p>Deploy, manage, and scale a multi-agent neural swarm acting autonomously on your infrastructure. NEUGI v2.1.3 delivers production-grade orchestration across 29 subsystems, 120+ modules, and ~71K lines of deterministic multi-agent state logic.</p>
 
                 <p>Welcome to the Neugi documentation. Here you will find everything you need to know about setting up and running a local fleet of specialized, deterministic AI agents capable of code generation, browser automation, web search, and raw operating system execution.</p>
 
+                <div class="tip" style="margin-top:14px;">
+                    <div class="tip-title">New in Dashboard Ops Upgrade</div>
+                    <p style="margin:0; color:var(--text-secondary);">
+                        Governance now includes severity-based audit triage (All/Info/Warn/Critical), keyword filtering, and batch approval safety prompts with optional reason logging.
+                        Plugin controls now support live enable/disable, bulk actions, and persisted state overrides across restarts.
+                    </p>
+                </div>
+                <div class="tip" style="margin-top:10px;">
+                    <div class="tip-title">Ops Shortcuts</div>
+                    <p style="margin:0; color:var(--text-secondary);">
+                        In Dashboard ops mode: <code>Ctrl/Cmd+K</code> opens command search, and <code>Alt+1..4</code> switches Governance audit severity filters (All, Info, Warn, Critical) for fast triage.
+                        You can also run <code>/smoke</code> from chat to execute a quick dashboard wiring health check.
+                    </p>
+                </div>
+
                 <div class="tip">
-                    <div class="tip-title">Lightweight by Design</div>
-                    <p style="margin:0; color:var(--text-secondary);">Neugi is specifically optimized for small, lightweight models (1B–7B LLMs) like Qwen 2.5, Llama 3.2, and DeepSeek running locally via Ollama. It can scale gracefully to larger cloud models (GPT-4, Claude, Gemini) when configured.</p>
+                    <div class="tip-title">Provider-Agnostic by Default</div>
+                    <p style="margin:0; color:var(--text-secondary);">Neugi now runs provider-agnostic workflows. You can start with cloud-first or local-first routing, then switch providers/models safely from dashboard setup. Current catalog includes OpenAI, Anthropic, Gemini, Grok, DeepSeek, Groq, Mistral, Cohere, OpenRouter, NVIDIA NIM, Together, Fireworks, Cerebras, and compatible custom endpoints.</p>
                 </div>
 
                 <h2>What is Neugi?</h2>
@@ -259,7 +306,7 @@
             <section id="install" class="page-section">
                 <div class="badge">Prerequisites</div>
                 <h1>Installation</h1>
-                <p>Neugi requires <strong>Python 3.10+</strong> and <strong>Ollama</strong> (recommended for local models). The entire framework installs in under 30 seconds.</p>
+                <p>Neugi requires <strong>Python 3.10+</strong>. Local Ollama is optional, not mandatory. The framework supports cloud and custom endpoints out of the box.</p>
 
                 <h3>Prerequisites</h3>
                 <table>
@@ -284,8 +331,8 @@
                 </div>
 
                 <div class="tip">
-                    <div class="tip-title">Windows Users — No WSL Required!</div>
-                    <p style="margin:0; color:var(--text-secondary);">Ollama has a native Windows installer. Just download the .exe from <a href="https://ollama.com/download/windows">ollama.com/download/windows</a>, double-click, and you're done. The <code>ollama</code> command works directly in Command Prompt and PowerShell. WSL is only needed if you specifically want to run Ollama inside Linux.</p>
+                    <div class="tip-title">Windows Users — Native Flow</div>
+                    <p style="margin:0; color:var(--text-secondary);">No WSL required. Install with PowerShell one-liner, run <code>neugi wizard</code>, pick your provider, test connection, and continue. Ollama is only required if you intentionally choose local Ollama routing.</p>
                 </div>
 
                 <h3>Manual Install</h3>
@@ -304,35 +351,41 @@ pip install -e "neugi_swarm_v2[dev]"</code>
 
             <!-- QUICKSTART -->
             <section id="quickstart" class="page-section">
-                <div class="badge">5 Minutes to Swarm</div>
+                <div class="badge">One-Liner to Workflow</div>
                 <h1>Quickstart</h1>
-                <p>Get a fully functional Neugi swarm running in under 5 minutes.</p>
+                <p>Get from clean install to production-ready workflow with a provider-agnostic setup path.</p>
 
-                <h3>Step 1: Start Ollama</h3>
+                <h3>Step 1: Install (One-Liner)</h3>
                 <div class="cmd-block">
-                    <code>ollama run qwen2.5-coder:7b</code>
+                    <code>irm https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm_v2/install.ps1 | iex</code>
                     <button class="copy-btn" onclick="copyCode(this)">Copy</button>
                 </div>
 
                 <h3>Step 2: Run the Wizard</h3>
-                <p>The interactive wizard walks you through provider selection, model choice, and feature enablement — no config files to memorize.</p>
+                <p>The wizard walks you through provider selection, model choice, key setup, and connectivity verification. No manual config editing required.</p>
                 <div class="cmd-block">
                     <code>neugi wizard</code>
                     <button class="copy-btn" onclick="copyCode(this)">Copy</button>
                 </div>
 
-                <h3>Step 3: Start Chatting</h3>
+                <h3>Step 3: Run Readiness Smoke Check</h3>
                 <div class="cmd-block">
-                    <code>neugi chat</code>
+                    <code>neugi smoke</code>
                     <button class="copy-btn" onclick="copyCode(this)">Copy</button>
                 </div>
 
-                <h3>Step 4: Launch Dashboard (Optional)</h3>
+                <h3>Step 4: Start Runtime + Dashboard</h3>
                 <div class="cmd-block">
                     <code>neugi start</code>
                     <button class="copy-btn" onclick="copyCode(this)">Copy</button>
                 </div>
                 <p>Then open <a href="dashboard.html">http://localhost:17901</a> for the web dashboard. The Setup tab can choose providers, search models, enter a key, test the connection, and save the AI config without using the terminal.</p>
+
+                <h3>Step 5: Run Primary Workflow</h3>
+                <div class="cmd-block">
+                    <code>neugi chat</code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
 
                 <div class="warning">
                     <div class="warning-title">First-Time Users</div>
@@ -364,8 +417,8 @@ pip install -e "neugi_swarm_v2[dev]"</code>
                     <tr><td><strong>Tools</strong></td><td>61 builtins across 10 categories, composition, dynamic generation</td></tr>
                     <tr><td><strong>Channels</strong></td><td>Unified Telegram, Discord, Slack, WhatsApp manager</td></tr>
                     <tr><td><strong>Security</strong></td><td>7-layer sandbox, neuro-symbolic validation, AES-256 secrets</td></tr>
-                    <tr><td><strong>CLI + Wizard</strong></td><td>17 commands, interactive chat, rescue mode, setup wizard</td></tr>
-                    <tr><td><strong>Dashboard</strong></td><td>Glass-morphism HTML, 28 REST endpoints, setup provider test, approval queue, WebSocket events</td></tr>
+                    <tr><td><strong>CLI + Wizard</strong></td><td>24 top-level commands, interactive chat, rescue mode, setup wizard</td></tr>
+                    <tr><td><strong>Dashboard</strong></td><td>Glass-morphism HTML, 32 REST endpoints, setup provider test, approval queue, WebSocket events</td></tr>
                     <tr><td><strong>Evals</strong></td><td>Benchmark harness, regression detection, skill scoring</td></tr>
                     <tr><td><strong>Multimodal</strong></td><td>Vision input, screenshot analysis, computer use</td></tr>
                     <tr><td><strong>A2A Protocol</strong></td><td>Agent-to-agent mesh, capability discovery, heartbeat</td></tr>
@@ -411,7 +464,7 @@ pip install -e "neugi_swarm_v2[dev]"</code>
                 </div>
 
                 <h2>Typed Agent LLM Wiring</h2>
-                <p>Every agent is strongly typed with auto-generated tool schemas from Python type hints. The <code>TypedAgent</code> class injects tool definitions directly into the LLM prompt, enabling structured function calling across Ollama, OpenAI, and Anthropic providers.</p>
+                <p>Every agent is strongly typed with auto-generated tool schemas from Python type hints. The <code>TypedAgent</code> class injects tool definitions directly into the LLM prompt, enabling structured function calling across local, cloud, and custom compatible providers.</p>
                 <pre><code>from neugi_swarm_v2.agents.typed import TypedAgent, agent_tool
 
 class MyAgent(TypedAgent):
@@ -451,7 +504,7 @@ class MyAgent(TypedAgent):
             <section id="skills" class="page-section">
                 <div class="badge">6 Tiers</div>
                 <h1>Skill System</h1>
-                <p>Neugi's skill system is the most advanced of any open-source agent framework. Skills are loaded in 6 tiers with automatic promotion/demotion based on usage frequency and relevance.</p>
+                <p>Neugi's skill system is designed for production reliability. Skills are loaded in 6 tiers with automatic promotion/demotion based on usage frequency and relevance.</p>
 
                 <table>
                     <tr><th>Tier</th><th>Scope</th><th>Priority</th></tr>
@@ -468,9 +521,9 @@ class MyAgent(TypedAgent):
 
             <!-- CLI -->
             <section id="cli" class="page-section">
-                <div class="badge">17 Commands</div>
+                <div class="badge">24 Commands</div>
                 <h1>CLI Reference</h1>
-                <p>Neugi provides a robust CLI for full swarm management, interactive chat, diagnostics, and configuration.</p>
+                <p>Neugi provides a robust CLI for full swarm management, interactive chat, diagnostics, and configuration. The table below highlights key commands; run <code>neugi help</code> for the complete live command tree.</p>
 
                 <table>
                     <tr><th>Command</th><th>Description</th></tr>
@@ -482,6 +535,9 @@ class MyAgent(TypedAgent):
                     <tr><td><code>neugi rescue</code></td><td>Diagnose and fix common issues</td></tr>
                     <tr><td><code>neugi doctor</code></td><td>System diagnostics with auto-fix</td></tr>
                     <tr><td><code>neugi update</code></td><td>Check for updates</td></tr>
+                    <tr><td><code>neugi smoke</code></td><td>Run fast end-to-end readiness checks</td></tr>
+                    <tr><td><code>neugi quickstart</code></td><td>One-command setup, diagnose, smoke test, and start</td></tr>
+                    <tr><td><code>neugi autonomous status</code></td><td>Show autonomous loop state and statistics</td></tr>
                     <tr><td><code>neugi agents list</code></td><td>List all active agents</td></tr>
                     <tr><td><code>neugi skills list</code></td><td>List installed skills</td></tr>
                     <tr><td><code>neugi memory recall &lt;query&gt;</code></td><td>Search memory</td></tr>
@@ -508,20 +564,21 @@ class MyAgent(TypedAgent):
                 <h3>Agent Operations</h3>
                 <table>
                     <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
-                    <tr><td>POST</td><td><code>/api/v2/agents</code></td><td>Create an agent</td></tr>
-                    <tr><td>GET</td><td><code>/api/v2/agents</code></td><td>List all agents</td></tr>
-                    <tr><td>GET</td><td><code>/api/v2/agents/{id}</code></td><td>Get agent details</td></tr>
-                    <tr><td>PUT</td><td><code>/api/v2/agents/{id}</code></td><td>Update agent config</td></tr>
-                    <tr><td>DELETE</td><td><code>/api/v2/agents/{id}</code></td><td>Remove an agent</td></tr>
+                    <tr><td>GET</td><td><code>/api/agents</code></td><td>List all agents</td></tr>
+                    <tr><td>POST</td><td><code>/api/agents/{id}/task</code></td><td>Delegate task to an agent</td></tr>
+                    <tr><td>GET</td><td><code>/api/sessions</code></td><td>List active sessions</td></tr>
+                    <tr><td>GET</td><td><code>/api/sessions/{id}/messages</code></td><td>Get session transcript</td></tr>
+                    <tr><td>POST</td><td><code>/api/chat</code></td><td>Run chat request</td></tr>
                 </table>
 
-                <h3>Chat & Memory</h3>
+                <h3>Provider & Runtime Setup</h3>
                 <table>
                     <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
-                    <tr><td>POST</td><td><code>/api/v2/chat</code></td><td>Stream agent response</td></tr>
-                    <tr><td>POST</td><td><code>/api/v2/memory/recall</code></td><td>Recall memories</td></tr>
-                    <tr><td>POST</td><td><code>/api/v2/memory/write</code></td><td>Write memory entry</td></tr>
-                    <tr><td>GET</td><td><code>/api/v2/memory/search</code></td><td>Vector similarity search</td></tr>
+                    <tr><td>GET</td><td><code>/api/providers</code></td><td>Fetch provider/model catalog</td></tr>
+                    <tr><td>GET</td><td><code>/api/providers/health</code></td><td>Readiness and key presence status</td></tr>
+                    <tr><td>GET</td><td><code>/api/config</code></td><td>Read runtime configuration</td></tr>
+                    <tr><td>PUT</td><td><code>/api/config</code></td><td>Update runtime configuration</td></tr>
+                    <tr><td>POST</td><td><code>/api/config/test-llm</code></td><td>Validate provider/model connection</td></tr>
                 </table>
 
                 <h3>WebSocket Events</h3>
@@ -575,7 +632,7 @@ class MyAgent(TypedAgent):
                 <p>First-time users can run <code>neugi wizard</code> for guided setup:</p>
                 <ol style="color:var(--text-secondary); margin-left:20px; margin-bottom:20px;">
                     <li>Directory creation and permission checks</li>
-                    <li>Provider selection (Ollama / OpenAI / Anthropic)</li>
+                    <li>Provider selection from current multi-provider catalog (including NVIDIA NIM and compatible endpoints)</li>
                     <li>Model selection with compatibility hints</li>
                     <li>Feature enablement (memory, skills, channels, dashboard)</li>
                     <li>Connection test before finishing</li>
@@ -586,12 +643,12 @@ class MyAgent(TypedAgent):
                 <table>
                     <tr><th>Category</th><th>Issues Detected</th></tr>
                     <tr><td>Configuration</td><td>Missing config, corrupted JSON, invalid provider settings</td></tr>
-                    <tr><td>Ollama</td><td>Not running, unreachable, wrong port</td></tr>
+                    <tr><td>Provider Connectivity</td><td>Unreachable endpoint, invalid base URL, missing/invalid API key, model mismatch</td></tr>
                     <tr><td>Directories</td><td>Missing required folders (skills, memory, sessions)</td></tr>
                     <tr><td>Permissions</td><td>No write access to NEUGI directory</td></tr>
                     <tr><td>Dependencies</td><td>Missing Python packages</td></tr>
                     <tr><td>Database</td><td>SQLite corruption, integrity check failures</td></tr>
-                    <tr><td>Ports</td><td>Conflicts on dashboard or Ollama ports</td></tr>
+                    <tr><td>Ports</td><td>Conflicts on dashboard and runtime service ports</td></tr>
                 </table>
 
                 <h2>Corruption Repair</h2>
@@ -623,9 +680,9 @@ class MyAgent(TypedAgent):
 
                 <h2>Ecosystem Vision 2026</h2>
                 <ol style="color:var(--text-secondary); margin-left:20px; margin-bottom:20px;">
-                    <li><strong>Local Foundation</strong> — Built with Ollama for zero-config privacy and offline operation</li>
-                    <li><strong>Global Reach</strong> — Native integration for OpenAI GPT-4, Anthropic Claude, Google Gemini</li>
-                    <li><strong>Cost Efficiency</strong> — Native scaling for DeepSeek, Alibaba Qwen, and local clusters</li>
+                    <li><strong>Provider-Agnostic Foundation</strong> — Cloud, local, and custom compatible endpoints within one unified runtime</li>
+                    <li><strong>Global Reach</strong> — Native integration for OpenAI, Anthropic, Gemini, Grok, and more</li>
+                    <li><strong>Cost Efficiency</strong> — Flexible scaling across DeepSeek, Qwen, NVIDIA NIM, and other optimized providers</li>
                     <li><strong>Hardware Agnostic</strong> — Runs on CPU, GPU, or Apple Silicon with automatic backend selection</li>
                 </ol>
 
@@ -635,7 +692,7 @@ class MyAgent(TypedAgent):
                 <p>Contact: <a href="mailto:atharia.agi@gmail.com">atharia.agi@gmail.com</a> • <a href="https://twitter.com/Atharia_AGI" target="_blank">@Atharia_AGI</a></p>
 
                 <div style="margin-top:40px; padding:24px; background:var(--bg-elevated); border:1px solid var(--border-subtle); border-radius:12px;">
-                    <p style="margin:0; color:var(--text-tertiary); font-size:13px;">Last updated April 27, 2026. Documentation version matches NEUGI v2.1.3.</p>
+                    <p style="margin:0; color:var(--text-tertiary); font-size:13px;">Last updated May 24, 2026. Claims revalidated against current v2.1.3 runtime and test suite.</p>
                 </div>
             </section>
 
