@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
-from .agent_manager import AgentManager
+from agents.agent_manager import AgentManager
 
 logger = logging.getLogger(__name__)
 
@@ -330,7 +330,7 @@ class ParallelProcess(Process):
         with ThreadPoolExecutor(max_workers=len(self.steps)) as pool:
             futures = {pool.submit(self._execute_step, step): step for step in self.steps}
             for future in as_completed(futures):
-                step = futures[future]
+                _ = futures[future]
                 # Step already updated by _execute_step
 
         if self.sync_barrier:

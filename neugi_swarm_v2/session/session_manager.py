@@ -522,7 +522,7 @@ class Session:
             return None
 
         try:
-            with open(checkpoint_path) as f:
+            with open(checkpoint_path, encoding="utf-8") as f:
                 data = json.load(f)
             checkpoint = SessionCheckpoint.from_dict(data)
 

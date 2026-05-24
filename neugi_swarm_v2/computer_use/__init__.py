@@ -7,7 +7,7 @@ Modules:
     controller: Main ComputerUseController for vision+action loops
 """
 
-from .controller import (
+from computer_use.controller import (
     ActionType,
     ComputerAction,
     ComputerUseConfig,

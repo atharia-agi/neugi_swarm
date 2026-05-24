@@ -18,26 +18,28 @@ from typing import (
 )
 
 from observability import get_event_bus
-
 from tools.tool_registry import ToolComplexity, ToolRegistry
 
 try:
     from security import (
         CommandValidator,
         ExecutionSandbox,
-        ExploitPreventionEngine,
         SandboxViolation,
     )
 except ImportError:
     ExecutionSandbox = None  # type: ignore
     SandboxViolation = None  # type: ignore
     CommandValidator = None  # type: ignore
-    ExploitPreventionEngine = None  # type: ignore
 
 try:
     from governance import ApprovalGate
 except ImportError:
     ApprovalGate = None  # type: ignore
+
+try:
+    from governance.budget import BudgetTracker
+except ImportError:
+    BudgetTracker = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +81,7 @@ class ExecutionTrace:
         error: str | None = None,
         cached: bool = False,
         retries: int = 0,
-    ):
+    ) -> None:
         """Add a step to the trace."""
         self.steps.append(
             {
@@ -94,7 +96,7 @@ class ExecutionTrace:
         )
         self.total_latency_ms += latency_ms
 
-    def complete(self):
+    def complete(self) -> None:
         """Mark trace as complete."""
         self.completed_at = time.time()
 
@@ -189,7 +191,7 @@ class CacheBackend:
 
     def set(
         self, tool_name: str, args: tuple, kwargs: dict, value: Any, ttl: float | None = None
-    ):
+    ) -> None:
         """Cache a result with optional TTL."""
         key = self._make_key(tool_name, args, kwargs)
         with self._lock:
@@ -201,13 +203,13 @@ class CacheBackend:
                 oldest_key, _ = self._cache.popitem(last=False)
                 self._expiry.pop(oldest_key, None)
 
-    def clear(self):
+    def clear(self) -> None:
         """Clear all cached entries."""
         with self._lock:
             self._cache.clear()
             self._expiry.clear()
 
-    def invalidate(self, tool_name: str):
+    def invalidate(self, tool_name: str) -> None:
         """Invalidate all cache entries for a tool."""
         with self._lock:
             keys_to_remove = []
@@ -240,12 +242,12 @@ class RateLimiter:
         >>> limiter.check("tool1")  # True if allowed
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._limits: dict[str, int] = {}
         self._windows: dict[str, deque[float]] = {}
         self._lock = threading.Lock()
 
-    def set_limit(self, tool_name: str, calls_per_minute: int):
+    def set_limit(self, tool_name: str, calls_per_minute: int) -> None:
         """Set rate limit for a tool."""
         with self._lock:
             self._limits[tool_name] = calls_per_minute
@@ -292,7 +294,7 @@ class RateLimiter:
                 return 0.0
             return window[0] + 60.0 - time.time()
 
-    def reset(self, tool_name: str):
+    def reset(self, tool_name: str) -> None:
         """Reset rate limit window for a tool."""
         with self._lock:
             if tool_name in self._windows:
@@ -348,7 +350,7 @@ class CircuitBreaker:
                 return calls >= self._half_open_max_calls
             return False
 
-    def record_success(self, tool_name: str):
+    def record_success(self, tool_name: str) -> None:
         """Record a successful call."""
         with self._lock:
             state = self._states.get(tool_name, self.CLOSED)
@@ -358,7 +360,7 @@ class CircuitBreaker:
             elif state == self.CLOSED:
                 self._failure_counts[tool_name] = 0
 
-    def record_failure(self, tool_name: str):
+    def record_failure(self, tool_name: str) -> None:
         """Record a failed call."""
         with self._lock:
             state = self._states.get(tool_name, self.CLOSED)
@@ -378,7 +380,7 @@ class CircuitBreaker:
         with self._lock:
             return self._states.get(tool_name, self.CLOSED)
 
-    def reset(self, tool_name: str):
+    def reset(self, tool_name: str) -> None:
         """Reset circuit breaker for a tool."""
         with self._lock:
             self._states.pop(tool_name, None)
@@ -412,15 +414,15 @@ class ToolExecutor:
         capability_profile: Any | None = None,
         sandbox: Any | None = None,
         command_validator: Any | None = None,
-        exploit_prevention: Any | None = None,
         approval_gate: Any | None = None,
+        budget_tracker: BudgetTracker | None = None,
     ):
         self.registry = registry
         self.capability_profile = capability_profile
         self.sandbox = sandbox
         self.command_validator = command_validator
-        self.exploit_prevention = exploit_prevention
         self.approval_gate = approval_gate
+        self.budget_tracker = budget_tracker
         self.cache_enabled = cache_enabled
         self.cache = CacheBackend(max_size=cache_max_size, default_ttl=cache_ttl)
         self.rate_limiter = RateLimiter()
@@ -492,11 +494,11 @@ class ToolExecutor:
                 "circuit_recovery_timeout": circuit_recovery_timeout,
             }
 
-    def set_rate_limit(self, tool_name: str, calls_per_minute: int):
+    def set_rate_limit(self, tool_name: str, calls_per_minute: int) -> None:
         """Set rate limit for a tool."""
         self.rate_limiter.set_limit(tool_name, calls_per_minute)
 
-    def set_transformer(self, tool_name: str, transformer: Callable):
+    def set_transformer(self, tool_name: str, transformer: Callable) -> None:
         """
         Set a result transformer for a tool.
 
@@ -576,26 +578,6 @@ class ToolExecutor:
                     trace_id=trace_id or "",
                 )
 
-            # -- Security: Exploit Prevention (input scan) ------------------
-            if self.exploit_prevention:
-                try:
-                    reports = self.exploit_prevention.analyze_input(
-                        str(kwargs), source=f"tool:{tool_name}"
-                    )
-                    critical_reports = [r for r in reports if getattr(r, "severity", "") == "critical"]
-                    if critical_reports:
-                        reason = critical_reports[0].description if hasattr(critical_reports[0], "description") else "Critical threat detected"
-                        logger.warning("Security blocked tool %s: %s", tool_name, reason)
-                        return ExecutionResult(
-                            tool_name=tool_name,
-                            success=False,
-                            error=f"Security blocked: {reason}",
-                            latency_ms=(time.time() - start_time) * 1000,
-                            trace_id=trace_id or "",
-                        )
-                except Exception as e:
-                    logger.warning("Exploit prevention scan failed for %s: %s", tool_name, e)
-
             # -- Security: Approval Gate (complex/strategic tools) ----------
             if self.approval_gate and schema.complexity in (ToolComplexity.COMPLEX, ToolComplexity.STRATEGIC):
                 try:
@@ -622,6 +604,25 @@ class ToolExecutor:
                             )
                 except Exception as e:
                     logger.warning("Approval gate check failed for %s: %s", tool_name, e)
+
+            # -- Governance: Budget check -----------------------------------
+            if self.budget_tracker:
+                try:
+                    budget_id = "default"
+                    if not self.budget_tracker.can_spend(budget_id, tokens=0, cost=0.0):
+                        logger.warning("Budget exceeded for tool %s", tool_name)
+                        return ExecutionResult(
+                            tool_name=tool_name,
+                            success=False,
+                            error="Budget exceeded",
+                            latency_ms=(time.time() - start_time) * 1000,
+                            trace_id=trace_id or "",
+                        )
+                except ValueError:
+                    # Budget ID does not exist — skip check gracefully
+                    logger.debug("Budget '%s' not configured, skipping budget check", "default")
+                except Exception as e:
+                    logger.warning("Budget check failed for %s: %s", tool_name, e)
 
             # -- Security: Command Validator (subprocess-based tools) -------
             if self.command_validator and tool_name in ("system_execute_command", "docker_run", "docker_exec", "docker_compose_up"):
@@ -725,26 +726,6 @@ class ToolExecutor:
             if tool_name in self._transformers:
                 result = self._transformers[tool_name](result)
 
-            # -- Security: Exploit Prevention (output scan) -----------------
-            if self.exploit_prevention and result is not None:
-                try:
-                    reports = self.exploit_prevention.analyze_tool_result(
-                        str(result), tool_name=tool_name
-                    )
-                    critical_reports = [r for r in reports if getattr(r, "severity", "") == "critical"]
-                    if critical_reports:
-                        reason = critical_reports[0].description if hasattr(critical_reports[0], "description") else "Critical threat in output"
-                        logger.warning("Security blocked output from %s: %s", tool_name, reason)
-                        return ExecutionResult(
-                            tool_name=tool_name,
-                            success=False,
-                            error=f"Security blocked output: {reason}",
-                            latency_ms=(time.time() - start_time) * 1000,
-                            trace_id=trace_id or "",
-                        )
-                except Exception as e:
-                    logger.warning("Exploit prevention output scan failed for %s: %s", tool_name, e)
-
             latency = (time.time() - start_time) * 1000
 
             if self.cache_enabled and schema.cacheable and not skip_cache:
@@ -836,6 +817,10 @@ class ToolExecutor:
 
         except Exception as e:
             latency = (time.time() - start_time) * 1000
+            logger.error(
+                "Unexpected error executing tool '%s' (kwargs=%s): %s",
+                tool_name, list(kwargs.keys()), e,
+            )
             self.registry.record_stats(tool_name, latency, False, str(e))
             self.circuit_breaker.record_failure(tool_name)
             # Publish tool execution failure event
@@ -871,11 +856,11 @@ class ToolExecutor:
             future = executor.submit(func, **kwargs)
             try:
                 return future.result(timeout=timeout)
-            except concurrent.futures.TimeoutError:
+            except concurrent.futures.TimeoutError as e:
                 raise TimeoutError(
                     "unknown",
                     f"Tool execution timed out after {timeout}s",
-                )
+                ) from e
 
     def _build_command_for_sandbox(
         self, tool_name: str, kwargs: dict[str, Any]
@@ -983,11 +968,11 @@ class ToolExecutor:
         """Get all execution traces."""
         return dict(self._traces)
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         """Clear the result cache."""
         self.cache.clear()
 
-    def reset_circuit(self, tool_name: str):
+    def reset_circuit(self, tool_name: str) -> None:
         """Reset circuit breaker for a tool."""
         self.circuit_breaker.reset(tool_name)
 

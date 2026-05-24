@@ -7,16 +7,16 @@ model can actually do (tools, vision, JSON mode) via probing.
 
 Usage:
     from model_registry import ModelCapabilityDetector
-    
+
     detector = ModelCapabilityDetector(ollama_url="http://localhost:11434")
-    
+
     # Detect capabilities of installed model
     caps = detector.detect("qwen3.5:cloud")
     print(caps.supports_tools)  # True/False based on probing
-    
+
     # List installed Ollama models
     models = detector.list_installed()
-    
+
     # Check if a model likely supports a feature
     if detector.likely_supports_tools("qwen3.5:cloud"):
         ...
@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 import logging
+import urllib.error
 import urllib.request
 from dataclasses import dataclass
 
@@ -51,7 +52,7 @@ class ModelCapabilities:
 class ModelCapabilityDetector:
     """
     Detects what a model can do by probing or heuristic matching.
-    
+
     NEVER blocks a model — if unknown, assumes basic chat capabilities
     and logs a warning so the user knows features might not work.
     """
@@ -140,7 +141,7 @@ class ModelCapabilityDetector:
     def detect(self, model_name: str, provider: str = "ollama") -> ModelCapabilities:
         """
         Detect capabilities for a model.
-        
+
         Strategy:
             1. Check cache
             2. Try to probe Ollama for actual model info
@@ -187,11 +188,11 @@ class ModelCapabilityDetector:
                 headers={"Accept": "application/json"},
                 method="GET",
             )
-            with urllib.request.urlopen(req, timeout=5) as resp:
+            with urllib.request.urlopen(req, timeout=5) as resp:  # nosec B310
                 data = json.loads(resp.read().decode())
                 models = data.get("models", [])
                 return [m.get("name", "") for m in models if m.get("name")]
-        except Exception as e:
+        except (urllib.error.URLError, OSError, TimeoutError, ValueError) as e:
             logger.warning("Could not list Ollama models: %s", e)
             return []
 
@@ -235,7 +236,7 @@ class ModelCapabilityDetector:
             headers={"Content-Type": "application/json", "Accept": "application/json"},
             method="POST",
         )
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        with urllib.request.urlopen(req, timeout=5) as resp:  # nosec B310
             return json.loads(resp.read().decode())
 
     def _parse_ollama_info(self, model_name: str, info: dict) -> ModelCapabilities:
@@ -284,9 +285,9 @@ class ModelCapabilityDetector:
         # Match against known families
         for family, hints in self._FAMILY_HINTS.items():
             if family in name_lower:
-                caps.supports_tools = hints["tools"]
-                caps.supports_vision = hints["vision"]
-                caps.supports_json_mode = hints["json"]
+                caps.supports_tools = bool(hints["tools"])
+                caps.supports_vision = bool(hints["vision"])
+                caps.supports_json_mode = bool(hints["json"])
                 caps.context_length = hints["ctx"]
                 return caps
 

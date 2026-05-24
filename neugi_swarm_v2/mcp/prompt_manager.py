@@ -7,9 +7,9 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from neugi_swarm_v2.mcp.messages import GetPromptResult, ListPromptsResult
+from neugi_swarm_v2.mcp.messages import ListPromptsResult
 
 logger = logging.getLogger(__name__)
 
@@ -20,15 +20,15 @@ class PromptTemplate:
     name: str
     description: str
     template: str
-    input_variables: List[str] = field(default_factory=list)
-    metadata: Optional[Dict[str, Any]] = None
+    input_variables: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] | None = None
 
 
 class PromptManager:
     """Manages prompt templates for MCP clients."""
 
-    def __init__(self):
-        self._prompts: Dict[str, PromptTemplate] = {}
+    def __init__(self) -> None:
+        self._prompts: dict[str, PromptTemplate] = {}
         self._default_prompts_installed = False
 
     def register(self, template: PromptTemplate) -> None:
@@ -41,8 +41,8 @@ class PromptManager:
         name: str,
         description: str,
         template: str,
-        input_variables: Optional[List[str]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        input_variables: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> PromptTemplate:
         """Convenience method to register a prompt template."""
         pt = PromptTemplate(
@@ -55,11 +55,11 @@ class PromptManager:
         self.register(pt)
         return pt
 
-    def get_prompt(self, name: str, arguments: Optional[dict] = None) -> Optional[PromptTemplate]:
+    def get_prompt(self, name: str, arguments: dict | None = None) -> PromptTemplate | None:
         """Get a prompt template by name."""
         return self._prompts.get(name)
 
-    def render_prompt(self, name: str, arguments: Optional[dict] = None) -> str:
+    def render_prompt(self, name: str, arguments: dict | None = None) -> str:
         """Render a prompt template with given arguments."""
         template = self.get_prompt(name)
         if template is None:
@@ -87,7 +87,7 @@ class PromptManager:
         ]
         return ListPromptsResult(prompts=prompts)
 
-    def list_prompt_templates(self) -> List[dict]:
+    def list_prompt_templates(self) -> list[dict]:
         """List all prompt templates as dicts."""
         return [
             {

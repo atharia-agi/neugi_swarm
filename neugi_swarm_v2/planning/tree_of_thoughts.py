@@ -490,7 +490,7 @@ class TreeOfThoughts:
     ) -> None:
         beam: list[ThoughtNode] = [self._tree[self._root_id]]
 
-        for depth_level in range(self.config.max_depth):
+        for _depth_level in range(self.config.max_depth):
             if not beam or self._should_terminate():
                 break
 

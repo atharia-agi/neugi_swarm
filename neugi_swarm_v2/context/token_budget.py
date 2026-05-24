@@ -352,7 +352,7 @@ class TokenBudget:
         self.safety_margin = safety_margin
 
         # Resolve model preset
-        preset = self._resolve_preset(model)
+        self._resolve_preset(model)
         self.total_tokens = total_tokens or _MODEL_LIMITS.get(model, 200_000)
         self.output_reservation = output_reservation or _DEFAULT_OUTPUT_RESERVATION.get(model, 8_192)
         self.input_budget = self.total_tokens - self.output_reservation

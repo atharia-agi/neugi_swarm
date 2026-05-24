@@ -7,7 +7,7 @@ Modules:
     harness: EvalHarness and built-in benchmarks
 """
 
-from .harness import (
+from evals.harness import (
     Benchmark,
     BenchmarkResult,
     BrowserBenchmark,

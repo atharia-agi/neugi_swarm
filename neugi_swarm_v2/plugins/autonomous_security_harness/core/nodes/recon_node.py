@@ -2,13 +2,16 @@
 Recon Node for Autonomous Security Harness.
 Performs initial reconnaissance (e.g., nmap scan) on targets.
 """
-from typing import Any, Dict, List
-import time
+from __future__ import annotations
 
-async def recon_node(state: dict, tool_executor, knowledge_searcher, scope_validator, auth_gate, audit_logger) -> dict:
+import time
+from typing import Any
+
+
+async def recon_node(state: dict[str, Any], tool_executor: Any, knowledge_searcher: Any, scope_validator: Any, auth_gate: Any, audit_logger: Any) -> dict[str, Any]:
     """
     Execute reconnaissance phase.
-    
+
     Args:
         state: The current workflow state
         tool_executor: ToolExecutor instance
@@ -16,7 +19,7 @@ async def recon_node(state: dict, tool_executor, knowledge_searcher, scope_valid
         scope_validator: ScopeValidator instance
         auth_gate: AuthGate instance (can be None)
         audit_logger: ImmutableAuditLogger instance
-        
+
     Returns:
         Updated state
     """
@@ -27,11 +30,11 @@ async def recon_node(state: dict, tool_executor, knowledge_searcher, scope_valid
             'action': 'recon_start',
             'targets': state['targets']
         })
-    
+
     # For each target, run nmap scan (or other recon tools)
     # We'll start with a simple nmap scan for common ports
     recon_findings = []
-    
+
     for target in state['targets']:
         # Scope validation
         if not scope_validator.validate_target(target, 'nmap'):
@@ -43,7 +46,7 @@ async def recon_node(state: dict, tool_executor, knowledge_searcher, scope_valid
                     'tool': 'nmap'
                 })
             continue
-        
+
         # Auth gate check for nmap (if required)
         if auth_gate:
             try:
@@ -59,7 +62,7 @@ async def recon_node(state: dict, tool_executor, knowledge_searcher, scope_valid
                     })
                 # If auth is denied, we skip this target for nmap
                 continue
-        
+
         # Log tool start
         if audit_logger:
             audit_logger.log({
@@ -68,7 +71,7 @@ async def recon_node(state: dict, tool_executor, knowledge_searcher, scope_valid
                 'tool': 'nmap',
                 'target': target
             })
-        
+
         # Execute nmap scan
         try:
             start_time = time.time()
@@ -77,7 +80,7 @@ async def recon_node(state: dict, tool_executor, knowledge_searcher, scope_valid
                 'ports': '1-1000'  # Default to first 1000 ports
             }, timeout=300)
             duration = time.time() - start_time
-            
+
             # Log tool completion
             if audit_logger:
                 audit_logger.log({
@@ -89,7 +92,7 @@ async def recon_node(state: dict, tool_executor, knowledge_searcher, scope_valid
                     'exit_code': result.get('exit_code'),
                     'vulnerabilities_found': len(result.get('vulnerabilities', []))
                 })
-            
+
             # Process result
             if result.get('exit_code') == 0:
                 # Parse nmap output to extract open ports and services
@@ -102,7 +105,7 @@ async def recon_node(state: dict, tool_executor, knowledge_searcher, scope_valid
                         if parts and parts[0].isdigit() and '/' in parts[0]:
                             port = parts[0].split('/')[0]
                             open_ports.append(port)
-                
+
                 if open_ports:
                     recon_findings.append({
                         'target': target,
@@ -111,7 +114,7 @@ async def recon_node(state: dict, tool_executor, knowledge_searcher, scope_valid
                         'raw_output': result.get('raw_output', '')[:1000],  # Truncate for storage
                         'timestamp': result.get('timestamp')
                     })
-                    
+
                     # Also add to state findings
                     state['findings'].append({
                         'type': 'open_port',
@@ -139,10 +142,10 @@ async def recon_node(state: dict, tool_executor, knowledge_searcher, scope_valid
                     'target': target,
                     'error': str(e)
                 })
-    
+
     # Update state with recon findings
     state['recon_findings'] = recon_findings
-    
+
     # Log the end of recon node
     if audit_logger:
         audit_logger.log({
@@ -150,10 +153,10 @@ async def recon_node(state: dict, tool_executor, knowledge_searcher, scope_valid
             'action': 'recon_complete',
             'findings_count': len(recon_findings)
         })
-    
+
     # Determine next step based on findings (this is a simplified example)
     # In a real implementation, you might have more complex logic
     # For now, we'll always go to web scan if we have targets with open ports, else network scan
     # But we'll let the router decide based on the state
-    
+
     return state

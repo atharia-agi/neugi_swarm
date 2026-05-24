@@ -38,11 +38,15 @@ from __future__ import annotations
 import json
 import logging
 import os
+import platform
+import re
 import time
 import uuid
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import Any
+
+from neugi_swarm_v2 import __version__
 
 logger = logging.getLogger(__name__)
 
@@ -131,9 +135,38 @@ class DashboardAPI:
     def __init__(self, server: Any):
         self.server = server
 
+    def _plugin_state_path(self) -> Path:
+        neugi_dir = Path.home() / ".neugi"
+        neugi_dir.mkdir(parents=True, exist_ok=True)
+        return neugi_dir / "plugin_state.json"
+
+    def _load_plugin_state_overrides(self) -> dict[str, bool]:
+        path = self._plugin_state_path()
+        if not path.exists():
+            return {}
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            if not isinstance(payload, dict):
+                return {}
+            data = payload.get("plugins", payload)
+            if not isinstance(data, dict):
+                return {}
+            out: dict[str, bool] = {}
+            for key, value in data.items():
+                if isinstance(value, bool):
+                    out[str(key)] = value
+            return out
+        except Exception:
+            return {}
+
+    def _save_plugin_state_overrides(self, overrides: dict[str, bool]) -> None:
+        path = self._plugin_state_path()
+        payload = {"plugins": overrides, "updated_at": time.time()}
+        path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
     # -- Health ----------------------------------------------------------------
 
-    def health(self, handler, body, query_params) -> dict:
+    def health(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """GET /api/health - System health check."""
         swarm = self.server.swarm
         subsystems = {}
@@ -152,16 +185,16 @@ class DashboardAPI:
             subsystems["agents"] = "not_initialized"
 
         return _ok({
-            "version": "2.0.0",
+            "version": __version__,
             "status": "healthy" if all(v == "healthy" for v in subsystems.values()) else "degraded",
-            "uptime_seconds": time.time(),
+            "uptime_seconds": max(0.0, time.time() - getattr(self.server, "started_at", time.time())),
             "subsystems": subsystems,
             "websocket_clients": self.server.broadcaster.client_count,
         })
 
     # -- Agents ----------------------------------------------------------------
 
-    def list_agents(self, handler, body, query_params) -> dict:
+    def list_agents(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """GET /api/agents - List all agents with status."""
         swarm = self.server.swarm
         if not swarm or not hasattr(swarm, "agent_manager"):
@@ -228,14 +261,14 @@ class DashboardAPI:
             "idle": len(agents) - active,
         })
 
-    def delegate_task(self, handler, body, query_params) -> dict:
+    def delegate_task(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """POST /api/agents/{id}/task - Delegate a task to a specific agent."""
         data = _parse_body(body)
         task = data.get("task", "")
         if not task:
             return _error("Task is required")
 
-        agent_id = data.get("agent_id", "")
+        agent_id = data.get("agent_id", "") or query_params.get("id", [""])[0]
         if not agent_id:
             return _error("agent_id is required")
 
@@ -260,7 +293,7 @@ class DashboardAPI:
 
     # -- Sessions --------------------------------------------------------------
 
-    def list_sessions(self, handler, body, query_params) -> dict:
+    def list_sessions(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """GET /api/sessions - List all active sessions."""
         swarm = self.server.swarm
         sessions = []
@@ -268,7 +301,12 @@ class DashboardAPI:
         if swarm and hasattr(swarm, "session_manager"):
             try:
                 session_mgr = swarm.session_manager
-                for session_id, session in session_mgr.sessions.items():
+                session_items = getattr(session_mgr, "sessions", None)
+                if isinstance(session_items, dict):
+                    iterable = session_items.items()
+                else:
+                    iterable = []
+                for session_id, session in iterable:
                     sessions.append({
                         "id": session_id,
                         "state": getattr(session, "state", "active"),
@@ -278,7 +316,7 @@ class DashboardAPI:
                         "isolation_mode": getattr(session, "isolation_mode", "shared"),
                     })
             except Exception as e:
-                logger.warning("Failed to list sessions: %s", e)
+                logger.debug("Failed to list sessions: %s", e)
 
         return _ok({
             "sessions": sessions,
@@ -286,7 +324,7 @@ class DashboardAPI:
             "active": sum(1 for s in sessions if s["state"] == "active"),
         })
 
-    def get_session_messages(self, handler, body, query_params) -> dict:
+    def get_session_messages(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """GET /api/sessions/{id}/messages - Get messages from a session."""
         session_id = query_params.get("id", [""])[0]
         if not session_id:
@@ -318,7 +356,7 @@ class DashboardAPI:
 
     # -- Chat ------------------------------------------------------------------
 
-    def chat(self, handler, body, query_params) -> dict:
+    def chat(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """POST /api/chat - Send a chat message."""
         data = _parse_body(body)
         message = data.get("message", "")
@@ -354,7 +392,7 @@ class DashboardAPI:
 
     # -- Skills ----------------------------------------------------------------
 
-    def list_skills(self, handler, body, query_params) -> dict:
+    def list_skills(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """GET /api/skills - List all available skills."""
         swarm = self.server.swarm
         skills = []
@@ -362,7 +400,12 @@ class DashboardAPI:
         if swarm and hasattr(swarm, "skill_manager"):
             try:
                 skill_mgr = swarm.skill_manager
-                for skill_id, skill in skill_mgr.skills.items():
+                skill_items = getattr(skill_mgr, "skills", None)
+                if isinstance(skill_items, dict):
+                    iterable = skill_items.items()
+                else:
+                    iterable = []
+                for skill_id, skill in iterable:
                     skills.append({
                         "id": skill_id,
                         "name": getattr(skill, "name", skill_id),
@@ -372,7 +415,7 @@ class DashboardAPI:
                         "actions": len(getattr(skill, "actions", [])),
                     })
             except Exception as e:
-                logger.warning("Failed to list skills: %s", e)
+                logger.debug("Failed to list skills: %s", e)
 
         tier_filter = query_params.get("tier", [None])[0]
         if tier_filter:
@@ -386,7 +429,7 @@ class DashboardAPI:
 
     # -- Memory ----------------------------------------------------------------
 
-    def memory_stats(self, handler, body, query_params) -> dict:
+    def memory_stats(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """GET /api/memory/stats - Memory system statistics."""
         swarm = self.server.swarm
 
@@ -414,7 +457,7 @@ class DashboardAPI:
             "vector_enabled": False,
         })
 
-    def memory_recall(self, handler, body, query_params) -> dict:
+    def memory_recall(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """GET /api/memory/recall?query= - Search memory."""
         query = query_params.get("query", [""])[0]
         if not query:
@@ -442,7 +485,7 @@ class DashboardAPI:
 
     # -- Channels --------------------------------------------------------------
 
-    def list_channels(self, handler, body, query_params) -> dict:
+    def list_channels(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """GET /api/channels - List channel status."""
         swarm = self.server.swarm
         channels = []
@@ -469,7 +512,7 @@ class DashboardAPI:
 
     # -- Workflows -------------------------------------------------------------
 
-    def list_workflows(self, handler, body, query_params) -> dict:
+    def list_workflows(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """GET /api/workflows - List all workflows."""
         swarm = self.server.swarm
         workflows = []
@@ -495,10 +538,10 @@ class DashboardAPI:
             "running": sum(1 for w in workflows if w["status"] == "running"),
         })
 
-    def run_workflow(self, handler, body, query_params) -> dict:
+    def run_workflow(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """POST /api/workflows/{id}/run - Execute a workflow."""
         data = _parse_body(body)
-        workflow_id = data.get("workflow_id", "")
+        workflow_id = data.get("workflow_id", "") or query_params.get("id", [""])[0]
         if not workflow_id:
             return _error("workflow_id is required")
 
@@ -524,19 +567,27 @@ class DashboardAPI:
 
     # -- Plugins ---------------------------------------------------------------
 
-    def list_plugins(self, handler, body, query_params) -> dict:
+    def list_plugins(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """GET /api/plugins - List all plugins."""
         swarm = self.server.swarm
         plugins = []
+        overrides = self._load_plugin_state_overrides()
 
         if swarm and hasattr(swarm, "plugins"):
             try:
                 for plugin_id, plugin in swarm.plugins.items():
+                    runtime_enabled = bool(getattr(plugin, "enabled", True))
+                    if plugin_id in overrides:
+                        runtime_enabled = bool(overrides[plugin_id])
+                        try:
+                            setattr(plugin, "enabled", runtime_enabled)
+                        except Exception:
+                            pass
                     plugins.append({
                         "id": plugin_id,
                         "name": getattr(plugin, "name", plugin_id),
                         "version": getattr(plugin, "version", "0.0.0"),
-                        "enabled": getattr(plugin, "enabled", True),
+                        "enabled": runtime_enabled,
                         "description": getattr(plugin, "description", ""),
                     })
             except Exception as e:
@@ -548,9 +599,85 @@ class DashboardAPI:
             "enabled": sum(1 for p in plugins if p["enabled"]),
         })
 
+    def toggle_plugin(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
+        """POST /api/plugins/toggle - Enable or disable a plugin."""
+        data = _parse_body(body)
+        plugin_id = str(data.get("plugin_id") or "").strip()
+        enabled = data.get("enabled")
+        if not plugin_id:
+            return _error("plugin_id is required")
+        if not isinstance(enabled, bool):
+            return _error("enabled must be boolean")
+
+        swarm = self.server.swarm
+        if not swarm or not hasattr(swarm, "plugins"):
+            return _error("plugin system is unavailable")
+
+        plugins = getattr(swarm, "plugins", {}) or {}
+        plugin = plugins.get(plugin_id)
+        if plugin is None:
+            return _error(f"plugin '{plugin_id}' not found")
+
+        changed = False
+        # Prefer explicit lifecycle hooks if available.
+        try:
+            if enabled:
+                if hasattr(plugin, "enable") and callable(plugin.enable):
+                    plugin.enable()
+                    changed = True
+                elif hasattr(plugin, "set_enabled") and callable(plugin.set_enabled):
+                    plugin.set_enabled(True)
+                    changed = True
+                else:
+                    setattr(plugin, "enabled", True)
+                    changed = True
+            else:
+                if hasattr(plugin, "disable") and callable(plugin.disable):
+                    plugin.disable()
+                    changed = True
+                elif hasattr(plugin, "set_enabled") and callable(plugin.set_enabled):
+                    plugin.set_enabled(False)
+                    changed = True
+                else:
+                    setattr(plugin, "enabled", False)
+                    changed = True
+        except Exception as e:
+            return _error(f"plugin toggle failed: {e}")
+
+        # Best-effort with plugin registry when exposed by swarm.
+        try:
+            registry = getattr(swarm, "plugin_registry", None)
+            if registry:
+                if enabled and hasattr(registry, "enable_plugin"):
+                    registry.enable_plugin(plugin_id)
+                if (not enabled) and hasattr(registry, "disable_plugin"):
+                    registry.disable_plugin(plugin_id)
+        except Exception:
+            # Non-fatal: runtime toggle above already applied.
+            pass
+
+        if hasattr(self.server, "broadcast_event"):
+            self.server.broadcast_event("plugin_toggled", {
+                "plugin_id": plugin_id,
+                "enabled": enabled,
+            })
+
+        overrides = self._load_plugin_state_overrides()
+        overrides[plugin_id] = enabled
+        try:
+            self._save_plugin_state_overrides(overrides)
+        except Exception as e:
+            logger.warning("Failed to persist plugin state override for %s: %s", plugin_id, e)
+
+        return _ok({
+            "plugin_id": plugin_id,
+            "enabled": bool(getattr(plugin, "enabled", enabled)),
+            "changed": changed,
+        })
+
     # -- Governance ------------------------------------------------------------
 
-    def budget_status(self, handler, body, query_params) -> dict:
+    def budget_status(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """GET /api/governance/budget - Get budget status."""
         swarm = self.server.swarm
 
@@ -581,13 +708,13 @@ class DashboardAPI:
             "total_requests": 0,
         })
 
-    def audit_log(self, handler, body, query_params) -> dict:
+    def audit_log(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """GET /api/governance/audit - Get audit log."""
         limit = int(query_params.get("limit", [50])[0])
         level = query_params.get("level", [None])[0]
 
         swarm = self.server.swarm
-        entries = []
+        entries: list[dict[str, Any]] = []
 
         if swarm and hasattr(swarm, "governance"):
             try:
@@ -604,22 +731,33 @@ class DashboardAPI:
             "total": len(entries),
         })
 
-    def approval_queue(self, handler, body, query_params) -> dict:
+    def approval_queue(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """GET /api/governance/approvals - List pending approval requests."""
         try:
             gate = self._get_approval_gate()
             agent_id = query_params.get("agent_id", [None])[0] if query_params else None
             pending = gate.get_pending_requests(agent_id=agent_id)
+            stats: dict[str, Any] = {}
+            if hasattr(gate, "get_stats"):
+                try:
+                    stats = gate.get_stats() or {}
+                except Exception:
+                    stats = {}
             return _ok({
                 "requests": [self._serialize_approval_request(req) for req in pending],
                 "total": len(pending),
-                "stats": gate.get_stats() if hasattr(gate, "get_stats") else {},
+                "stats": stats,
             })
         except Exception as e:
-            logger.warning("Failed to get approval queue: %s", e)
-            return _error(f"Approval queue unavailable: {e}", code=500)
+            logger.debug("Approval queue unavailable: %s", e)
+            return _ok({
+                "requests": [],
+                "total": 0,
+                "stats": {},
+                "unavailable_reason": str(e),
+            })
 
-    def decide_approval(self, handler, body, query_params) -> dict:
+    def decide_approval(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """POST /api/governance/approvals/decide - Approve or reject an action."""
         data = _parse_body(body)
         request_id = str(data.get("request_id") or "").strip()
@@ -649,9 +787,95 @@ class DashboardAPI:
         except Exception as e:
             return _error(f"Approval decision failed: {e}")
 
+    def governance_profile_get(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
+        """GET /api/governance/profile - Get active governance risk profile and rules."""
+        try:
+            gate = self._get_approval_gate()
+            profile = self._load_governance_profile_from_config()
+            rules = []
+            if hasattr(gate, "list_rules"):
+                for r in gate.list_rules(enabled_only=False):
+                    rules.append({
+                        "rule_id": getattr(r, "rule_id", ""),
+                        "name": getattr(r, "name", ""),
+                        "action_type": getattr(r, "action_type", "*"),
+                        "agent_role": getattr(r, "agent_role", "*"),
+                        "min_risk": self._enum_value(getattr(r, "min_risk", "")),
+                        "approval_count": getattr(r, "approval_count", 1),
+                        "timeout_minutes": getattr(r, "timeout_minutes", 60),
+                        "enabled": bool(getattr(r, "enabled", True)),
+                    })
+            stats = gate.get_stats() if hasattr(gate, "get_stats") else {}
+            return _ok({
+                "profile": profile,
+                "available_profiles": ["startup", "team", "enterprise"],
+                "rules": rules,
+                "stats": stats or {},
+            })
+        except Exception as e:
+            return _error(f"Failed to get governance profile: {e}", code=500)
+
+    def governance_profile_set(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
+        """POST /api/governance/profile - Apply and persist governance risk profile."""
+        data = _parse_body(body)
+        profile = str(data.get("profile") or "team").strip().lower()
+        force = bool(data.get("force", False))
+        if profile not in {"startup", "team", "enterprise"}:
+            return _error("profile must be one of: startup, team, enterprise")
+        try:
+            gate = self._get_approval_gate()
+            if not hasattr(gate, "apply_risk_profile"):
+                return _error("Approval gate does not support profile application", code=500)
+            result = gate.apply_risk_profile(profile=profile, force=force)
+            self._persist_governance_profile_to_config(profile)
+            stats = gate.get_stats() if hasattr(gate, "get_stats") else {}
+            if hasattr(self.server, "broadcast_event"):
+                self.server.broadcast_event("governance_profile", {
+                    "profile": profile,
+                    "applied": bool(result.get("applied")),
+                    "force": force,
+                })
+            return _ok({
+                "profile": profile,
+                "result": result,
+                "stats": stats or {},
+            }, message="Governance profile updated")
+        except Exception as e:
+            return _error(f"Failed to set governance profile: {e}", code=500)
+
+    def governance_profile_preview(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
+        """POST /api/governance/profile/preview - Preview risk profile rule diff."""
+        data = _parse_body(body)
+        profile = str(data.get("profile") or "team").strip().lower()
+        if profile not in {"startup", "team", "enterprise"}:
+            return _error("profile must be one of: startup, team, enterprise")
+        try:
+            gate = self._get_approval_gate()
+            current_rules = []
+            if hasattr(gate, "list_rules"):
+                for r in gate.list_rules(enabled_only=False):
+                    current_rules.append({
+                        "name": getattr(r, "name", ""),
+                        "min_risk": self._enum_value(getattr(r, "min_risk", "")),
+                        "approval_count": int(getattr(r, "approval_count", 1) or 1),
+                        "enabled": bool(getattr(r, "enabled", True)),
+                    })
+            preview = gate.preview_risk_profile(profile) if hasattr(gate, "preview_risk_profile") else {
+                "profile": profile,
+                "rules": [],
+                "rule_count": 0,
+            }
+            return _ok({
+                "current": {"rule_count": len(current_rules), "rules": current_rules},
+                "preview": preview,
+                "delta_rule_count": int(preview.get("rule_count", 0)) - len(current_rules),
+            })
+        except Exception as e:
+            return _error(f"Failed to preview governance profile: {e}", code=500)
+
     # -- Learning --------------------------------------------------------------
 
-    def learning_stats(self, handler, body, query_params) -> dict:
+    def learning_stats(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """GET /api/learning/stats - Learning system statistics."""
         swarm = self.server.swarm
 
@@ -680,7 +904,7 @@ class DashboardAPI:
 
     # -- Steering --------------------------------------------------------------
 
-    def send_steering(self, handler, body, query_params) -> dict:
+    def send_steering(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """POST /api/steering - Send a steering message."""
         data = _parse_body(body)
         message = data.get("message", "")
@@ -713,7 +937,7 @@ class DashboardAPI:
 
     # -- Auth ------------------------------------------------------------------
 
-    def login(self, handler, body, query_params) -> dict:
+    def login(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """POST /api/auth/login - Authenticate and get a session token."""
         data = _parse_body(body)
         api_key = data.get("api_key", "")
@@ -727,7 +951,7 @@ class DashboardAPI:
             "expires_in": self.server.config.session_token_ttl,
         })
 
-    def logout(self, handler, body, query_params) -> dict:
+    def logout(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """POST /api/auth/logout - Revoke session token."""
         auth_header = handler.headers.get("Authorization", "")
         if auth_header.startswith("Bearer "):
@@ -739,15 +963,35 @@ class DashboardAPI:
 
     # -- Config ----------------------------------------------------------------
 
-    def provider_catalog(self, handler, body, query_params) -> dict:
+    def provider_catalog(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """GET /api/providers - Provider and model catalog for dashboard setup."""
         try:
-            from neugi_swarm_v2.provider_catalog import get_all_providers
+            from neugi_swarm_v2.provider_catalog import (
+                default_fallback_model,
+                get_all_providers,
+                provider_to_runtime,
+            )
 
             providers = []
             for provider in get_all_providers():
                 provider_data = asdict(provider) if is_dataclass(provider) else dict(provider)
-                provider_data["runtime_provider"] = provider_data.get("name", "")
+                models = list(provider_data.get("models", []))
+                if not any(str(m.get("id", "")).strip().lower() == "custom" for m in models if isinstance(m, dict)):
+                    models.append({
+                        "id": "custom",
+                        "name": "Custom Model",
+                        "description": "Use any model id supported by this provider.",
+                        "context_window": 4096,
+                        "max_output": 4096,
+                        "supports_tools": True,
+                        "supports_vision": False,
+                        "tier": "medium",
+                        "status": "custom",
+                    })
+                provider_data["models"] = models
+                runtime_provider = provider_to_runtime(provider_data.get("name", ""))
+                provider_data["runtime_provider"] = runtime_provider
+                provider_data["default_fallback_model"] = default_fallback_model(runtime_provider)
                 providers.append(provider_data)
 
             return _ok({
@@ -758,30 +1002,91 @@ class DashboardAPI:
             logger.warning("Provider catalog unavailable: %s", e)
             return _ok({"providers": [], "total": 0, "error": str(e)})
 
-    def get_config(self, handler, body, query_params) -> dict:
+    def provider_health(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
+        """GET /api/providers/health - Lightweight provider readiness summary."""
+        try:
+            from neugi_swarm_v2.provider_catalog import get_all_providers
+
+            items: list[dict[str, Any]] = []
+            for provider in get_all_providers():
+                env_vars = list(getattr(provider, "env_vars", []) or [])
+                has_env_key = any(bool(os.environ.get(env_var, "").strip()) for env_var in env_vars)
+                needs_api_key = str(getattr(provider, "auth_type", "bearer_header")).strip().lower() != "none"
+                ready = (not needs_api_key) or has_env_key
+                items.append({
+                    "provider": provider.name,
+                    "display_name": provider.display_name,
+                    "category": provider.category,
+                    "models_count": len(getattr(provider, "models", []) or []),
+                    "needs_api_key": needs_api_key,
+                    "has_env_key": has_env_key,
+                    "ready": ready,
+                })
+
+            ready_count = sum(1 for item in items if item["ready"])
+            return _ok({
+                "providers": items,
+                "ready_count": ready_count,
+                "total": len(items),
+            })
+        except Exception as e:
+            logger.warning("Provider health unavailable: %s", e)
+            return _ok({"providers": [], "ready_count": 0, "total": 0, "error": str(e)})
+
+    def get_config(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """GET /api/config - Get current configuration."""
         swarm = self.server.swarm
         if swarm and hasattr(swarm, "config"):
             try:
-                return _ok(swarm.config.to_dict())
+                config_data = swarm.config.to_dict()
+                llm_data = config_data.get("llm", {})
+                raw_key = str(llm_data.get("api_key") or "")
+                if raw_key:
+                    llm_data["api_key"] = "********"
+                    llm_data["api_key_masked"] = True
+                else:
+                    llm_data["api_key_masked"] = False
+                config_data["llm"] = llm_data
+                return _ok(config_data)
             except Exception:
                 pass
 
+        inferred_provider = "openai_compatible"
+        inferred_model = ""
+        inferred_base_url = ""
+        inferred_fallback = ""
+        if os.environ.get("OPENAI_API_KEY"):
+            inferred_provider = "openai"
+            inferred_model = "gpt-5-mini"
+            inferred_fallback = "gpt-4.1-mini"
+            inferred_base_url = "https://api.openai.com"
+        elif os.environ.get("ANTHROPIC_API_KEY"):
+            inferred_provider = "anthropic"
+            inferred_model = "claude-3-5-haiku-20241022"
+            inferred_fallback = "claude-3-5-haiku-20241022"
+            inferred_base_url = "https://api.anthropic.com"
+        elif os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"):
+            inferred_provider = "gemini"
+            inferred_model = "gemini-2.5-flash"
+            inferred_fallback = "gemini-2.5-flash"
+            inferred_base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
+
         return _ok({
             "llm": {
-                "provider": "ollama",
-                "model": "qwen2.5-coder:7b",
-                "fallback_model": "llama3.2:3b",
-                "base_url": "http://localhost:11434",
+                "provider": inferred_provider,
+                "model": inferred_model,
+                "fallback_model": inferred_fallback,
+                "base_url": inferred_base_url,
                 "ollama_url": "http://localhost:11434",
                 "temperature": 0.7,
                 "max_tokens": 4096,
+                "api_key_masked": False,
             },
             "memory": {"daily_ttl_days": 30},
             "agent": {"default_agents": ["Aurora", "Cipher", "Nova"]},
         })
 
-    def update_config(self, handler, body, query_params) -> dict:
+    def update_config(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """PUT /api/config - Update configuration."""
         data = _parse_body(body)
         if not data:
@@ -790,24 +1095,37 @@ class DashboardAPI:
         swarm = self.server.swarm
         if swarm and hasattr(swarm, "config"):
             try:
+                self._handle_api_key_update(swarm.config, data)
+                self._apply_llm_defaults(data)
                 self._merge_config(swarm.config, data, self._CONFIG_UPDATE_ALLOWLIST)
                 saved_path = self._persist_config(swarm.config)
+                config_data = swarm.config.to_dict() if hasattr(swarm.config, "to_dict") else {}
+                llm_data = config_data.get("llm", {}) if isinstance(config_data, dict) else {}
+                raw_key = str(llm_data.get("api_key") or "")
+                if raw_key:
+                    llm_data["api_key"] = "********"
+                    llm_data["api_key_masked"] = True
+                else:
+                    llm_data["api_key_masked"] = False
+                if isinstance(config_data, dict):
+                    config_data["llm"] = llm_data
                 return _ok({
                     "message": "Configuration updated",
                     "saved_path": str(saved_path) if saved_path else None,
-                    "config": swarm.config.to_dict() if hasattr(swarm.config, "to_dict") else {},
+                    "config": config_data,
                 })
             except Exception as e:
                 return _error(f"Config update failed: {e}")
 
         return _ok({"message": "Configuration queued for update"})
 
-    def test_llm_config(self, handler, body, query_params) -> dict:
+    def test_llm_config(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """POST /api/config/test-llm - Test a proposed LLM provider setup."""
         data = _parse_body(body)
         llm_data = data.get("llm", data)
         if not isinstance(llm_data, dict):
             return _error("LLM configuration is required")
+        self._apply_llm_defaults({"llm": llm_data})
 
         provider_name = str(llm_data.get("provider") or "").strip() or "ollama"
         model = str(llm_data.get("model") or "").strip()
@@ -850,12 +1168,14 @@ class DashboardAPI:
             except Exception:
                 pass
             logger.info("LLM provider test failed for %s/%s: %s", provider_name, model, type(e).__name__)
+            remediation = self._provider_error_remediation(provider_name, error_type, e)
             return _ok({
                 "provider": provider_name,
                 "model": model,
                 "connected": False,
                 "error_type": error_type,
                 "error": self._sanitize_provider_error(e),
+                "remediation": remediation,
             }, message="Provider connection failed")
 
     def _merge_config(self, target: Any, updates: dict[str, Any], allowlist: Any) -> None:
@@ -872,7 +1192,7 @@ class DashboardAPI:
             else:
                 continue
 
-            if key == "api_key" and value == "":
+            if key == "api_key" and (value == "" or value == "********"):
                 continue
             if not hasattr(target, key):
                 continue
@@ -891,11 +1211,47 @@ class DashboardAPI:
         config_path = Path(neugi_dir) / "config.json"
         config_path.parent.mkdir(parents=True, exist_ok=True)
         data = config.to_dict()
-        api_key = getattr(getattr(config, "llm", None), "api_key", "")
-        if api_key:
-            data.setdefault("llm", {})["api_key"] = api_key
+        # Never persist API keys in plaintext config.
+        if isinstance(data, dict):
+            llm_data = data.setdefault("llm", {})
+            if isinstance(llm_data, dict):
+                llm_data["api_key"] = ""
         config_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
         return config_path
+
+    def _handle_api_key_update(self, config: Any, updates: dict[str, Any]) -> None:
+        """Store dashboard-submitted API key in SecretManager and keep config plaintext empty."""
+        llm_data = updates.get("llm")
+        if not isinstance(llm_data, dict):
+            return
+        submitted = str(llm_data.get("api_key") or "").strip()
+        if not submitted or submitted == "********":
+            return
+
+        from neugi_swarm_v2.security.secret_manager import SecretClass, SecretManager
+
+        neugi_dir = getattr(config, "neugi_dir", None) or (Path.home() / ".neugi")
+        secrets_db = Path(neugi_dir) / "secrets.db"
+        if not os.environ.get("NEUGI_MASTER_KEY", "").strip():
+            raise ValueError(
+                "NEUGI_MASTER_KEY is required before storing API keys securely. "
+                "Set NEUGI_MASTER_KEY and retry."
+            )
+        manager = SecretManager(db_path=str(secrets_db))
+        try:
+            manager.add_secret(
+                name="llm_api_key",
+                value=submitted,
+                secret_class=SecretClass.API_KEY,
+                description="Primary LLM provider API key",
+            )
+        except Exception:
+            manager.update_secret(name="llm_api_key", value=submitted)
+
+        # Avoid retaining plaintext key in runtime config and persisted JSON.
+        if hasattr(config, "llm"):
+            setattr(config.llm, "api_key", "")
+        llm_data["api_key"] = "********"
 
     def _make_test_provider(self, llm_data: dict[str, Any], api_key: str):
         """Build a runtime provider from proposed dashboard settings."""
@@ -939,6 +1295,26 @@ class DashboardAPI:
             return AnthropicCompatibleProvider(cfg)
         return OpenAICompatibleProvider(cfg)
 
+    def _apply_llm_defaults(self, updates: dict[str, Any]) -> None:
+        """Normalize/complete LLM payload before merge/test."""
+        llm_data = updates.get("llm")
+        if not isinstance(llm_data, dict):
+            return
+        provider_name = str(llm_data.get("provider") or "ollama").strip() or "ollama"
+        fallback = str(llm_data.get("fallback_model") or "").strip()
+        if fallback:
+            return
+        try:
+            from neugi_swarm_v2.provider_catalog import default_fallback_model, provider_to_runtime
+
+            runtime_provider = provider_to_runtime(provider_name)
+            computed = default_fallback_model(runtime_provider)
+            if computed:
+                llm_data["fallback_model"] = computed
+        except Exception:
+            # Keep payload unchanged on catalog lookup failures.
+            pass
+
     def _resolve_existing_api_key(self, provider_name: str) -> str:
         """Resolve an already configured API key without exposing it to the UI."""
         swarm = self.server.swarm
@@ -975,9 +1351,43 @@ class DashboardAPI:
         for marker in ("Authorization:", "Bearer ", "x-api-key:"):
             if marker in text:
                 text = text.split(marker)[0].rstrip()
+        text = re.sub(r"(?i)\b(sk-[A-Za-z0-9\-_]{10,}|xox[baprs]-[A-Za-z0-9\-]{10,}|ghp_[A-Za-z0-9]{10,})\b", "[REDACTED]", text)
+        text = re.sub(r"(?i)\b(api[_-]?key|token|secret)\s*[:=]\s*['\"]?[^'\"\s,;]{6,}['\"]?", r"\1=[REDACTED]", text)
         if len(text) > 300:
             text = text[:300].rstrip() + "..."
         return text or type(error).__name__
+
+    def _provider_error_remediation(self, provider_name: str, error_type: str, error: Exception) -> list[str]:
+        provider_label = provider_name or "provider"
+        lowered = (str(error) or "").lower()
+        steps: list[str] = []
+        if "certificate_verify_failed" in lowered or "ssl" in lowered:
+            steps.extend([
+                "Your environment is blocking TLS trust. Disable SSL inspection/proxy MITM for API domains.",
+                "Install/update system root certificates, then retry Test Provider.",
+                f"If this is a corporate network, ask IT to trust the upstream CA for {provider_label} endpoints.",
+            ])
+            return steps
+        if error_type in {"auth_error"} or "401" in lowered or "403" in lowered or "unauthorized" in lowered:
+            steps.extend([
+                f"Check API key for {provider_label}.",
+                "Verify Base URL matches provider documentation.",
+                "Retry with Setup -> Test Provider before saving.",
+            ])
+            return steps
+        if error_type in {"network_error", "timeout_error"} or "timed out" in lowered or "refused" in lowered:
+            steps.extend([
+                "Check network connectivity and firewall egress.",
+                "Validate Base URL and provider status page.",
+                "Try another provider from Setup to confirm local environment health.",
+            ])
+            return steps
+        steps.extend([
+            "Re-check provider/model/base URL in Setup.",
+            "Run Test Provider again and inspect error_type.",
+            "If still failing, run `neugi doctor --json --strict` and share report.",
+        ])
+        return steps
 
     def _get_approval_gate(self):
         """Resolve or create the approval gate backing the dashboard queue."""
@@ -1006,6 +1416,46 @@ class DashboardAPI:
         db_path.parent.mkdir(parents=True, exist_ok=True)
         self.server._approval_gate = ApprovalGate(db_path=str(db_path))
         return self.server._approval_gate
+
+    def _load_governance_profile_from_config(self) -> str:
+        """Read governance profile from ~/.neugi/config.json with fallback."""
+        neugi_dir = Path.home() / ".neugi"
+        swarm = self.server.swarm
+        if swarm is not None and hasattr(swarm, "config"):
+            neugi_dir = Path(getattr(swarm.config, "neugi_dir", neugi_dir))
+        config_path = neugi_dir / "config.json"
+        if not config_path.exists():
+            return "team"
+        try:
+            payload = json.loads(config_path.read_text(encoding="utf-8"))
+            profile = str((payload.get("governance") or {}).get("profile") or "team").strip().lower()
+            if profile in {"startup", "team", "enterprise"}:
+                return profile
+        except Exception:
+            pass
+        return "team"
+
+    def _persist_governance_profile_to_config(self, profile: str) -> Path:
+        """Persist governance profile to ~/.neugi/config.json."""
+        neugi_dir = Path.home() / ".neugi"
+        swarm = self.server.swarm
+        if swarm is not None and hasattr(swarm, "config"):
+            neugi_dir = Path(getattr(swarm.config, "neugi_dir", neugi_dir))
+        config_path = neugi_dir / "config.json"
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        data: dict[str, Any] = {}
+        if config_path.exists():
+            try:
+                data = json.loads(config_path.read_text(encoding="utf-8"))
+            except Exception:
+                data = {}
+        gov = data.get("governance")
+        if not isinstance(gov, dict):
+            gov = {}
+            data["governance"] = gov
+        gov["profile"] = profile
+        config_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        return config_path
 
     def _serialize_approval_request(self, request: Any) -> dict[str, Any]:
         """Serialize an approval request for dashboard rendering."""
@@ -1043,10 +1493,9 @@ class DashboardAPI:
 
     # -- Autonomous Loop -------------------------------------------------------
 
-    def benchmark_results(self, handler, body, query_params) -> dict:
+    def benchmark_results(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """GET /api/benchmarks - List benchmark results."""
         try:
-            from neugi_swarm_v2.evals.harness import EvalResult
             results_dir = Path(__file__).parent.parent / "evals" / "results"
             if results_dir.exists():
                 benchmarks = []
@@ -1072,7 +1521,7 @@ class DashboardAPI:
             pass
         return _ok({"benchmarks": [], "total": 0, "note": "No benchmark results available"})
 
-    def autonomous_status(self, handler, body, query_params) -> dict:
+    def autonomous_status(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """GET /api/autonomous/status - Live autonomous loop state."""
         swarm = self.server.swarm
         if not swarm or not hasattr(swarm, "autonomous_loop") or swarm.autonomous_loop is None:
@@ -1090,13 +1539,13 @@ class DashboardAPI:
 
     # -- Observability -----------------------------------------------------------
 
-    def observability_status(self, handler, body, query_params) -> dict:
+    def observability_status(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
         """GET /api/observability/status - Event bus status and metrics."""
         try:
             from neugi_swarm_v2.observability.event_bus import get_event_bus
             bus = get_event_bus()
             history = bus.get_history()
-            event_counts = {}
+            event_counts: dict[str, int] = {}
             for e in history:
                 event_counts[e.name] = event_counts.get(e.name, 0) + 1
 
@@ -1120,3 +1569,79 @@ class DashboardAPI:
                 "error": str(e),
                 "message": "Observability system not available",
             })
+
+    # -- Local Runtime Controls -------------------------------------------------
+
+    def autostart_status(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
+        """GET /api/runtime/autostart - Get autostart status for current user."""
+        mode, path = self._autostart_artifact()
+        return _ok({
+            "enabled": path.exists(),
+            "mode": mode,
+            "path": str(path),
+            "platform": platform.system(),
+        })
+
+    def autostart_update(self, handler: Any, body: bytes | None, query_params: dict[str, list[str]]) -> dict[str, Any]:
+        """POST /api/runtime/autostart - Enable/disable autostart for current user."""
+        data = _parse_body(body)
+        action = str(data.get("action", "")).strip().lower()
+        if action not in {"enable", "disable"}:
+            return _error("action must be 'enable' or 'disable'")
+
+        mode, path = self._autostart_artifact()
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+
+            if action == "enable":
+                if mode == "windows":
+                    path.write_text("@echo off\r\nneugi start\r\n", encoding="utf-8")
+                elif mode == "macos":
+                    logs_dir = Path.home() / ".neugi" / "logs"
+                    logs_dir.mkdir(parents=True, exist_ok=True)
+                    plist = f"""<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.neugi.autostart</string>
+  <key>ProgramArguments</key>
+  <array><string>/bin/sh</string><string>-lc</string><string>neugi start</string></array>
+  <key>RunAtLoad</key><true/>
+  <key>StandardOutPath</key><string>{str(logs_dir / "autostart.out.log")}</string>
+  <key>StandardErrorPath</key><string>{str(logs_dir / "autostart.err.log")}</string>
+</dict>
+</plist>
+"""
+                    path.write_text(plist, encoding="utf-8")
+                else:
+                    desktop = """[Desktop Entry]
+Type=Application
+Version=1.0
+Name=NEUGI Autostart
+Comment=Start NEUGI at login
+Exec=sh -lc 'neugi start'
+Terminal=false
+X-GNOME-Autostart-enabled=true
+"""
+                    path.write_text(desktop, encoding="utf-8")
+            else:
+                if path.exists():
+                    path.unlink()
+
+            return _ok({
+                "enabled": action == "enable",
+                "mode": mode,
+                "path": str(path),
+            }, message=f"Autostart {action}d")
+        except Exception as e:
+            return _error(f"Failed to update autostart: {e}", code=500)
+
+    def _autostart_artifact(self) -> tuple[str, Path]:
+        """Resolve current-user autostart file path."""
+        system = platform.system()
+        if system == "Windows":
+            startup_dir = Path(os.environ.get("APPDATA", "")) / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup"
+            return "windows", startup_dir / "neugi-start.cmd"
+        if system == "Darwin":
+            return "macos", Path.home() / "Library" / "LaunchAgents" / "com.neugi.autostart.plist"
+        return "linux", Path.home() / ".config" / "autostart" / "neugi.desktop"

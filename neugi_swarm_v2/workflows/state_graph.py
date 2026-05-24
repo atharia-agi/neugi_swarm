@@ -505,7 +505,7 @@ class StateGraph:
                 in_degree[target] += 1
 
         # Start with entry points
-        queue = deque()
+        queue: deque[str] = deque()
         for entry in self._entry_points:
             queue.append(entry)
 

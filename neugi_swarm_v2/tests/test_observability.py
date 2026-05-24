@@ -3,7 +3,7 @@ Tests for the observability event bus.
 """
 
 import threading
-import time
+
 from neugi_swarm_v2.observability.event_bus import EventBus, get_event_bus
 
 
@@ -11,14 +11,14 @@ def test_event_bus_basic():
     """Test basic publish/subscribe functionality."""
     bus = EventBus(max_history=10)
     results = []
-    
+
     def handler(event):
         results.append(event.name)
-    
+
     bus.subscribe('test_event', handler)
     bus.publish('test_event', {'data': 1})
     bus.publish('test_event', {'data': 2})
-    
+
     assert len(results) == 2
     assert results[0] == 'test_event'
     assert results[1] == 'test_event'
@@ -29,18 +29,18 @@ def test_event_bus_middleware():
     bus = EventBus(max_history=10)
     results = []
     middleware_calls = []
-    
+
     def handler(event):
         results.append(event.name)
-    
+
     def middleware(event):
         middleware_calls.append(event.name)
-    
+
     bus.subscribe('test_event', handler)
     bus.add_middleware(middleware)
-    
+
     bus.publish('test_event', {'data': 1})
-    
+
     assert len(results) == 1
     assert results[0] == 'test_event'
     assert len(middleware_calls) == 1
@@ -50,17 +50,17 @@ def test_event_bus_middleware():
 def test_event_bus_history():
     """Test event history functionality."""
     bus = EventBus(max_history=5)
-    
+
     bus.publish('event1', {'data': 1})
     bus.publish('event2', {'data': 2})
     bus.publish('event1', {'data': 3})
-    
+
     history = bus.get_history()
     assert len(history) == 3
-    
+
     history_event1 = bus.get_history('event1')
     assert len(history_event1) == 2
-    
+
     history_event2 = bus.get_history('event2')
     assert len(history_event2) == 1
 
@@ -70,26 +70,26 @@ def test_event_bus_thread_safety():
     bus = EventBus(max_history=100)
     results = []
     results_lock = threading.Lock()
-    
+
     def handler(event):
         with results_lock:
             results.append(event.name)
-    
+
     def publish_events(thread_id):
         for i in range(10):
             bus.publish('thread_event', {'thread': thread_id, 'i': i})
-    
+
     bus.subscribe('thread_event', handler)
-    
+
     threads = []
     for i in range(5):
         t = threading.Thread(target=publish_events, args=(i,))
         threads.append(t)
         t.start()
-    
+
     for t in threads:
         t.join()
-    
+
     # Should have 5 * 10 = 50 events
     assert len(results) == 50
 
@@ -98,10 +98,10 @@ def test_global_event_bus():
     """Test that the global event bus is accessible."""
     bus1 = get_event_bus()
     bus2 = get_event_bus()
-    
+
     # Should be the same instance
     assert bus1 is bus2
-    
+
     # Should be an EventBus
     assert isinstance(bus1, EventBus)
 

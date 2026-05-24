@@ -106,7 +106,6 @@ class LearningSystem:
             base_dir: Root directory for NEUGI data. Defaults to ~/.neugi.
             db_path: Explicit path to the learning SQLite database.
         """
-        import os
         from pathlib import Path
 
         if base_dir:

@@ -21,7 +21,6 @@ import time
 import traceback
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
 
 from neugi_swarm_v2.observability.event_bus import Event, EventBus
 from neugi_swarm_v2.tools.plugin_validator import validate_plugin, validate_plugin_structure
@@ -33,7 +32,7 @@ class PluginTestResult:
     plugin_name: str
     passed: int = 0
     failed: int = 0
-    errors: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
     duration_seconds: float = 0.0
 
 
@@ -45,9 +44,9 @@ class PluginTestHarness:
     so plugins can be tested without a running NEUGI instance.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.mock_event_bus = EventBus(max_history=100)
-        self._received_events: List[Event] = []
+        self._received_events: list[Event] = []
 
     def test_plugin(self, plugin_dir: str) -> PluginTestResult:
         """
@@ -103,9 +102,9 @@ class PluginTestHarness:
 
             entry_point = manifest_data.get("entry_point", f"{name}:activate")
             if ":" in entry_point:
-                module_name, func_name = entry_point.split(":", 1)
+                module_name, _func_name = entry_point.split(":", 1)
             else:
-                module_name, func_name = entry_point, "activate"
+                module_name, _func_name = entry_point, "activate"
 
             # Add plugin dir to path
             if str(plugin_path) not in sys.path:
@@ -129,7 +128,7 @@ class PluginTestHarness:
                 spec.loader.exec_module(module)
                 result.passed += 1
 
-            except Exception as e:
+            except (ImportError, ModuleNotFoundError, AttributeError, OSError) as e:
                 result.errors.append(f"Failed to load entry point: {e}")
                 result.failed += 1
                 result.duration_seconds = time.time() - start
@@ -164,13 +163,13 @@ class PluginTestHarness:
                                     self.logger = __import__("logging").getLogger(name)
                                     self.event_bus = self
 
-                                def info(self, msg):
+                                def info(self, msg: str) -> None:
                                     pass
 
-                                def warning(self, msg):
+                                def warning(self, msg: str) -> None:
                                     pass
 
-                                def debug(self, msg):
+                                def debug(self, msg: str) -> None:
                                     pass
 
                             if hasattr(instance, "_on_tool_success"):
@@ -181,11 +180,11 @@ class PluginTestHarness:
                             result.passed += 1
                         elif hasattr(instance, "event_handlers"):
                             result.passed += 1
-                    except Exception as e:
+                    except (TypeError, ValueError, RuntimeError, AttributeError) as e:
                         result.errors.append(f"Plugin class instantiation error: {e}")
                         result.failed += 1
 
-        except Exception as e:
+        except (ImportError, OSError, RuntimeError) as e:
             result.errors.append(f"Unexpected test error: {e}\n{traceback.format_exc()}")
             result.failed += 1
 
@@ -193,7 +192,7 @@ class PluginTestHarness:
         return result
 
 
-def main():
+def main() -> int:
     """CLI entry point for plugin testing."""
     import argparse
     parser = argparse.ArgumentParser(description="Test NEUGI plugin in isolation")

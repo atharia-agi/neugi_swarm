@@ -15,8 +15,8 @@ import logging
 import time
 from typing import Any
 
-from .async_http import AsyncHTTPClient
-from .base import (
+from channels.async_http import AsyncHTTPClient
+from channels.base import (
     Attachment,
     BaseChannel,
     ChannelCapabilities,
@@ -504,7 +504,7 @@ class TelegramChannel(BaseChannel):
     async def _describe_image(self, image_b64: str, caption: str = "") -> str:
         """
         Generate text description of image for text-only models.
-        
+
         Strategy:
             1. Try lightweight vision model (llava via Ollama)
             2. Try OCR if available

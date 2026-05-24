@@ -5,10 +5,11 @@ MCP Tool Manager - Manages tool registration and execution
 
 from __future__ import annotations
 
+import json
 import logging
-import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
+from typing import Any
 
 from neugi_swarm_v2.mcp.messages import CallToolResult, ListToolsResult
 
@@ -22,13 +23,13 @@ class Tool:
     description: str
     input_schema: dict
     handler: Callable
-    tags: Optional[list[str]] = None
+    tags: list[str] | None = None
 
 
 class ToolManager:
     """Manages tool registration, discovery, and execution."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._tools: dict[str, Tool] = {}
         self._aliases: dict[str, str] = {}
 
@@ -36,8 +37,8 @@ class ToolManager:
         self,
         name: str,
         description: str = "",
-        input_schema: Optional[dict] = None,
-        tags: Optional[list[str]] = None,
+        input_schema: dict | None = None,
+        tags: list[str] | None = None,
     ) -> Callable:
         """Decorator to register a tool function.
 
@@ -77,12 +78,12 @@ class ToolManager:
         self._aliases[alias] = target
         logger.debug("Registered MCP alias: %s -> %s", alias, target)
 
-    def get_tool(self, name: str) -> Optional[Tool]:
+    def get_tool(self, name: str) -> Tool | None:
         """Get a tool by name, resolving aliases."""
         resolved = self._aliases.get(name, name)
         return self._tools.get(resolved)
 
-    def list_tools(self, cursor: Optional[str] = None) -> ListToolsResult:
+    def list_tools(self, cursor: str | None = None) -> ListToolsResult:
         """List all registered tools with pagination support."""
         tools = [
             {
@@ -110,8 +111,8 @@ class ToolManager:
     async def call_tool(
         self,
         name: str,
-        arguments: Optional[dict] = None,
-        session_id: Optional[str] = None,
+        arguments: dict | None = None,
+        session_id: str | None = None,
     ) -> CallToolResult:
         """Execute a registered tool with given arguments.
 

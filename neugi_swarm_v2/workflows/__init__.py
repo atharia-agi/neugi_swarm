@@ -10,14 +10,14 @@ Public API:
     - HumanInTheLoop: Human approval and intervention system
 """
 
-from .checkpoint import (
+from workflows.checkpoint import (
     Checkpoint,
     CheckpointDiff,
     CheckpointManager,
     CheckpointStorage,
     SQLiteCheckpointStorage,
 )
-from .executor import (
+from workflows.executor import (
     ExecutionConfig,
     ExecutionResult,
     ExecutionStatus,
@@ -25,7 +25,7 @@ from .executor import (
     RetryPolicy,
     WorkflowExecutor,
 )
-from .human_in_loop import (
+from workflows.human_in_loop import (
     ApprovalRequest,
     ApprovalStatus,
     HumanInTheLoop,
@@ -33,7 +33,7 @@ from .human_in_loop import (
     NotificationHandler,
     PausePoint,
 )
-from .state_graph import (
+from workflows.state_graph import (
     ConditionalEdge,
     EdgeDefinition,
     ExecutionContext,

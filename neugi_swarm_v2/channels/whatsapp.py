@@ -13,8 +13,7 @@ import time
 from typing import Any
 
 import requests
-
-from .base import (
+from channels.base import (
     Attachment,
     BaseChannel,
     ChannelCapabilities,
@@ -417,8 +416,6 @@ class WhatsAppChannel(BaseChannel):
     async def send_message(self, message: OutgoingMessage) -> str | None:
         """Send a message via WhatsApp Cloud API."""
         try:
-            endpoint = f"/{self._phone_number_id}/messages"
-
             if message.message_type == MessageType.TEXT:
                 if message.buttons:
                     return await self._send_interactive(message)
@@ -656,8 +653,6 @@ class WhatsAppChannel(BaseChannel):
 
     async def _send_interactive(self, message: OutgoingMessage) -> str | None:
         """Send an interactive message (buttons or list)."""
-        endpoint = f"/{self._phone_number_id}/messages"
-
         if message.buttons:
             if len(message.buttons) <= 3:
                 return await self._send_button_message(message)

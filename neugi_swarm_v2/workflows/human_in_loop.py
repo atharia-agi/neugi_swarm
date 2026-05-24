@@ -6,12 +6,15 @@ notification system for workflows requiring human input.
 
 from __future__ import annotations
 
+import logging
 import time
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 class ApprovalStatus(Enum):
@@ -159,7 +162,8 @@ class PausePoint:
             return False
         try:
             return self.auto_approve_conditions(state)
-        except Exception:
+        except (TypeError, ValueError, KeyError) as e:
+            logger.debug("Auto-approve condition check failed: %s", e)
             return False
 
 
@@ -198,8 +202,8 @@ class NotificationHandler:
         for handler in self._handlers:
             try:
                 handler(request)
-            except Exception:
-                pass  # Don't let notification failures block workflow
+            except (OSError, RuntimeError, ValueError) as e:
+                logger.warning("Notification handler failed for request %s: %s", request.request_id, e)
 
     def notify_timeout(self, request: ApprovalRequest) -> None:
         """Send notifications for a timed-out request.
@@ -210,8 +214,8 @@ class NotificationHandler:
         for handler in self._handlers:
             try:
                 handler(request)
-            except Exception:
-                pass
+            except (OSError, RuntimeError, ValueError) as e:
+                logger.warning("Timeout notification handler failed for request %s: %s", request.request_id, e)
 
 
 class HumanInTheLoop:
@@ -673,8 +677,8 @@ class HumanInTheLoop:
         for callback in self._response_callbacks:
             try:
                 callback(response)
-            except Exception:
-                pass
+            except (OSError, RuntimeError, ValueError) as e:
+                logger.warning("Response callback failed: %s", e)
 
         return request
 

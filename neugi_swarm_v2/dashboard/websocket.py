@@ -13,7 +13,7 @@ Features:
 
 Usage:
     from dashboard.websocket import WebSocketHandler
-    
+
     # Inside HTTP request handler:
     if path == "/ws":
         ws = WebSocketHandler(request_handler)
@@ -46,7 +46,7 @@ class WebSocketError(Exception):
 class WebSocketHandler:
     """
     Handle a single WebSocket connection.
-    
+
     Implements RFC 6455 framing and handshake.
     """
 
@@ -58,7 +58,7 @@ class WebSocketHandler:
     OP_PING = 0x9
     OP_PONG = 0xA
 
-    def __init__(self, http_handler):
+    def __init__(self, http_handler: Any) -> None:
         """
         Args:
             http_handler: The BaseHTTPRequestHandler instance
@@ -75,7 +75,7 @@ class WebSocketHandler:
     def handshake(self) -> bool:
         """
         Perform WebSocket handshake.
-        
+
         Returns:
             True if handshake successful
         """
@@ -92,7 +92,7 @@ class WebSocketHandler:
         # Compute accept key
         magic = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
         accept = base64.b64encode(
-            hashlib.sha1((key + magic).encode()).digest()
+            hashlib.sha1((key + magic).encode(), usedforsecurity=False).digest()
         ).decode()
 
         # Send handshake response
@@ -168,9 +168,9 @@ class WebSocketHandler:
     def receive_messages(self, timeout: float | None = None) -> Generator[str, None, None]:
         """
         Yield decoded text messages until connection closes.
-        
+
         Handles ping/pong and close frames automatically.
-        
+
         Yields:
             Decoded text strings
         """
@@ -206,8 +206,8 @@ class WebSocketHandler:
 
         byte1, byte2 = header[0], header[1]
 
-        fin = (byte1 >> 7) & 1
-        rsv = (byte1 >> 4) & 0x7
+        _fin = (byte1 >> 7) & 1  # noqa: F841
+        _rsv = (byte1 >> 4) & 0x7  # noqa: F841
         opcode = byte1 & 0xF
         masked = (byte2 >> 7) & 1
         payload_len = byte2 & 0x7F
@@ -317,7 +317,7 @@ class WebSocketServer:
     Manage multiple WebSocket connections with broadcast capability.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._clients: list[WebSocketHandler] = []
         self._lock = threading.Lock()
         self._running = False
@@ -339,7 +339,7 @@ class WebSocketServer:
     def broadcast(self, message: dict[str, Any]) -> int:
         """
         Broadcast a message to all connected clients.
-        
+
         Returns:
             Number of clients that received the message
         """

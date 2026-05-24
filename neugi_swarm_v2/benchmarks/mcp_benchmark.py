@@ -13,12 +13,11 @@ Requires:
 from __future__ import annotations
 
 import asyncio
-import json
-import subprocess
+import statistics
 import sys
 import time
-import statistics
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
@@ -35,7 +34,7 @@ async def benchmark_stdio(
     """Benchmark MCP server via stdio transport."""
     results = []
 
-    async def single_call():
+    async def single_call() -> tuple[float, Any]:
         req = RequestMessage(
             method="tools/call",
             params={"name": tool_name, "arguments": {"message": "benchmark_test"}},
@@ -52,9 +51,7 @@ async def benchmark_stdio(
             results.append(elapsed)
         else:
             tasks = [single_call() for _ in range(concurrency)]
-            batch_start = time.perf_counter()
             batch_responses = await asyncio.gather(*tasks)
-            batch_elapsed = time.perf_counter() - batch_start
             for elapsed, _ in batch_responses:
                 results.append(elapsed)
             if i > 0 and i % 10 == 0:
@@ -86,7 +83,7 @@ async def benchmark_http(
 
     results = []
 
-    async def single_http_call(client: httpx.AsyncClient):
+    async def single_http_call(client: httpx.AsyncClient) -> tuple[float, Any]:
         payload = {
             "jsonrpc": "2.0",
             "id": "bench",
@@ -164,7 +161,7 @@ async def benchmark_concurrency_scaling(server: MCPServer) -> dict:
     return results
 
 
-def print_results(results: dict, title: str = "Benchmark Results"):
+def print_results(results: dict, title: str = "Benchmark Results") -> None:
     """Pretty-print benchmark results."""
     print(f"\n{'='*60}")
     print(f"  {title}")
@@ -183,7 +180,7 @@ def print_results(results: dict, title: str = "Benchmark Results"):
                 print(f"  {key}: {value}")
 
 
-async def main():
+async def main() -> None:
     """Main benchmark entry point."""
     print("=" * 60)
     print("  NEUGI MCP Server Performance Benchmark")

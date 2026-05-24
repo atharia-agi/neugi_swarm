@@ -19,9 +19,7 @@ import threading
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
-
-from neugi_swarm_v2.mcp.messages import RequestMessage, ResponseMessage
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -34,9 +32,9 @@ class CheckpointData:
         checkpoint_id: str,
         task_id: str,
         step: int,
-        state: Dict[str, Any],
+        state: dict[str, Any],
         timestamp: float = None,
-        metadata: Dict[str, Any] | None = None,
+        metadata: dict[str, Any] | None = None,
     ):
         self.checkpoint_id = checkpoint_id
         self.task_id = task_id
@@ -56,7 +54,7 @@ class CheckpointData:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "CheckpointData":
+    def from_dict(cls, data: dict) -> CheckpointData:
         return cls(
             checkpoint_id=data["checkpoint_id"],
             task_id=data["task_id"],
@@ -70,18 +68,18 @@ class CheckpointData:
 class ExecutionThread:
     """Tracks an executing workflow with checkpoint support."""
 
-    def __init__(self, thread_id: str, checkpoint_store: "CheckpointStore"):
+    def __init__(self, thread_id: str, checkpoint_store: CheckpointStore):
         self.thread_id = thread_id
         self._store = checkpoint_store
-        self._checkpoints: List[CheckpointData] = []
+        self._checkpoints: list[CheckpointData] = []
         self._current_step = 0
         self._lock = threading.Lock()
         self._created_at = datetime.now().isoformat()
         self._updated_at = self._created_at
         self._status = "active"  # active, paused, completed, failed
-        self._result: Optional[Dict[str, Any]] = None
+        self._result: dict[str, Any] | None = None
 
-    def checkpoint(self, state: Dict[str, Any], metadata: Dict[str, Any] | None = None) -> CheckpointData:
+    def checkpoint(self, state: dict[str, Any], metadata: dict[str, Any] | None = None) -> CheckpointData:
         """Create a new checkpoint for this execution thread.
 
         Args:
@@ -116,7 +114,7 @@ class ExecutionThread:
             return checkpoint
 
     @property
-    def current_state(self) -> Dict[str, Any]:
+    def current_state(self) -> dict[str, Any]:
         """Get the latest state from the most recent checkpoint."""
         with self._lock:
             if self._checkpoints:
@@ -124,7 +122,7 @@ class ExecutionThread:
             return {}
 
     @property
-    def last_checkpoint(self) -> Optional[CheckpointData]:
+    def last_checkpoint(self) -> CheckpointData | None:
         """Get the most recent checkpoint."""
         with self._lock:
             return self._checkpoints[-1] if self._checkpoints else None
@@ -222,7 +220,7 @@ class CheckpointStore:
             logger.error("Failed to initialize checkpoint store: %s", e)
             raise
 
-    def create_thread(self, thread_id: str, metadata: Dict[str, Any] | None = None) -> ExecutionThread:
+    def create_thread(self, thread_id: str, metadata: dict[str, Any] | None = None) -> ExecutionThread:
         """Create a new execution thread with initial checkpoint."""
         with self._lock:
             conn = self._get_conn()
@@ -303,7 +301,7 @@ class CheckpointStore:
         )
         return thread
 
-    def list_threads(self, status: str | None = None) -> List[Dict[str, Any]]:
+    def list_threads(self, status: str | None = None) -> list[dict[str, Any]]:
         """List execution threads, optionally filtered by status."""
         conn = self._get_conn()
         if status:
@@ -387,7 +385,7 @@ class CheckpointStore:
         )
         conn.commit()
 
-    def cleanup_old_threads(self, max_age_hours: int = 24, keep_statuses: List[str] | None = None) -> int:
+    def cleanup_old_threads(self, max_age_hours: int = 24, keep_statuses: list[str] | None = None) -> int:
         """Clean up old completed/failed threads.
 
         Args:
@@ -405,7 +403,7 @@ class CheckpointStore:
 
         # Get old threads to clean
         old_threads = conn.execute(
-            "SELECT thread_id FROM execution_threads WHERE status NOT IN ({}) AND updated_at < ?".format(
+            "SELECT thread_id FROM execution_threads WHERE status NOT IN ({}) AND updated_at < ?".format(  # nosec B608
                 ",".join("?" for _ in keep_statuses)
             ),
             [*keep_statuses, cutoff],
@@ -422,7 +420,7 @@ class CheckpointStore:
         logger.info("Cleaned up %d old threads", cleaned)
         return cleaned
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get checkpoint store statistics."""
         conn = self._get_conn()
         total_threads = conn.execute("SELECT COUNT(*) FROM execution_threads").fetchone()[0]
@@ -482,16 +480,16 @@ class ResilientMCPExecutor:
         self.server = mcp_server
         self.auto_resume = auto_resume
         self.checkpoint_interval = checkpoint_interval
-        self._active_threads: Dict[str, ExecutionThread] = {}
+        self._active_threads: dict[str, ExecutionThread] = {}
         self._lock = threading.Lock()
 
     async def execute_workflow(
         self,
         workflow_name: str,
-        initial_state: Dict[str, Any],
+        initial_state: dict[str, Any],
         thread_id: str | None = None,
         max_steps: int = 100,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute a workflow with checkpoint-based resilience.
 
         Args:
@@ -599,14 +597,14 @@ class ResilientMCPExecutor:
             with self._lock:
                 self._active_threads.pop(thread_id, None)
 
-    def get_thread_status(self, thread_id: str) -> Dict[str, Any] | None:
+    def get_thread_status(self, thread_id: str) -> dict[str, Any] | None:
         """Get the status of a workflow thread."""
         thread = self._active_threads.get(thread_id)
         if thread:
             return thread.to_dict()
         return self.store.get_thread(thread_id)
 
-    def list_active_workflows(self) -> List[Dict[str, Any]]:
+    def list_active_workflows(self) -> list[dict[str, Any]]:
         """List all active workflow threads."""
         return self.store.list_threads("active")
 
@@ -614,7 +612,7 @@ class ResilientMCPExecutor:
         """Clean up completed/failed threads."""
         return self.store.cleanup_old_threads(max_age_hours)
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get executor statistics."""
         stats = self.store.get_stats()
         stats["active_threads"] = len(self._active_threads)

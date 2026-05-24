@@ -1,6 +1,28 @@
 @echo off
 setlocal enabledelayedexpansion
 
+echo.
+echo  _   _ _____ _   _  ____ ___
+echo ^| \ ^| ^| ____^| ^| ^| ^|/ ___^|_ _^|
+echo ^|  \^| ^|  _^| ^| ^| ^| ^| ^|  _ ^| ^|
+echo ^| ^|\  ^| ^|___^| ^|_^| ^| ^|_^| ^|^| ^|
+echo ^|_^| \_^|_____^\___/ \____^|___^|
+echo.
+echo NEUGI Swarm v2.1.3 Installer
+echo.
+echo Safety Notice ^(Beta / Experimental^)
+echo - NEUGI can run autonomous and tool-executing agent workflows.
+echo - Actions may affect files, systems, and connected provider resources.
+echo - Keep human approval controls enabled for high-impact operations.
+echo - Review terms/privacy: https://neugi.com/terms.html and https://neugi.com/privacy.html
+echo.
+set /p NEUGI_INSTALL_CONSENT="Do you want to continue installation? [y/N]: "
+if /i not "%NEUGI_INSTALL_CONSENT%"=="y" (
+    echo [NEUGI] Installation cancelled by user.
+    exit /b 0
+)
+echo.
+
 echo =========================================
 echo   NEUGI Swarm V2.1.3 - Windows Installer
 echo =========================================
@@ -112,11 +134,22 @@ echo   NEUGI v2.1.3 installed successfully!
 echo =========================================
 echo.
 echo Quick start:
+echo   neugi quickstart  - Recommended: auto-fix, smoke test, and start
 echo   neugi wizard      - Interactive setup (recommended)
 echo   neugi rescue      - Fix issues automatically
 echo   neugi chat        - Start chatting
 echo   neugi status      - Check system health
 echo.
 echo Note: If Ollama was just installed, restart your terminal first.
+echo.
+set /p RUN_QS="Run 'neugi quickstart' now? [Y/n]: "
+if /i not "%RUN_QS%"=="n" (
+    set /p RUN_QS_NONINT="Run non-interactive mode (best for CI/server)? [y/N]: "
+    if /i "%RUN_QS_NONINT%"=="y" (
+        neugi quickstart --non-interactive --json
+    ) else (
+        neugi quickstart
+    )
+)
 echo.
 pause

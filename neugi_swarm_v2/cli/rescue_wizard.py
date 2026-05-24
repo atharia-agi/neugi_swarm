@@ -8,7 +8,7 @@ No memorizing commands. No editing JSON files. No Googling.
 
 Usage:
     from cli.rescue_wizard import RescueWizard
-    
+
     wizard = RescueWizard()
     wizard.run_setup()      # First-time: "Just press Enter"
     wizard.run_rescue()     # Broken? "I'll figure it out"
@@ -38,7 +38,7 @@ class WizardError(Exception):
 class RescueWizard:
     """
     NEUGI Rescue & Setup Wizard — Zero Knowledge Required.
-    
+
     Philosophy:
         1. DETECT first, ask later. We check what's on your system.
         2. SENSIBLE defaults. Press Enter to accept our recommendation.
@@ -57,7 +57,7 @@ class RescueWizard:
     def run_setup(self) -> bool:
         """
         First-time guided setup. Assumes ZERO knowledge.
-        
+
         Flow:
             1. Check Python version (must be 3.10+)
             2. Check if Ollama installed
@@ -66,7 +66,7 @@ class RescueWizard:
             5. Auto-create directories
             6. Save config
             7. Test connection
-        
+
         Returns:
             True if ready to chat
         """
@@ -125,7 +125,7 @@ class RescueWizard:
     def run_rescue(self) -> bool:
         """
         Interactive rescue mode. Auto-detects and fixes issues.
-        
+
         Returns:
             True if system is healthy after rescue
         """
@@ -165,9 +165,9 @@ class RescueWizard:
     def system_check(self) -> dict[str, Any]:
         """
         Non-interactive full system check.
-        
+
         Returns:
-            Dict with: python_ok, ollama_ok, config_ok, dirs_ok, 
+            Dict with: python_ok, ollama_ok, config_ok, dirs_ok,
                       models_available, issues[], fixes[]
         """
         issues = []
@@ -202,7 +202,7 @@ class RescueWizard:
         # Config check
         if self.config_path.exists():
             try:
-                with open(self.config_path) as f:
+                with open(self.config_path, encoding="utf-8") as f:
                     cfg = json.load(f)
                 if "llm" not in cfg or not cfg["llm"].get("model"):
                     issues.append({
@@ -264,10 +264,10 @@ class RescueWizard:
         config_valid = False
         if self.config_path.exists():
             try:
-                with open(self.config_path) as f:
+                with open(self.config_path, encoding="utf-8") as f:
                     cfg = json.load(f)
                 config_valid = "llm" in cfg and bool(cfg["llm"].get("model"))
-            except Exception:
+            except (json.JSONDecodeError, OSError, ValueError):
                 config_valid = False
         return {
             "python_ok": py_ok,
@@ -283,7 +283,7 @@ class RescueWizard:
         try:
             with open(self.config_path, encoding="utf-8") as f:
                 return json.load(f)
-        except Exception:
+        except (json.JSONDecodeError, OSError, ValueError):
             return {}
 
     def _setup_directories(self) -> bool:
@@ -402,7 +402,7 @@ class RescueWizard:
             return False
 
         self._print("\nAvailable providers:")
-        for i, (key, desc) in enumerate(options, 1):
+        for i, (_key, desc) in enumerate(options, 1):
             self._print(f"  {i}. {desc}")
 
         choice = self._ask_choice("Select", len(options))
@@ -427,7 +427,7 @@ class RescueWizard:
         # Config JSON
         if self.config_path.exists():
             try:
-                with open(self.config_path) as f:
+                with open(self.config_path, encoding="utf-8") as f:
                     json.load(f)
             except json.JSONDecodeError:
                 self._print_warning("Config file corrupted. Restoring defaults...")
@@ -564,7 +564,7 @@ class RescueWizard:
         if result["installed"]:
             try:
                 req = urllib.request.Request("http://localhost:11434/api/tags", method="GET")
-                with urllib.request.urlopen(req, timeout=3) as resp:
+                with urllib.request.urlopen(req, timeout=3) as resp:  # nosec B310
                     if resp.status == 200:
                         result["running"] = True
             except Exception:
@@ -576,7 +576,7 @@ class RescueWizard:
         """List models available in Ollama."""
         try:
             req = urllib.request.Request("http://localhost:11434/api/tags", method="GET")
-            with urllib.request.urlopen(req, timeout=3) as resp:
+            with urllib.request.urlopen(req, timeout=3) as resp:  # nosec B310
                 data = json.loads(resp.read().decode())
                 return [m.get("name", "") for m in data.get("models", []) if m.get("name")]
         except Exception:
@@ -587,10 +587,10 @@ class RescueWizard:
         if not self.config_path.exists():
             return ""
         try:
-            with open(self.config_path) as f:
+            with open(self.config_path, encoding="utf-8") as f:
                 cfg = json.load(f)
             return cfg.get("llm", {}).get("model", "")
-        except Exception:
+        except (json.JSONDecodeError, OSError, ValueError):
             return ""
 
     def _get_current_provider(self) -> dict[str, str]:
@@ -598,10 +598,10 @@ class RescueWizard:
         if not self.config_path.exists():
             return {}
         try:
-            with open(self.config_path) as f:
+            with open(self.config_path, encoding="utf-8") as f:
                 cfg = json.load(f)
             return cfg.get("llm", {})
-        except Exception:
+        except (json.JSONDecodeError, OSError, ValueError):
             return {}
 
     # ==================== FIX HELPERS ====================

@@ -334,7 +334,7 @@ class DeviceManager:
                     raise DeviceAlreadyRegisteredError(
                         f"Device name '{device_name}' already registered",
                         device_name,
-                    )
+                    ) from e
                 raise
 
         device = Device(

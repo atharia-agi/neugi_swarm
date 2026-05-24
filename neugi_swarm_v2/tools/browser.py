@@ -13,17 +13,17 @@ Features:
 
 Usage:
     from tools.browser import BrowserTool
-    
+
     browser = BrowserTool()
-    
+
     # Tier 1: Fast read
     text = browser.read("https://example.com")
-    
+
     # Tier 2: Interactive
     browser.navigate("https://example.com")
     browser.click("button#submit")
     screenshot = browser.screenshot()
-    
+
     # Tier 3: Full automation
     browser.automate([
         {"action": "navigate", "url": "https://example.com"},
@@ -108,10 +108,10 @@ class BrowserTool:
         try:
             from playwright.sync_api import sync_playwright
             self._playwright = sync_playwright().start()
-        except ImportError:
+        except ImportError as e:
             raise BrowserToolError(
                 "Playwright not installed. Run: pip install playwright && playwright install"
-            )
+            ) from e
 
     def _get_browser(self) -> Any:
         """Get or create browser instance."""
@@ -244,16 +244,16 @@ class BrowserTool:
         () => {
             const elements = [];
             const interactiveTags = ['a', 'button', 'input', 'select', 'textarea'];
-            
+
             function extractElement(el, depth = 0) {
                 if (depth > 3) return null;  // Limit depth
-                
+
                 const tag = el.tagName.toLowerCase();
                 const rect = el.getBoundingClientRect();
                 const isVisible = rect.width > 0 && rect.height > 0;
-                
+
                 if (!isVisible) return null;
-                
+
                 const info = {
                     tag: tag,
                     selector: el.id ? `#${el.id}` : el.className ? `.${el.className.split(' ')[0]}` : tag,
@@ -267,12 +267,12 @@ class BrowserTool:
                         width: rect.width, height: rect.height
                     }
                 };
-                
+
                 // Key attributes
                 ['id', 'class', 'name', 'placeholder', 'href', 'src', 'alt'].forEach(attr => {
                     if (el.hasAttribute(attr)) info.attributes[attr] = el.getAttribute(attr);
                 });
-                
+
                 // Children (limited)
                 if (depth < 2) {
                     Array.from(el.children).slice(0, 5).forEach(child => {
@@ -280,16 +280,16 @@ class BrowserTool:
                         if (childInfo) info.children.push(childInfo);
                     });
                 }
-                
+
                 return info;
             }
-            
+
             // Extract top-level interactive elements
             document.querySelectorAll('body > *').forEach(el => {
                 const info = extractElement(el, 0);
                 if (info) elements.push(info);
             });
-            
+
             // Also get all buttons and links
             document.querySelectorAll('button, a, input').forEach(el => {
                 const info = extractElement(el, 0);
@@ -297,7 +297,7 @@ class BrowserTool:
                     elements.push(info);
                 }
             });
-            
+
             return elements.slice(0, 50);  // Limit total
         }
         """
@@ -313,7 +313,7 @@ class BrowserTool:
         () => {
             const elements = [];
             const tags = ['button', 'a', 'input[type="submit"]', 'input[type="button"]', '[role="button"]'];
-            
+
             tags.forEach(tag => {
                 document.querySelectorAll(tag).forEach((el, idx) => {
                     const rect = el.getBoundingClientRect();
@@ -331,7 +331,7 @@ class BrowserTool:
                     }
                 });
             });
-            
+
             return elements.slice(0, 30);
         }
         """

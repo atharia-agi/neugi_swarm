@@ -278,7 +278,10 @@ class IdleObserver:
                     signal.gaps.append("error handling patterns")
 
         except Exception as e:
-            logger.warning("Memory signal analysis failed: %s", e)
+            if "unable to open database file" in str(e).lower():
+                logger.debug("Memory signal analysis skipped: %s", e)
+            else:
+                logger.warning("Memory signal analysis failed: %s", e)
 
         return signal
 
@@ -565,7 +568,6 @@ class IdleObserver:
             with sqlite3.connect(self.memory_db_path) as conn:
                 conn.row_factory = sqlite3.Row
 
-                day_ago = time.time() - 86400
                 week_ago = time.time() - 604800
 
                 # Repeated queries (same query pattern >3 times)
@@ -603,7 +605,10 @@ class IdleObserver:
                     )
 
         except Exception as e:
-            logger.warning("Learning signal analysis failed: %s", e)
+            if "unable to open database file" in str(e).lower():
+                logger.debug("Learning signal analysis skipped: %s", e)
+            else:
+                logger.warning("Learning signal analysis failed: %s", e)
 
         return signal
 
@@ -667,6 +672,9 @@ class IdleObserver:
                     ))
 
         except Exception as e:
-            logger.warning("Research opportunity observation failed: %s", e)
+            if "unable to open database file" in str(e).lower():
+                logger.debug("Research opportunity observation skipped: %s", e)
+            else:
+                logger.warning("Research opportunity observation failed: %s", e)
 
         return observations

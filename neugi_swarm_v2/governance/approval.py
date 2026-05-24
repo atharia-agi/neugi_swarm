@@ -231,37 +231,6 @@ class ApprovalRequest:
 
 
 @dataclass
-class ApprovalChain:
-    """A multi-level approval chain.
-
-    Attributes:
-        chain_id: Unique chain identifier.
-        name: Human-readable chain name.
-        levels: Ordered list of (level_name, approvers) tuples.
-        current_level: Current level index (0-based).
-        timeout_minutes: Total timeout for the chain.
-    """
-
-    chain_id: str = field(default_factory=lambda: str(uuid.uuid4())[:8])
-    name: str = "unnamed_chain"
-    levels: list[tuple[str, list[str]]] = field(default_factory=list)
-    current_level: int = 0
-    timeout_minutes: float = 120.0
-
-    @property
-    def current_approvers(self) -> list[str]:
-        """Get approvers for the current level."""
-        if 0 <= self.current_level < len(self.levels):
-            return self.levels[self.current_level][1]
-        return []
-
-    @property
-    def is_complete(self) -> bool:
-        """Check if all levels have been approved."""
-        return self.current_level >= len(self.levels)
-
-
-@dataclass
 class ApprovalTimeoutError(Exception):
     """Raised when an approval request times out.
 
@@ -277,22 +246,6 @@ class ApprovalTimeoutError(Exception):
         if not self.message:
             self.message = f"Approval request '{self.request_id}' timed out"
 
-
-@dataclass
-class ApprovalHistory:
-    """Complete history for an approval request.
-
-    Attributes:
-        request: The original request.
-        decisions: All decisions made.
-        status_changes: List of (status, timestamp) tuples.
-        total_duration: Time from creation to final decision.
-    """
-
-    request: ApprovalRequest
-    decisions: list[ApprovalDecision] = field(default_factory=list)
-    status_changes: list[tuple[str, datetime]] = field(default_factory=list)
-    total_duration: timedelta | None = None
 
 
 # -- Approval Gate -----------------------------------------------------------
@@ -312,7 +265,6 @@ class ApprovalGate:
         default_timeout: Default timeout in minutes.
         _lock: Thread safety lock.
         _rules: In-memory rule cache.
-        _chains: In-memory chain cache.
     """
 
     def __init__(
@@ -324,7 +276,6 @@ class ApprovalGate:
         self.default_timeout = default_timeout_minutes
         self._lock = threading.Lock()
         self._rules: dict[str, ApprovalRule] = {}
-        self._chains: dict[str, ApprovalChain] = {}
         self._init_db()
         self._load_rules()
 
@@ -400,14 +351,6 @@ class ApprovalGate:
 
                 CREATE INDEX IF NOT EXISTS idx_status_log_request
                     ON approval_status_log(request_id);
-
-                CREATE TABLE IF NOT EXISTS approval_chains (
-                    chain_id TEXT PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    levels_json TEXT NOT NULL,
-                    current_level INTEGER NOT NULL DEFAULT 0,
-                    timeout_minutes REAL NOT NULL DEFAULT 120.0
-                );
             """)
 
     def _load_rules(self) -> None:
@@ -520,6 +463,133 @@ class ApprovalGate:
         if enabled_only:
             return [r for r in self._rules.values() if r.enabled]
         return list(self._rules.values())
+
+    def clear_rules(self) -> int:
+        """Delete all approval rules and clear in-memory cache.
+
+        Returns:
+            Number of rules removed from in-memory cache before deletion.
+        """
+        with self._lock:
+            removed = len(self._rules)
+            with self._get_conn() as conn:
+                conn.execute("DELETE FROM approval_rules")
+            self._rules.clear()
+            return removed
+
+    def apply_risk_profile(self, profile: str, force: bool = False) -> dict[str, Any]:
+        """Apply a predefined risk/approval profile.
+
+        Profiles:
+            - startup: medium/high/critical require approval; high+ require 2 approvals
+            - team: medium+ require approval; high+ require 2 approvals
+            - enterprise: low+ require approval; high+ require 2 approvals
+
+        Args:
+            profile: startup | team | enterprise
+            force: If True, replace any existing rules.
+
+        Returns:
+            Summary dictionary with applied rules and metadata.
+        """
+        profile_key = str(profile or "").strip().lower()
+        if profile_key not in {"startup", "team", "enterprise"}:
+            raise ValueError(f"Unknown risk profile: {profile}")
+
+        existing = self.list_rules(enabled_only=False)
+        if existing and not force:
+            return {
+                "profile": profile_key,
+                "applied": False,
+                "reason": "existing_rules_present",
+                "existing_rule_count": len(existing),
+            }
+
+        if force:
+            self.clear_rules()
+
+        def _add(
+            name: str,
+            min_risk: RiskLevel,
+            approval_count: int = 1,
+            timeout_minutes: float = 60.0,
+        ) -> None:
+            self.add_rule(ApprovalRule(
+                name=name,
+                action_type="*",
+                agent_role="*",
+                min_cost=0.0,
+                max_cost=float("inf"),
+                min_risk=min_risk,
+                requires_approval=True,
+                approvers=["operator", "reviewer"] if approval_count > 1 else ["operator"],
+                approval_count=approval_count,
+                timeout_minutes=timeout_minutes,
+                enabled=True,
+            ))
+
+        if profile_key == "startup":
+            _add("startup_medium_gate", RiskLevel.MEDIUM, approval_count=1, timeout_minutes=60.0)
+            _add("startup_high_gate", RiskLevel.HIGH, approval_count=2, timeout_minutes=90.0)
+            _add("startup_critical_gate", RiskLevel.CRITICAL, approval_count=2, timeout_minutes=120.0)
+        elif profile_key == "team":
+            _add("team_medium_gate", RiskLevel.MEDIUM, approval_count=1, timeout_minutes=45.0)
+            _add("team_high_gate", RiskLevel.HIGH, approval_count=2, timeout_minutes=75.0)
+            _add("team_critical_gate", RiskLevel.CRITICAL, approval_count=2, timeout_minutes=120.0)
+        else:  # enterprise
+            _add("enterprise_low_gate", RiskLevel.LOW, approval_count=1, timeout_minutes=30.0)
+            _add("enterprise_high_gate", RiskLevel.HIGH, approval_count=2, timeout_minutes=60.0)
+            _add("enterprise_critical_gate", RiskLevel.CRITICAL, approval_count=2, timeout_minutes=120.0)
+
+        return {
+            "profile": profile_key,
+            "applied": True,
+            "reason": "profile_applied",
+            "active_rule_count": len(self.list_rules(enabled_only=True)),
+        }
+
+    def preview_risk_profile(self, profile: str) -> dict[str, Any]:
+        """Preview rules for a predefined profile without mutating state."""
+        profile_key = str(profile or "").strip().lower()
+        if profile_key not in {"startup", "team", "enterprise"}:
+            raise ValueError(f"Unknown risk profile: {profile}")
+
+        rules: list[dict[str, Any]] = []
+
+        def _add(
+            name: str,
+            min_risk: RiskLevel,
+            approval_count: int = 1,
+            timeout_minutes: float = 60.0,
+        ) -> None:
+            rules.append({
+                "name": name,
+                "action_type": "*",
+                "agent_role": "*",
+                "min_cost": 0.0,
+                "max_cost": float("inf"),
+                "min_risk": min_risk.value,
+                "requires_approval": True,
+                "approvers": ["operator", "reviewer"] if approval_count > 1 else ["operator"],
+                "approval_count": approval_count,
+                "timeout_minutes": timeout_minutes,
+                "enabled": True,
+            })
+
+        if profile_key == "startup":
+            _add("startup_medium_gate", RiskLevel.MEDIUM, approval_count=1, timeout_minutes=60.0)
+            _add("startup_high_gate", RiskLevel.HIGH, approval_count=2, timeout_minutes=90.0)
+            _add("startup_critical_gate", RiskLevel.CRITICAL, approval_count=2, timeout_minutes=120.0)
+        elif profile_key == "team":
+            _add("team_medium_gate", RiskLevel.MEDIUM, approval_count=1, timeout_minutes=45.0)
+            _add("team_high_gate", RiskLevel.HIGH, approval_count=2, timeout_minutes=75.0)
+            _add("team_critical_gate", RiskLevel.CRITICAL, approval_count=2, timeout_minutes=120.0)
+        else:
+            _add("enterprise_low_gate", RiskLevel.LOW, approval_count=1, timeout_minutes=30.0)
+            _add("enterprise_high_gate", RiskLevel.HIGH, approval_count=2, timeout_minutes=60.0)
+            _add("enterprise_critical_gate", RiskLevel.CRITICAL, approval_count=2, timeout_minutes=120.0)
+
+        return {"profile": profile_key, "rules": rules, "rule_count": len(rules)}
 
     def find_matching_rules(
         self,
@@ -767,31 +837,6 @@ class ApprovalGate:
         logger.info("Request rejected: %s by %s (%s)", request_id, approver, reason)
         return request
 
-    def escalate(
-        self,
-        request_id: str,
-        reason: str = "",
-    ) -> ApprovalRequest:
-        """Escalate a pending request to higher authority.
-
-        Args:
-            request_id: Request to escalate.
-            reason: Reason for escalation.
-
-        Returns:
-            Updated ApprovalRequest.
-
-        Raises:
-            ValueError: If request not found.
-        """
-        request = self.get_request(request_id)
-        if request is None:
-            raise ValueError(f"Request '{request_id}' not found")
-
-        self._update_status(request, ApprovalStatus.ESCALATED)
-        logger.info("Request escalated: %s (%s)", request_id, reason)
-        return request
-
     def get_request(self, request_id: str) -> ApprovalRequest | None:
         """Get an approval request by ID.
 
@@ -943,171 +988,6 @@ class ApprovalGate:
 
         return requests
 
-    def get_history(self, request_id: str) -> ApprovalHistory:
-        """Get complete history for an approval request.
-
-        Args:
-            request_id: Request identifier.
-
-        Returns:
-            ApprovalHistory with full audit trail.
-
-        Raises:
-            ValueError: If request not found.
-        """
-        request = self.get_request(request_id)
-        if request is None:
-            raise ValueError(f"Request '{request_id}' not found")
-
-        decisions = self._get_decisions(request_id)
-
-        with self._get_conn() as conn:
-            rows = conn.execute(
-                """
-                SELECT status, timestamp FROM approval_status_log
-                WHERE request_id = ?
-                ORDER BY timestamp ASC
-                """,
-                (request_id,),
-            ).fetchall()
-
-        status_changes = [
-            (row["status"], datetime.fromisoformat(row["timestamp"]))
-            for row in rows
-        ]
-
-        total_duration = None
-        if status_changes and len(status_changes) >= 2:
-            total_duration = status_changes[-1][1] - status_changes[0][1]
-
-        return ApprovalHistory(
-            request=request,
-            decisions=decisions,
-            status_changes=status_changes,
-            total_duration=total_duration,
-        )
-
-    def add_chain(self, chain: ApprovalChain) -> ApprovalChain:
-        """Add a multi-level approval chain.
-
-        Args:
-            chain: Chain to add.
-
-        Returns:
-            The added chain.
-        """
-        with self._lock:
-            with self._get_conn() as conn:
-                conn.execute(
-                    """
-                    INSERT OR REPLACE INTO approval_chains
-                    (chain_id, name, levels_json, current_level, timeout_minutes)
-                    VALUES (?, ?, ?, ?, ?)
-                    """,
-                    (
-                        chain.chain_id,
-                        chain.name,
-                        json.dumps(chain.levels),
-                        chain.current_level,
-                        chain.timeout_minutes,
-                    ),
-                )
-
-            self._chains[chain.chain_id] = chain
-            logger.info("Approval chain added: %s", chain.name)
-            return chain
-
-    def get_chain(self, chain_id: str) -> ApprovalChain | None:
-        """Get an approval chain by ID.
-
-        Args:
-            chain_id: Chain identifier.
-
-        Returns:
-            ApprovalChain if found, None otherwise.
-        """
-        if chain_id in self._chains:
-            return self._chains[chain_id]
-
-        with self._get_conn() as conn:
-            row = conn.execute(
-                "SELECT * FROM approval_chains WHERE chain_id = ?",
-                (chain_id,),
-            ).fetchone()
-
-        if row is None:
-            return None
-
-        chain = ApprovalChain(
-            chain_id=row["chain_id"],
-            name=row["name"],
-            levels=json.loads(row["levels_json"]),
-            current_level=row["current_level"],
-            timeout_minutes=row["timeout_minutes"],
-        )
-        self._chains[chain.chain_id] = chain
-        return chain
-
-    def advance_chain(self, chain_id: str) -> ApprovalChain | None:
-        """Advance an approval chain to the next level.
-
-        Args:
-            chain_id: Chain to advance.
-
-        Returns:
-            Updated ApprovalChain, or None if not found.
-        """
-        chain = self.get_chain(chain_id)
-        if chain is None:
-            return None
-
-        chain.current_level += 1
-
-        with self._get_conn() as conn:
-            conn.execute(
-                "UPDATE approval_chains SET current_level = ? WHERE chain_id = ?",
-                (chain.current_level, chain_id),
-            )
-
-        if chain.is_complete:
-            logger.info("Approval chain completed: %s", chain.name)
-        else:
-            logger.info(
-                "Approval chain advanced: %s (level %d/%d)",
-                chain.name, chain.current_level, len(chain.levels),
-            )
-
-        return chain
-
-    def check_timeouts(self) -> list[str]:
-        """Check and expire timed-out requests.
-
-        Returns:
-            List of request IDs that were expired.
-        """
-        expired_ids = []
-
-        with self._get_conn() as conn:
-            rows = conn.execute(
-                """
-                SELECT request_id FROM approval_requests
-                WHERE status = 'pending' AND timeout_at IS NOT NULL
-                AND timeout_at < ?
-                """,
-                (datetime.now(timezone.utc).isoformat(),),
-            ).fetchall()
-
-            for row in rows:
-                request_id = row["request_id"]
-                self._update_status(
-                    ApprovalRequest(request_id=request_id),
-                    ApprovalStatus.EXPIRED,
-                )
-                expired_ids.append(request_id)
-                logger.warning("Approval request expired: %s", request_id)
-
-        return expired_ids
-
     def get_stats(self) -> dict[str, Any]:
         """Get approval gate statistics.
 
@@ -1118,12 +998,12 @@ class ApprovalGate:
             row = conn.execute("""
                 SELECT
                     COUNT(*) as total,
-                    SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved,
-                    SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected,
-                    SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
-                    SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END) as expired,
-                    SUM(CASE WHEN status = 'auto_approved' THEN 1 ELSE 0 END) as auto_approved,
-                    SUM(CASE WHEN status = 'escalated' THEN 1 ELSE 0 END) as escalated
+                    COALESCE(SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END), 0) as approved,
+                    COALESCE(SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END), 0) as rejected,
+                    COALESCE(SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END), 0) as pending,
+                    COALESCE(SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END), 0) as expired,
+                    COALESCE(SUM(CASE WHEN status = 'auto_approved' THEN 1 ELSE 0 END), 0) as auto_approved,
+                    COALESCE(SUM(CASE WHEN status = 'escalated' THEN 1 ELSE 0 END), 0) as escalated
                 FROM approval_requests
             """).fetchone()
 
@@ -1141,7 +1021,6 @@ class ApprovalGate:
                 else 0.0
             ),
             "active_rules": len([r for r in self._rules.values() if r.enabled]),
-            "active_chains": len(self._chains),
         }
 
     def close(self) -> None:

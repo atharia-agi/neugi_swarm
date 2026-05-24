@@ -10,11 +10,11 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+from collections.abc import Callable
 from typing import Any
 
 import requests
-
-from .base import (
+from channels.base import (
     Attachment,
     BaseChannel,
     ChannelCapabilities,
@@ -278,7 +278,6 @@ class DiscordChannel(BaseChannel):
 
     async def _parse_message(self, raw_data: dict[str, Any]) -> IncomingMessage | None:
         """Parse raw Discord message data into IncomingMessage."""
-        channel = raw_data.get("channel", {})
         channel_type = raw_data.get("channel_type", 0)
 
         if channel_type == 1:
@@ -676,7 +675,7 @@ class DiscordChannel(BaseChannel):
         endpoint = f"/applications/{self._application_id}/guilds/{guild_id}/commands"
         return self._call_api("PUT", endpoint, commands)
 
-    def register_command_handler(self, command_name: str, handler) -> None:
+    def register_command_handler(self, command_name: str, handler: Callable) -> None:
         """Register a handler for a slash command."""
         self._command_handlers[command_name] = handler
 

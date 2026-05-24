@@ -22,12 +22,12 @@ neugi dashboard   # Launch web UI
 
 **macOS / Linux:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm_v2/install.sh | bash
+curl -fsSL https://neugi.com/install.sh | bash
 ```
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm_v2/install.ps1 | iex
+irm https://neugi.com/install.ps1 | iex
 ```
 
 ## Docker
@@ -161,7 +161,7 @@ neugi gateway --port 8082 --mode secondary --primary ws://host1:8081
 
 ```bash
 # CLI
-curl http://localhost:17901/api/v2/health
+curl http://localhost:17901/api/health
 
 # Expected response
 {"status": "ok", "version": "2.0.0", "subsystems": 17}

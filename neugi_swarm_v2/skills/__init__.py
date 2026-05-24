@@ -14,21 +14,21 @@ Implements a hierarchical, multi-format compatible skill system with:
 - Import/export in all formats
 """
 
-from .skill_contract import (
+from skills.skill_contract import (
     SkillAction,
     SkillContract,
     SkillFrontmatter,
     SkillState,
     SkillTier,
 )
-from .skill_loader import (
+from skills.skill_loader import (
     GatingResult,
     SkillLoader,
     SkillParseResult,
 )
-from .skill_manager import SkillManager
-from .skill_matcher import MatchResult, SkillMatcher
-from .skill_prompt import (
+from skills.skill_manager import SkillManager
+from skills.skill_matcher import MatchResult, SkillMatcher
+from skills.skill_prompt import (
     CompactionResult,
     PromptAssembler,
     PromptTier,

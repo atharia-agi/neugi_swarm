@@ -1,28 +1,233 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=https://github.com/atharia-agi/neugi_swarm">
-    <title>NEUGI Wizard</title>
-    <style>
-        body {
-            background: #000;
-            color: #fff;
-            font-family: 'Inter', sans-serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            text-align: center;
-        }
-        a { color: #6366f1; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NEUGI Setup Wizard</title>
+  <link rel="icon" type="image/x-icon" href="https://neugi.com/assets/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="https://neugi.com/assets/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="https://neugi.com/assets/favicon-192x192.png">
+  <style>
+    :root {
+      --bg: #08090f;
+      --panel: #121420;
+      --panel-2: #171a2b;
+      --text: #f4f6ff;
+      --muted: #a3abc8;
+      --line: rgba(255,255,255,0.12);
+      --accent: #f4f4f5;
+      --accent-2: #a1a1aa;
+      --ok: #10b981;
+      --warn: #f59e0b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 20% 20%, rgba(99,102,241,0.15), transparent 35%),
+        radial-gradient(circle at 85% 10%, rgba(139,92,246,0.12), transparent 40%),
+        var(--bg);
+    }
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .hero {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: clamp(28px, 4vw, 42px);
+      line-height: 1.1;
+    }
+    .hero p { margin: 0; color: var(--muted); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+    }
+    .card {
+      grid-column: span 12;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 18px;
+    }
+    @media (min-width: 860px) {
+      .card.span-6 { grid-column: span 6; }
+      .card.span-8 { grid-column: span 8; }
+      .card.span-4 { grid-column: span 4; }
+    }
+    h2 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+    .muted { color: var(--muted); }
+    .cmd {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 10px 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .btn:hover { border-color: var(--accent); }
+    .btn.primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border: none;
+    }
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .kpi {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .ok { color: var(--ok); }
+    .warn { color: var(--warn); }
+    a { color: #9aa3ff; }
+    .steps { margin: 0; padding-left: 18px; }
+    .steps li { margin: 6px 0; color: var(--muted); }
+    .footer {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+    /* NEUGI native IDE refinement. */
+    :root {
+      --bg:#0d0d0d;
+      --panel:#111111;
+      --panel-2:#151515;
+      --line:rgba(255,255,255,0.06);
+      --text:#f4f4f5;
+      --muted:#a1a1aa;
+    }
+    body { font-size:13px; line-height:1.45; }
+    .wrap { max-width:1040px; padding:16px; }
+    .hero, .card, .cmd, .kpi, button, select {
+      border-radius:4px !important;
+      box-shadow:none !important;
+    }
+    .hero { padding:16px; margin-bottom:10px; }
+    .hero h1 { font-size:24px; }
+    .hero p, p, li { font-size:13px; }
+    .grid { gap:10px; }
+    .card { padding:12px; }
+    .card h2 { font-size:13px; }
+    .cmd { padding:8px; font-size:12px; }
+    button, select { min-height:28px; padding:5px 8px; font-size:12px; }
+  </style>
 </head>
 <body>
-    <div>
-        <p>Wizard is bundled with NEUGI CLI. Run <code>neugi wizard</code> after installation.</p>
-        <p><a href="https://github.com/atharia-agi/neugi_swarm">View on GitHub</a></p>
+  <div class="wrap">
+    <section class="hero">
+      <h1>NEUGI Setup Wizard</h1>
+      <p>Built for normal humans too: one install command, one quickstart command, then use the web dashboard as your second brain.</p>
+    </section>
+
+    <section class="grid">
+      <article class="card span-6">
+        <h2>Step 1 · Install</h2>
+        <p class="muted">Choose your OS and run once.</p>
+        <div class="row" style="margin-bottom:8px;">
+          <button class="btn" onclick="setOs('windows')">Windows</button>
+          <button class="btn" onclick="setOs('mac')">macOS</button>
+          <button class="btn" onclick="setOs('linux')">Linux</button>
+        </div>
+        <div class="cmd" id="installCmd">irm https://neugi.com/install.ps1 | iex</div>
+        <div class="row" style="margin-top:8px;">
+          <button class="btn" onclick="copyCmd('installCmd')">Copy Install Command</button>
+          <span id="installHint" class="muted">Windows selected</span>
+        </div>
+      </article>
+
+      <article class="card span-6">
+        <h2>Step 2 · Quickstart</h2>
+        <p class="muted">After install, run this once:</p>
+        <div class="cmd" id="quickstartCmd">neugi quickstart</div>
+        <div class="row" style="margin-top:8px;">
+          <button class="btn" onclick="copyCmd('quickstartCmd')">Copy Quickstart</button>
+          <div class="kpi"><span class="ok">Recommended:</span> auto-fix, smoke test, setup, start</div>
+        </div>
+        <div class="kpis">
+          <div class="kpi">Server / CI: <code>neugi quickstart --ci</code></div>
+          <div class="kpi">Diagnostics: <code>neugi doctor --json --strict</code></div>
+        </div>
+      </article>
+
+      <article class="card span-8">
+        <h2>Step 3 · Use Without Living in CLI</h2>
+        <ol class="steps">
+          <li>Open <a href="dashboard.html">dashboard.html</a> (or <code>http://localhost:17901</code> when gateway is running).</li>
+          <li>Go to <strong>Setup</strong> tab, pick provider/model, test connection, then save.</li>
+          <li>Go to <strong>Memory</strong> tab and store personal context so NEUGI is less forgetful.</li>
+          <li>Enable autonomous mode when ready so it can proactively help between prompts.</li>
+        </ol>
+      </article>
+
+      <article class="card span-4">
+        <h2>Power Checklist</h2>
+        <div class="kpi"><span class="ok">1.</span> `neugi smoke --json --strict` returns <code>ok: true</code></div>
+        <div class="kpi"><span class="ok">2.</span> `neugi insights --json` shows tool telemetry</div>
+        <div class="kpi"><span class="ok">3.</span> Memory panel has saved user facts & goals</div>
+        <div class="kpi"><span class="warn">4.</span> Keep config + API keys secure</div>
+      </article>
+    </section>
+
+    <div class="footer">
+      Need docs? See <a href="docs.html">NEUGI Docs</a> · Need source? <a href="https://github.com/atharia-agi/neugi_swarm">GitHub</a>
     </div>
+  </div>
+
+  <script>
+    const installMap = {
+      windows: "irm https://neugi.com/install.ps1 | iex",
+      mac: "curl -fsSL https://neugi.com/install.sh | bash",
+      linux: "curl -fsSL https://neugi.com/install.sh | bash",
+    };
+
+    function setOs(os) {
+      const cmd = installMap[os];
+      document.getElementById("installCmd").textContent = cmd;
+      document.getElementById("installHint").textContent =
+        os === "windows" ? "Windows selected" : os === "mac" ? "macOS selected" : "Linux selected";
+    }
+
+    function copyCmd(id) {
+      const text = document.getElementById(id).textContent;
+      navigator.clipboard.writeText(text);
+    }
+  </script>
 </body>
 </html>

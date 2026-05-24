@@ -19,6 +19,7 @@ Philosophy: Don't treat all models the same. Adapt.
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any
@@ -284,7 +285,7 @@ class CapabilityProfileBuilder:
     }
 
     # Specific model overrides (fine-tuned profiles)
-    _MODEL_OVERRIDES = {
+    _MODEL_OVERRIDES: dict[str, dict[str, Any]] = {
         "o1": {"reasoning_depth": ReasoningDepth.STRATEGIC, "self_correction": SelfCorrection.BUILT_IN},
         "o3": {"reasoning_depth": ReasoningDepth.STRATEGIC, "self_correction": SelfCorrection.BUILT_IN},
         "deepseek-r1": {"reasoning_depth": ReasoningDepth.DEEP, "self_correction": SelfCorrection.BUILT_IN},
@@ -335,7 +336,7 @@ class CapabilityProfileBuilder:
         if not caps.supports_tools:
             profile.tool_use_reliability = ToolUseReliability.COERCE
             profile.max_tools_per_call = 0
-            profile.supports_autonomous_execution  # computed property, no effect
+            # supports_autonomous_execution is a computed property — no assignment needed
 
         # JSON mode adjustments
         if caps.supports_json_mode:

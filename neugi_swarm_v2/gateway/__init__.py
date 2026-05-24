@@ -19,7 +19,7 @@ Usage:
     gateway.start()
 """
 
-from .cron import (
+from gateway.cron import (
     CronError,
     CronExpression,
     CronJob,
@@ -29,7 +29,7 @@ from .cron import (
     CronSchedule,
     CronScheduler,
 )
-from .device import (
+from gateway.device import (
     Device,
     DeviceCapabilities,
     DeviceError,
@@ -38,18 +38,15 @@ from .device import (
     DeviceState,
     DeviceTrustLevel,
 )
-from .gateway import (
-    Device,
-    DeviceState,
-    DeviceTrustLevel,
+from gateway.gateway import (
+    Connection,
     Event,
     EventType,
-    Connection,
     GatewayServer,
     RPCRequest,
     RPCResponse,
 )
-from .heartbeat import (
+from gateway.heartbeat import (
     HeartbeatEngine,
     HeartbeatError,
     HeartbeatResult,
@@ -57,7 +54,7 @@ from .heartbeat import (
     HeartbeatTask,
     WakeupQueue,
 )
-from .router import (
+from gateway.router import (
     DeliveryReceipt,
     MessageRouter,
     Route,

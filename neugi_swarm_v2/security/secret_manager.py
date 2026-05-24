@@ -39,6 +39,18 @@ logger = logging.getLogger(__name__)
 
 # -- Enums ---------------------------------------------------------------------
 
+# -- Exceptions ----------------------------------------------------------------
+
+class SecretNotFoundError(Exception):
+    """Raised when a requested secret does not exist."""
+    pass
+
+
+class SecretDecryptionError(Exception):
+    """Raised when a secret cannot be decrypted."""
+    pass
+
+
 class SecretClass(Enum):
     """Classification of secret types."""
     API_KEY = "api_key"
@@ -239,7 +251,7 @@ class SecretEncryption:
         keystream = keystream[:len(data)]
 
         # XOR encrypt
-        encrypted = bytes(a ^ b for a, b in zip(data, keystream))
+        encrypted = bytes(a ^ b for a, b in zip(data, keystream, strict=False))
 
         # HMAC for integrity
         mac = hmac.new(self._key_bytes, iv + encrypted, hashlib.sha256).digest()
@@ -278,7 +290,7 @@ class SecretEncryption:
         keystream = keystream[:len(encrypted)]
 
         # XOR decrypt
-        decrypted = bytes(a ^ b for a, b in zip(encrypted, keystream))
+        decrypted = bytes(a ^ b for a, b in zip(encrypted, keystream, strict=False))
         return decrypted.decode("utf-8")
 
     def hash_value(self, value: str) -> str:
@@ -320,7 +332,7 @@ class SecretManager:
         self._db_path = db_path
         self._master_key = master_key or os.environ.get("NEUGI_MASTER_KEY", "")
         if not self._master_key:
-            logger.warning("No master key provided — secrets will not be encrypted")
+            logger.warning("No master key provided — encrypt/decrypt operations will fail")
         self._auto_rotate_days = auto_rotate_days
         self._encryption = SecretEncryption(self._master_key) if self._master_key else None
         self._value_hashes: dict[str, str] = {}  # name -> hash for scanning
@@ -431,8 +443,8 @@ class SecretManager:
                         json.dumps(entry.metadata), description,
                     ),
                 )
-            except sqlite3.IntegrityError:
-                raise ValueError(f"Secret '{name}' already exists")
+            except sqlite3.IntegrityError as e:
+                raise ValueError(f"Secret '{name}' already exists") from e
 
         self._value_hashes[name] = value_hash
         self._log_access(name, "add")
@@ -495,6 +507,64 @@ class SecretManager:
         self._log_access(name, "get")
         return entry
 
+    def get(self, name: str) -> str:
+        """Retrieve a decrypted secret value by name.
+
+        Convenience method that returns the plaintext value directly.
+        Never returns None or empty string — always raises on failure.
+
+        Args:
+            name: The secret identifier.
+
+        Returns:
+            The decrypted plaintext value.
+
+        Raises:
+            SecretNotFoundError: If no secret with this name exists.
+            SecretDecryptionError: If decryption fails.
+        """
+        with self._get_conn() as conn:
+            row = conn.execute(
+                "SELECT * FROM secrets WHERE name = ?", (name,)
+            ).fetchone()
+
+        if row is None:
+            raise SecretNotFoundError(f"Secret '{name}' not found")
+
+        # Check status
+        status = SecretStatus(row["status"])
+        if status in (SecretStatus.REVOKED, SecretStatus.COMPROMISED):
+            logger.warning("Attempted access to %s secret: %s", status.value, name)
+            self._log_access(name, f"access_denied_{status.value}")
+            raise SecretNotFoundError(
+                f"Secret '{name}' is {status.value} and cannot be accessed"
+            )
+
+        # Decrypt value
+        try:
+            value = self._decrypt_value(row["value_encrypted"])
+        except (ValueError, Exception) as e:
+            logger.error("Failed to decrypt secret '%s': %s", name, e)
+            raise SecretDecryptionError(
+                f"Failed to decrypt secret '{name}': {e}"
+            ) from e
+
+        if not value:
+            raise SecretDecryptionError(
+                f"Secret '{name}' decrypted to empty value"
+            )
+
+        # Update access metadata
+        now = time.time()
+        with self._get_conn() as conn:
+            conn.execute(
+                "UPDATE secrets SET last_accessed = ?, access_count = access_count + 1 WHERE name = ?",
+                (now, name),
+            )
+
+        self._log_access(name, "get")
+        return value
+
     def update_secret(
         self,
         name: str,
@@ -553,7 +623,7 @@ class SecretManager:
 
         with self._get_conn() as conn:
             cursor = conn.execute(
-                f"UPDATE secrets SET {', '.join(updates)} WHERE name = ?",
+                f"UPDATE secrets SET {', '.join(updates)} WHERE name = ?",  # nosec B608
                 params,
             )
 
@@ -838,7 +908,7 @@ class SecretManager:
         leaks: list[dict[str, str]] = []
 
         # Check against stored hashes
-        for name, stored_hash in self._value_hashes.items():
+        for name, _stored_hash in self._value_hashes.items():
             # Get the secret to re-hash (needed for comparison)
             with self._get_conn() as conn:
                 row = conn.execute(
@@ -895,12 +965,16 @@ class SecretManager:
 
         Returns:
             Encrypted string.
+
+        Raises:
+            SecretDecryptionError: If no encryption key is configured.
         """
         if self._encryption:
             return self._encryption.encrypt(value)
-        # Fallback: base64 encode (NOT secure — only for dev)
-        logger.warning("Storing secret without encryption")
-        return base64.b64encode(value.encode()).decode()
+        raise SecretDecryptionError(
+            "No master key configured — cannot encrypt secrets. "
+            "Set NEUGI_MASTER_KEY environment variable or pass master_key to SecretManager."
+        )
 
     def _decrypt_value(self, encrypted: str) -> str:
         """Decrypt a secret value.
@@ -910,11 +984,16 @@ class SecretManager:
 
         Returns:
             Plaintext value.
+
+        Raises:
+            SecretDecryptionError: If no encryption key is configured or decryption fails.
         """
         if self._encryption:
             return self._encryption.decrypt(encrypted)
-        # Fallback: base64 decode
-        return base64.b64decode(encrypted).decode()
+        raise SecretDecryptionError(
+            "No master key configured — cannot decrypt secrets. "
+            "Set NEUGI_MASTER_KEY environment variable or pass master_key to SecretManager."
+        )
 
     # -- Access Logging ------------------------------------------------------
 

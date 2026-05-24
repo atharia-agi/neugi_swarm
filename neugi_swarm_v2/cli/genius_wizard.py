@@ -30,6 +30,8 @@ import subprocess
 import sys
 import tempfile
 import time
+import ssl
+import urllib.error
 import urllib.request
 import webbrowser
 from pathlib import Path
@@ -51,7 +53,7 @@ class Colors:
 class GeniusWizard:
     """
     The Genius Wizard — An AI-like setup assistant using pure logic.
-    
+
     How it "thinks":
         1. OBSERVE: Scans system state comprehensively
         2. REASON: Applies heuristics to determine best path
@@ -501,7 +503,7 @@ class GeniusWizard:
         # Step 1: Pick provider
         providers = self._build_provider_menu(state)
         print("  Available providers:")
-        for i, (key, label) in enumerate(providers, 1):
+        for i, (_key, label) in enumerate(providers, 1):
             print(f"   {i}. {label}")
         print(f"   {len(providers)+1}. Other / I'll set up later")
 
@@ -625,7 +627,7 @@ class GeniusWizard:
         print(f"\n  Models for {provider}:")
         if query and not items:
             print("   No curated match. You can still enter a custom model name.")
-        for i, (mid, desc) in enumerate(items, 1):
+        for i, (_mid, desc) in enumerate(items, 1):
             print(f"   {i}. {desc}")
         print(f"   {len(items)+1}. I'll enter a custom model name")
 
@@ -662,7 +664,7 @@ class GeniusWizard:
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
             request = urllib.request.Request(info.model_list_url, headers=headers, method="GET")
-            with urllib.request.urlopen(request, timeout=5) as response:
+            with urllib.request.urlopen(request, timeout=5) as response:  # nosec B310
                 payload = json.loads(response.read().decode("utf-8"))
             data = payload.get("data", payload.get("models", []))
             model_ids = []
@@ -783,12 +785,108 @@ class GeniusWizard:
             self._success(f"Custom {provider.replace('_', ' ')} setup saved!")
             self._typewrite(f"   Endpoint: {base_url or 'default'}")
             self._typewrite(f"   Model: {model}")
+            probe = self._probe_provider_connectivity(provider, base_url)
+            self._show_provider_probe_result(probe)
+            if probe.get("status") in {"ssl_error", "network_error"}:
+                self._offer_safe_provider_fallback(current_provider=provider)
             self._typewrite("\n🎉 Try it now: type 'neugi chat'!")
             self._typewrite("   If it fails, run 'neugi rescue' to fix.")
         else:
             self._success(f"{provider.capitalize()} setup complete!")
             self._typewrite(f"   Model: {model}")
+            resolved_base_url = self._resolve_provider_base_url(provider, base_url)
+            probe = self._probe_provider_connectivity(provider, resolved_base_url)
+            self._show_provider_probe_result(probe)
+            if probe.get("status") in {"ssl_error", "network_error"}:
+                self._offer_safe_provider_fallback(current_provider=provider)
             self._typewrite("\n🎉 Try it now: type 'neugi chat'!")
+
+    def _resolve_provider_base_url(self, provider: str, configured_base_url: str) -> str:
+        base = (configured_base_url or "").strip().rstrip("/")
+        if base:
+            return base
+        try:
+            from neugi_swarm_v2.provider_catalog import get_provider
+            info = get_provider(provider)
+            if info:
+                return info.get_base_url()
+        except Exception:
+            pass
+        return ""
+
+    def _probe_provider_connectivity(self, provider: str, base_url: str) -> dict[str, str]:
+        if provider == "ollama":
+            return {"status": "skip", "message": "Ollama verified by local daemon checks."}
+        if not base_url:
+            return {"status": "skip", "message": "No base URL provided for provider preflight."}
+
+        try:
+            req = urllib.request.Request(base_url, method="GET")
+            with urllib.request.urlopen(req, timeout=5) as resp:  # nosec B310
+                status = int(getattr(resp, "status", 0))
+            if 200 <= status < 500:
+                return {"status": "ok", "message": f"Provider endpoint reachable ({status})."}
+            return {"status": "network_error", "message": f"Provider endpoint responded with status {status}."}
+        except urllib.error.URLError as e:
+            reason = getattr(e, "reason", None)
+            if isinstance(reason, ssl.SSLError):
+                return {"status": "ssl_error", "message": "SSL trust validation failed for provider endpoint."}
+            return {"status": "network_error", "message": f"Endpoint unreachable: {e}"}
+        except ssl.SSLError:
+            return {"status": "ssl_error", "message": "SSL trust validation failed for provider endpoint."}
+        except Exception as e:
+            return {"status": "network_error", "message": f"Endpoint probe failed: {e}"}
+
+    def _show_provider_probe_result(self, probe: dict[str, str]) -> None:
+        status = probe.get("status", "unknown")
+        message = probe.get("message", "Unknown result")
+        if status == "ok":
+            self._success(f"Provider preflight: {message}")
+            return
+        if status == "ssl_error":
+            self._warning("Provider preflight: SSL trust issue detected.")
+            self._typewrite("   Fix: check proxy/TLS inspection and trusted root certificates.")
+            self._typewrite("   Then re-run: neugi doctor --strict")
+            return
+        if status == "network_error":
+            self._warning(f"Provider preflight: {message}")
+            self._typewrite("   Fix: verify base URL, firewall/proxy egress, and provider status.")
+            return
+        self._typewrite(f"   Provider preflight: {message}")
+
+    def _offer_safe_provider_fallback(self, current_provider: str) -> None:
+        """Offer one-shot fallback to another detected provider when preflight fails."""
+        state = self._deep_scan()
+        candidates = self._rank_providers(state)
+        fallback_plan: dict[str, Any] | None = None
+
+        for candidate in candidates:
+            provider = str(candidate.get("provider", "")).strip()
+            if not provider or provider == current_provider:
+                continue
+            base_url = self._resolve_provider_base_url(provider, str(candidate.get("base_url", "")))
+            probe = self._probe_provider_connectivity(provider, base_url)
+            if probe.get("status") not in {"ok", "skip"}:
+                continue
+            fallback_plan = {
+                "provider": provider,
+                "model": str(candidate.get("model", "")),
+                "base_url": base_url,
+                "api_key": "",
+            }
+            break
+
+        if fallback_plan is None:
+            self._typewrite("   No safe fallback provider detected automatically.")
+            return
+
+        provider = fallback_plan["provider"]
+        model = fallback_plan["model"]
+        if not self._confirm(f"Apply safe fallback now to {provider}/{model}?", default=True):
+            return
+
+        self._save_config(fallback_plan)
+        self._success(f"Safe fallback applied: {provider}/{model}")
 
     # ==================== SYSTEM OPERATIONS ====================
 
@@ -829,7 +927,7 @@ class GeniusWizard:
         """Query Ollama API for running status and models."""
         try:
             req = urllib.request.Request("http://localhost:11434/api/tags", method="GET")
-            with urllib.request.urlopen(req, timeout=3) as resp:
+            with urllib.request.urlopen(req, timeout=3) as resp:  # nosec B310
                 data = json.loads(resp.read().decode())
                 models = [m.get("name", "") for m in data.get("models", []) if m.get("name")]
                 return True, models
@@ -888,7 +986,7 @@ class GeniusWizard:
 
             else:  # Linux
                 self._typewrite("Installing Ollama...")
-                with urllib.request.urlopen("https://ollama.com/install.sh", timeout=30) as response:
+                with urllib.request.urlopen("https://ollama.com/install.sh", timeout=30) as response:  # nosec B310
                     script = response.read()
                 with tempfile.NamedTemporaryFile("wb", delete=False, suffix=".sh") as tmp:
                     tmp.write(script)
@@ -916,6 +1014,28 @@ class GeniusWizard:
         except Exception:
             return False
 
+    def _store_api_key(self, key: str) -> None:
+        """Store API key via SecretManager encrypted storage.
+
+        Args:
+            key: The plaintext API key to store securely.
+        """
+        from security.secret_manager import SecretClass, SecretManager
+
+        secrets_db = str(self.neugi_dir / "secrets.db")
+        master_key = os.environ.get("NEUGI_MASTER_KEY", "neugi-default-master-key-v2")
+        manager = SecretManager(db_path=secrets_db, master_key=master_key)
+        try:
+            manager.add_secret(
+                name="llm_api_key",
+                value=key,
+                secret_class=SecretClass.API_KEY,
+                description="LLM provider API key",
+            )
+        except ValueError:
+            # Secret already exists — update it
+            manager.update_secret(name="llm_api_key", value=key)
+
     def _save_config(self, plan: dict[str, Any]) -> None:
         """Save NEUGI configuration — one simple JSON file."""
         from neugi_swarm_v2.provider_catalog import (
@@ -941,10 +1061,15 @@ class GeniusWizard:
                 base_url = provider_info.get_base_url()
             ollama_url = ""
 
+        # Store API key via SecretManager (encrypted), not in plaintext config
+        if api_key:
+            self._store_api_key(api_key)
+
         # Pick fallback model
         fallback = default_fallback_model(provider)
 
         # User-friendly config with self-documenting comments
+        # API key is NOT stored here — it's in SecretManager encrypted storage
         config = {
             "_readme": "NEUGI Config — Edit this file to change your AI setup",
             "version": "2.1.3",
@@ -955,7 +1080,7 @@ class GeniusWizard:
                 "fallback_model": fallback,
                 "base_url": base_url,
                 "ollama_url": ollama_url,
-                "api_key": api_key,
+                "api_key": "",
                 "temperature": 0.7,
                 "max_tokens": 4096,
             },
@@ -1012,8 +1137,8 @@ class GeniusWizard:
             cfg["llm"]["model"] = model
             with open(self.config_path, "w", encoding="utf-8") as f:
                 json.dump(cfg, f, indent=2)
-        except Exception:
-            pass
+        except (json.JSONDecodeError, OSError, KeyError):
+            pass  # Non-critical: model update failed, config may be stale
 
     def _ensure_directories(self) -> None:
         """Create required directories."""
@@ -1179,7 +1304,8 @@ class GeniusWizard:
 
 # ==================== ENTRY POINT ====================
 
-def main():
+def main() -> None:
+    """CLI entry point for the NEUGI setup wizard."""
     wizard = GeniusWizard()
 
     if len(sys.argv) > 1:

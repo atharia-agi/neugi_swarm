@@ -1,9 +1,10 @@
 """Execute security tools via NEUGI's existing ToolExecutor."""
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 logger = logging.getLogger(__name__)
 
-def run_security_tools(targets: List[str], tools: List[str], depth: str = "standard") -> Dict[str, Any]:
+def run_security_tools(targets: list[str], tools: list[str], depth: str = "standard") -> dict[str, Any]:
     """Run security tools via ToolExecutor and return structured results.
 
     Args:

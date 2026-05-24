@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Any, Optional
 
 # Add the neugi_swarm_v2 directory to the sys.path so we can import from agents and llm_provider
 sys.path.append(str(Path(__file__).parent.parent.parent))
@@ -23,8 +22,8 @@ class BrowserAgent(TypedAgent):
     def __init__(
         self,
         name: str = "browser_agent",
-        llm_provider: Optional[LLMProvider] = None,
-        system_prompt: Optional[str] = None,
+        llm_provider: LLMProvider | None = None,
+        system_prompt: str | None = None,
         **kwargs,
     ):
         """

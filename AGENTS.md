@@ -102,9 +102,7 @@ repo/
 │       ├── cli.py            # Main CLI (rich-based)
 │       ├── interactive.py    # Interactive chat REPL
 │       ├── genius_wizard.py  # Canonical zero-dependency setup wizard
-│       ├── smart_wizard.py   # Deprecated compatibility alias
-│       ├── rescue_wizard.py  # Auto-fix rescue mode
-│       └── wizard.py         # Deprecated compatibility alias
+│       └── rescue_wizard.py  # Auto-fix rescue mode
 │
 ├── tests/                    # 379 collected tests across all subsystems
 ├── assets/                   # Brand images, favicon, hero video
@@ -160,8 +158,6 @@ swarm.remember("User prefers dark mode")
 
 ### Wizard Architecture
 - `GeniusWizard` — canonical zero-dependency, pure stdlib, first-time setup wizard
-- `SmartWizard` — compatibility alias for old imports; do not add new setup logic here
-- `SetupWizard` (`cli/wizard.py`) — compatibility alias for old imports; do not add new setup logic here
 - `RescueWizard` — interactive auto-fix with health checks; setup delegation goes to `GeniusWizard`
 - `neugi wizard` uses `GeniusWizard`; `neugi rescue` uses `RescueWizard`
 

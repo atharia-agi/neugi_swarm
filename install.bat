@@ -3,6 +3,24 @@ setlocal
 REM NEUGI Swarm v2 - Root Install Wrapper
 REM Delegates to neugi_swarm_v2\install.bat
 
+echo.
+echo  _   _ _____ _   _  ____ ___
+echo ^| \ ^| ^| ____^| ^| ^| ^|/ ___^|_ _^|
+echo ^|  \^| ^|  _^| ^| ^| ^| ^| ^|  _ ^| ^|
+echo ^| ^|\  ^| ^|___^| ^|_^| ^| ^|_^| ^|^| ^|
+echo ^|_^| \_^|_____^\___/ \____^|___^|
+echo.
+echo NEUGI Installer Safety Notice
+echo - This framework can execute autonomous and tool-driven actions.
+echo - Outputs can be incorrect; keep human oversight and staged rollout.
+echo - Use implies acceptance of Terms/Privacy at https://neugi.com.
+echo.
+set /p NEUGI_BOOTSTRAP_CONSENT="Continue installer bootstrap? [y/N]: "
+if /i not "%NEUGI_BOOTSTRAP_CONSENT%"=="y" (
+    echo [NEUGI] Installation cancelled by user.
+    exit /b 0
+)
+
 echo NEUGI Swarm v2 Installer
 echo ========================
 echo.

@@ -12,7 +12,7 @@ Features:
 
 Usage:
     from computer_use.controller import ComputerUseController
-    
+
     controller = ComputerUseController()
     result = controller.execute_task(
         "Go to github.com and search for 'neugi swarm'",
@@ -100,7 +100,7 @@ class ComputerUseConfig:
 class ComputerUseController:
     """
     Vision-guided computer automation controller.
-    
+
     Implements the core loop:
         1. Screenshot current state
         2. Send to vision model (or local equivalent)
@@ -126,13 +126,13 @@ class ComputerUseController:
     ) -> TaskResult:
         """
         Execute a computer use task.
-        
+
         Args:
             task: Natural language description of the task
             max_steps: Override max steps from config
             starting_url: Optional URL to start from
             callback: Optional callback for each step
-            
+
         Returns:
             TaskResult with full execution trace
         """
@@ -228,7 +228,7 @@ class ComputerUseController:
     ) -> ComputerAction:
         """
         Determine next action based on current state.
-        
+
         In production, this calls a vision model. Here we implement
         a rule-based fallback for when no vision model is available.
         """
@@ -258,7 +258,6 @@ class ComputerUseController:
             import os
 
             from llm_multimodal import MultimodalProvider, VisionComputerUse
-            from llm_provider import LLMProvider
             provider_url = os.environ.get("OLLAMA_URL", "http://localhost:11434")
 
             from llm_provider import OllamaProvider, ProviderConfig, ProviderType

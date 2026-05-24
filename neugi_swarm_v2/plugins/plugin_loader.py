@@ -565,7 +565,7 @@ class PluginLoader:
         changed = set()
 
         # Check for modified or new plugins
-        for name, ts in current.items():
+        for name, _ts in current.items():
             if name not in self._last_scan or current[name] > self._last_scan[name]:
                 changed.add(name)
 
@@ -589,7 +589,7 @@ class PluginLoader:
             manifests = self._discovery.discover()
             for name, manifest in manifests.items():
                 max_mtime = 0.0
-                for root, dirs, files in os.walk(manifest.plugin_dir):
+                for root, _dirs, files in os.walk(manifest.plugin_dir):
                     for f in files:
                         fp = os.path.join(root, f)
                         try:

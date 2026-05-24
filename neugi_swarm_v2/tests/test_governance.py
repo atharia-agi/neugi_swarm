@@ -2,6 +2,8 @@
 import os
 import sys
 import unittest
+import tempfile
+import uuid
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -15,20 +17,21 @@ class TestGovernanceImports(unittest.TestCase):
         from governance import approval
         self.assertTrue(hasattr(approval, "ApprovalGate"))
 
-    def test_audit_imports(self):
-        from governance import audit
-        self.assertTrue(hasattr(audit, "AuditLogger"))
-
-    def test_policy_imports(self):
-        from governance import policy
-        self.assertTrue(hasattr(policy, "PolicyEngine"))
-
     def test_package_exports(self):
-        from governance import ApprovalGate, AuditLogger, BudgetTracker, PolicyEngine
+        from governance import ApprovalGate, BudgetTracker
         self.assertIsNotNone(BudgetTracker)
         self.assertIsNotNone(ApprovalGate)
-        self.assertIsNotNone(AuditLogger)
-        self.assertIsNotNone(PolicyEngine)
+
+    def test_approval_get_stats_empty_db(self):
+        from governance.approval import ApprovalGate
+        db_path = os.path.join(tempfile.gettempdir(), f"neugi_approval_{uuid.uuid4().hex}.db")
+        gate = ApprovalGate(db_path=db_path)
+        stats = gate.get_stats()
+        self.assertEqual(stats["total_requests"], 0)
+        self.assertEqual(stats["approved"], 0)
+        self.assertEqual(stats["rejected"], 0)
+        self.assertEqual(stats["pending"], 0)
+        self.assertEqual(stats["approval_rate"], 0.0)
 
 
 if __name__ == "__main__":

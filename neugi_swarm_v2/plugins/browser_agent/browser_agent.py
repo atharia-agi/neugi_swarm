@@ -6,12 +6,12 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from ..agents import TypedAgent, AgentResult
-from ..llm_provider import LLMProvider
-from ..tools.browser import BrowserTool
-from ..tools.tool_executor import ToolExecutor
+from agents import AgentResult, TypedAgent
+from llm_provider import LLMProvider
+from tools.browser import BrowserTool
+from tools.tool_executor import ToolExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -34,8 +34,8 @@ class BrowserAgent(TypedAgent):
     def __init__(
         self,
         name: str = "browser_agent",
-        llm_provider: Optional[LLMProvider] = None,
-        system_prompt: Optional[str] = None,
+        llm_provider: LLMProvider | None = None,
+        system_prompt: str | None = None,
         max_steps: int = 10,
         **kwargs,
     ):
@@ -88,7 +88,7 @@ class BrowserAgent(TypedAgent):
         self.browser_tool = BrowserTool()
         self.tool_executor = ToolExecutor()
 
-    def _execute_browser_action(self, action: str, action_input: Dict[str, Any]) -> Any:
+    def _execute_browser_action(self, action: str, action_input: dict[str, Any]) -> Any:
         """
         Execute a browser action using the BrowserTool.
 
@@ -180,9 +180,9 @@ class BrowserAgent(TypedAgent):
             An AgentResult containing the outcome.
         """
         logger.info(f"Browser agent starting with goal: {goal}")
-        thoughts: List[str] = []
-        actions: List[Dict[str, Any]] = []
-        observations: List[Any] = []
+        thoughts: list[str] = []
+        actions: list[dict[str, Any]] = []
+        observations: list[Any] = []
 
         # Initial prompt to the LLM
         prompt = (

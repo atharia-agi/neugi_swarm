@@ -9,7 +9,6 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
 
 
 class PluginValidationError(Exception):
@@ -22,13 +21,13 @@ PLUGIN_HOOKS = {
 }
 
 
-def validate_plugin(path: str) -> Tuple[bool, List[str]]:
+def validate_plugin(path: str) -> tuple[bool, list[str]]:
     """
     Validate a plugin directory or manifest file.
-    
+
     Args:
         path: Path to plugin directory or plugin.json file.
-        
+
     Returns:
         Tuple of (is_valid, list of warning/error messages).
     """
@@ -58,8 +57,6 @@ def validate_plugin(path: str) -> Tuple[bool, List[str]]:
     for field in required_fields:
         if field not in manifest:
             messages.append(f"Missing required field: {field}")
-
-    name = manifest.get("name", "unknown")
 
     # Validate version format
     version = manifest.get("version", "0.0.0")
@@ -92,16 +89,12 @@ def validate_plugin(path: str) -> Tuple[bool, List[str]]:
             # 1. A .py file inside or relative to plugin dir
             # 2. A package (__init__.py) with matching name inside plugin dir
             # 3. The plugin dir itself (if module_path == plugin_dir.name, __init__ resolves)
-            found = False
             if module_file.exists():
                 messages.append(f"Found entry point: {module_file.name}")
-                found = True
             elif (module_dir / "__init__.py").exists():
                 messages.append(f"Found entry point: {module_path}/__init__.py")
-                found = True
             elif module_path == plugin_dir.name and (plugin_dir / "__init__.py").exists():
                 messages.append(f"Found entry point: {plugin_dir.name}/__init__.py")
-                found = True
             else:
                 messages.append(f"Entry point module not found: {module_file}")
 
@@ -125,13 +118,13 @@ def validate_plugin(path: str) -> Tuple[bool, List[str]]:
     return is_valid, messages
 
 
-def validate_plugin_structure(path: str) -> Tuple[bool, List[str]]:
+def validate_plugin_structure(path: str) -> tuple[bool, list[str]]:
     """
     Validate the file structure of a plugin directory.
-    
+
     Args:
         path: Path to plugin directory.
-        
+
     Returns:
         Tuple of (is_valid, list of messages).
     """
@@ -156,7 +149,7 @@ def validate_plugin_structure(path: str) -> Tuple[bool, List[str]]:
     return bool(has_init or has_manifest), messages
 
 
-def main():
+def main() -> int:
     """CLI entry point for plugin validation."""
     import argparse
     parser = argparse.ArgumentParser(description="Validate NEUGI plugin")

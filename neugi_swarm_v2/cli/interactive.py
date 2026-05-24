@@ -27,19 +27,11 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from rich.align import Align
-    from rich.box import ROUNDED
-    from rich.columns import Columns
-    from rich.console import Console, Group
-    from rich.layout import Layout
-    from rich.live import Live
-    from rich.markdown import Markdown
+    from rich.console import Console
     from rich.panel import Panel
-    from rich.progress import Progress, SpinnerColumn, TextColumn
-    from rich.prompt import Confirm, Prompt
+    from rich.prompt import Prompt
     from rich.rule import Rule
     from rich.syntax import Syntax
-    from rich.table import Table
     from rich.text import Text
     from rich.theme import Theme
 except ImportError:

@@ -22,17 +22,14 @@ Usage:
 from __future__ import annotations
 
 import asyncio
-import hashlib
-import json
 import logging
-import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from neugi_swarm_v2.memory.memory_core import MemorySystem
-from neugi_swarm_v2.skills import SkillManager, SkillContract
+from neugi_swarm_v2.skills import SkillManager
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +40,7 @@ class SkillImprovement:
     skill_name: str
     improvement_type: str  # "refine", "expand", "merge", "new"
     confidence: float
-    source_interactions: List[str] = field(default_factory=list)
+    source_interactions: list[str] = field(default_factory=list)
     suggested_change: str = ""
     reasoning: str = ""
     applied: bool = False
@@ -56,7 +53,7 @@ class LearningSignal:
     signal_type: str  # "success_pattern", "failure_pattern", "repeated_task", "knowledge_gap"
     source: str  # interaction ID or task ID
     confidence: float
-    data: Dict[str, Any] = field(default_factory=dict)
+    data: dict[str, Any] = field(default_factory=dict)
     timestamp: datetime = field(default_factory=datetime.now)
 
 
@@ -67,7 +64,7 @@ class SkillEvolutionMetrics:
     total_skills_refined: int = 0
     total_skills_merged: int = 0
     total_skills_deprecated: int = 0
-    last_learning_cycle: Optional[datetime] = None
+    last_learning_cycle: datetime | None = None
     average_confidence: float = 0.0
     improvements_pending: int = 0
 
@@ -92,14 +89,14 @@ class SkillImprover:
         self,
         memory_system: MemorySystem,
         skill_manager: SkillManager,
-        skills_dir: Optional[str] = None,
+        skills_dir: str | None = None,
     ):
         self.memory = memory_system
         self.skill_manager = skill_manager
         self.skills_dir = Path(skills_dir or "skills")
         self.metrics = SkillEvolutionMetrics()
-        self._learning_queue: List[LearningSignal] = []
-        self._improvements: List[SkillImprovement] = []
+        self._learning_queue: list[LearningSignal] = []
+        self._improvements: list[SkillImprovement] = []
         self._running = False
 
     async def start(self) -> None:
@@ -151,7 +148,7 @@ class SkillImprover:
 
         logger.info("Learning cycle complete")
 
-    async def _extract_learning_signals(self) -> List[LearningSignal]:
+    async def _extract_learning_signals(self) -> list[LearningSignal]:
         """Extract learning signals from memory and interaction history."""
         signals = []
 
@@ -185,10 +182,10 @@ class SkillImprover:
 
         return signals
 
-    def _identify_repeated_patterns(self, tasks: List[Any]) -> List[LearningSignal]:
+    def _identify_repeated_patterns(self, tasks: list[Any]) -> list[LearningSignal]:
         """Identify tasks that are performed repeatedly."""
         signals = []
-        task_counts: Dict[str, int] = {}
+        task_counts: dict[str, int] = {}
 
         for task in tasks:
             task_str = str(task)
@@ -205,7 +202,7 @@ class SkillImprover:
 
         return signals
 
-    def _identify_success_patterns(self, successes: List[Any]) -> List[LearningSignal]:
+    def _identify_success_patterns(self, successes: list[Any]) -> list[LearningSignal]:
         """Identify patterns that lead to success."""
         signals = []
 
@@ -222,7 +219,7 @@ class SkillImprover:
 
         return signals
 
-    def _identify_failure_patterns(self, failures: List[Any]) -> List[LearningSignal]:
+    def _identify_failure_patterns(self, failures: list[Any]) -> list[LearningSignal]:
         """Identify patterns from failures."""
         signals = []
 
@@ -237,7 +234,7 @@ class SkillImprover:
 
         return signals
 
-    def _identify_knowledge_gaps(self, questions: List[Any]) -> List[LearningSignal]:
+    def _identify_knowledge_gaps(self, questions: list[Any]) -> list[LearningSignal]:
         """Identify knowledge gaps that should become skills."""
         signals = []
 
@@ -252,7 +249,7 @@ class SkillImprover:
 
         return signals
 
-    def _analyze_signals(self, signals: List[LearningSignal]) -> List[SkillImprovement]:
+    def _analyze_signals(self, signals: list[LearningSignal]) -> list[SkillImprovement]:
         """Analyze learning signals to generate improvement opportunities."""
         improvements = []
 
@@ -300,8 +297,8 @@ class SkillImprover:
         return improvements
 
     async def _validate_improvements(
-        self, improvements: List[SkillImprovement]
-    ) -> List[SkillImprovement]:
+        self, improvements: list[SkillImprovement]
+    ) -> list[SkillImprovement]:
         """Validate improvements before applying."""
         validated = []
 
@@ -351,8 +348,8 @@ class SkillImprover:
         return validated
 
     async def _apply_improvements(
-        self, improvements: List[SkillImprovement]
-    ) -> List[SkillImprovement]:
+        self, improvements: list[SkillImprovement]
+    ) -> list[SkillImprovement]:
         """Apply validated improvements to the skills system."""
         applied = []
 
@@ -456,7 +453,7 @@ SKILL_CONTRACT = SkillContract(
 )
 '''
 
-    def _refine_skill(self, improvement: SkillImprovement) -> Optional[dict]:
+    def _refine_skill(self, improvement: SkillImprovement) -> dict | None:
         """Refine an existing skill."""
         try:
             # Look for existing skill to refine
@@ -470,7 +467,7 @@ SKILL_CONTRACT = SkillContract(
             logger.error("Error refining skill %s: %s", improvement.skill_name, e)
         return None
 
-    async def _merge_skills(self, improvement: SkillImprovement) -> Optional[dict]:
+    async def _merge_skills(self, improvement: SkillImprovement) -> dict | None:
         """Merge similar skills."""
         # Find similar skills
         similar = []
@@ -492,7 +489,7 @@ SKILL_CONTRACT = SkillContract(
             return {"merged": len(similar), "into": improvement.skill_name}
         return None
 
-    def _expand_skill(self, improvement: SkillImprovement) -> Optional[dict]:
+    def _expand_skill(self, improvement: SkillImprovement) -> dict | None:
         """Expand an existing skill with new capabilities."""
         return {"expanded": improvement.skill_name}
 
@@ -547,7 +544,7 @@ SKILL_CONTRACT = SkillContract(
 
         return len(intersection) / len(union) if union else 0.0
 
-    def _update_metrics(self, applied: List[SkillImprovement]) -> None:
+    def _update_metrics(self, applied: list[SkillImprovement]) -> None:
         """Update skill evolution metrics."""
         self.metrics.last_learning_cycle = datetime.now()
         self.metrics.total_skills_generated += sum(

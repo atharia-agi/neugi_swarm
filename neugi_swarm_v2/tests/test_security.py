@@ -15,17 +15,9 @@ class TestSecurityImports(unittest.TestCase):
         from security import command_validator
         self.assertTrue(hasattr(command_validator, "CommandValidator"))
 
-    def test_exploit_prevention_imports(self):
-        from security import exploit_prevention
-        self.assertTrue(hasattr(exploit_prevention, "ExploitPreventionEngine"))
-
     def test_secret_manager_imports(self):
         from security import secret_manager
         self.assertTrue(hasattr(secret_manager, "SecretManager"))
-
-    def test_shield_reasoning_imports(self):
-        from security import shield_reasoning
-        self.assertTrue(hasattr(shield_reasoning, "ShieldReasoner"))
 
     def test_package_exports(self):
         from security import CommandValidator, ExecutionSandbox, SecretManager

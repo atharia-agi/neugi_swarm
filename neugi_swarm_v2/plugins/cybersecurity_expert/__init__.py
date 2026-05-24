@@ -7,14 +7,18 @@ plugin system, event bus, and ToolExecutor. No external FastAPI needed.
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 # Import observability using absolute path from package root
 from observability.event_bus import Event, get_event_bus
+
 # Import plugin SDK from parent plugins directory
-from ..plugin_sdk import (
-    PluginBase, PluginContext, PluginCapability,
-    register_tool, register_skill, register_hook,
+from plugins.plugin_sdk import (
+    PluginBase,
+    PluginContext,
+    register_hook,
+    register_skill,
+    register_tool,
 )
 
 logger = logging.getLogger(__name__)
@@ -89,13 +93,13 @@ class CybersecurityExpertPlugin(PluginBase):
     def _on_post_init(self, ctx):
         """Build knowledge index lazily after NEUGI fully initializes."""
         try:
-            from .knowledge_indexer import build_knowledge_index
+            from plugins.cybersecurity_expert.knowledge_indexer import build_knowledge_index
             # Check if we should use vectors (based on availability and config)
             use_vectors = True  # Default to using vectors if available
             config = ctx.get_config("cybersecurity", {})
             if "use_vectors" in config:
                 use_vectors = config["use_vectors"]
-            
+
             if not any(self._index_path.glob("*.idx")):
                 logger.info("Building knowledge index from %s... (vectors: %s)", self._kb_path, use_vectors)
                 build_knowledge_index(str(self._kb_path), str(self._index_path), use_vectors=use_vectors)
@@ -109,7 +113,7 @@ class CybersecurityExpertPlugin(PluginBase):
         params = ctx.get("params", {})
         targets = params.get("targets", [])
         if targets:
-            from .scope_validator import validate_targets
+            from plugins.cybersecurity_expert.scope_validator import validate_targets
             result = validate_targets(targets)
             if not result["valid"]:
                 ctx["blocked"] = True
@@ -133,8 +137,8 @@ class CybersecurityExpertPlugin(PluginBase):
 
     # -- Tool implementations ---------------------------------------------------
 
-    def tool_security_scan(self, targets: List[str], tools: Optional[List[str]] = None,
-                           depth: str = "standard") -> Dict[str, Any]:
+    def tool_security_scan(self, targets: list[str], tools: list[str] | None = None,
+                           depth: str = "standard") -> dict[str, Any]:
         """Execute security tools on targets via NEUGI's ToolExecutor.
 
         Args:
@@ -145,11 +149,11 @@ class CybersecurityExpertPlugin(PluginBase):
         Returns:
             Scan results with vulnerabilities
         """
-        from .tool_executor import run_security_tools
+        from plugins.cybersecurity_expert.tool_executor import run_security_tools
         return run_security_tools(targets, tools or ["nmap", "nuclei"], depth)
 
-    def tool_knowledge_search(self, query: str, category: Optional[str] = None,
-                               limit: int = 10) -> Dict[str, Any]:
+    def tool_knowledge_search(self, query: str, category: str | None = None,
+                               limit: int = 10) -> dict[str, Any]:
         """Search the cybersecurity knowledge base.
 
         Args:
@@ -160,11 +164,11 @@ class CybersecurityExpertPlugin(PluginBase):
         Returns:
             Search results with relevance scores
         """
-        from .knowledge_searcher import search_knowledge
+        from plugins.cybersecurity_expert.knowledge_searcher import search_knowledge
         return search_knowledge(str(self._index_path), query, category, limit)
 
-    def tool_compliance_check(self, targets: List[str],
-                               frameworks: Optional[List[str]] = None) -> Dict[str, Any]:
+    def tool_compliance_check(self, targets: list[str],
+                               frameworks: list[str] | None = None) -> dict[str, Any]:
         """Check targets against compliance frameworks.
 
         Args:
@@ -174,10 +178,10 @@ class CybersecurityExpertPlugin(PluginBase):
         Returns:
             Compliance assessment results
         """
-        from .compliance_checker import check_compliance
+        from plugins.cybersecurity_expert.compliance_checker import check_compliance
         return check_compliance(targets, frameworks or ["NIST", "ISO27001"])
 
-    def tool_scope_validate(self, targets: List[str]) -> Dict[str, Any]:
+    def tool_scope_validate(self, targets: list[str]) -> dict[str, Any]:
         """Validate targets before scanning.
 
         Args:
@@ -186,7 +190,7 @@ class CybersecurityExpertPlugin(PluginBase):
         Returns:
             Validation result with any warnings
         """
-        from .scope_validator import validate_targets
+        from plugins.cybersecurity_expert.scope_validator import validate_targets
         return validate_targets(targets)
 
 

@@ -1,8 +1,7 @@
 """Knowledge base search for Cybersecurity Expert Plugin."""
 import json
 from pathlib import Path
-from typing import Any, Dict, Optional, List, Tuple
-import math
+from typing import Any
 
 try:
     import numpy as np
@@ -28,15 +27,15 @@ def _cosine_similarity(vec1: bytes, vec2: bytes) -> float:
     except Exception:
         return 0.0
 
-def search_knowledge(index_path: str, query: str, category: Optional[str] = None, limit: int = 10, use_vectors: bool = True) -> Dict[str, Any]:
+def search_knowledge(index_path: str, query: str, category: str | None = None, limit: int = 10, use_vectors: bool = True) -> dict[str, Any]:
     idx = Path(index_path)
-    
+
     # Initialize sentence transformer if requested and available
     embedder = None
     if use_vectors:
         try:
-            from sentence_transformers import SentenceTransformer
             import numpy as np
+            from sentence_transformers import SentenceTransformer
             embedder = SentenceTransformer('all-MiniLM-L6-v2')
         except ImportError:
             logger.debug("Sentence transformers not available for vector search")
@@ -44,7 +43,7 @@ def search_knowledge(index_path: str, query: str, category: Optional[str] = None
         except Exception as e:
             logger.debug("Failed to initialize sentence transformer: %s", e)
             embedder = None
-    
+
     # Try Whoosh first (with vector re-ranking if available)
     try:
         from whoosh import index as wi
@@ -55,7 +54,7 @@ def search_knowledge(index_path: str, query: str, category: Optional[str] = None
             with ix.searcher() as s:
                 hits = s.search(parser.parse(query), limit=limit*5)  # Get more hits for re-ranking
                 results = []
-                
+
                 # Generate query embedding if vector search is enabled
                 query_embedding = None
                 if embedder and query.strip():
@@ -63,14 +62,15 @@ def search_knowledge(index_path: str, query: str, category: Optional[str] = None
                         query_embedding = embedder.encode([query.strip()])[0].astype(np.float32)
                     except Exception as e:
                         logger.debug("Failed to generate query embedding: %s", e)
-                
+
                 for hit in hits:
                     d = hit.fields()
-                    if category and category not in d.get("tags","") and category not in d.get("framework",""): continue
-                    
+                    if category and category not in d.get("tags", "") and category not in d.get("framework", ""):
+                        continue
+
                     # Calculate base relevance from Whoosh score
                     base_relevance = round(hit.score, 3)
-                    
+
                     # Enhance with vector similarity if available
                     final_relevance = base_relevance
                     if embedder and query_embedding is not None and d.get("vector"):
@@ -88,12 +88,12 @@ def search_knowledge(index_path: str, query: str, category: Optional[str] = None
                         except Exception as e:
                             logger.debug("Vector similarity calculation failed: %s", e)
                             final_relevance = base_relevance
-                    
-                    try: 
+
+                    try:
                         meta = json.loads(d.get("metadata","{}"))
-                    except: 
+                    except (json.JSONDecodeError, TypeError, ValueError):
                         meta = {}
-                    
+
                     results.append({
                         "id": d["path"],
                         "title": d["title"],
@@ -102,16 +102,16 @@ def search_knowledge(index_path: str, query: str, category: Optional[str] = None
                         "tags": d.get("tags", "").split(","),
                         "metadata": meta
                     })
-                    
+
                     if len(results) >= limit:
                         break
-                
+
                 # Sort by relevance (descending)
                 results.sort(key=lambda x: x["relevance"], reverse=True)
                 return {"query": query, "results": results[:limit], "count": len(results[:limit])}
     except Exception as e:
         logger.debug("Whoosh search failed: %s", e)
-    
+
     # Fallback to SQLite search
     import sqlite3
     db = idx / "kb_index.db"
@@ -124,11 +124,11 @@ def search_knowledge(index_path: str, query: str, category: Optional[str] = None
                     query_embedding = embedder.encode([query.strip()])[0].astype(np.float32)
                 except Exception as e:
                     logger.debug("Failed to generate query embedding for SQLite: %s", e)
-            
+
             c = sqlite3.connect(str(db))
             c.row_factory = sqlite3.Row
             like = f"%{query}%"
-            
+
             # Get more results for potential re-ranking
             rows = c.execute(
                 "SELECT path, title, substr(content,1,500) snip, tags, framework, metadata, vector "
@@ -138,16 +138,16 @@ def search_knowledge(index_path: str, query: str, category: Optional[str] = None
                 (like, like, like, like, like, limit*3)
             ).fetchall()
             c.close()
-            
+
             results = []
             for r in rows:
                 if category and category not in r["tags"] and category not in r["framework"]:
                     continue
-                
+
                 # Base relevance (we'll adjust for vector similarity if available)
                 base_relevance = 0.5
                 final_relevance = base_relevance
-                
+
                 # Enhance with vector similarity if available
                 if embedder and query_embedding is not None and r["vector"]:
                     try:
@@ -162,12 +162,12 @@ def search_knowledge(index_path: str, query: str, category: Optional[str] = None
                     except Exception as e:
                         logger.debug("Vector similarity calculation failed for SQLite: %s", e)
                         final_relevance = base_relevance
-                
+
                 try:
                     meta = json.loads(r["metadata"])
-                except:
+                except (json.JSONDecodeError, TypeError, ValueError):
                     meta = {}
-                
+
                 results.append({
                     "id": r["path"],
                     "title": r["title"],
@@ -176,11 +176,11 @@ def search_knowledge(index_path: str, query: str, category: Optional[str] = None
                     "tags": r["tags"].split(",") if r["tags"] else [],
                     "metadata": meta
                 })
-            
+
             # Sort by relevance (descending)
             results.sort(key=lambda x: x["relevance"], reverse=True)
             return {"query": query, "results": results[:limit], "count": len(results[:limit])}
         except Exception as e:
             logger.debug("SQLite search failed: %s", e)
-    
+
     return {"query": query, "results": [], "count": 0, "error": "No index found"}

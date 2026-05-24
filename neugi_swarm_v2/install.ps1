@@ -1,5 +1,35 @@
 $ErrorActionPreference = "Stop"
 
+function Show-InstallBanner {
+    $ascii = @'
+ _   _ _____ _   _  ____ ___
+| \ | | ____| | | |/ ___|_ _|
+|  \| |  _| | | | | |  _ | |
+| |\  | |___| |_| | |_| || |
+|_| \_|_____|\___/ \____|___|
+'@
+    Write-Host $ascii -ForegroundColor Cyan
+    Write-Host "NEUGI Swarm v2.1.3 Installer" -ForegroundColor White
+    Write-Host ""
+}
+
+function Confirm-InstallerRisk {
+    Write-Host "Safety Notice (Beta / Experimental)" -ForegroundColor Yellow
+    Write-Host "- NEUGI can run autonomous and tool-executing agent workflows." -ForegroundColor DarkYellow
+    Write-Host "- Actions may affect files, systems, and connected provider resources." -ForegroundColor DarkYellow
+    Write-Host "- Keep human approval controls enabled for high-impact operations." -ForegroundColor DarkYellow
+    Write-Host "- Review terms and privacy: https://neugi.com/terms.html and https://neugi.com/privacy.html" -ForegroundColor DarkYellow
+    Write-Host ""
+    $answer = Read-Host "Do you want to continue installation? [y/N]"
+    return $answer -match "^[Yy]$"
+}
+
+Show-InstallBanner
+if (-not (Confirm-InstallerRisk)) {
+    Write-Host "[NEUGI] Installation cancelled by user." -ForegroundColor Yellow
+    exit 0
+}
+
 Write-Host "========================================="
 Write-Host "  NEUGI Swarm V2.1.3 - Windows Installer"
 Write-Host "========================================="
@@ -97,9 +127,22 @@ Write-Host "  NEUGI v2.1.3 installed successfully!"
 Write-Host "========================================="
 Write-Host ""
 Write-Host "Quick start:"
+Write-Host "  neugi quickstart  # Recommended: auto-fix, smoke test, and start"
 Write-Host "  neugi wizard      # Pick provider, enter API key, choose model"
 Write-Host "  neugi chat        # Start chatting"
 Write-Host "  neugi status      # Check system health"
 Write-Host ""
 Write-Host "If 'neugi' is not found, open a new terminal or run:"
 Write-Host "  $cmdPath wizard"
+Write-Host ""
+
+$runQuickstart = Read-Host "Run 'neugi quickstart' now? [Y/n]"
+if ($runQuickstart -notmatch "^[Nn]$") {
+    Write-Host "[INFO] Running quickstart..."
+    $nonInteractive = Read-Host "Run non-interactive mode (best for CI/server)? [y/N]"
+    if ($nonInteractive -match "^[Yy]$") {
+        & $cmdPath quickstart --non-interactive --json
+    } else {
+        & $cmdPath quickstart
+    }
+}

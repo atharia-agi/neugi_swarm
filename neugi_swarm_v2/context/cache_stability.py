@@ -400,7 +400,7 @@ class CacheStability:
         for prev in self._history:
             # Find common prefix length
             match_len = 0
-            for i, (c1, c2) in enumerate(zip(normalized, prev.normalized_prompt)):
+            for i, (c1, c2) in enumerate(zip(normalized, prev.normalized_prompt, strict=False)):
                 if c1 != c2:
                     break
                 match_len = i + 1

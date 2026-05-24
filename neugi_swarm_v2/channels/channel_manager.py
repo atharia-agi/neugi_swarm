@@ -15,7 +15,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
-from .base import (
+from channels.base import (
     BaseChannel,
     ChannelHealth,
     ChannelType,
@@ -243,7 +243,7 @@ class ChannelManager:
 
         if tasks:
             results = await asyncio.gather(*tasks, return_exceptions=True)
-            for key, result in zip(self._channels.keys(), results):
+            for key, result in zip(self._channels.keys(), results, strict=False):
                 if isinstance(result, Exception):
                     self._status[key] = ChannelStatus.ERROR
                     self._logger.error("Failed to start channel %s: %s", key, result)

@@ -366,7 +366,6 @@ class MessageBus:
 
     def unsubscribe(self, topic: str, sub_id: str) -> bool:
         """Remove a subscription. Returns True if found."""
-        handlers = self._subscribers.get(topic, [])
         # We can't easily match by id since we store functions directly.
         # In production, wrap handlers in a registry. For now, clear all.
         if topic in self._subscribers:

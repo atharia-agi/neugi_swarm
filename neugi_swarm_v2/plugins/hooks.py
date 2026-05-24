@@ -568,7 +568,7 @@ class HookAbortError(Exception):
 
 # -- Convenience decorators ----------------------------------------------------
 
-def hook(event: str, priority: int = HookPriority.NORMAL, timeout: float | None = None):
+def hook(event: str, priority: int = HookPriority.NORMAL, timeout: float | None = None) -> Callable:
     """
     Decorator to register a function as a hook handler.
 

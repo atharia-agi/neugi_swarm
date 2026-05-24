@@ -6,6 +6,7 @@ parallel execution, error handling, timeouts, and progress callbacks.
 
 from __future__ import annotations
 
+import logging
 import time
 import traceback
 from collections.abc import Callable
@@ -16,7 +17,9 @@ from typing import (
     Any,
 )
 
-from .state_graph import (
+logger = logging.getLogger(__name__)
+
+from workflows.state_graph import (
     ExecutionContext,
     GraphCompilationResult,
     NodeStatus,
@@ -369,7 +372,6 @@ class WorkflowExecutor:
             node_name, self.config.error_handling
         )
 
-        last_error = None
         for attempt in range(retry_policy.max_retries + 1):
             if self._cancelled:
                 record.status = NodeStatus.SKIPPED
@@ -396,7 +398,6 @@ class WorkflowExecutor:
                 break
 
             except Exception as e:
-                last_error = e
                 record.retries = attempt
 
                 if attempt < retry_policy.max_retries:
@@ -424,7 +425,7 @@ class WorkflowExecutor:
                 # Handle based on error handling strategy
                 if error_handling == ErrorHandling.ABORT:
                     self._history.append(record)
-                    raise WorkflowExecutionError(f"Node '{node_name}' failed: {e}")
+                    raise WorkflowExecutionError(f"Node '{node_name}' failed: {e}") from e
                 elif error_handling == ErrorHandling.SKIP:
                     self._history.append(record)
                     return
@@ -571,8 +572,8 @@ class WorkflowExecutor:
         for callback in self._callbacks:
             try:
                 callback(node_name, status, metadata)
-            except Exception:
-                pass  # Callbacks should not break execution
+            except (OSError, RuntimeError, ValueError) as e:
+                logger.debug("Workflow callback failed for node %s: %s", node_name, e)
 
     def _record_error(
         self,

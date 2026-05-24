@@ -1277,9 +1277,10 @@ class StrategicPlanner:
             return "No milestones to display."
 
         width = min(60, plan.horizon_days)
+        title_line = f"Gantt Chart: {plan.title}"
         lines = [
-            f"Gantt Chart: {plan.title}",
-            f"{'=' * (len(lines[0]) if lines else 40)}",
+            title_line,
+            f"{'=' * len(title_line)}",
             f"Day 0{' ' * (width - 8)}Day {plan.horizon_days}",
             f"{'|' + '-' * width + '|'}",
         ]

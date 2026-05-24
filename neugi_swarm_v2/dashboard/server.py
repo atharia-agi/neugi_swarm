@@ -22,9 +22,11 @@ import hmac
 import json
 import logging
 import os
+import re
 import secrets
 import threading
 import time
+import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -59,7 +61,7 @@ class DashboardConfig:
     port: int = 17901
     api_key: str = ""
     session_token_ttl: int = 3600
-    rate_limit_requests: int = 100
+    rate_limit_requests: int = 600
     rate_limit_window: int = 60
     cors_origins: list[str] = field(default_factory=lambda: [
         "http://localhost:17901",
@@ -164,7 +166,7 @@ class SessionTokenManager:
 
 # -- WebSocket Server (RFC 6455 stdlib implementation) ----------------------
 
-from .websocket import WebSocketHandler, WebSocketServer
+from dashboard.websocket import WebSocketHandler, WebSocketServer
 
 # -- Dashboard Server --------------------------------------------------------
 
@@ -196,6 +198,7 @@ class DashboardServer:
         self._server: HTTPServer | None = None
         self._thread: threading.Thread | None = None
         self._running = False
+        self.started_at = time.time()
 
         if not self.config.static_dir:
             self.config.static_dir = str(Path(__file__).parent)
@@ -238,20 +241,27 @@ class DashboardServer:
             "GET /api/workflows": self.api.list_workflows,
             "POST /api/workflows/{id}/run": self.api.run_workflow,
             "GET /api/plugins": self.api.list_plugins,
+            "POST /api/plugins/toggle": self.api.toggle_plugin,
             "GET /api/governance/budget": self.api.budget_status,
             "GET /api/governance/audit": self.api.audit_log,
             "GET /api/governance/approvals": self.api.approval_queue,
             "POST /api/governance/approvals/decide": self.api.decide_approval,
+            "GET /api/governance/profile": self.api.governance_profile_get,
+            "POST /api/governance/profile": self.api.governance_profile_set,
+            "POST /api/governance/profile/preview": self.api.governance_profile_preview,
             "GET /api/learning/stats": self.api.learning_stats,
             "POST /api/steering": self.api.send_steering,
             "POST /api/auth/login": self.api.login,
             "POST /api/auth/logout": self.api.logout,
             "GET /api/providers": self.api.provider_catalog,
+            "GET /api/providers/health": self.api.provider_health,
             "GET /api/config": self.api.get_config,
             "PUT /api/config": self.api.update_config,
             "POST /api/config/test-llm": self.api.test_llm_config,
             "GET /api/autonomous/status": self.api.autonomous_status,
             "GET /api/observability/status": self.api.observability_status,
+            "GET /api/runtime/autostart": self.api.autostart_status,
+            "POST /api/runtime/autostart": self.api.autostart_update,
             "GET /api/benchmarks": self.api.benchmark_results,
         }
 
@@ -263,9 +273,11 @@ class DashboardServer:
         Args:
             blocking: If True, block the calling thread.
         """
+        DashboardRequestHandler.server_instance = self
+        self.started_at = time.time()
         self._server = HTTPServer(
             (self.config.host, self.config.port),
-            lambda *args: DashboardRequestHandler(self, *args),
+            DashboardRequestHandler,
         )
         self._running = True
 
@@ -336,6 +348,8 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
 
     def _check_rate_limit(self) -> bool:
         client_ip = self._get_client_ip()
+        if client_ip in {"127.0.0.1", "::1", "localhost"}:
+            return True
         return self.server_instance.rate_limiter.is_allowed(client_ip)
 
     def _check_auth(self) -> bool:
@@ -369,6 +383,14 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-API-Key")
         self.send_header("Access-Control-Max-Age", "3600")
 
+    def _set_security_headers(self) -> None:
+        """Set baseline hardening headers for dashboard responses."""
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        self.send_header("Content-Security-Policy", "default-src 'self' 'unsafe-inline' data: blob:; connect-src 'self' ws: wss:; img-src 'self' data: blob:;")
+
     def _send_json_response(
         self,
         status: int,
@@ -388,6 +410,7 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Encoding", content_encoding)
         self.send_header("Content-Length", str(len(body)))
         self._set_cors_headers()
+        self._set_security_headers()
 
         if headers:
             for k, v in headers.items():
@@ -438,8 +461,12 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Encoding", content_encoding)
         self.send_header("Content-Length", str(len(content)))
-        self.send_header("Cache-Control", "public, max-age=3600")
+        if path.suffix.lower() in {".html", ".htm"}:
+            self.send_header("Cache-Control", "no-store, max-age=0")
+        else:
+            self.send_header("Cache-Control", "public, max-age=3600")
         self._set_cors_headers()
+        self._set_security_headers()
         self.end_headers()
         self.wfile.write(content)
 
@@ -455,17 +482,21 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
 
     def _route_request(self, method: str) -> None:
         path, query_params = self._parse_path()
+        request_started = time.perf_counter()
+        request_id = str(uuid.uuid4())
 
         if not self._check_rate_limit():
             self._send_json_response(429, {
                 "error": "Rate limit exceeded",
                 "retry_after": self.server_instance.config.rate_limit_window,
-            })
+                "request_id": request_id,
+            }, headers={"X-Request-Id": request_id})
             return
 
         if method == "OPTIONS":
             self.send_response(204)
             self._set_cors_headers()
+            self._set_security_headers()
             self.end_headers()
             return
 
@@ -478,10 +509,28 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
 
         route_key = f"{method} {path}"
         handler = self.server_instance._api_routes.get(route_key)
+        if handler is None:
+            # Match templated routes like /api/agents/{id}/task
+            for registered_key, candidate in self.server_instance._api_routes.items():
+                try:
+                    registered_method, template_path = registered_key.split(" ", 1)
+                except ValueError:
+                    continue
+                if registered_method != method or "{" not in template_path:
+                    continue
+                names = re.findall(r"\{([^/{}]+)\}", template_path)
+                regex = "^" + re.sub(r"\{[^/{}]+\}", r"([^/]+)", template_path) + "$"
+                match = re.match(regex, path)
+                if not match:
+                    continue
+                handler = candidate
+                for name, value in zip(names, match.groups()):
+                    query_params[name] = [value]
+                break
 
         if handler:
             if path != "/api/auth/login" and not self._check_auth():
-                self._send_json_response(401, {"error": "Authentication required"})
+                self._send_json_response(401, {"error": "Authentication required", "request_id": request_id}, headers={"X-Request-Id": request_id})
                 return
             try:
                 body = None
@@ -489,14 +538,38 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
                     body = self._read_body()
                 result = handler(self, body, query_params)
                 if result is not None:
-                    self._send_json_response(200, result)
+                    elapsed_ms = round((time.perf_counter() - request_started) * 1000.0, 2)
+                    if isinstance(result, dict):
+                        result.setdefault("request_id", request_id)
+                        result.setdefault("latency_ms", elapsed_ms)
+                    self._send_json_response(200, result, headers={
+                        "X-Request-Id": request_id,
+                        "X-Response-Time-Ms": str(elapsed_ms),
+                    })
             except ValueError as e:
-                self._send_json_response(400, {"error": str(e)})
+                elapsed_ms = round((time.perf_counter() - request_started) * 1000.0, 2)
+                self._send_json_response(400, {"error": str(e), "request_id": request_id, "latency_ms": elapsed_ms}, headers={
+                    "X-Request-Id": request_id,
+                    "X-Response-Time-Ms": str(elapsed_ms),
+                })
+            except (OSError, ConnectionError, TimeoutError) as e:
+                logger.warning("I/O error handling API request %s: %s", path, e)
+                elapsed_ms = round((time.perf_counter() - request_started) * 1000.0, 2)
+                self._send_json_response(502, {"error": "Service unavailable", "request_id": request_id, "latency_ms": elapsed_ms}, headers={
+                    "X-Request-Id": request_id,
+                    "X-Response-Time-Ms": str(elapsed_ms),
+                })
             except Exception as e:
-                logger.exception("API error: %s", path)
+                logger.exception("Unhandled API error on %s: %s", path, e)
+                elapsed_ms = round((time.perf_counter() - request_started) * 1000.0, 2)
                 self._send_json_response(500, {
                     "error": "Internal server error",
                     "detail": str(e) if self.server_instance.config.enable_auth else None,
+                    "request_id": request_id,
+                    "latency_ms": elapsed_ms,
+                }, headers={
+                    "X-Request-Id": request_id,
+                    "X-Response-Time-Ms": str(elapsed_ms),
                 })
             return
 

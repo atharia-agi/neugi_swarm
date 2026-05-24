@@ -9,8 +9,9 @@ This plugin demonstrates:
 """
 
 import time
-from neugi_swarm_v2.plugins import Plugin, HookContext
+
 from neugi_swarm_v2.observability.event_bus import get_event_bus
+from neugi_swarm_v2.plugins import HookContext, Plugin
 
 
 class MetricsExamplePlugin(Plugin):
@@ -109,6 +110,6 @@ class MetricsExamplePlugin(Plugin):
         self.logger.info("MetricsExamplePlugin deactivated.")
 
 
-def activate():
+def activate() -> MetricsExamplePlugin:
     """Entry point for the plugin."""
     return MetricsExamplePlugin()

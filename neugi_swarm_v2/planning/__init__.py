@@ -23,7 +23,7 @@ Usage:
 
 from __future__ import annotations
 
-from .chain_of_verification import (
+from planning.chain_of_verification import (
     ChainOfVerification,
     CoVConfig,
     CoVResult,
@@ -31,7 +31,7 @@ from .chain_of_verification import (
     VerificationQuestion,
     VerificationState,
 )
-from .goal_system import (
+from planning.goal_system import (
     Goal,
     GoalDecomposition,
     GoalDependency,
@@ -43,7 +43,7 @@ from .goal_system import (
     GoalSuggestion,
     GoalSystem,
 )
-from .self_reflection import (
+from planning.self_reflection import (
     ConfidenceLevel,
     ErrorCategory,
     Reflection,
@@ -52,7 +52,7 @@ from .self_reflection import (
     ReflectionResult,
     SelfReflectionEngine,
 )
-from .strategic_planner import (
+from planning.strategic_planner import (
     Milestone,
     PlanError,
     PlanPhase,
@@ -64,7 +64,7 @@ from .strategic_planner import (
     StrategicPlan,
     StrategicPlanner,
 )
-from .tree_of_thoughts import (
+from planning.tree_of_thoughts import (
     SearchStrategy,
     ThoughtBranch,
     ThoughtNode,

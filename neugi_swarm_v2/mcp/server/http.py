@@ -14,8 +14,8 @@ for browser-based MCP clients.
 
 from __future__ import annotations
 
-import asyncio
 import argparse
+import asyncio
 import json
 import logging
 import sys

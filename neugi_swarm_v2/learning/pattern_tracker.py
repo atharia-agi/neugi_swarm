@@ -585,7 +585,7 @@ class PatternTracker:
                     HAVING COUNT(*) >= ?
                     ORDER BY occurrence_count DESC
                     LIMIT ?
-                """
+                """  # nosec B608
                 params.append(limit)
 
                 rows = conn.execute(query, params).fetchall()

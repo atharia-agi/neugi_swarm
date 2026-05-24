@@ -261,7 +261,6 @@ class ResearchEngine:
 
         try:
             for round_num in range(1, self.config.max_rounds + 1):
-                round_start = time.time()
                 query = all_queries[-1]
 
                 # Check timeout

@@ -17,6 +17,7 @@ Version: 2.0.0
 from __future__ import annotations
 
 import json
+import re
 import time
 from abc import ABC, abstractmethod
 from collections.abc import Generator
@@ -28,12 +29,14 @@ import requests
 
 
 class ProviderType(Enum):
+    """Supported LLM provider backends."""
     OLLAMA = "ollama"
     OPENAI_COMPATIBLE = "openai_compatible"
     ANTHROPIC_COMPATIBLE = "anthropic_compatible"
 
 
 class ErrorType(Enum):
+    """Classification of LLM provider errors for failover logic."""
     NONE = "none"
     CONTEXT_OVERFLOW = "context_overflow"
     RATE_LIMIT = "rate_limit"
@@ -53,6 +56,7 @@ class ToolCall:
 
     @property
     def parsed_arguments(self) -> dict[str, Any]:
+        """Parse the JSON arguments string into a dictionary."""
         try:
             return json.loads(self.arguments)
         except (json.JSONDecodeError, TypeError):
@@ -138,10 +142,12 @@ class LLMProvider(ABC):
 
     @property
     def total_tokens_used(self) -> int:
+        """Cumulative token usage across all requests."""
         return self._total_tokens_used
 
     @property
     def request_count(self) -> int:
+        """Total number of requests made to this provider."""
         return self._request_count
 
 
@@ -208,7 +214,8 @@ class OllamaProvider(LLMProvider):
                     usage={"prompt_tokens": 0, "completion_tokens": 0},
                     finish_reason="stop" if data.get("done") else "length",
                 )
-            except Exception as e:
+            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout,
+                    requests.exceptions.HTTPError, json.JSONDecodeError, OSError) as e:
                 self._last_error = e
                 if attempt < self.config.max_retries - 1:
                     time.sleep(self.config.retry_delay * (attempt + 1))
@@ -253,7 +260,7 @@ class OllamaProvider(LLMProvider):
 
                 message = data.get("message", {})
                 content = message.get("content", "").strip()
-                tool_calls = []
+                tool_calls: list[ToolCall] = []
 
                 # Extract tool calls if present
                 for tc in message.get("tool_calls", []):
@@ -275,7 +282,8 @@ class OllamaProvider(LLMProvider):
                     model=model,
                     finish_reason="stop" if data.get("done") else "length",
                 )
-            except Exception as e:
+            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout,
+                    requests.exceptions.HTTPError, json.JSONDecodeError, OSError) as e:
                 self._last_error = e
                 if attempt < self.config.max_retries - 1:
                     time.sleep(self.config.retry_delay * (attempt + 1))
@@ -320,7 +328,8 @@ class OllamaProvider(LLMProvider):
                                 yield chunk
                     except json.JSONDecodeError:
                         continue
-        except Exception as e:
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout,
+                requests.exceptions.HTTPError, OSError) as e:
             self._last_error = e
             raise
 
@@ -423,7 +432,7 @@ class OpenAICompatibleProvider(LLMProvider):
                 message = choice.get("message", {})
                 content = message.get("content", "").strip()
 
-                tool_calls = []
+                tool_calls: list[ToolCall] = []
                 for tc in message.get("tool_calls", []):
                     tool_calls.append(ToolCall(
                         id=tc.get("id", f"tc_{len(tool_calls)}"),
@@ -444,7 +453,8 @@ class OpenAICompatibleProvider(LLMProvider):
                     usage=usage,
                     finish_reason=choice.get("finish_reason", ""),
                 )
-            except Exception as e:
+            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout,
+                    requests.exceptions.HTTPError, json.JSONDecodeError, OSError) as e:
                 self._last_error = e
                 if attempt < self.config.max_retries - 1:
                     time.sleep(self.config.retry_delay * (attempt + 1))
@@ -584,7 +594,7 @@ class AnthropicCompatibleProvider(LLMProvider):
                 self._request_count += 1
 
                 content = ""
-                tool_calls = []
+                tool_calls: list[ToolCall] = []
 
                 for block in data.get("content", []):
                     if block.get("type") == "text":
@@ -609,7 +619,8 @@ class AnthropicCompatibleProvider(LLMProvider):
                     usage=usage,
                     finish_reason=data.get("stop_reason", ""),
                 )
-            except Exception as e:
+            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout,
+                    requests.exceptions.HTTPError, json.JSONDecodeError, OSError) as e:
                 self._last_error = e
                 if attempt < self.config.max_retries - 1:
                     time.sleep(self.config.retry_delay * (attempt + 1))
@@ -680,7 +691,7 @@ class ToolCallParser:
 
     @staticmethod
     def parse_tool_calls(text: str) -> list[ToolCall]:
-        tool_calls = []
+        tool_calls: list[ToolCall] = []
 
         # Pattern 1: JSON blocks with tool call structure
         patterns = [
@@ -708,7 +719,6 @@ class ToolCallParser:
 
         # Pattern 2: Function call style
         if not tool_calls:
-            import re
             func_pattern = r'(\w+)\((.*?)\)'
             for match in re.finditer(func_pattern, text):
                 name = match.group(1)
@@ -725,7 +735,7 @@ class ToolCallParser:
                             name=name,
                             arguments=json.dumps(args),
                         ))
-                    except Exception:
+                    except (ValueError, TypeError):
                         pass
 
         return tool_calls
@@ -743,6 +753,3 @@ class ToolCallParser:
             text = re.sub(pattern, "", text, flags=re.DOTALL)
 
         return text.strip()
-
-
-import re

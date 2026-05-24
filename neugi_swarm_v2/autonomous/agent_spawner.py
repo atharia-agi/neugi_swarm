@@ -168,7 +168,7 @@ class AutonomousAgentSpawner:
                 output = self.llm_callback(full_prompt, max_tokens=4000)
                 result.output = output
                 result.success = True
-                result.tokens_used = len(output.split()) * 1.3  # Rough estimate
+                result.tokens_used = int(len(output.split()) * 1.3)  # Rough estimate
                 self._success_count += 1
             else:
                 result.error = "No LLM callback available"

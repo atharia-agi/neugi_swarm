@@ -11,18 +11,11 @@ Adds MCP server management commands to the NEUGI CLI:
 
 from __future__ import annotations
 
-import asyncio
-import json
-import sys
-from pathlib import Path
 from typing import Any
 
 from rich.console import Console
 from rich.table import Table
-from rich.panel import Panel
-from rich.text import Text
 
-from neugi_swarm_v2 import __version__
 from neugi_swarm_v2.config import load_config
 
 console = Console()
@@ -139,7 +132,6 @@ class MCPCliExtension:
 
     def _cmd_mcp_start(self, args: list) -> dict:
         """Start the MCP server."""
-        import importlib
         import sys
 
         config = load_config()
@@ -151,7 +143,6 @@ class MCPCliExtension:
         try:
             if args and args[0] == "--stdio":
                 # Start stdio mode inline
-                from neugi_swarm_v2.mcp.server.stdio import main as stdio_main
                 console.print("[info]Starting MCP server (stdio mode)...[/info]")
                 if sys.platform == "win32":
                     import subprocess
@@ -170,7 +161,6 @@ class MCPCliExtension:
                 return {"status": "started", "mode": "stdio", "pid": "background"}
             else:
                 # Start HTTP mode
-                from neugi_swarm_v2.mcp.server.http import main as http_main
                 console.print(f"[info]Starting MCP server (HTTP mode) on port {port}...[/info]")
 
                 import subprocess
@@ -247,7 +237,7 @@ class MCPCliExtension:
         """Connect the MCP bridge to NEUGI subsystems."""
         try:
             from neugi_swarm_v2 import NeugiSwarmV2
-            from neugi_swarm_v2.mcp.bridge import MCPBridge, create_bridge
+            from neugi_swarm_v2.mcp.bridge import create_bridge
             from neugi_swarm_v2.mcp.server import MCPServer
 
             # Create or get server
@@ -402,19 +392,19 @@ class MCPCliExtension:
     def _cmd_mcp_test(self, args: list) -> dict:
         """Test MCP server connection."""
         try:
-            import urllib.request
             import urllib.error
+            import urllib.request
 
             url = "http://127.0.0.1:17902"
             req = urllib.request.Request(url, method="GET")
-            with urllib.request.urlopen(req, timeout=5) as resp:
+            with urllib.request.urlopen(req, timeout=5) as resp:  # nosec B310
                 if resp.status == 200:
                     console.print("[success]MCP server is reachable[/success]")
                     return {"status": "reachable", "url": url}
         except urllib.error.URLError:
-            console.print("[warning]MCP server not reachable at %s[/warning]" % url)
+            console.print(f"[warning]MCP server not reachable at {url}[/warning]")
             return {"status": "unreachable", "url": url}
-        except Exception as e:
+        except (OSError, TimeoutError) as e:
             console.print(f"[error]Connection test failed: {e}[/error]")
             return {"error": str(e)}
 

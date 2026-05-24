@@ -153,6 +153,7 @@ body::before {
   gap: 0.5rem;
   padding: 0 1rem;
   max-width: 520px;
+  position: relative;
 }
 .header-search {
   flex: 1;
@@ -172,6 +173,58 @@ body::before {
   color: var(--text-secondary);
   padding: 0 0.6rem;
   font-size: 0.78rem;
+}
+
+.search-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 1rem;
+  right: 1rem;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  z-index: 35;
+  display: none;
+}
+
+.search-panel.open {
+  display: block;
+}
+
+.search-panel-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.72rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent);
+  cursor: pointer;
+}
+
+.search-panel-item:last-child {
+  border-bottom: none;
+}
+
+.search-panel-item:hover,
+.search-panel-item.active {
+  background: var(--bg-card-hover);
+}
+
+.search-panel-item .meta {
+  color: var(--text-muted);
+  font-size: 0.66rem;
+}
+
+.search-panel-group {
+  padding: 0.35rem 0.55rem;
+  font-size: 0.64rem;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
 }
 
 .header-logo {
@@ -424,6 +477,9 @@ body::before {
 
 .section-badge {
   font-size: 0.7rem;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   padding: 0.15rem 0.5rem;
   border-radius: 999px;
   background: var(--bg-tertiary);
@@ -744,37 +800,9 @@ body::before {
   border-color: var(--accent-primary);
 }
 
-.model-picker {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  max-height: 220px;
-  overflow-y: auto;
-}
-
-.model-option {
-  padding: 0.55rem 0.6rem;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  background: var(--bg-tertiary);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.model-option:hover,
-.model-option.active {
-  border-color: var(--accent-primary);
-  background: var(--bg-card-hover);
-}
-
-.model-name {
-  font-size: 0.78rem;
-  font-weight: 600;
-}
-
-.model-meta {
-  margin-top: 0.15rem;
-  font-size: 0.65rem;
+.setup-subhint {
+  margin-top: 0.2rem;
+  font-size: 0.68rem;
   color: var(--text-muted);
 }
 
@@ -788,16 +816,37 @@ body::before {
   line-height: 1.45;
 }
 
+.setup-hint.sev-info {
+  border-color: color-mix(in srgb, var(--severity-info) 34%, var(--border-color));
+}
+
+.setup-hint.sev-warn {
+  border-color: color-mix(in srgb, var(--severity-warn) 40%, var(--border-color));
+}
+
+.setup-hint.sev-critical {
+  border-color: color-mix(in srgb, var(--severity-critical) 46%, var(--border-color));
+}
+
 .setup-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
 }
 
+.setup-actions .full-row {
+  grid-column: 1 / -1;
+}
+
 .setup-status {
   min-height: 1rem;
   font-size: 0.72rem;
   color: var(--text-muted);
+}
+
+.search-hit {
+  outline: 1px solid color-mix(in srgb, var(--accent-primary) 60%, transparent);
+  background: color-mix(in srgb, var(--accent-primary) 14%, transparent);
 }
 
 .approval-list {
@@ -839,6 +888,8 @@ body::before {
 .approval-meta {
   margin-top: 0.15rem;
   font-size: 0.65rem;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
   color: var(--text-muted);
 }
 
@@ -1598,6 +1649,15 @@ body::before { display: none; }
 .metric-card.sev-critical {
   border-color: color-mix(in srgb, var(--severity-critical) 42%, var(--border-color));
 }
+.metric-card.sev-info .metric-change {
+  color: color-mix(in srgb, var(--severity-info) 75%, var(--text-secondary));
+}
+.metric-card.sev-warn .metric-change {
+  color: color-mix(in srgb, var(--severity-warn) 82%, var(--text-secondary));
+}
+.metric-card.sev-critical .metric-change {
+  color: color-mix(in srgb, var(--severity-critical) 88%, var(--text-secondary));
+}
 .metric-detail {
   display: none;
   font-size: 10px;
@@ -1642,12 +1702,20 @@ body::before { display: none; }
 .metric-label {
   letter-spacing: 0.04em;
   font-size: 10px;
+  line-height: 1.15;
+  font-weight: 600;
+  text-transform: uppercase;
 }
 .metric-value {
   font-size: 13px;
   font-weight: 600;
+  line-height: 1.1;
 }
-.metric-change { font-size: 10px; }
+.metric-change {
+  font-size: 10px;
+  line-height: 1.2;
+  font-weight: 500;
+}
 .metrics-bar[data-mode="idle"] .metric-change {
   display: inline;
 }
@@ -1719,7 +1787,7 @@ body::before { display: none; }
   padding: 7px 9px;
   border-radius: 6px;
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.45;
 }
 .chat-message.user .chat-bubble {
   background: #f4f4f5;
@@ -1744,7 +1812,7 @@ body::before { display: none; }
   border-radius: 4px;
   background: #151515;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 4px;
 }
 .tab {
@@ -1754,9 +1822,13 @@ body::before { display: none; }
   align-items: center;
   justify-content: center;
   text-align: center;
-  line-height: 1;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  font-weight: 500;
   min-height: 26px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .tab.active {
   background: #202020;
@@ -1799,6 +1871,90 @@ body.sidebar-collapsed .main-content {
   background: #111111;
   border-color: rgba(255, 255, 255, 0.08);
 }
+.ops-toolbar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.ops-input {
+  height: 28px;
+  min-width: 140px;
+  flex: 1 1 180px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: #101010;
+  color: #d4d4d8;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.severity-chip {
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: #111;
+  color: #a1a1aa;
+  font-size: 11px;
+  padding: 0 8px;
+}
+.severity-chip.active {
+  color: #f4f4f5;
+  border-color: rgba(244,244,245,0.36);
+}
+.severity-chip.info.active { border-color: rgba(34,211,238,0.45); color: #67e8f9; }
+.severity-chip.warn.active { border-color: rgba(245,158,11,0.45); color: #fbbf24; }
+.severity-chip.critical.active { border-color: rgba(239,68,68,0.45); color: #f87171; }
+.plugin-badge {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 10px;
+  color: #a1a1aa;
+}
+.plugin-badge.enabled {
+  border-color: rgba(34,197,94,0.45);
+  color: #4ade80;
+}
+.plugin-badge.disabled {
+  border-color: rgba(161,161,170,0.45);
+  color: #a1a1aa;
+}
+.plugin-item.pending {
+  opacity: 0.62;
+}
+.toast-stack {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+}
+.toast-item {
+  min-width: 220px;
+  max-width: 360px;
+  background: #111;
+  border: 1px solid rgba(255,255,255,0.12);
+  color: #d4d4d8;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.35;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 140ms ease-out, transform 140ms ease-out;
+}
+.toast-item.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+.toast-item.info { border-color: rgba(34,211,238,0.35); }
+.toast-item.warn { border-color: rgba(245,158,11,0.42); color: #fbbf24; }
+.toast-item.critical { border-color: rgba(239,68,68,0.45); color: #f87171; }
 @media (max-width: 760px) {
   body {
     overflow: auto;
@@ -1820,6 +1976,16 @@ body.sidebar-collapsed .main-content {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 </style>
 </head>
 <body>
@@ -1827,7 +1993,16 @@ body.sidebar-collapsed .main-content {
   <!-- Header -->
   <header class="header">
     <div class="header-brand">
-      <div class="header-logo"><img src="/static/icon_mascot.webp" alt="Neugi Mascot"></div>
+      <div class="header-logo">
+        <picture>
+          <source srcset="assets/icon_mascot.webp" type="image/webp">
+          <img
+            src="assets/icon_mascot.png"
+            alt="Neugi Mascot"
+            onerror="if(!this.dataset.fallback1){this.dataset.fallback1='1';this.src='/assets/icon_mascot.webp';return;}if(!this.dataset.fallback2){this.dataset.fallback2='1';this.src='/assets/icon_mascot.png';return;}if(!this.dataset.fallback3){this.dataset.fallback3='1';this.src='/static/icon_mascot.webp';return;}this.src='/static/icon_mascot.png';"
+          >
+        </picture>
+      </div>
       <div>
         <div class="header-title">NEUGI Dashboard</div>
         <span class="header-version">v2.1.3</span>
@@ -1836,9 +2011,10 @@ body.sidebar-collapsed .main-content {
     <div class="header-center">
       <input class="header-search" id="globalSearch" placeholder="Search (Ctrl+K)">
       <select class="workspace-select" id="workspaceSelect">
-        <option>Workspace</option>
-        <option>Main</option>
+        <option value="main">Main</option>
+        <option value="workspace">Workspace</option>
       </select>
+      <div class="search-panel" id="globalSearchPanel"></div>
     </div>
     <div class="header-actions">
       <div class="header-status">
@@ -1859,10 +2035,12 @@ body.sidebar-collapsed .main-content {
     </button>
     <div class="nav-item active" data-nav="chat" onclick="handleSidebarNav('chat', this)"><span class="nav-icon">&#9675;</span><span class="nav-label">Chat</span></div>
     <div class="nav-item" data-nav="agents" onclick="handleSidebarNav('agents', this)"><span class="nav-icon">&#9679;</span><span class="nav-label">Agents</span></div>
+    <div class="nav-item" data-nav="sessions" onclick="handleSidebarNav('sessions', this)"><span class="nav-icon">&#9637;</span><span class="nav-label">Sessions</span></div>
     <div class="nav-item" data-nav="skills" onclick="handleSidebarNav('skills', this)"><span class="nav-icon">&#9671;</span><span class="nav-label">Skills</span></div>
     <div class="nav-item" data-nav="memory" onclick="handleSidebarNav('memory', this)"><span class="nav-icon">&#9638;</span><span class="nav-label">Memory</span></div>
     <div class="nav-item" data-nav="flows" onclick="handleSidebarNav('flows', this)"><span class="nav-icon">&#10227;</span><span class="nav-label">Flows</span></div>
     <div class="nav-item" data-nav="plugins" onclick="handleSidebarNav('plugins', this)"><span class="nav-icon">&#9635;</span><span class="nav-label">Plugins</span></div>
+    <div class="nav-item" data-nav="governance" onclick="handleSidebarNav('governance', this)"><span class="nav-icon">&#9888;</span><span class="nav-label">Governance</span></div>
     <div class="nav-item" data-nav="config" onclick="handleSidebarNav('config', this)"><span class="nav-icon">&#9881;</span><span class="nav-label">Config</span></div>
     <div class="sidebar-panels" id="sidebarPanelsHost"></div>
   </aside>
@@ -1939,6 +2117,8 @@ body.sidebar-collapsed .main-content {
         </summary>
         <div class="tabs">
           <button class="tab active" onclick="switchTab('setup')">Setup</button>
+          <button class="tab" onclick="switchTab('agents')">Agents</button>
+          <button class="tab" onclick="switchTab('sessions')">Sessions</button>
           <button class="tab" onclick="switchTab('skills')">Skills</button>
           <button class="tab" onclick="switchTab('memory')">Memory</button>
           <button class="tab" onclick="switchTab('channels')">Channels</button>
@@ -1950,19 +2130,18 @@ body.sidebar-collapsed .main-content {
         <div class="tab-content active" id="tab-setup">
           <div class="setup-panel">
             <div class="setup-hint" id="setupSummary">Loading provider catalog...</div>
+            <div class="setup-hint" id="setupProviderHealth">Provider health: checking...</div>
+            <div class="setup-hint" id="setupProviderEnvHint">Env hint: waiting for provider selection...</div>
             <div class="setup-grid">
               <label class="setup-field">
                 <span class="setup-label">Provider</span>
                 <select class="setup-select" id="setupProvider" onchange="handleProviderChange()"></select>
               </label>
-              <label class="setup-field">
-                <span class="setup-label">Model search</span>
-                <input class="setup-input" id="setupModelSearch" placeholder="Search model..." oninput="renderSetupModels()">
-              </label>
               <label class="setup-field full">
                 <span class="setup-label">Model</span>
-                <div class="model-picker" id="setupModelPicker"></div>
-                <input class="setup-input" id="setupCustomModel" placeholder="Custom model id" style="display:none; margin-top:0.4rem">
+                <input class="setup-input" id="setupModelInput" list="setupModelOptions" placeholder="Type or pick model id" oninput="renderSetupModels()">
+                <datalist id="setupModelOptions"></datalist>
+                <div class="setup-subhint" id="setupModelHint">Provider model suggestions loaded dynamically.</div>
               </label>
               <label class="setup-field">
                 <span class="setup-label">Base URL</span>
@@ -1987,13 +2166,47 @@ body.sidebar-collapsed .main-content {
             </div>
             <div class="setup-actions">
               <button class="btn" onclick="loadSetupConfig()">Reload Config</button>
+              <button class="btn" onclick="applySafeConfigPreset()">Apply Safe Config</button>
               <button class="btn" onclick="testSetupProvider()">Test Provider</button>
+              <select class="setup-select" id="setupGovernanceProfile" title="Governance risk profile">
+                <option value="startup">Startup</option>
+                <option value="team">Team</option>
+                <option value="enterprise">Enterprise</option>
+              </select>
+              <button class="btn" onclick="previewGovernanceProfile()">Preview Governance</button>
+              <button class="btn" onclick="applyGovernanceProfile()">Apply Governance</button>
               <button class="btn" onclick="toggleAutostart(true)">Autostart On</button>
               <button class="btn" onclick="toggleAutostart(false)">Autostart Off</button>
+              <button class="btn full-row" onclick="validateAllProviders()">Validate All Providers</button>
               <button class="btn btn-primary" onclick="saveSetupConfig()">Save AI Setup</button>
             </div>
             <div class="setup-hint" id="autostartStatus">Autostart status: checking...</div>
+            <div class="setup-hint" id="governanceStatus">Governance profile: loading...</div>
+            <div class="setup-hint" id="governancePreviewStatus">Governance preview: ready</div>
             <div class="setup-status" id="setupStatus"></div>
+          </div>
+        </div>
+
+        <!-- Agents Tab -->
+        <div class="tab-content" id="tab-agents">
+          <div class="skills-list" id="agentsControlList" style="margin-top: 0.75rem">
+            <div class="empty-state">
+              <div class="icon">&#9679;</div>
+              <div>Loading agents...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sessions Tab -->
+        <div class="tab-content" id="tab-sessions">
+          <div class="skills-list" id="sessionsControlList" style="margin-top: 0.75rem">
+            <div class="empty-state">
+              <div class="icon">&#9637;</div>
+              <div>Loading sessions...</div>
+            </div>
+          </div>
+          <div class="memory-entries" id="sessionMessagesPreview" style="margin-top:0.6rem; max-height:180px;">
+            <div class="empty-state"><div>Select a session to inspect messages</div></div>
           </div>
         </div>
 
@@ -2063,6 +2276,11 @@ body.sidebar-collapsed .main-content {
 
         <!-- Plugins Tab -->
         <div class="tab-content" id="tab-plugins">
+          <div class="ops-toolbar" style="margin-top:0.75rem;">
+            <button class="btn btn-sm" onclick="setAllPlugins(true)">Enable All</button>
+            <button class="btn btn-sm" onclick="setAllPlugins(false)">Disable All</button>
+            <span class="section-badge" id="pluginSummaryBadge">0 enabled</span>
+          </div>
           <div class="plugins-list" id="pluginsList" style="margin-top: 0.75rem">
             <div class="empty-state">
               <div class="icon">&#9635;</div>
@@ -2081,6 +2299,19 @@ body.sidebar-collapsed .main-content {
           <span class="section-badge" id="approvalCount">0 pending</span>
         </summary>
         <div style="display: flex; flex-direction: column; gap: 0.5rem">
+          <div style="display:flex;gap:6px;align-items:center;justify-content:flex-end;">
+            <button class="btn btn-sm" onclick="approveHighRiskOnly()" title="Approve all pending high-risk requests">Approve High</button>
+            <button class="btn btn-sm" onclick="approveAllPending()" title="Approve all pending requests">Approve All</button>
+            <button class="btn btn-sm" onclick="filterAuditByKeyword('')" title="Reset audit filter">Reset Audit</button>
+          </div>
+          <div class="ops-toolbar">
+            <input id="auditSearchInput" class="ops-input" type="text" placeholder="Filter audit keyword..." oninput="setAuditKeyword(this.value)">
+            <button id="auditChipAll" class="severity-chip active" onclick="setAuditLevel('all')">All</button>
+            <button id="auditChipInfo" class="severity-chip info" onclick="setAuditLevel('info')">Info</button>
+            <button id="auditChipWarn" class="severity-chip warn" onclick="setAuditLevel('warn')">Warn</button>
+            <button id="auditChipCritical" class="severity-chip critical" onclick="setAuditLevel('critical')">Critical</button>
+            <span class="section-badge" id="auditSummaryBadge">0 shown</span>
+          </div>
           <div>
             <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.25rem">
               <span>Daily Budget</span>
@@ -2104,11 +2335,18 @@ body.sidebar-collapsed .main-content {
               <div>No pending approvals</div>
             </div>
           </div>
+          <div class="approval-list" id="auditList">
+            <div class="empty-state">
+              <div>No audit entries</div>
+            </div>
+          </div>
         </div>
       </details>
     </div>
   </div>
 </div>
+
+<div class="toast-stack" id="toastStack"></div>
 
 <!-- Settings Modal -->
 <div class="modal-overlay" id="settingsModal">
@@ -2157,6 +2395,7 @@ body.sidebar-collapsed .main-content {
           <span class="toggle-slider"></span>
         </label>
       </div>
+      <div class="settings-row-desc" id="settingsNotificationStatus" style="margin-top:6px;color:var(--text-muted)">Permission: unknown</div>
     </div>
     <button class="btn btn-primary" style="width: 100%" onclick="saveSettings()">Save Settings</button>
   </div>
@@ -2181,15 +2420,28 @@ const state = {
   plugins: [],
   governance: {},
   approvals: [],
+  auditEntries: [],
+  auditFilterKeyword: '',
+  auditFilterLevel: 'all',
+  auditKeywordDebounce: null,
   providers: [],
+  providerHealthByName: {},
+  governanceProfile: 'team',
   config: null,
   selectedModel: '',
   apiKeyMasked: false,
+  workspace: 'main',
+  searchResults: [],
+  searchActiveIndex: -1,
   chatHistory: [],
+  activeSessionId: '',
+  debug: false,
   ui: {
     activeMetric: '',
     activeTab: 'setup',
     sidebarCollapsed: false,
+    auditFilterKeyword: '',
+    auditFilterLevel: 'all',
   },
 };
 
@@ -2216,9 +2468,20 @@ async function fetchHealth() {
     const data = await api('/api/health');
     state.health = data.data;
     updateStatus('connected');
+    const offlineCritical = state.health && (state.health.status === 'degraded' || state.health.status === 'error');
+    if (offlineCritical) {
+      setMetricSeverity('agents', 'critical');
+      setMetricSeverity('sessions', 'critical');
+      setMetricSeverity('skills', 'warn');
+      setMetricSeverity('memory', 'warn');
+    }
     updateMetrics();
   } catch (e) {
     updateStatus('offline');
+    setMetricSeverity('agents', 'critical');
+    setMetricSeverity('sessions', 'critical');
+    setMetricSeverity('skills', 'warn');
+    setMetricSeverity('memory', 'warn');
     console.warn('Health check failed:', e);
   }
 }
@@ -2239,6 +2502,7 @@ async function fetchAgents() {
     const active = Number(data.data.active || 0);
     const ratio = total > 0 ? active / total : 0;
     setMetricSeverity('agents', ratio < 0.25 ? 'warn' : 'info');
+    renderAgentControls();
   } catch (e) {
     console.warn('Failed to fetch agents:', e);
   }
@@ -2262,9 +2526,53 @@ function renderAgents() {
     .map((agent) => {
       const label = agent.name || agent.id || 'Agent';
       const status = agent.status || 'idle';
-      return `<div class="metric-inline-item">${escapeHtml(label)} · ${escapeHtml(status)} · ${statusDots(status)}</div>`;
+      return `<div class="metric-inline-item">${escapeHtml(label)} &middot; ${escapeHtml(status)} &middot; ${statusDots(status)}</div>`;
     })
     .join('');
+}
+
+function renderAgentControls() {
+  const list = document.getElementById('agentsControlList');
+  if (!list) return;
+  if (!state.agents.length) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">&#9675;</div><div>No agents available</div></div>';
+    return;
+  }
+  list.innerHTML = state.agents.map((agent) => `
+    <div class="approval-item">
+      <div class="approval-row">
+        <div>
+          <div class="approval-title">${escapeHtml(agent.name || agent.id)}</div>
+          <div class="approval-meta">${escapeHtml(agent.role || 'worker')} &middot; ${escapeHtml(agent.status || 'idle')} &middot; L${Number(agent.level || 1)}</div>
+        </div>
+        <span class="section-badge">${Number(agent.tasks_completed || 0)} tasks</span>
+      </div>
+      <div class="approval-actions">
+        <button class="btn btn-sm" onclick="promptDelegateTask('${escapeAttr(agent.id)}')">Assign</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function delegateTaskToAgent(agentId, task) {
+  const trimmed = String(task || '').trim();
+  if (!trimmed) return;
+  try {
+    await api(`/api/agents/${encodeURIComponent(agentId)}/task`, {
+      method: 'POST',
+      body: JSON.stringify({ agent_id: agentId, task: trimmed }),
+    });
+    showNotification(`Task delegated to ${agentId}`);
+    await fetchAgents();
+  } catch (e) {
+    showNotification(`Failed to delegate task: ${e.message}`);
+  }
+}
+
+function promptDelegateTask(agentId) {
+  const task = window.prompt(`Assign task to ${agentId}:`);
+  if (!task) return;
+  delegateTaskToAgent(agentId, task);
 }
 
 // -- Sessions ---------------------------------------------------------------
@@ -2273,6 +2581,7 @@ async function fetchSessions() {
     const data = await api('/api/sessions');
     state.sessions = data.data.sessions || [];
     renderSessions();
+    renderSessionsControl();
     document.getElementById('metricSessions').textContent = data.data.total;
     document.getElementById('metricSessionsActive').textContent = `${data.data.active} active`;
     const detail = document.getElementById('metricSessionsDetail');
@@ -2299,9 +2608,63 @@ function renderSessions() {
       const id = (s.id || 'session').substring(0, 8);
       const count = s.message_count || 0;
       const sessionState = s.state || 'idle';
-      return `<div class="metric-inline-item">${escapeHtml(id)} · ${count} msg · ${escapeHtml(sessionState)}</div>`;
+      return `<div class="metric-inline-item">${escapeHtml(id)} &middot; ${count} msg &middot; ${escapeHtml(sessionState)}</div>`;
     })
     .join('');
+}
+
+function renderSessionsControl() {
+  const list = document.getElementById('sessionsControlList');
+  if (!list) return;
+  if (!state.sessions.length) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">&#9637;</div><div>No sessions available</div></div>';
+    return;
+  }
+  list.innerHTML = state.sessions.map((s) => `
+    <div class="approval-item">
+      <div class="approval-row">
+        <div>
+          <div class="approval-title">${escapeHtml(s.id || 'session')}</div>
+          <div class="approval-meta">${escapeHtml(s.state || 'active')} &middot; ${Number(s.message_count || 0)} messages</div>
+        </div>
+        <span class="section-badge">${escapeHtml(s.isolation_mode || 'shared')}</span>
+      </div>
+      <div class="approval-actions">
+        <button class="btn btn-sm" onclick="useSession('${escapeAttr(s.id)}')">Use</button>
+        <button class="btn btn-sm" onclick="inspectSession('${escapeAttr(s.id)}')">Inspect</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function useSession(sessionId) {
+  state.activeSessionId = sessionId;
+  const hint = document.getElementById('chatHint');
+  if (hint) hint.textContent = `Active session: ${sessionId}`;
+  const input = document.getElementById('chatInput');
+  if (input) input.focus();
+}
+
+async function inspectSession(sessionId) {
+  const preview = document.getElementById('sessionMessagesPreview');
+  if (!preview) return;
+  preview.innerHTML = '<div class="empty-state"><div>Loading session messages...</div></div>';
+  try {
+    const data = await api(`/api/sessions/${encodeURIComponent(sessionId)}/messages?limit=20`);
+    const messages = data.data.messages || [];
+    if (!messages.length) {
+      preview.innerHTML = '<div class="empty-state"><div>No messages in this session</div></div>';
+      return;
+    }
+    preview.innerHTML = messages.map((m) => `
+      <div class="memory-entry">
+        <div class="memory-entry-time">${escapeHtml(m.role || 'message')}</div>
+        <div>${escapeHtml(m.content || m.text || JSON.stringify(m))}</div>
+      </div>
+    `).join('');
+  } catch (e) {
+    preview.innerHTML = `<div class="empty-state"><div>Failed to load: ${escapeHtml(e.message)}</div></div>`;
+  }
 }
 
 // -- Skills -----------------------------------------------------------------
@@ -2321,7 +2684,7 @@ async function fetchSkills() {
       const featured = (state.skills || []).slice(0, 8);
       inline.innerHTML = featured.length
         ? featured
-            .map((s) => `<div class="metric-inline-item">${escapeHtml(s.name || s.id || 'Skill')} · ${escapeHtml(s.tier || 'workspace')}</div>`)
+            .map((s) => `<div class="metric-inline-item">${escapeHtml(s.name || s.id || 'Skill')} &middot; ${escapeHtml(s.tier || 'workspace')}</div>`)
             .join('')
         : '<div class="metric-inline-item">No skills loaded</div>';
     }
@@ -2367,9 +2730,9 @@ async function fetchMemory() {
     const inline = document.getElementById('metricMemoryInline');
     if (inline) {
       inline.innerHTML = [
-        `<div class="metric-inline-item">Consolidated · ${data.data.consolidated_entries || 0}</div>`,
-        `<div class="metric-inline-item">Daily · ${data.data.daily_entries || 0}</div>`,
-        `<div class="metric-inline-item">Size · ${formatBytes(data.data.storage_size_bytes || 0)}</div>`,
+        `<div class="metric-inline-item">Consolidated &middot; ${data.data.consolidated_entries || 0}</div>`,
+        `<div class="metric-inline-item">Daily &middot; ${data.data.daily_entries || 0}</div>`,
+        `<div class="metric-inline-item">Size &middot; ${formatBytes(data.data.storage_size_bytes || 0)}</div>`,
       ].join('');
     }
     const daily = Number(data.data.daily_entries || 0);
@@ -2455,13 +2818,29 @@ function renderWorkflows() {
   }
   list.innerHTML = state.workflows.map(w => `
     <div class="workflow-item">
-      <div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;width:100%;">
+        <div>
         <div class="workflow-name">${w.name || w.id}</div>
         <div style="font-size: 0.65rem; color: var(--text-muted)">${w.steps || 0} steps &middot; ${w.success_count || 0} runs</div>
+        </div>
+        <button class="btn btn-sm" onclick="runWorkflowFromUI('${escapeAttr(w.id)}')">Run</button>
       </div>
       <span class="workflow-status ${w.status || 'idle'}">${w.status || 'idle'}</span>
     </div>
   `).join('');
+}
+
+async function runWorkflowFromUI(workflowId) {
+  try {
+    await api(`/api/workflows/${encodeURIComponent(workflowId)}/run`, {
+      method: 'POST',
+      body: JSON.stringify({ workflow_id: workflowId }),
+    });
+    showNotification(`Workflow ${workflowId} started`);
+    await fetchWorkflows();
+  } catch (e) {
+    showNotification(`Workflow run failed: ${e.message}`);
+  }
 }
 
 // -- Plugins ----------------------------------------------------------------
@@ -2477,6 +2856,11 @@ async function fetchPlugins() {
 
 function renderPlugins() {
   const list = document.getElementById('pluginsList');
+  const summary = document.getElementById('pluginSummaryBadge');
+  if (summary) {
+    const enabledCount = (state.plugins || []).filter((p) => p.enabled).length;
+    summary.textContent = `${enabledCount} enabled / ${(state.plugins || []).length}`;
+  }
   if (!state.plugins.length) {
     list.innerHTML = '<div class="empty-state"><div class="icon">&#9635;</div><div>No plugins installed</div></div>';
     return;
@@ -2486,26 +2870,85 @@ function renderPlugins() {
       <div class="plugin-info">
         <span class="plugin-name">${p.name || p.id}</span>
         <span class="plugin-version">v${p.version || '0.0.0'}</span>
+        <span class="plugin-badge ${p.enabled ? 'enabled' : 'disabled'}">${p.enabled ? 'enabled' : 'disabled'}</span>
       </div>
       <label class="toggle">
-        <input type="checkbox" ${p.enabled ? 'checked' : ''}>
+        <input type="checkbox" ${p.enabled ? 'checked' : ''} onchange="togglePlugin('${escapeAttr(p.id)}', this.checked, this)">
         <span class="toggle-slider"></span>
       </label>
     </div>
   `).join('');
 }
 
+async function togglePlugin(pluginId, enabled, checkboxEl = null) {
+  const previous = checkboxEl ? !enabled : null;
+  const row = checkboxEl?.closest?.('.plugin-item') || null;
+  if (checkboxEl) checkboxEl.disabled = true;
+  if (row) row.classList.add('pending');
+  try {
+    const data = await api('/api/plugins/toggle', {
+      method: 'POST',
+      body: JSON.stringify({ plugin_id: pluginId, enabled }),
+    });
+    const finalEnabled = Boolean(data?.data?.enabled);
+    if (checkboxEl) checkboxEl.checked = finalEnabled;
+    const item = (state.plugins || []).find((p) => String(p.id) === String(pluginId));
+    if (item) item.enabled = finalEnabled;
+    showNotification(`Plugin ${pluginId} ${finalEnabled ? 'enabled' : 'disabled'}`);
+    await fetchPlugins();
+  } catch (e) {
+    if (checkboxEl && previous !== null) checkboxEl.checked = previous;
+    showNotification(`Plugin toggle failed: ${e.message}`);
+  } finally {
+    if (row) row.classList.remove('pending');
+    if (checkboxEl) checkboxEl.disabled = false;
+  }
+}
+
+async function setAllPlugins(enabled) {
+  const plugins = (state.plugins || []);
+  if (!plugins.length) return;
+  const message = enabled
+    ? 'Enable all plugins?'
+    : 'Disable all plugins?';
+  if (!window.confirm(message)) return;
+  let success = 0;
+  for (const plugin of plugins) {
+    if (Boolean(plugin.enabled) === enabled) continue;
+    try {
+      const idx = plugins.findIndex((p) => p.id === plugin.id);
+      if (idx >= 0) {
+        plugins[idx].enabled = enabled;
+        renderPlugins();
+      }
+      // eslint-disable-next-line no-await-in-loop
+      await api('/api/plugins/toggle', {
+        method: 'POST',
+        body: JSON.stringify({ plugin_id: plugin.id, enabled }),
+      });
+      success += 1;
+    } catch (_e) {
+      // continue best-effort for remaining plugins
+    }
+  }
+  await fetchPlugins();
+  showNotification(`${enabled ? 'Enabled' : 'Disabled'} ${success} plugin(s)`);
+}
+
 // -- Governance -------------------------------------------------------------
 async function fetchGovernance() {
   try {
-    const [budgetData, approvalData] = await Promise.all([
+    const [budgetData, approvalData, auditData] = await Promise.all([
       api('/api/governance/budget'),
       api('/api/governance/approvals'),
+      api('/api/governance/audit?limit=25'),
     ]);
     state.governance = budgetData.data;
     state.approvals = approvalData.data.requests || [];
+    state.auditEntries = auditData.data.entries || [];
     updateBudget();
     renderApprovals();
+    renderAuditTrail();
   } catch (e) {
     console.warn('Failed to fetch governance:', e);
   }
@@ -2577,7 +3020,87 @@ function renderApprovals() {
   }).join('');
 }
 
-async function decideApproval(requestId, decision) {
+function renderAuditTrail() {
+  const list = document.getElementById('auditList');
+  if (!list) return;
+  const summary = document.getElementById('auditSummaryBadge');
+  const filtered = getFilteredAuditEntries();
+  if (summary) {
+    summary.textContent = `${filtered.length} shown / ${(state.auditEntries || []).length}`;
+  }
+  syncAuditChipState();
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty-state"><div>No audit entries</div></div>';
+    return;
+  }
+  list.innerHTML = filtered.map((entry) => {
+    const level = String(entry.level || 'info').toLowerCase();
+    const sevClass = level === 'error' || level === 'critical'
+      ? 'sev-critical'
+      : (level === 'warning' || level === 'warn' ? 'sev-warn' : 'sev-info');
+    return `
+      <div class="approval-item ${sevClass}">
+        <div class="approval-row">
+          <div class="approval-title">${escapeHtml(entry.action || entry.event || 'event')}</div>
+          <span class="section-badge">${escapeHtml(level)}</span>
+        </div>
+        <div class="approval-meta">${escapeHtml(entry.actor || entry.source || 'system')} &middot; ${formatTime(entry.timestamp || Date.now() / 1000)}</div>
+        <div class="approval-desc">${escapeHtml(entry.detail || entry.message || 'No details')}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function getFilteredAuditEntries() {
+  const keyword = String(state.auditFilterKeyword || '').trim().toLowerCase();
+  const levelFilter = String(state.auditFilterLevel || 'all').toLowerCase();
+  return (state.auditEntries || []).filter((entry) => {
+    const level = String(entry.level || 'info').toLowerCase();
+    const normalizedLevel = (level === 'warning') ? 'warn' : (level === 'error' ? 'critical' : level);
+    if (levelFilter !== 'all' && normalizedLevel !== levelFilter) return false;
+    if (!keyword) return true;
+    const hay = `${entry.action || ''} ${entry.event || ''} ${entry.actor || ''} ${entry.source || ''} ${entry.detail || ''} ${entry.message || ''}`.toLowerCase();
+    return hay.includes(keyword);
+  });
+}
+
+function setAuditKeyword(value) {
+  const next = String(value || '');
+  if (state.auditKeywordDebounce) {
+    clearTimeout(state.auditKeywordDebounce);
+  }
+  state.auditKeywordDebounce = setTimeout(() => {
+    state.auditFilterKeyword = next;
+    state.ui.auditFilterKeyword = next;
+    saveUIState();
+    renderAuditTrail();
+  }, 160);
+}
+
+function setAuditLevel(level) {
+  state.auditFilterLevel = String(level || 'all').toLowerCase();
+  state.ui.auditFilterLevel = state.auditFilterLevel;
+  saveUIState();
+  renderAuditTrail();
+}
+
+function syncAuditChipState() {
+  const level = String(state.auditFilterLevel || 'all').toLowerCase();
+  const mapping = {
+    all: 'auditChipAll',
+    info: 'auditChipInfo',
+    warn: 'auditChipWarn',
+    critical: 'auditChipCritical',
+  };
+  Object.values(mapping).forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('active');
+  });
+  const active = document.getElementById(mapping[level] || mapping.all);
+  if (active) active.classList.add('active');
+}
+
+async function decideApproval(requestId, decision, reason = '') {
   try {
     await api('/api/governance/approvals/decide', {
       method: 'POST',
@@ -2585,6 +3108,7 @@ async function decideApproval(requestId, decision) {
         request_id: requestId,
         decision,
         approver: 'dashboard',
+        reason,
       }),
     });
     await fetchGovernance();
@@ -2613,7 +3137,7 @@ async function sendChat() {
   try {
     const data = await api('/api/chat', {
       method: 'POST',
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message, session_id: state.activeSessionId || null }),
     });
     removeTypingIndicator(thinkingId);
     appendChatMessage('assistant', data.data.response || 'No response');
@@ -2641,7 +3165,7 @@ function handleComposerInput() {
     return;
   }
   if (message.startsWith('/')) {
-    hint.textContent = 'Commands: /clear, /settings, /model, /agent';
+    hint.textContent = 'Commands: /clear, /settings, /model, /agent, /session, /provider, /flow, /plugin, /memory, /approve, /audit';
     return;
   }
   if (message.includes('@')) {
@@ -2659,7 +3183,9 @@ function autoResizeComposer() {
 }
 
 function handleSlashCommand(message) {
-  const cmd = message.toLowerCase();
+  const cmd = message.toLowerCase().trim();
+  const [head, ...tail] = cmd.split(/\s+/);
+  const arg = tail.join(' ').trim();
   if (cmd === '/clear') {
     clearChat();
     return true;
@@ -2670,14 +3196,148 @@ function handleSlashCommand(message) {
   }
   if (cmd === '/model') {
     switchTab('setup');
-    setSetupStatus('Model quick switch: use Setup tab model picker.');
+    setSetupStatus('Model quick switch: use Setup tab model input.');
     return true;
   }
   if (cmd === '/agent') {
     focusMetric('agents');
     return true;
   }
+  if (head === '/session') {
+    focusMetric('sessions');
+    if (arg) {
+      const match = (state.sessions || []).find((s) => String(s.id || '').toLowerCase().includes(arg));
+      if (match?.id) {
+        useSession(match.id);
+        inspectSession(match.id);
+        appendChatMessage('assistant', `Session selected: ${match.id}`);
+      } else {
+        appendChatMessage('assistant', `No session matched "${arg}"`);
+      }
+    }
+    return true;
+  }
+  if (head === '/provider') {
+    switchTab('setup');
+    if (arg) {
+      const match = (state.providers || []).find((p) => `${p.name || ''} ${p.display_name || ''}`.toLowerCase().includes(arg));
+      if (match?.name) {
+        const select = document.getElementById('setupProvider');
+        if (select) {
+          select.value = match.name;
+          handleProviderChange();
+          appendChatMessage('assistant', `Provider switched: ${match.display_name || match.name}`);
+        }
+      } else {
+        appendChatMessage('assistant', `No provider matched "${arg}"`);
+      }
+    }
+    return true;
+  }
+  if (head === '/flow') {
+    handleSidebarNav('flows', document.querySelector('.nav-sidebar .nav-item[data-nav="flows"]'));
+    if (arg) {
+      const match = (state.workflows || []).find((w) => `${w.id || ''} ${w.name || ''}`.toLowerCase().includes(arg));
+      if (match?.id) runWorkflowFromUI(match.id);
+      else appendChatMessage('assistant', `No workflow matched "${arg}"`);
+    }
+    return true;
+  }
+  if (head === '/plugin') {
+    handleSidebarNav('plugins', document.querySelector('.nav-sidebar .nav-item[data-nav="plugins"]'));
+    if (arg) {
+      const match = (state.plugins || []).find((p) => `${p.id || ''} ${p.name || ''}`.toLowerCase().includes(arg));
+      if (match) {
+        appendChatMessage('assistant', `Plugin: ${match.name || match.id} | version: ${match.version || '0.0.0'} | ${match.enabled ? 'enabled' : 'disabled'}`);
+      } else {
+        appendChatMessage('assistant', `No plugin matched "${arg}"`);
+      }
+    }
+    return true;
+  }
+  if (head === '/memory') {
+    handleSidebarNav('memory', document.querySelector('.nav-sidebar .nav-item[data-nav="memory"]'));
+    if (arg) {
+      const input = document.getElementById('memorySearchInput');
+      if (input) input.value = arg;
+      searchMemory();
+    }
+    return true;
+  }
+  if (head === '/approve') {
+    handleSidebarNav('governance', document.querySelector('.nav-sidebar .nav-item[data-nav="governance"]'));
+    if (!arg || arg === 'list') {
+      appendChatMessage('assistant', `Pending approvals: ${(state.approvals || []).length}`);
+      return true;
+    }
+    if (arg === 'all') {
+      approveAllPending();
+      return true;
+    }
+    if (arg === 'high') {
+      approveHighRiskOnly();
+      return true;
+    }
+    appendChatMessage('assistant', 'Usage: /approve list | /approve high | /approve all');
+    return true;
+  }
+  if (head === '/audit') {
+    handleSidebarNav('governance', document.querySelector('.nav-sidebar .nav-item[data-nav="governance"]'));
+    const normalized = String(arg || '').trim().toLowerCase();
+    if (['all', 'info', 'warn', 'critical'].includes(normalized)) {
+      setAuditLevel(normalized);
+      appendChatMessage('assistant', `Audit level filter: ${normalized}`);
+    } else {
+      filterAuditByKeyword(arg || '');
+    }
+    return true;
+  }
+  if (head === '/smoke') {
+    runOpsSmokeCheck();
+    return true;
+  }
   return false;
+}
+
+async function approveAllPending() {
+  if (!window.confirm('Approve ALL pending requests?')) return;
+  const reason = window.prompt('Approval reason (optional):', '') || '';
+  const items = (state.approvals || []).filter((r) => String(r.status || 'pending').toLowerCase() === 'pending');
+  if (!items.length) {
+    appendChatMessage('assistant', 'No pending approvals.');
+    return;
+  }
+  for (const req of items) {
+    // eslint-disable-next-line no-await-in-loop
+    await decideApproval(req.request_id, 'approve', reason);
+  }
+  appendChatMessage('assistant', `Approved ${items.length} request(s).`);
+}
+
+async function approveHighRiskOnly() {
+  if (!window.confirm('Approve all pending HIGH-RISK requests?')) return;
+  const reason = window.prompt('Approval reason (optional):', '') || '';
+  const items = (state.approvals || []).filter((r) => {
+    const risk = String(r.risk_level || '').toLowerCase();
+    const status = String(r.status || 'pending').toLowerCase();
+    return status === 'pending' && risk === 'high';
+  });
+  if (!items.length) {
+    appendChatMessage('assistant', 'No pending high-risk approvals.');
+    return;
+  }
+  for (const req of items) {
+    // eslint-disable-next-line no-await-in-loop
+    await decideApproval(req.request_id, 'approve', reason);
+  }
+  appendChatMessage('assistant', `Approved ${items.length} high-risk request(s).`);
+}
+
+function filterAuditByKeyword(keyword) {
+  state.auditFilterKeyword = String(keyword || '');
+  const input = document.getElementById('auditSearchInput');
+  if (input) input.value = state.auditFilterKeyword;
+  renderAuditTrail();
 }
 
 function appendChatMessage(role, text) {
@@ -2741,6 +3401,7 @@ async function fetchProviderCatalog() {
   try {
     const data = await api('/api/providers');
     state.providers = data.data.providers || [];
+    await fetchProviderHealth();
     renderProviderOptions();
     await loadSetupConfig();
   } catch (e) {
@@ -2749,19 +3410,38 @@ async function fetchProviderCatalog() {
   }
 }
 
+async function fetchProviderHealth() {
+  try {
+    const data = await api('/api/providers/health');
+    const items = data?.data?.providers || [];
+    const byName = {};
+    items.forEach((item) => {
+      byName[item.provider] = item;
+    });
+    state.providerHealthByName = byName;
+  } catch (e) {
+    state.providerHealthByName = {};
+    console.warn('Failed to fetch provider health:', e);
+  }
+}
+
 async function loadSetupConfig() {
   try {
     const data = await api('/api/config');
     state.config = data.data || {};
     const llm = state.config.llm || {};
-    const providerName = llm.provider || 'ollama';
+    const suggestedProvider = (state.providers || []).find((p) => {
+      const r = getProviderReadiness(p);
+      return p && p.name !== 'ollama' && r && r.hasEnvKey;
+    })?.name || state.providers?.[0]?.name || 'ollama';
+    const providerName = llm.provider || suggestedProvider;
     const providerSelect = document.getElementById('setupProvider');
     if (providerSelect.options.length) {
       providerSelect.value = providerName;
     }
     handleProviderChange(false);
     state.selectedModel = llm.model || state.selectedModel || '';
-    document.getElementById('setupCustomModel').value = state.selectedModel;
+    document.getElementById('setupModelInput').value = state.selectedModel;
     document.getElementById('setupBaseUrl').value = llm.base_url || llm.ollama_url || '';
     document.getElementById('setupFallbackModel').value = llm.fallback_model || '';
     document.getElementById('setupTemperature').value = llm.temperature ?? 0.7;
@@ -2777,6 +3457,7 @@ async function loadSetupConfig() {
     renderSetupModels();
     setSetupStatus('Config loaded.');
     await refreshAutostartStatus();
+    await refreshGovernanceProfileStatus();
   } catch (e) {
     setSetupStatus(`Config load failed: ${e.message}`, true);
   }
@@ -2808,15 +3489,82 @@ async function toggleAutostart(enable) {
   }
 }
 
+async function refreshGovernanceProfileStatus() {
+  const statusEl = document.getElementById('governanceStatus');
+  const selectEl = document.getElementById('setupGovernanceProfile');
+  if (!statusEl || !selectEl) return;
+  try {
+    const data = await api('/api/governance/profile');
+    const payload = data.data || {};
+    const profile = String(payload.profile || 'team');
+    state.governanceProfile = profile;
+    selectEl.value = profile;
+    const rules = Array.isArray(payload.rules) ? payload.rules : [];
+    const enabledRules = rules.filter((r) => r && r.enabled).length;
+    statusEl.textContent = `Governance profile: ${profile} (${enabledRules} active rules)`;
+    setSetupHintSeverity(statusEl, profile === 'enterprise' ? 'warn' : 'info');
+  } catch (e) {
+    statusEl.textContent = `Governance profile unavailable: ${e.message}`;
+    setSetupHintSeverity(statusEl, 'warn');
+  }
+}
+
+async function applyGovernanceProfile() {
+  const selectEl = document.getElementById('setupGovernanceProfile');
+  if (!selectEl) return;
+  const profile = String(selectEl.value || 'team').toLowerCase();
+  try {
+    setSetupStatus(`Applying governance profile: ${profile}...`);
+    const data = await api('/api/governance/profile', {
+      method: 'POST',
+      body: JSON.stringify({ profile, force: true }),
+    });
+    state.governanceProfile = profile;
+    setSetupStatus(data.message || `Governance profile applied: ${profile}`);
+    await refreshGovernanceProfileStatus();
+  } catch (e) {
+    setSetupStatus(`Governance profile apply failed: ${e.message}`, true);
+  }
+}
+
+async function previewGovernanceProfile() {
+  const selectEl = document.getElementById('setupGovernanceProfile');
+  const previewEl = document.getElementById('governancePreviewStatus');
+  if (!selectEl || !previewEl) return;
+  const profile = String(selectEl.value || 'team').toLowerCase();
+  try {
+    previewEl.textContent = `Governance preview: loading ${profile}...`;
+    setSetupHintSeverity(previewEl, 'info');
+    const data = await api('/api/governance/profile/preview', {
+      method: 'POST',
+      body: JSON.stringify({ profile }),
+    });
+    const payload = data.data || {};
+    const currentCount = Number(payload.current?.rule_count || 0);
+    const previewCount = Number(payload.preview?.rule_count || 0);
+    const delta = Number(payload.delta_rule_count || 0);
+    const deltaLabel = delta > 0 ? `+${delta}` : `${delta}`;
+    previewEl.textContent = `Governance preview (${profile}): ${currentCount} -> ${previewCount} rules (delta ${deltaLabel})`;
+    setSetupHintSeverity(previewEl, profile === 'enterprise' ? 'warn' : 'info');
+    setSetupStatus(`Governance preview ready for ${profile}.`);
+  } catch (e) {
+    previewEl.textContent = `Governance preview failed: ${e.message}`;
+    setSetupHintSeverity(previewEl, 'critical');
+    setSetupStatus(`Governance preview failed: ${e.message}`, true);
+  }
+}
+
 function renderProviderOptions() {
   const select = document.getElementById('setupProvider');
   if (!state.providers.length) {
     select.innerHTML = '<option value="ollama">Ollama</option>';
     return;
   }
-  select.innerHTML = state.providers.map(provider => `
-    <option value="${escapeHtml(provider.name)}">${escapeHtml(provider.display_name || provider.name)}</option>
-  `).join('');
+  select.innerHTML = state.providers.map(provider => {
+    const readiness = getProviderReadiness(provider);
+    const marker = readiness.level === 'critical' ? '[KEY]' : (readiness.level === 'warn' ? '[WARN]' : '[OK]');
+    return `<option value="${escapeHtml(provider.name)}">${marker} ${escapeHtml(provider.display_name || provider.name)}</option>`;
+  }).join('');
 }
 
 function handleProviderChange(resetModel = true) {
@@ -2824,59 +3572,206 @@ function handleProviderChange(resetModel = true) {
   if (!provider) return;
   if (resetModel) {
     state.selectedModel = provider.models?.[0]?.id || 'custom';
-    document.getElementById('setupCustomModel').value = state.selectedModel;
   }
+  document.getElementById('setupModelInput').value = state.selectedModel || '';
   document.getElementById('setupBaseUrl').value = provider.base_url || provider.api_endpoint || '';
   document.getElementById('setupSummary').textContent =
     `${provider.display_name || provider.name}: ${provider.notes || 'Provider ready.'}`;
-  const customModel = document.getElementById('setupCustomModel');
-  const isCustomProvider = provider.name?.includes('compatible');
-  customModel.style.display = isCustomProvider ? 'block' : 'none';
+  autoFillFallbackModel(provider);
+  renderProviderHealthHint(provider);
   renderSetupModels();
+}
+
+function getProviderReadiness(provider) {
+  if (!provider) {
+    return { level: 'warn', needsApiKey: false, hasEnvKey: false, health: null };
+  }
+  const runtime = provider.runtime_provider || provider.name;
+  const health = state.providerHealthByName[runtime] || state.providerHealthByName[provider.name] || null;
+  const needsApiKey = provider.auth_type !== 'none';
+  const hasEnvKey = health ? Boolean(health.has_env_key) : false;
+  const level = provider.name !== 'ollama' && needsApiKey && !hasEnvKey
+    ? 'critical'
+    : ((needsApiKey && !hasEnvKey) ? 'warn' : 'info');
+  return { level, needsApiKey, hasEnvKey, health };
+}
+
+function autoFillFallbackModel(provider) {
+  const input = document.getElementById('setupFallbackModel');
+  if (!input || !provider) return;
+  const current = String(input.value || '').trim();
+  if (current) return;
+  const models = (provider.models || []).filter(m => m && m.id && m.id !== 'custom');
+  if (!models.length) return;
+  const primary = String(state.selectedModel || models[0].id);
+  const secondary = models.find(m => m.id !== primary);
+  input.value = secondary ? secondary.id : models[0].id;
+}
+
+function setSetupHintSeverity(element, severity) {
+  if (!element) return;
+  element.classList.remove('sev-info', 'sev-warn', 'sev-critical');
+  if (severity === 'critical') element.classList.add('sev-critical');
+  else if (severity === 'warn') element.classList.add('sev-warn');
+  else element.classList.add('sev-info');
+}
+
+function renderProviderHealthHint(provider) {
+  const healthEl = document.getElementById('setupProviderHealth');
+  const envEl = document.getElementById('setupProviderEnvHint');
+  if (!provider) {
+    if (healthEl) healthEl.textContent = 'Provider health: no provider selected.';
+    if (envEl) envEl.textContent = 'Env hint: no provider selected.';
+    setSetupHintSeverity(healthEl, 'warn');
+    setSetupHintSeverity(envEl, 'warn');
+    return;
+  }
+
+  const readiness = getProviderReadiness(provider);
+  const health = readiness.health;
+  const envVars = (provider.env_vars || []).filter(Boolean);
+  const hasEnvKey = readiness.hasEnvKey;
+  const needsApiKey = readiness.needsApiKey;
+  const severity = readiness.level;
+
+  if (healthEl) {
+    if (health) {
+      const readyLabel = health.ready ? 'ready' : 'needs key';
+      healthEl.textContent =
+        `Provider health: ${provider.display_name || provider.name} is ${readyLabel}. ` +
+        `Models: ${health.models_count ?? (provider.models || []).length}.`;
+    } else {
+      healthEl.textContent =
+        `Provider health: ${provider.display_name || provider.name}. ` +
+        `Models: ${(provider.models || []).length}.`;
+    }
+  }
+  setSetupHintSeverity(healthEl, severity);
+
+  if (envEl) {
+    if (!needsApiKey) {
+      envEl.textContent = 'Env hint: no API key required for this provider.';
+      setSetupHintSeverity(envEl, 'info');
+      return;
+    }
+    if (envVars.length === 0) {
+      envEl.textContent = 'Env hint: no canonical env var declared. You can still paste API key here.';
+      setSetupHintSeverity(envEl, 'warn');
+      return;
+    }
+    const missing = envVars;
+    if (hasEnvKey) {
+      envEl.textContent = `Env hint: detected key env. Preferred vars: ${missing.join(', ')}`;
+      setSetupHintSeverity(envEl, 'info');
+    } else {
+      envEl.textContent = `Env hint: set one of ${missing.join(', ')} or paste API key here.`;
+      setSetupHintSeverity(envEl, severity);
+    }
+  }
+}
+
+async function validateAllProviders() {
+  setSetupStatus('Validating provider readiness...');
+  await fetchProviderHealth();
+  renderProviderOptions();
+  const provider = getSelectedProvider();
+  if (provider) {
+    renderProviderHealthHint(provider);
+  }
+  const items = Object.values(state.providerHealthByName || {});
+  const total = items.length;
+  const ready = items.filter(x => x.ready).length;
+  const missing = items.filter(x => x.needs_api_key && !x.has_env_key).length;
+  const severity = missing > 0 ? 'warn' : 'info';
+  setSetupStatus(`Provider readiness: ${ready}/${total} ready${missing ? `, ${missing} need API keys` : ''}.`, severity === 'warn');
 }
 
 function renderSetupModels() {
   const provider = getSelectedProvider();
-  const picker = document.getElementById('setupModelPicker');
+  const options = document.getElementById('setupModelOptions');
+  const hint = document.getElementById('setupModelHint');
+  const input = document.getElementById('setupModelInput');
   if (!provider) {
-    picker.innerHTML = '<div class="empty-state"><div>No provider selected</div></div>';
+    if (options) options.innerHTML = '';
+    if (hint) hint.textContent = 'No provider selected.';
     return;
   }
-  const query = document.getElementById('setupModelSearch').value.trim().toLowerCase();
+  const query = (input?.value || '').trim().toLowerCase();
   const models = (provider.models || []).filter(model => {
     const haystack = `${model.id} ${model.name} ${model.description} ${model.tier} ${model.status}`.toLowerCase();
     return !query || haystack.includes(query);
   });
-  if (!models.length) {
-    picker.innerHTML = '<div class="empty-state"><div>No matching models</div></div>';
-    return;
+  if (options) {
+    options.innerHTML = models.map(model => {
+      const label = `${model.name || model.id} · ${model.id}`;
+      return `<option value="${escapeAttr(model.id)}" label="${escapeAttr(label)}"></option>`;
+    }).join('');
   }
-  picker.innerHTML = models.map(model => `
-    <div class="model-option ${model.id === state.selectedModel ? 'active' : ''}" onclick="selectSetupModel('${escapeAttr(model.id)}')">
-      <div class="model-name">${escapeHtml(model.name || model.id)}</div>
-      <div class="model-meta">${escapeHtml(model.id)} &middot; ${escapeHtml(model.tier || 'medium')} &middot; ${formatContext(model.context_window)}</div>
-    </div>
-  `).join('');
+  if (hint) {
+    const total = (provider.models || []).length;
+    const shown = models.length;
+    hint.textContent = shown === total
+      ? `${total} suggested models available. You can type any custom model id.`
+      : `${shown}/${total} suggestions match current input.`;
+  }
 }
 
 function selectSetupModel(modelId) {
   state.selectedModel = modelId;
-  document.getElementById('setupCustomModel').value = modelId;
+  document.getElementById('setupModelInput').value = modelId;
   renderSetupModels();
+}
+
+function validateBaseUrlInput(raw, providerName) {
+  const value = (raw || '').trim();
+  if (!value) return '';
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch (_e) {
+    throw new Error('Base URL must be a valid URL');
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new Error('Base URL protocol must be http or https');
+  }
+  if (providerName === 'ollama' && parsed.protocol !== 'http:') {
+    throw new Error('Ollama base URL should use http://');
+  }
+  return value.replace(/\/+$/, '');
+}
+
+function applySafeConfigPreset() {
+  const provider = getSelectedProvider();
+  if (!provider) {
+    setSetupStatus('Cannot apply safe config: provider is not selected.', true);
+    return;
+  }
+  document.getElementById('setupTemperature').value = '0.2';
+  document.getElementById('setupMaxTokens').value = '2048';
+  autoFillFallbackModel(provider);
+  const baseUrlInput = document.getElementById('setupBaseUrl');
+  if (!baseUrlInput.value.trim()) {
+    baseUrlInput.value = provider.base_url || provider.api_endpoint || '';
+  }
+  setSetupStatus(`Safe config applied for ${provider.display_name || provider.name} (temp=0.2, max_tokens=2048).`);
 }
 
 function buildSetupPayload(includeApiKey = true) {
   const provider = getSelectedProvider();
-  const customModel = document.getElementById('setupCustomModel').value.trim();
-  const model = customModel || state.selectedModel || provider?.models?.[0]?.id || 'custom';
-  const baseUrl = document.getElementById('setupBaseUrl').value.trim();
+  const modelValue = document.getElementById('setupModelInput').value.trim();
+  const model = modelValue || state.selectedModel || provider?.models?.[0]?.id || 'custom';
+  if (!model) {
+    throw new Error('Model is required');
+  }
+  state.selectedModel = model;
+  const baseUrl = validateBaseUrlInput(document.getElementById('setupBaseUrl').value, provider?.name || 'ollama');
   const payload = {
     llm: {
       provider: provider?.name || 'ollama',
       model,
       fallback_model: document.getElementById('setupFallbackModel').value.trim(),
       base_url: baseUrl,
-      ollama_url: provider?.name === 'ollama' ? (baseUrl || 'http://localhost:11434') : 'http://localhost:11434',
+      ollama_url: provider?.name === 'ollama' ? (baseUrl || 'http://localhost:11434') : '',
       temperature: Number(document.getElementById('setupTemperature').value || 0.7),
       max_tokens: Number(document.getElementById('setupMaxTokens').value || 4096),
     },
@@ -2891,16 +3786,21 @@ function buildSetupPayload(includeApiKey = true) {
 async function testSetupProvider() {
   try {
     setSetupStatus('Testing provider connection...');
+    const payload = buildSetupPayload(true);
     const data = await api('/api/config/test-llm', {
       method: 'POST',
-      body: JSON.stringify(buildSetupPayload(true)),
+      body: JSON.stringify(payload),
     });
     const result = data.data || {};
     if (result.connected) {
       const latency = result.latency_ms ? ` in ${result.latency_ms}ms` : '';
       setSetupStatus(`Provider test passed${latency}: ${result.provider}/${result.model}`);
     } else {
-      setSetupStatus(`Provider test failed (${result.error_type || 'unknown'}): ${result.error || 'No response'}`, true);
+      let detail = `Provider test failed (${result.error_type || 'unknown'}): ${result.error || 'No response'}`;
+      if (Array.isArray(result.remediation) && result.remediation.length) {
+        detail += ` | Fix: ${result.remediation.join(' ')}`;
+      }
+      setSetupStatus(detail, true);
     }
   } catch (e) {
     setSetupStatus(`Provider test failed: ${e.message}`, true);
@@ -2908,8 +3808,8 @@ async function testSetupProvider() {
 }
 
 async function saveSetupConfig() {
-  const payload = buildSetupPayload(true);
   try {
+    const payload = buildSetupPayload(true);
     setSetupStatus('Saving AI setup...');
     const data = await api('/api/config', {
       method: 'PUT',
@@ -2965,7 +3865,28 @@ function focusMetric(metricName) {
   state.ui.activeMetric = activeCard ? metricName : '';
   saveUIState();
   if (activeCard) {
+    const metricTabMap = {
+      agents: 'agents',
+      sessions: 'sessions',
+      skills: 'skills',
+      memory: 'memory',
+    };
+    const mappedTab = metricTabMap[metricName];
+    if (mappedTab) {
+      switchTab(mappedTab);
+      setActiveSidebarNav(metricName);
+      const controlPanel = document.getElementById('sidebarControlPanel');
+      if (controlPanel) controlPanel.open = true;
+    }
+  }
+  if (activeCard) {
     activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }
+}
+
+function logDebug(...args) {
+  if (state.debug) {
+    console.log(...args);
   }
 }
 
@@ -2978,7 +3899,7 @@ function connectWebSocket() {
   try {
     state.ws = new WebSocket(wsUrl);
     state.ws.onopen = () => {
-      console.log('WebSocket connected');
+      logDebug('WebSocket connected');
       const wsBadge = document.getElementById('statusText');
       if (wsBadge) wsBadge.textContent = 'Connected';
     };
@@ -2991,7 +3912,7 @@ function connectWebSocket() {
       }
     };
     state.ws.onclose = () => {
-      console.log('WebSocket disconnected, reconnecting in 5s...');
+      logDebug('WebSocket disconnected, reconnecting in 5s...');
       const wsBadge = document.getElementById('statusText');
       if (wsBadge) wsBadge.textContent = 'Disconnected';
       setTimeout(connectWebSocket, 5000);
@@ -3022,6 +3943,9 @@ function handleWsEvent(data) {
       break;
     case 'workflow_run':
       fetchWorkflows();
+      break;
+    case 'governance_profile':
+      refreshGovernanceProfileStatus();
       break;
     case 'steering':
       showNotification('Steering message sent');
@@ -3060,7 +3984,7 @@ function updateMetrics() {
   if (!state.health) return;
   const memoryInline = document.getElementById('metricMemoryInline');
   if (memoryInline && memoryInline.children.length === 0) {
-    memoryInline.innerHTML = `<div class="metric-inline-item">Uptime · ${formatUptime(state.health.uptime_seconds || 0)}</div>`;
+    memoryInline.innerHTML = `<div class="metric-inline-item">Uptime &middot; ${formatUptime(state.health.uptime_seconds || 0)}</div>`;
   }
 }
 
@@ -3088,9 +4012,14 @@ function switchTab(tabName, trigger = null) {
   saveUIState();
 }
 
-function handleSidebarNav(route, itemEl) {
+function setActiveSidebarNav(route) {
   document.querySelectorAll('.nav-sidebar .nav-item').forEach((node) => node.classList.remove('active'));
-  if (itemEl) itemEl.classList.add('active');
+  const item = document.querySelector(`.nav-sidebar .nav-item[data-nav="${route}"]`);
+  if (item) item.classList.add('active');
+}
+
+function handleSidebarNav(route, itemEl) {
+  setActiveSidebarNav(route);
 
   const controlPanel = document.getElementById('sidebarControlPanel');
   const governancePanel = document.getElementById('sidebarGovernance');
@@ -3103,7 +4032,12 @@ function handleSidebarNav(route, itemEl) {
       break;
     }
     case 'agents':
+      switchTab('agents');
       focusMetric('agents');
+      break;
+    case 'sessions':
+      switchTab('sessions');
+      focusMetric('sessions');
       break;
     case 'skills':
       switchTab('skills');
@@ -3129,6 +4063,414 @@ function handleSidebarNav(route, itemEl) {
   }
 }
 
+function handleWorkspaceChange() {
+  const select = document.getElementById('workspaceSelect');
+  state.workspace = String(select?.value || 'main').toLowerCase();
+  saveUIState();
+  const hint = document.getElementById('chatHint');
+  if (hint) hint.textContent = `Workspace: ${state.workspace}`;
+  refreshAll();
+}
+
+function clearSearchHighlights() {
+  document.querySelectorAll('.search-hit').forEach((node) => node.classList.remove('search-hit'));
+}
+
+function closeSearchPanel() {
+  const panel = document.getElementById('globalSearchPanel');
+  if (panel) {
+    panel.classList.remove('open');
+    panel.innerHTML = '';
+  }
+  state.searchResults = [];
+  state.searchActiveIndex = -1;
+}
+
+function renderSearchPanel() {
+  const panel = document.getElementById('globalSearchPanel');
+  if (!panel) return;
+  if (!state.searchResults.length) {
+    closeSearchPanel();
+    return;
+  }
+  panel.classList.add('open');
+  let html = '';
+  let lastGroup = '';
+  state.searchResults.forEach((item, idx) => {
+    const group = item.group || 'results';
+    if (group !== lastGroup) {
+      html += `<div class="search-panel-group">${escapeHtml(group)}</div>`;
+      lastGroup = group;
+    }
+    html += `
+      <div class="search-panel-item ${idx === state.searchActiveIndex ? 'active' : ''}" data-search-index="${idx}" onclick="executeSearchResult(${idx})">
+        <span>${escapeHtml(item.label)}</span>
+        <span class="meta">${escapeHtml(item.meta || '')}</span>
+      </div>
+    `;
+  });
+  panel.innerHTML = html;
+}
+
+function executeSearchResult(index) {
+  const result = state.searchResults[index];
+  if (!result) return;
+  if (result.type === 'action') {
+    if (result.action === 'refreshAll') refreshAll();
+    else if (result.action === 'openSettings') openSettings();
+    else if (result.action === 'switchTabSetup') switchTab('setup');
+    else if (result.action === 'validateProviders') validateAllProviders();
+    else if (result.action === 'smokeOps') runOpsSmokeCheck();
+    else if (result.action === 'toggleSidebar') toggleSidebar();
+  }
+  if (result.type === 'route') {
+    const navItem = document.querySelector(`.nav-sidebar .nav-item[data-nav="${result.route}"]`);
+    handleSidebarNav(result.route, navItem);
+  }
+  if (result.type === 'node' && result.node) {
+    result.node.classList.add('search-hit');
+    result.node.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  if (result.type === 'agent') {
+    if (result.agentId) {
+      handleSidebarNav('agents', document.querySelector('.nav-sidebar .nav-item[data-nav="agents"]'));
+      promptDelegateTask(result.agentId);
+    }
+  }
+  if (result.type === 'session') {
+    if (result.sessionId) {
+      handleSidebarNav('sessions', document.querySelector('.nav-sidebar .nav-item[data-nav="sessions"]'));
+      useSession(result.sessionId);
+      inspectSession(result.sessionId);
+    }
+  }
+  if (result.type === 'provider') {
+    if (result.providerName) {
+      switchTab('setup');
+      const select = document.getElementById('setupProvider');
+      if (select) {
+        select.value = result.providerName;
+        handleProviderChange();
+      }
+    }
+  }
+  if (result.type === 'workflow' && result.workflowId) {
+    handleSidebarNav('flows', document.querySelector('.nav-sidebar .nav-item[data-nav="flows"]'));
+    runWorkflowFromUI(result.workflowId);
+  }
+  if (result.type === 'plugin' && result.pluginId) {
+    handleSidebarNav('plugins', document.querySelector('.nav-sidebar .nav-item[data-nav="plugins"]'));
+    const plugin = (state.plugins || []).find((p) => String(p.id || '') === String(result.pluginId));
+    if (plugin) {
+      appendChatMessage(
+        'assistant',
+        `Plugin: ${plugin.name || plugin.id} | version: ${plugin.version || '0.0.0'} | ${plugin.enabled ? 'enabled' : 'disabled'}`
+      );
+    }
+  }
+  if (result.type === 'memory_search') {
+    handleSidebarNav('memory', document.querySelector('.nav-sidebar .nav-item[data-nav="memory"]'));
+    if (result.query) {
+      const input = document.getElementById('memorySearchInput');
+      if (input) input.value = result.query;
+      searchMemory();
+    }
+  }
+  if (result.type === 'approval_action') {
+    handleSidebarNav('governance', document.querySelector('.nav-sidebar .nav-item[data-nav="governance"]'));
+    if (!result.decision || result.decision === 'list') {
+      appendChatMessage('assistant', `Pending approvals: ${(state.approvals || []).length}`);
+    } else if (result.decision === 'all') {
+      approveAllPending();
+    } else if (result.decision === 'high') {
+      approveHighRiskOnly();
+    } else {
+      appendChatMessage('assistant', 'Usage: /approve list | /approve high | /approve all');
+    }
+  }
+  if (result.type === 'audit_filter') {
+    handleSidebarNav('governance', document.querySelector('.nav-sidebar .nav-item[data-nav="governance"]'));
+    filterAuditByKeyword(result.query || '');
+  }
+  closeSearchPanel();
+}
+
+function handleSearchKeydown(event) {
+  const panelOpen = document.getElementById('globalSearchPanel')?.classList.contains('open');
+  if (!panelOpen) {
+    if (event.key === 'Escape') {
+      clearSearchHighlights();
+      closeSearchPanel();
+    }
+    return;
+  }
+  if (event.key === 'ArrowDown') {
+    event.preventDefault();
+    state.searchActiveIndex = Math.min(state.searchResults.length - 1, state.searchActiveIndex + 1);
+    renderSearchPanel();
+    return;
+  }
+  if (event.key === 'ArrowUp') {
+    event.preventDefault();
+    state.searchActiveIndex = Math.max(0, state.searchActiveIndex - 1);
+    renderSearchPanel();
+    return;
+  }
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    const idx = state.searchActiveIndex >= 0 ? state.searchActiveIndex : 0;
+    executeSearchResult(idx);
+    return;
+  }
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    clearSearchHighlights();
+    closeSearchPanel();
+  }
+}
+
+function handleGlobalSearch() {
+  const input = document.getElementById('globalSearch');
+  const term = String(input?.value || '').trim().toLowerCase();
+  clearSearchHighlights();
+  if (!term) {
+    showQuickActions();
+    return;
+  }
+
+  const scopedResults = buildScopedSearchResults(term);
+  if (scopedResults) {
+    state.searchResults = scopedResults.slice(0, 25);
+    state.searchActiveIndex = state.searchResults.length ? 0 : -1;
+    renderSearchPanel();
+    return;
+  }
+
+  const quickActions = [
+    { type: 'action', action: 'refreshAll', label: 'Refresh all data', meta: 'Ctrl+R', group: 'actions' },
+    { type: 'action', action: 'openSettings', label: 'Open settings', meta: 'modal', group: 'actions' },
+    { type: 'action', action: 'switchTabSetup', label: 'Go to setup tab', meta: 'config', group: 'actions' },
+    { type: 'action', action: 'validateProviders', label: 'Validate all providers', meta: 'setup', group: 'actions' },
+    { type: 'action', action: 'smokeOps', label: 'Run ops smoke check', meta: '/smoke', group: 'actions' },
+    { type: 'action', action: 'toggleSidebar', label: 'Toggle sidebar', meta: 'layout', group: 'actions' },
+  ].filter((item) => `${item.label} ${item.meta}`.toLowerCase().includes(term));
+
+  const routeMap = [
+    ['agent', 'agents'],
+    ['session', 'sessions'],
+    ['skill', 'skills'],
+    ['memory', 'memory'],
+    ['flow', 'flows'],
+    ['plugin', 'plugins'],
+    ['config', 'config'],
+    ['govern', 'governance'],
+    ['setup', 'config'],
+    ['chat', 'chat'],
+  ];
+  const routeHits = routeMap
+    .filter(([keyword]) => term.includes(keyword))
+    .map(([keyword, route]) => ({
+      type: 'route',
+      route,
+      label: `Go to ${route}`,
+      meta: `keyword: ${keyword}`,
+      group: 'navigation',
+    }));
+
+  const candidates = Array.from(document.querySelectorAll(
+    '.metric-card, .approval-item, .memory-entry, .workflow-card, .channel-item, .chat-message, .nav-item, .tab'
+  ));
+  const nodeHits = candidates
+    .filter((node) => node.textContent?.toLowerCase().includes(term))
+    .slice(0, 25)
+    .map((node) => {
+      const label = (node.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 90);
+      return { type: 'node', node, label, meta: node.className || 'node', group: 'results' };
+    });
+
+  nodeHits.forEach((entry) => entry.node.classList.add('search-hit'));
+  state.searchResults = [...quickActions, ...routeHits, ...nodeHits].slice(0, 25);
+  state.searchActiveIndex = state.searchResults.length ? 0 : -1;
+
+  if (routeHits.length === 1 && nodeHits.length === 0) {
+    executeSearchResult(0);
+    return;
+  }
+  renderSearchPanel();
+}
+
+function buildScopedSearchResults(term) {
+  if (!term.startsWith('/')) return null;
+  const raw = term.slice(1).trim();
+  if (!raw) return [
+    { type: 'action', action: 'switchTabSetup', label: '/provider', meta: 'list providers', group: 'scoped commands' },
+    { type: 'route', route: 'agents', label: '/agent', meta: 'list agents', group: 'scoped commands' },
+    { type: 'route', route: 'sessions', label: '/session', meta: 'list sessions', group: 'scoped commands' },
+    { type: 'route', route: 'flows', label: '/flow', meta: 'list workflows', group: 'scoped commands' },
+    { type: 'route', route: 'plugins', label: '/plugin', meta: 'list plugins', group: 'scoped commands' },
+    { type: 'route', route: 'memory', label: '/memory', meta: 'search memory', group: 'scoped commands' },
+    { type: 'route', route: 'governance', label: '/approve', meta: 'approval actions', group: 'scoped commands' },
+    { type: 'route', route: 'governance', label: '/audit', meta: 'audit filter', group: 'scoped commands' },
+  ];
+
+  const [scope, ...rest] = raw.split(/\s+/);
+  const q = rest.join(' ').trim();
+
+  if (scope === 'agent') {
+    return (state.agents || [])
+      .filter((a) => {
+        const hay = `${a.id || ''} ${a.name || ''} ${a.role || ''} ${a.status || ''}`.toLowerCase();
+        return !q || hay.includes(q);
+      })
+      .slice(0, 25)
+      .map((a) => ({
+        type: 'agent',
+        agentId: a.id,
+        label: `Assign task: ${a.name || a.id}`,
+        meta: `${a.role || 'worker'} · ${a.status || 'idle'}`,
+        group: 'agents',
+      }));
+  }
+
+  if (scope === 'session') {
+    return (state.sessions || [])
+      .filter((s) => {
+        const hay = `${s.id || ''} ${s.state || ''} ${s.isolation_mode || ''}`.toLowerCase();
+        return !q || hay.includes(q);
+      })
+      .slice(0, 25)
+      .map((s) => ({
+        type: 'session',
+        sessionId: s.id,
+        label: `Use session: ${s.id || 'session'}`,
+        meta: `${s.state || 'active'} · ${Number(s.message_count || 0)} messages`,
+        group: 'sessions',
+      }));
+  }
+
+  if (scope === 'provider') {
+    return (state.providers || [])
+      .filter((p) => {
+        const hay = `${p.name || ''} ${p.display_name || ''} ${p.category || ''} ${p.notes || ''}`.toLowerCase();
+        return !q || hay.includes(q);
+      })
+      .slice(0, 25)
+      .map((p) => ({
+        type: 'provider',
+        providerName: p.name,
+        label: `Switch provider: ${p.display_name || p.name}`,
+        meta: `${p.category || 'provider'}${p.default_fallback_model ? ` · fallback ${p.default_fallback_model}` : ''}`,
+        group: 'providers',
+      }));
+  }
+
+  if (scope === 'flow') {
+    return (state.workflows || [])
+      .filter((w) => {
+        const hay = `${w.id || ''} ${w.name || ''} ${w.status || ''}`.toLowerCase();
+        return !q || hay.includes(q);
+      })
+      .slice(0, 25)
+      .map((w) => ({
+        type: 'workflow',
+        workflowId: w.id,
+        label: `Run flow: ${w.name || w.id}`,
+        meta: `${w.status || 'idle'} | ${Number(w.steps || 0)} steps`,
+        group: 'flows',
+      }));
+  }
+
+  if (scope === 'plugin') {
+    return (state.plugins || [])
+      .filter((p) => {
+        const hay = `${p.id || ''} ${p.name || ''} ${p.version || ''}`.toLowerCase();
+        return !q || hay.includes(q);
+      })
+      .slice(0, 25)
+      .map((p) => ({
+        type: 'plugin',
+        pluginId: p.id,
+        label: `Plugin: ${p.name || p.id}`,
+        meta: `v${p.version || '0.0.0'} | ${p.enabled ? 'enabled' : 'disabled'}`,
+        group: 'plugins',
+      }));
+  }
+
+  if (scope === 'memory') {
+    return [{
+      type: 'memory_search',
+      query: q,
+      label: q ? `Search memory: "${q}"` : 'Open memory',
+      meta: q ? 'execute recall' : 'memory panel',
+      group: 'memory',
+    }];
+  }
+
+  if (scope === 'approve') {
+    const suffix = q || 'list';
+    return [{
+      type: 'approval_action',
+      decision: suffix,
+      label: `/approve ${suffix}`,
+      meta: 'list | high | all',
+      group: 'governance',
+    }];
+  }
+
+  if (scope === 'audit') {
+    return [{
+      type: 'audit_filter',
+      query: q,
+      label: q ? `Filter audit: "${q}"` : 'Show all audit entries',
+      meta: 'governance',
+      group: 'governance',
+    }];
+  }
+
+  return [{
+    type: 'action',
+    action: 'openSettings',
+    label: `Unknown scope "/${scope}"`,
+    meta: 'Try /agent, /session, /provider, /flow, /plugin, /memory, /approve, /audit',
+    group: 'scoped commands',
+  }];
+}
+
+function showQuickActions() {
+  clearSearchHighlights();
+  state.searchResults = [
+    { type: 'action', action: 'refreshAll', label: 'Refresh all data', meta: 'Ctrl+R', group: 'actions' },
+    { type: 'action', action: 'openSettings', label: 'Open settings', meta: 'modal', group: 'actions' },
+    { type: 'action', action: 'switchTabSetup', label: 'Go to setup tab', meta: 'config', group: 'actions' },
+    { type: 'action', action: 'validateProviders', label: 'Validate all providers', meta: 'setup', group: 'actions' },
+    { type: 'action', action: 'toggleSidebar', label: 'Toggle sidebar', meta: 'layout', group: 'actions' },
+    { type: 'route', route: 'agents', label: 'Go to agents', meta: 'navigation', group: 'navigation' },
+    { type: 'route', route: 'sessions', label: 'Go to sessions', meta: 'navigation', group: 'navigation' },
+    { type: 'route', route: 'governance', label: 'Go to governance', meta: 'navigation', group: 'navigation' },
+  ];
+  state.searchActiveIndex = 0;
+  renderSearchPanel();
+}
+
+function runOpsSmokeCheck() {
+  const checks = [
+    { name: 'Provider catalog loaded', ok: Array.isArray(state.providers) && state.providers.length > 0 },
+    { name: 'Plugins loaded', ok: Array.isArray(state.plugins) },
+    { name: 'Governance wired', ok: Array.isArray(state.approvals) && Array.isArray(state.auditEntries) },
+    { name: 'Workspace selector mounted', ok: Boolean(document.getElementById('workspaceSelect')) },
+    { name: 'Audit controls mounted', ok: Boolean(document.getElementById('auditSearchInput')) && Boolean(document.getElementById('auditChipCritical')) },
+  ];
+  const failed = checks.filter((c) => !c.ok);
+  if (!failed.length) {
+    showNotification('Ops smoke check passed');
+    appendChatMessage('assistant', 'Ops smoke check passed. Core dashboard wiring is healthy.');
+    return;
+  }
+  const msg = `Ops smoke warning: ${failed.map((f) => f.name).join(', ')}`;
+  showNotification(msg);
+  appendChatMessage('assistant', msg);
+}
+
 // -- Settings ---------------------------------------------------------------
 function openSettings() {
   document.getElementById('settingsModal').classList.add('active');
@@ -3136,6 +4478,11 @@ function openSettings() {
   document.getElementById('settingsApiKey').value = state.apiKey;
   document.getElementById('settingsAutoRefresh').checked = state.autoRefresh;
   document.getElementById('settingsWebSocket').checked = state.useWebSocket;
+  const notifyToggle = document.getElementById('settingsNotifications');
+  if (notifyToggle) {
+    notifyToggle.checked = Notification.permission === 'granted';
+  }
+  updateNotificationPermissionStatus();
 }
 
 function closeSettings() {
@@ -3147,6 +4494,7 @@ function saveSettings() {
   state.apiKey = document.getElementById('settingsApiKey').value;
   state.autoRefresh = document.getElementById('settingsAutoRefresh').checked;
   state.useWebSocket = document.getElementById('settingsWebSocket').checked;
+  const notifyEnabled = document.getElementById('settingsNotifications')?.checked;
 
   localStorage.setItem('neugi_settings', JSON.stringify({
     baseUrl: state.baseUrl || dashboardOrigin(),
@@ -3154,6 +4502,12 @@ function saveSettings() {
     autoRefresh: state.autoRefresh,
     useWebSocket: state.useWebSocket,
   }));
+
+  if (notifyEnabled && 'Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission().finally(updateNotificationPermissionStatus);
+  } else {
+    updateNotificationPermissionStatus();
+  }
 
   closeSettings();
   refreshAll();
@@ -3164,6 +4518,19 @@ function saveSettings() {
   }
 
   setupAutoRefresh();
+}
+
+function updateNotificationPermissionStatus() {
+  const el = document.getElementById('settingsNotificationStatus');
+  if (!el || !('Notification' in window)) return;
+  const p = Notification.permission;
+  if (p === 'granted') {
+    el.textContent = 'Permission: granted';
+  } else if (p === 'denied') {
+    el.textContent = 'Permission: denied (enable in browser settings)';
+  } else {
+    el.textContent = 'Permission: default (will ask on save if enabled)';
+  }
 }
 
 function loadSettings() {
@@ -3228,7 +4595,12 @@ function formatTime(timestamp) {
 }
 
 function saveUIState() {
-  localStorage.setItem('neugi_ui_state', JSON.stringify(state.ui));
+  localStorage.setItem('neugi_ui_state', JSON.stringify({
+    ...state.ui,
+    workspace: state.workspace,
+    auditFilterKeyword: state.auditFilterKeyword,
+    auditFilterLevel: state.auditFilterLevel,
+  }));
 }
 
 function loadUIState() {
@@ -3238,7 +4610,12 @@ function loadUIState() {
       activeMetric: saved.activeMetric || '',
       activeTab: saved.activeTab || 'setup',
       sidebarCollapsed: Boolean(saved.sidebarCollapsed),
+      auditFilterKeyword: String(saved.auditFilterKeyword || ''),
+      auditFilterLevel: String(saved.auditFilterLevel || 'all'),
     };
+    state.workspace = saved.workspace || 'main';
+    state.auditFilterKeyword = state.ui.auditFilterKeyword;
+    state.auditFilterLevel = state.ui.auditFilterLevel;
   } catch (e) {
     console.warn('Failed to load UI state:', e);
   }
@@ -3254,6 +4631,15 @@ function applyUIState() {
   if (state.ui.activeMetric) {
     focusMetric(state.ui.activeMetric);
   }
+  const ws = document.getElementById('workspaceSelect');
+  if (ws) {
+    ws.value = state.workspace === 'workspace' ? 'workspace' : 'main';
+  }
+  const auditInput = document.getElementById('auditSearchInput');
+  if (auditInput) {
+    auditInput.value = state.auditFilterKeyword || '';
+  }
+  syncAuditChipState();
 }
 
 function formatContext(tokens) {
@@ -3274,9 +4660,41 @@ function escapeAttr(text) {
 }
 
 function showNotification(message) {
-  if (document.getElementById('settingsNotifications').checked && 'Notification' in window) {
-    new Notification('NEUGI Dashboard', { body: message });
+  const text = String(message || '');
+  const severity = inferMessageSeverity(text);
+  pushToast(text, severity);
+  if (
+    document.getElementById('settingsNotifications').checked &&
+    'Notification' in window &&
+    Notification.permission === 'granted'
+  ) {
+    new Notification('NEUGI Dashboard', { body: text });
   }
+}
+
+function inferMessageSeverity(text) {
+  const t = String(text || '').toLowerCase();
+  if (t.includes('failed') || t.includes('error') || t.includes('critical') || t.includes('denied')) {
+    return 'critical';
+  }
+  if (t.includes('warn') || t.includes('fallback') || t.includes('degraded')) {
+    return 'warn';
+  }
+  return 'info';
+}
+
+function pushToast(message, severity = 'info') {
+  const stack = document.getElementById('toastStack');
+  if (!stack || !message) return;
+  const toast = document.createElement('div');
+  toast.className = `toast-item ${severity}`;
+  toast.textContent = String(message);
+  stack.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('show'));
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 180);
+  }, 3200);
 }
 
 // -- Init -------------------------------------------------------------------
@@ -3303,10 +4721,26 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target === e.currentTarget) closeSettings();
   });
 
+  document.getElementById('globalSearch')?.addEventListener('input', handleGlobalSearch);
+  document.getElementById('globalSearch')?.addEventListener('focus', showQuickActions);
+  document.getElementById('globalSearch')?.addEventListener('keydown', handleSearchKeydown);
+  document.getElementById('workspaceSelect')?.addEventListener('change', handleWorkspaceChange);
+  document.getElementById('settingsNotifications')?.addEventListener('change', updateNotificationPermissionStatus);
+  updateNotificationPermissionStatus();
+  document.addEventListener('click', (e) => {
+    const center = document.querySelector('.header-center');
+    if (center && !center.contains(e.target)) {
+      closeSearchPanel();
+      clearSearchHighlights();
+    }
+  });
+
   // Keyboard shortcut
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeSettings();
+      closeSearchPanel();
+      clearSearchHighlights();
       if (state.ui.activeMetric) focusMetric(state.ui.activeMetric);
     }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
@@ -3317,8 +4751,8 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       refreshAll();
     }
-    if (!e.ctrlKey && !e.metaKey && !e.altKey && /^[1-7]$/.test(e.key)) {
-      const map = ['chat', 'agents', 'skills', 'memory', 'flows', 'plugins', 'config'];
+    if (!e.ctrlKey && !e.metaKey && !e.altKey && /^[1-8]$/.test(e.key)) {
+      const map = ['chat', 'agents', 'sessions', 'skills', 'memory', 'flows', 'plugins', 'config'];
       const route = map[Number(e.key) - 1];
       const item = document.querySelector(`.nav-sidebar .nav-item[data-nav="${route}"]`);
       if (route && item) {
@@ -3327,7 +4761,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     if (!e.ctrlKey && !e.metaKey && !e.altKey && (e.key === '[' || e.key === ']')) {
-      const order = ['setup', 'skills', 'memory', 'channels', 'workflows', 'plugins'];
+      const order = ['setup', 'agents', 'sessions', 'skills', 'memory', 'channels', 'workflows', 'plugins'];
       const current = state.ui.activeTab || 'setup';
       let idx = order.indexOf(current);
       if (idx < 0) idx = 0;
@@ -3335,8 +4769,15 @@ document.addEventListener('DOMContentLoaded', () => {
       switchTab(order[idx]);
       e.preventDefault();
     }
+    if (e.altKey && !e.ctrlKey && !e.metaKey) {
+      if (e.key === '1') { e.preventDefault(); handleSidebarNav('governance', document.querySelector('.nav-sidebar .nav-item[data-nav="governance"]')); setAuditLevel('all'); }
+      if (e.key === '2') { e.preventDefault(); handleSidebarNav('governance', document.querySelector('.nav-sidebar .nav-item[data-nav="governance"]')); setAuditLevel('info'); }
+      if (e.key === '3') { e.preventDefault(); handleSidebarNav('governance', document.querySelector('.nav-sidebar .nav-item[data-nav="governance"]')); setAuditLevel('warn'); }
+      if (e.key === '4') { e.preventDefault(); handleSidebarNav('governance', document.querySelector('.nav-sidebar .nav-item[data-nav="governance"]')); setAuditLevel('critical'); }
+    }
   });
 });
 </script>
 </body>
 </html>
+

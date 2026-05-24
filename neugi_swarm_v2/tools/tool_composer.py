@@ -203,7 +203,6 @@ class ToolComposer:
 
         if composition_type == CompositionType.SEQUENTIAL:
             for i, tool in enumerate(tool_names):
-                connector = "  │" if i < len(tool_names) - 1 else "  "
                 lines.append(f"  ▼ [{tool}]")
                 if i < len(tool_names) - 1:
                     lines.append("  │")
@@ -290,7 +289,7 @@ class SequentialComposer(ToolComposer):
         self.validate_composition(name, tool_names, CompositionType.SEQUENTIAL)
 
         def sequential_func(**kwargs) -> dict[str, Any]:
-            results = {}
+            results: dict[str, Any] = {}
             step_results = []
 
             for tool_name in tool_names:
@@ -602,7 +601,7 @@ class LoopComposer(ToolComposer):
         self.validate_composition(name, tool_names, CompositionType.LOOP)
 
         def loop_func(**kwargs) -> dict[str, Any]:
-            all_results = []
+            all_results: list[Any] = []
             iteration = 0
             last_result = None
 

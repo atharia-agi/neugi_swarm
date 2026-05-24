@@ -6,9 +6,9 @@ JSON-RPC 2.0 compatible message types for MCP protocol.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any, Optional
 import json
+from dataclasses import dataclass, field
+from typing import Any
 
 
 class JSONRPCMessage:
@@ -24,7 +24,7 @@ class JSONRPCMessage:
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_dict(cls, data: dict) -> "JSONRPCMessage":
+    def from_dict(cls, data: dict) -> JSONRPCMessage:
         return cls(jsonrpc=data.get("jsonrpc", "2.0"))
 
 
@@ -32,8 +32,8 @@ class JSONRPCMessage:
 class RequestMessage(JSONRPCMessage):
     """JSON-RPC request message."""
     method: str = ""
-    params: Optional[dict] = None
-    id: Optional[str | int] = None
+    params: dict | None = None
+    id: str | int | None = None
 
     def to_dict(self) -> dict:
         d = super().to_dict()
@@ -49,9 +49,9 @@ class RequestMessage(JSONRPCMessage):
 @dataclass
 class ResponseMessage(JSONRPCMessage):
     """JSON-RPC response message."""
-    result: Optional[Any] = None
-    error: Optional[dict] = None
-    id: Optional[str | int] = None
+    result: Any | None = None
+    error: dict | None = None
+    id: str | int | None = None
 
     def to_dict(self) -> dict:
         d = super().to_dict()
@@ -67,7 +67,7 @@ class ResponseMessage(JSONRPCMessage):
 class NotificationMessage(JSONRPCMessage):
     """JSON-RPC notification (no response expected)."""
     method: str = ""
-    params: Optional[dict] = None
+    params: dict | None = None
 
     def to_dict(self) -> dict:
         d = super().to_dict()
@@ -98,9 +98,9 @@ class InitializeParams:
     """Parameters for initialize request."""
     protocol_version: str = "2024-11-05"
     capabilities: dict = field(default_factory=dict)
-    client_info: Optional[dict] = None
-    root_uri: Optional[str] = None
-    process_id: Optional[int] = None
+    client_info: dict | None = None
+    root_uri: str | None = None
+    process_id: int | None = None
 
 
 @dataclass
@@ -108,7 +108,7 @@ class InitializeResult:
     """Result from initialize request."""
     protocol_version: str = "2024-11-05"
     capabilities: dict = field(default_factory=dict)
-    server_info: Optional[dict] = None
+    server_info: dict | None = None
 
     def to_dict(self) -> dict:
         return {
@@ -122,10 +122,10 @@ class InitializeResult:
 class ListToolsResult:
     """Result listing available tools."""
     tools: list[dict] = field(default_factory=list)
-    next_cursor: Optional[str] = None
+    next_cursor: str | None = None
 
-    def to_dict(self) -> dict:
-        d = {"tools": self.tools}
+    def to_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {"tools": self.tools}
         if self.next_cursor:
             d["nextCursor"] = self.next_cursor
         return d
@@ -148,10 +148,10 @@ class CallToolResult:
 class ListResourcesResult:
     """Result listing available resources."""
     resources: list[dict] = field(default_factory=list)
-    next_cursor: Optional[str] = None
+    next_cursor: str | None = None
 
-    def to_dict(self) -> dict:
-        d = {"resources": self.resources}
+    def to_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {"resources": self.resources}
         if self.next_cursor:
             d["nextCursor"] = self.next_cursor
         return d
@@ -170,10 +170,10 @@ class ReadResourceResult:
 class ListPromptsResult:
     """Result listing available prompts."""
     prompts: list[dict] = field(default_factory=list)
-    next_cursor: Optional[str] = None
+    next_cursor: str | None = None
 
-    def to_dict(self) -> dict:
-        d = {"prompts": self.prompts}
+    def to_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {"prompts": self.prompts}
         if self.next_cursor:
             d["nextCursor"] = self.next_cursor
         return d

@@ -158,7 +158,7 @@ class ScopePath:
     def common_ancestor(self, other: ScopePath) -> ScopePath:
         """Return the deepest common ancestor of two scope paths."""
         common: list[str] = []
-        for a, b in zip(self.parts, other.parts):
+        for a, b in zip(self.parts, other.parts, strict=False):
             if a == b:
                 common.append(a)
             else:

@@ -232,7 +232,7 @@ def compute_relevance(
     tag_score = 0.0
     if tags:
         tag_weights = tag_weights or {}
-        matched_tags = 0
+        matched_tags: float = 0
         total_weight = 0.0
         for tag in tags:
             tag_lower = tag.lower()

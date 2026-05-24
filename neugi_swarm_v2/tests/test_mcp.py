@@ -8,57 +8,49 @@ SSE forwarder, and A2A adapter.
 from __future__ import annotations
 
 import asyncio
-import json
 import os
 import sys
 import tempfile
-import time
-import uuid
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
 # Ensure package root is importable
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from neugi_swarm_v2.mcp.messages import (
-    CallToolResult,
-    InitializeResult,
-    ListResourcesResult,
-    ListToolsResult,
-    RequestMessage,
-    ResponseMessage,
-    NotificationMessage,
-    GetPromptResult,
-    ListPromptsResult,
-)
-from neugi_swarm_v2.mcp.tool_manager import ToolManager
-from neugi_swarm_v2.mcp.resource_manager import ResourceManager
-from neugi_swarm_v2.mcp.prompt_manager import PromptManager, PromptTemplate
-from neugi_swarm_v2.mcp.server import MCPServer
-from neugi_swarm_v2.mcp.transport import (
-    BaseTransport,
-    StdioTransport,
-    HTTPTransport,
-    HTTPConnection,
-    SSEConnection,
-    RateLimiter,
-    SSEAuth,
-    TransportError,
-)
 from neugi_swarm_v2.mcp.checkpoint import (
-    CheckpointStore,
     CheckpointData,
-    ExecutionThread,
+    CheckpointStore,
     ResilientMCPExecutor,
 )
+from neugi_swarm_v2.mcp.messages import (
+    CallToolResult,
+    GetPromptResult,
+    InitializeResult,
+    ListPromptsResult,
+    ListResourcesResult,
+    ListToolsResult,
+    NotificationMessage,
+    RequestMessage,
+    ResponseMessage,
+)
+from neugi_swarm_v2.mcp.prompt_manager import PromptManager
+from neugi_swarm_v2.mcp.resource_manager import ResourceManager
+from neugi_swarm_v2.mcp.server import MCPServer
 from neugi_swarm_v2.mcp.sse_forwarder import (
     SSEEventForwarder,
     get_sse_forwarder,
     setup_sse_forwarding,
 )
-
+from neugi_swarm_v2.mcp.tool_manager import ToolManager
+from neugi_swarm_v2.mcp.transport import (
+    HTTPTransport,
+    RateLimiter,
+    SSEAuth,
+    SSEConnection,
+    StdioTransport,
+)
 
 # =============================================================================
 # ToolManager Tests
@@ -783,7 +775,7 @@ class TestExecutionThread:
 
     def test_current_state(self):
         thread = self.store.create_thread("state-test")
-        cp = thread.checkpoint({"progress": 50})
+        thread.checkpoint({"progress": 50})
         state = thread.current_state
         assert "progress" in state
         assert state["progress"] == 50

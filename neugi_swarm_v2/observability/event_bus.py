@@ -14,10 +14,11 @@ import json
 import sqlite3
 import threading
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 
 @dataclass
@@ -26,59 +27,59 @@ class Event:
     name: str
     payload: Any = None
     timestamp: datetime = field(default_factory=datetime.now)
-    source: Optional[str] = None
+    source: str | None = None
 
 
 class EventBus:
     """
     A simple thread-safe event bus with optional SQLite persistence.
-    
+
     Example:
         bus = EventBus()
-        
+
         def handler(event):
             print(f"Received {event.name}: {event.payload}")
-            
+
         bus.subscribe("tool_call", handler)
         bus.publish("tool_call", {"tool": "web_search", "query": "hello"})
     """
-    
-    def __init__(self, max_history: int = 1000, persist_path: Optional[str] = None):
-        self._subscribers: Dict[str, List[Callable[[Event], None]]] = defaultdict(list)
-        self._middleware: List[Callable[[Event], None]] = []
-        self._history: List[Event] = []
+
+    def __init__(self, max_history: int = 1000, persist_path: str | None = None):
+        self._subscribers: dict[str, list[Callable[[Event], None]]] = defaultdict(list)
+        self._middleware: list[Callable[[Event], None]] = []
+        self._history: list[Event] = []
         self._max_history = max_history
         self._lock = threading.RLock()
-        self._persist_path: Optional[str] = persist_path
-        self._db_conn: Optional[sqlite3.Connection] = None
+        self._persist_path: str | None = persist_path
+        self._db_conn: sqlite3.Connection | None = None
         if persist_path:
             self._init_persistence()
-    
+
     def subscribe(self, event_name: str, callback: Callable[[Event], None]) -> None:
         """
         Subscribe to an event.
-        
+
         Args:
             event_name: The name of the event to subscribe to.
             callback: A function that takes an Event object.
         """
         with self._lock:
             self._subscribers[event_name].append(callback)
-    
+
     def add_middleware(self, middleware: Callable[[Event], None]) -> None:
         """
         Add middleware that will be called for every published event.
-        
+
         Args:
             middleware: A function that takes an Event object.
         """
         with self._lock:
             self._middleware.append(middleware)
-    
+
     def unsubscribe(self, event_name: str, callback: Callable[[Event], None]) -> None:
         """
         Unsubscribe from an event.
-        
+
         Args:
             event_name: The name of the event to unsubscribe from.
             callback: The callback function to remove.
@@ -89,31 +90,31 @@ class EventBus:
                     self._subscribers[event_name].remove(callback)
                 except ValueError:
                     pass  # Callback not in list
-    
-    def publish(self, event_name: str, payload: Any = None, source: Optional[str] = None) -> None:
+
+    def publish(self, event_name: str, payload: Any = None, source: str | None = None) -> None:
         """
         Publish an event to all subscribers.
-        
+
         Args:
             event_name: The name of the event.
             payload: The data associated with the event.
             source: Optional identifier of the component that published the event.
         """
         event = Event(name=event_name, payload=payload, source=source)
-        
+
         with self._lock:
             # Add to history
             self._history.append(event)
             if len(self._history) > self._max_history:
                 self._history.pop(0)
-            
+
             # Get copies to avoid issues if they modify during iteration
             subscribers = self._subscribers.get(event_name, []).copy()
             middleware = self._middleware.copy()
-        
+
         # Persist event (fire-and-forget, non-blocking)
         self._persist_event(event)
-        
+
         # Call middleware first
         for mw in middleware:
             try:
@@ -121,7 +122,7 @@ class EventBus:
             except Exception:
                 # Don't let one middleware's exception break others
                 pass
-        
+
         # Call subscribers outside the lock to avoid deadlocks
         for callback in subscribers:
             try:
@@ -129,14 +130,14 @@ class EventBus:
             except Exception:
                 # Don't let one subscriber's exception break others
                 pass
-    
-    def get_history(self, event_name: Optional[str] = None) -> List[Event]:
+
+    def get_history(self, event_name: str | None = None) -> list[Event]:
         """
         Get event history, optionally filtered by event name.
-        
+
         Args:
             event_name: If provided, only return events with this name.
-            
+
         Returns:
             List of events, most recent last.
         """
@@ -144,7 +145,7 @@ class EventBus:
             if event_name is None:
                 return self._history.copy()
             return [e for e in self._history if e.name == event_name]
-    
+
     def clear_history(self) -> None:
         """Clear the event history and persisted storage."""
         with self._lock:
@@ -199,8 +200,8 @@ class EventBus:
             self._persist_path = persist_path
             self._init_persistence()
 
-    def get_persisted_events(self, event_name: Optional[str] = None,
-                              limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
+    def get_persisted_events(self, event_name: str | None = None,
+                              limit: int = 100, offset: int = 0) -> list[dict[str, Any]]:
         """Retrieve persisted events from SQLite."""
         if not self._db_conn:
             return []

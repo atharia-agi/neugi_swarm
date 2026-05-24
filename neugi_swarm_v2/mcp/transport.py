@@ -10,10 +10,10 @@ import json
 import logging
 import sys
 from abc import ABC, abstractmethod
-from collections import defaultdict
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Callable
+from typing import Any
 
-from neugi_swarm_v2.mcp.messages import JSONRPCMessage, RequestMessage, ResponseMessage, NotificationMessage
+from neugi_swarm_v2.mcp.messages import JSONRPCMessage, NotificationMessage, RequestMessage, ResponseMessage
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,7 @@ class SSEConnection:
     def __init__(self, session_id: str, rate_limiter: RateLimiter | None = None, client_name: str = "anonymous"):
         self.session_id = session_id
         self._queue: asyncio.Queue = asyncio.Queue()
-        self._subscribed_events: List[str] = []
+        self._subscribed_events: list[str] = []
         self._active = True
         self._rate_limiter = rate_limiter
         self.client_name = client_name
@@ -112,7 +112,7 @@ class SSEConnection:
         lines.append("")
         return "\n".join(lines)
 
-    async def get_event(self, timeout: float = 30.0) -> Optional[str]:
+    async def get_event(self, timeout: float = 30.0) -> str | None:
         try:
             return await asyncio.wait_for(self._queue.get(), timeout=timeout)
         except asyncio.TimeoutError:
@@ -125,9 +125,9 @@ class SSEConnection:
 class BaseTransport(ABC):
     """Base class for MCP transports."""
 
-    def __init__(self):
-        self._message_handlers: Dict[str, Callable] = {}
-        self._request_handlers: Dict[str, Callable] = {}
+    def __init__(self) -> None:
+        self._message_handlers: dict[str, Callable] = {}
+        self._request_handlers: dict[str, Callable] = {}
         self._running = False
 
     @abstractmethod
@@ -213,9 +213,9 @@ class BaseTransport(ABC):
 class StdioTransport(BaseTransport):
     """Stdio-based transport for local/CLI MCP connections."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
-        self._reader_task: Optional[asyncio.Task] = None
+        self._reader_task: asyncio.Task | None = None
         self._running = False
 
     async def start(self, handler: Callable[[dict], Any]) -> None:
@@ -249,10 +249,10 @@ class StdioTransport(BaseTransport):
                 logger.error("Stdio read error: %s", e)
                 await asyncio.sleep(0.01)
 
-    def _read_line(self) -> Optional[str]:
+    def _read_line(self) -> str | None:
         try:
             return sys.stdin.readline()
-        except (IOError, OSError):
+        except OSError:
             return None
 
     async def stop(self) -> None:
@@ -265,7 +265,7 @@ class StdioTransport(BaseTransport):
         try:
             sys.stdout.write(message.to_json() + "\n")
             sys.stdout.flush()
-        except (IOError, OSError) as e:
+        except OSError as e:
             logger.error("Stdio write error: %s", e)
 
 
@@ -273,24 +273,24 @@ class HTTPTransport(BaseTransport):
     """HTTP-based transport with SSE support for browser-based MCP clients."""
 
     def __init__(self, host: str = "127.0.0.1", port: int = 17902,
-                 cors_origins: Optional[list[str]] = None,
+                 cors_origins: list[str] | None = None,
                  enable_sse: bool = True,
                  rate_limit: float = 10, rate_burst: int = 20,
-                 auth_tokens: Optional[dict[str, str]] = None):
+                 auth_tokens: dict[str, str] | None = None):
         super().__init__()
         self.host = host
         self.port = port
         self.cors_origins = cors_origins or ["*"]
-        self._server: Optional[asyncio.AbstractServer] = None
-        self._sessions: Dict[str, asyncio.Queue] = {}
+        self._server: asyncio.AbstractServer | None = None
+        self._sessions: dict[str, asyncio.Queue] = {}
         self._session_counter = 0
         self._enable_sse = enable_sse
-        self._sse_connections: Dict[str, SSEConnection] = {}
+        self._sse_connections: dict[str, SSEConnection] = {}
         self._rate_limiter = RateLimiter(rate_limit, rate_burst)
         self._auth = SSEAuth(auth_tokens)
 
     @property
-    def sse_connections(self) -> Dict[str, SSEConnection]:
+    def sse_connections(self) -> dict[str, SSEConnection]:
         return dict(self._sse_connections)
 
     async def start(self, handler: Callable[[dict], Any]) -> None:
@@ -363,7 +363,7 @@ class HTTPConnection(asyncio.Protocol):
         self.transport = transport
         self.handler = handler
         self._buffer = b""
-        self._session_id: Optional[str] = None
+        self._session_id: str | None = None
         self._is_sse = False
 
     def connection_made(self, transport: asyncio.BaseTransport) -> None:
@@ -423,7 +423,7 @@ class HTTPConnection(asyncio.Protocol):
                     "Content-Type: application/json\r\n"
                     f"Content-Length: {len(body)}\r\n"
                     "\r\n"
-                ).encode("utf-8") + body
+                ).encode() + body
                 self._transport.write(resp)
                 return
 
@@ -472,7 +472,7 @@ class HTTPConnection(asyncio.Protocol):
             logger.error("SSE send error: %s", e)
 
     async def _handle_message(self, message: dict) -> None:
-        result = await self._async_handle(message)
+        await self._async_handle(message)
 
     async def _async_handle(self, message: dict) -> None:
         try:
@@ -491,7 +491,7 @@ class HTTPConnection(asyncio.Protocol):
             f"Mcp-Session-Id: {self._session_id}\r\n"
             f"Access-Control-Allow-Origin: {self.transport.cors_origins[0] if self.transport.cors_origins else '*'}\r\n"
             "\r\n"
-        ).encode("utf-8") + body
+        ).encode() + body
         self._transport.write(response)
 
     def _send_error(self, status: int, message: str) -> None:
@@ -501,10 +501,10 @@ class HTTPConnection(asyncio.Protocol):
             "Content-Type: application/json\r\n"
             f"Content-Length: {len(body)}\r\n"
             "\r\n"
-        ).encode("utf-8") + body
+        ).encode() + body
         self._transport.write(response)
 
-    def connection_lost(self, exc: Optional[Exception]) -> None:
+    def connection_lost(self, exc: Exception | None) -> None:
         if self._is_sse and self._session_id:
             self.transport.unregister_sse_connection(self._session_id)
             logger.debug("SSE connection lost: %s", self._session_id)

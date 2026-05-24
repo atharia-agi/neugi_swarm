@@ -592,6 +592,65 @@ class TestAutonomousLoop:
         assert isinstance(result, LoopResult)
         assert result.success
 
+    def test_execution_batch_exception_opens_circuit(self, temp_memory_db):
+        class FakeSwarm:
+            memory_db_path = temp_memory_db
+            memory = None
+            goals = None
+            message_bus = None
+            _llm_call = None
+
+        config = LoopConfig(
+            enabled=True,
+            idle_threshold_seconds=0,
+            circuit_breaker_threshold=1,
+            autostart=False,
+        )
+        loop = AutonomousLoop(swarm=FakeSwarm(), config=config)
+
+        observation = Observation(
+            obs_type=ObservationType.SYSTEM_HEALTH,
+            source="health",
+            description="Injected failure path",
+            confidence=0.9,
+            urgency=0.9,
+            value=0.9,
+            data={"chaos": True},
+        )
+        decision = Decision(
+            decision_type=DecisionType.SELF_HEAL,
+            source_observation=observation,
+            outcome=DecisionOutcome.APPROVED,
+            priority=0.9,
+        )
+
+        loop.observer = type("Obs", (), {"observe": lambda self=None: [observation], "get_signals": lambda self=None: {}})()
+        loop.decision_engine = type(
+            "Decider",
+            (),
+            {
+                "decide": lambda self, _obs: [decision],
+                "today_action_count": 0,
+                "get_stats": lambda self=None: {},
+            },
+        )()
+
+        class BoomExecutor:
+            def execute_batch(self, _decisions):
+                raise TimeoutError("chaos-timeout")
+
+            def get_stats(self):
+                return {}
+
+        loop.executor = BoomExecutor()
+
+        result = loop._tick()
+        assert result.success is False
+        assert result.error and "execution_batch_failed" in result.error
+        stats = loop.get_stats()
+        assert stats["failure_count"] >= 1
+        assert stats["circuit_open"] is True
+
 
 # -- ResearchEngine Tests -----------------------------------------------------
 
@@ -716,7 +775,7 @@ AI is making rapid progress in 2026.
             memory_system=MockMemory(),
             config=ResearchConfig(max_rounds=1, store_in_memory=True),
         )
-        report = engine.research("test")
+        engine.research("test")
         assert len(stored) == 1
         assert stored[0]["role"] == "research"
         assert "autoresearch" in stored[0]["tags"]

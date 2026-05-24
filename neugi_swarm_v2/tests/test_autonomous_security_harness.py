@@ -1,11 +1,9 @@
 """
 Tests for the Autonomous Security Harness Plugin.
 """
-import json
-import tempfile
-import os
-from pathlib import Path
 import sys
+import tempfile
+from pathlib import Path
 
 # Add the active package root to the path so plugin imports never resolve to
 # stale audit/copy directories outside this checkout.
@@ -76,10 +74,10 @@ def test_scope_validator():
     validator = ScopeValidator(scope)
 
     # Test allowed targets
-    assert validator.validate_target('example.com', 'nmap') == True
-    assert validator.validate_target('192.168.1.10', 'nmap') == True  # In CIDR
-    assert validator.validate_target('10.0.0.1', 'nmap') == False   # Private IP not allowed
-    assert validator.validate_target('google.com', 'nmap') == False  # Not in allowed list
+    assert validator.validate_target('example.com', 'nmap')
+    assert validator.validate_target('192.168.1.10', 'nmap')  # In CIDR
+    assert not validator.validate_target('10.0.0.1', 'nmap')   # Private IP not allowed
+    assert not validator.validate_target('google.com', 'nmap')  # Not in allowed list
 
     # Test port validation (if we had a method for it)
     # We don't have a public method for port validation in the current ScopeValidator, but we can add one if needed.
@@ -101,10 +99,10 @@ def test_audit_logger():
         logger.log({'action': 'test', 'data': 'value'})
 
         # Verify the chain
-        assert logger.verify_chain() == True
+        assert logger.verify_chain()
 
         # Try to tamper with the log file
-        with open(log_path, 'r') as f:
+        with open(log_path) as f:
             lines = f.readlines()
         # Modify the first line (not the hash, but the content)
         if len(lines) > 0:
@@ -114,7 +112,7 @@ def test_audit_logger():
                 f.writelines(lines)
 
         # Now verification should fail
-        assert logger.verify_chain() == False
+        assert not logger.verify_chain()
 
         print("SUCCESS: Audit logger tests passed")
 

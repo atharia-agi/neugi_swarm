@@ -5,11 +5,12 @@ MCP Resource Manager - Manages resource registration and access
 
 from __future__ import annotations
 
-import logging
 import json
-from dataclasses import dataclass, field
+import logging
+from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from neugi_swarm_v2.mcp.messages import (
     ListResourcesResult,
@@ -25,8 +26,8 @@ class ResourceTemplate:
     uri_template: str
     name: str
     description: str
-    mimeType: Optional[str] = None
-    annotations: Optional[dict] = None
+    mimeType: str | None = None
+    annotations: dict | None = None
 
 
 @dataclass
@@ -35,10 +36,10 @@ class Resource:
     uri: str
     name: str
     description: str
-    mimeType: Optional[str] = None
-    annotations: Optional[dict] = None
+    mimeType: str | None = None
+    annotations: dict | None = None
     content: Any = None
-    loader: Optional[Callable] = None
+    loader: Callable | None = None
 
     def read(self) -> Any:
         """Read resource content, using loader if available."""
@@ -50,20 +51,20 @@ class Resource:
 class ResourceManager:
     """Manages resource registration and access for MCP clients."""
 
-    def __init__(self):
-        self._static_resources: Dict[str, Resource] = {}
-        self._templates: Dict[str, ResourceTemplate] = {}
-        self._dynamic_handlers: Dict[str, Callable] = {}
-        self._cache: Dict[str, Any] = {}
-        self._cache_ttl: Dict[str, float] = {}
+    def __init__(self) -> None:
+        self._static_resources: dict[str, Resource] = {}
+        self._templates: dict[str, ResourceTemplate] = {}
+        self._dynamic_handlers: dict[str, Callable] = {}
+        self._cache: dict[str, Any] = {}
+        self._cache_ttl: dict[str, float] = {}
 
     def register_static(
         self,
         uri: str,
         name: str,
         description: str = "",
-        mimeType: Optional[str] = None,
-        annotations: Optional[dict] = None,
+        mimeType: str | None = None,
+        annotations: dict | None = None,
         content: Any = None,
     ) -> Resource:
         """Register a static resource with fixed content."""
@@ -84,8 +85,8 @@ class ResourceManager:
         uri_template: str,
         name: str,
         description: str = "",
-        mimeType: Optional[str] = None,
-        annotations: Optional[dict] = None,
+        mimeType: str | None = None,
+        annotations: dict | None = None,
     ) -> ResourceTemplate:
         """Register a resource template for dynamic URIs."""
         template = ResourceTemplate(
@@ -116,9 +117,9 @@ class ResourceManager:
     def register_file(
         self,
         file_path: str,
-        uri: Optional[str] = None,
-        name: Optional[str] = None,
-        mimeType: Optional[str] = None,
+        uri: str | None = None,
+        name: str | None = None,
+        mimeType: str | None = None,
     ) -> Resource:
         """Register a local file as a resource."""
         if uri is None:
@@ -131,8 +132,8 @@ class ResourceManager:
             try:
                 content = Path(path).read_text(encoding="utf-8")
                 return content
-            except Exception as e:
-                logger.error("Failed to read file %s: %s", path, e)
+            except (FileNotFoundError, PermissionError, OSError, UnicodeDecodeError) as e:
+                logger.error("Failed to read file resource '%s': %s", path, e)
                 raise
 
         return self.register_static(
@@ -181,7 +182,7 @@ class ResourceManager:
             handler=memory_loader,
         )
 
-    def list_resources(self, cursor: Optional[str] = None) -> ListResourcesResult:
+    def list_resources(self, cursor: str | None = None) -> ListResourcesResult:
         """List all available resources."""
         resources = []
 

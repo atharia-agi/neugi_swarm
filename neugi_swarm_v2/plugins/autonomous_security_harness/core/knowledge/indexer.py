@@ -1,23 +1,25 @@
 """
 Knowledge Base Indexer for Autonomous Security Harness Plugin.
 """
-import json, os, re, sqlite3
+import json
+import re
+import sqlite3
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = __import__("logging").getLogger(__name__)
 
 try:
     from whoosh import index
-    from whoosh.fields import Schema, TEXT, ID, KEYWORD, STORED
     from whoosh.analysis import StemmingAnalyzer
+    from whoosh.fields import ID, KEYWORD, STORED, TEXT, Schema
     HAS_WHOOSH = True
 except ImportError:
     HAS_WHOOSH = False
 
 try:
-    from sentence_transformers import SentenceTransformer
     import numpy as np
+    from sentence_transformers import SentenceTransformer
     HAS_SENTENCE_TRANSFORMERS = True
 except ImportError:
     HAS_SENTENCE_TRANSFORMERS = False
@@ -96,7 +98,7 @@ class KnowledgeIndexer:
             headings = re.findall(r"^#{1,6}\s+(.+)$", clean, re.MULTILINE)
             title = fm.get("title") or (headings[0] if headings else fp.stem)
             tags = self._infer_tags(fp, fm, headings)
-            
+
             # Generate vector embedding if embedder is available
             vector_bytes = None
             if self.embedder and clean.strip():
@@ -105,7 +107,7 @@ class KnowledgeIndexer:
                     vector_bytes = embedding.astype(np.float32).tobytes()
                 except Exception as e:
                     logger.debug(f"Failed to generate embedding for {fp.name}: {e}")
-            
+
             try:
                 writer.add_document(
                     path=str(fp.relative_to(self.kb_path)), title=title, content=clean,
@@ -148,7 +150,7 @@ class KnowledgeIndexer:
             title = fm.get("title") or (headings[0] if headings else fp.stem)
             tags = ",".join(self._infer_tags(fp, fm, headings))
             rel = str(fp.relative_to(self.kb_path))
-            
+
             # Generate vector embedding if embedder is available
             vector_bytes = None
             if self.embedder and clean.strip():
@@ -157,7 +159,7 @@ class KnowledgeIndexer:
                     vector_bytes = embedding.astype(np.float32).tobytes()
                 except Exception as e:
                     logger.debug(f"Failed to generate embedding for {fp.name}: {e}")
-            
+
             try:
                 conn.execute("INSERT OR REPLACE INTO knowledge VALUES (?,?,?,?,?,?,?,?,?,?)",
                              (rel, title, clean[:50000], ",".join(headings[:10]), tags,
@@ -245,21 +247,21 @@ class KnowledgeSearcher:
         except Exception:
             return 0.0
 
-    def search_knowledge(self, query: str, category: Optional[str] = None, limit: int = 10) -> Dict[str, Any]:
+    def search_knowledge(self, query: str, category: str | None = None, limit: int = 10) -> dict[str, Any]:
         """Search the knowledge base."""
         if self.HAS_INDEX:
             return self._whoosh_search(query, category, limit)
         else:
             return self._sqlite_search(query, category, limit)
 
-    def _whoosh_search(self, query: str, category: Optional[str], limit: int) -> Dict[str, Any]:
+    def _whoosh_search(self, query: str, category: str | None, limit: int) -> dict[str, Any]:
         try:
             from whoosh.qparser import MultifieldParser, OrGroup
             parser = MultifieldParser(["title","content","headings","tags","framework"], schema=self.ix.schema, group=OrGroup)
             with self.ix.searcher() as s:
                 hits = s.search(parser.parse(query), limit=limit*5)  # Get more hits for re-ranking
                 results = []
-                
+
                 # Generate query embedding if vector search is enabled
                 query_embedding = None
                 if self.use_vectors and self.embedder and query.strip():
@@ -267,15 +269,15 @@ class KnowledgeSearcher:
                         query_embedding = self.embedder.encode([query.strip()])[0].astype(np.float32)
                     except Exception as e:
                         logger.debug(f"Failed to generate query embedding: {e}")
-                
+
                 for hit in hits:
                     d = hit.fields()
                     if category and category not in d.get("tags","") and category not in d.get("framework",""):
                         continue
-                    
+
                     base_relevance = round(hit.score, 3)
                     final_relevance = base_relevance
-                    
+
                     if self.use_vectors and self.embedder and query_embedding is not None and d.get("vector"):
                         try:
                             vector_bytes = d.get("vector")
@@ -288,12 +290,12 @@ class KnowledgeSearcher:
                         except Exception as e:
                             logger.debug(f"Vector similarity calculation failed: {e}")
                             final_relevance = base_relevance
-                    
-                    try: 
+
+                    try:
                         meta = json.loads(d.get("metadata","{}"))
-                    except: 
+                    except (json.JSONDecodeError, TypeError, ValueError):
                         meta = {}
-                    
+
                     results.append({
                         "id": d["path"],
                         "title": d["title"],
@@ -302,21 +304,21 @@ class KnowledgeSearcher:
                         "tags": d.get("tags", "").split(","),
                         "metadata": meta
                     })
-                    
+
                     if len(results) >= limit:
                         break
-                
+
                 results.sort(key=lambda x: x["relevance"], reverse=True)
                 return {"query": query, "results": results[:limit], "count": len(results[:limit])}
         except Exception as e:
             logger.error(f"Whoosh search failed: {e}")
             return {"query": query, "results": [], "count": 0, "error": "Whoosh search error"}
 
-    def _sqlite_search(self, query: str, category: Optional[str], limit: int) -> Dict[str, Any]:
+    def _sqlite_search(self, query: str, category: str | None, limit: int) -> dict[str, Any]:
         import sqlite3
         if not self.db_path.exists():
             return {"query": query, "results": [], "count": 0, "error": "No index found"}
-        
+
         try:
             # Generate query embedding for SQLite vector search
             query_embedding = None
@@ -325,11 +327,11 @@ class KnowledgeSearcher:
                     query_embedding = self.embedder.encode([query.strip()])[0].astype(np.float32)
                 except Exception as e:
                     logger.debug(f"Failed to generate query embedding for SQLite: {e}")
-            
+
             c = sqlite3.connect(str(self.db_path))
             c.row_factory = sqlite3.Row
             like = f"%{query}%"
-            
+
             rows = c.execute(
                 "SELECT path, title, substr(content,1,500) snip, tags, framework, metadata, vector "
                 "FROM knowledge WHERE title LIKE ? OR content LIKE ? OR headings LIKE ? ORDER BY "
@@ -338,15 +340,15 @@ class KnowledgeSearcher:
                 (like, like, like, like, like, limit*3)
             ).fetchall()
             c.close()
-            
+
             results = []
             for r in rows:
                 if category and category not in r["tags"] and category not in r["framework"]:
                     continue
-                
+
                 base_relevance = 0.5
                 final_relevance = base_relevance
-                
+
                 if self.use_vectors and self.embedder and query_embedding is not None and r["vector"]:
                     try:
                         stored_embedding = np.frombuffer(r["vector"], dtype=np.float32)
@@ -357,12 +359,12 @@ class KnowledgeSearcher:
                     except Exception as e:
                         logger.debug(f"Vector similarity calculation failed for SQLite: {e}")
                         final_relevance = base_relevance
-                
+
                 try:
                     meta = json.loads(r["metadata"])
-                except:
+                except (json.JSONDecodeError, TypeError, ValueError):
                     meta = {}
-                
+
                 results.append({
                     "id": r["path"],
                     "title": r["title"],
@@ -371,7 +373,7 @@ class KnowledgeSearcher:
                     "tags": r["tags"].split(",") if r["tags"] else [],
                     "metadata": meta
                 })
-            
+
             results.sort(key=lambda x: x["relevance"], reverse=True)
             return {"query": query, "results": results[:limit], "count": len(results[:limit])}
         except Exception as e:

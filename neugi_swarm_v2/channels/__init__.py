@@ -5,7 +5,7 @@ Supports Telegram, Discord, Slack, and WhatsApp with a common interface
 for message handling, user management, and channel orchestration.
 """
 
-from .base import (
+from channels.base import (
     BaseChannel,
     ChannelCapability,
     ChannelHealth,
@@ -15,11 +15,11 @@ from .base import (
     MessageType,
     UserIdentity,
 )
-from .channel_manager import ChannelManager, ChannelStats, ChannelStatus
-from .discord import DiscordChannel
-from .slack import SlackChannel
-from .telegram import TelegramChannel
-from .whatsapp import WhatsAppChannel
+from channels.channel_manager import ChannelManager, ChannelStats, ChannelStatus
+from channels.discord import DiscordChannel
+from channels.slack import SlackChannel
+from channels.telegram import TelegramChannel
+from channels.whatsapp import WhatsAppChannel
 
 __all__ = [
     "BaseChannel",

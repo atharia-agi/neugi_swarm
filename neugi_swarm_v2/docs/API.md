@@ -4,6 +4,8 @@
 
 Base URL: `http://localhost:17901/api`
 
+Runtime-validated endpoint count: `32`
+
 ### Core Runtime
 
 | Method | Endpoint | Description |
@@ -57,6 +59,9 @@ Base URL: `http://localhost:17901/api`
 | GET | `/config` | Read runtime config |
 | PUT | `/config` | Update runtime config |
 | POST | `/config/test-llm` | Test provider/model connection |
+
+Provider matrix (auto-generated from runtime catalog):
+- [PROVIDER_MATRIX.md](./PROVIDER_MATRIX.md)
 
 ### Runtime Control & Observability
 
@@ -124,4 +129,22 @@ For full tree, run:
 
 ```bash
 neugi help
+```
+
+---
+
+## Quick Call Snippets
+
+```bash
+# Health
+curl http://localhost:17901/api/health
+
+# Provider catalog
+curl http://localhost:17901/api/providers
+
+# Provider readiness
+curl http://localhost:17901/api/providers/health
+
+# Config read
+curl http://localhost:17901/api/config
 ```

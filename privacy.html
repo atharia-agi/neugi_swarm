@@ -2,37 +2,84 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Privacy Policy — NEUGI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="https://neugi.com/assets/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://neugi.com/assets/favicon-32x32.png">
+    <title>Privacy Policy - NEUGI</title>
     <style>
-        body {
-            background: #000;
-            color: #a1a1aa;
-            font-family: 'Inter', -apple-system, sans-serif;
-            line-height: 1.6;
-            max-width: 800px;
-            margin: 60px auto;
-            padding: 0 24px;
+        :root {
+            --bg: #0d0d0d;
+            --panel: #111111;
+            --border: rgba(255, 255, 255, 0.06);
+            --text: #f4f4f5;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
         }
-        h1 { color: #fff; font-size: 32px; margin-bottom: 8px; }
-        h2 { color: #fff; font-size: 20px; margin-top: 32px; }
-        a { color: #6366f1; }
-        .updated { color: #71717a; font-size: 14px; margin-bottom: 32px; }
+        * { box-sizing: border-box; }
+        body {
+            background: var(--bg);
+            color: var(--text-secondary);
+            font-family: "Inter", -apple-system, "Segoe UI", sans-serif;
+            font-size: 13px;
+            line-height: 1.55;
+            max-width: 860px;
+            margin: 32px auto;
+            padding: 0 24px 36px;
+        }
+        h1 { color: var(--text); font-size: 24px; margin: 0 0 8px; letter-spacing: -0.02em; }
+        h2 { color: var(--text); font-size: 14px; margin: 24px 0 8px; }
+        p, li { margin: 0 0 10px; }
+        ul { margin: 0 0 10px 18px; padding: 0; }
+        a { color: #e4e4e7; }
+        .updated { color: var(--text-muted); font-size: 12px; margin-bottom: 18px; }
+        .card {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--panel);
+            padding: 14px;
+            margin-top: 12px;
+        }
     </style>
 </head>
 <body>
     <h1>Privacy Policy</h1>
-    <p class="updated">Last updated: April 2026</p>
+    <p class="updated">Last updated: May 24, 2026</p>
 
-    <h2>Data Collection</h2>
-    <p>NEUGI is a fully local, open-source agentic framework. We do not collect, store, or transmit any user data to external servers. All memory, conversations, and configuration remain on your local machine.</p>
+    <h2>1. Privacy Model</h2>
+    <p>NEUGI is designed for local-first operation. By default, runtime state, memory, and configuration are stored in your local NEUGI directory and infrastructure under your control.</p>
 
-    <h2>Third-Party Services</h2>
-    <p>When you configure external LLM providers (OpenAI, Anthropic, etc.), your data is sent directly to those providers according to their respective privacy policies. NEUGI does not act as a intermediary.</p>
+    <h2>2. Data NEUGI Stores Locally</h2>
+    <ul>
+        <li>Configuration (for example provider, model, and endpoint settings)</li>
+        <li>Session and memory data (including local SQLite stores)</li>
+        <li>Operational logs and governance/audit records</li>
+    </ul>
 
-    <h2>Local Storage</h2>
-    <p>NEUGI stores data locally in SQLite databases and JSON configuration files within your designated NEUGI directory. You have full control over this data.</p>
+    <h2>3. External Provider Data Flow</h2>
+    <p>When you configure third-party providers, prompts and related content are sent directly to those providers according to your configuration and their policies. NEUGI maintainers do not proxy that traffic as a hosted relay service.</p>
 
-    <h2>Contact</h2>
-    <p>For privacy-related inquiries, contact <a href="mailto:atharia.agi@gmail.com">atharia.agi@gmail.com</a>.</p>
+    <h2>4. Credentials and Secrets</h2>
+    <p>You are responsible for securing API keys, tokens, and environment variables in your deployment. Use least-privilege credentials and rotate secrets regularly.</p>
+
+    <h2>5. Telemetry and Analytics</h2>
+    <p>NEUGI does not require centralized telemetry to operate. If you enable external monitoring integrations in your own environment, data handling follows the tools and services you choose.</p>
+
+    <h2>6. Security Disclaimer</h2>
+    <p>No system can guarantee perfect security. You remain responsible for host hardening, network controls, access management, backup strategy, and incident response.</p>
+
+    <h2>7. Data Retention and Deletion</h2>
+    <p>You control retention, cleanup, and deletion in your own runtime. Review configured memory lifecycles, logs, and backup policies to align with your compliance needs.</p>
+
+    <h2>8. International and Regulatory Use</h2>
+    <p>If your deployment processes personal or regulated data, you are responsible for compliance with applicable frameworks (for example GDPR, PDPA, HIPAA, or industry-specific controls).</p>
+
+    <h2>9. Policy Updates</h2>
+    <p>This policy may be updated as NEUGI evolves. Continued use after updates indicates acceptance of the revised policy.</p>
+
+    <div class="card">
+        <p style="margin:0;">
+            Privacy questions: <a href="mailto:atharia.agi@gmail.com">atharia.agi@gmail.com</a>
+        </p>
+    </div>
 </body>
 </html>

@@ -45,11 +45,13 @@ from autonomous.decision import DecisionCriteria, DecisionOutcome, ProactiveDeci
 from autonomous.executor import ExecutionContext, ExecutionResult, SelfDirectedExecutor
 from autonomous.observer import IdleObserver
 from autonomous.reporter import ActivityReporter, ReportSeverity
+from observability import get_event_bus
 
 logger = logging.getLogger(__name__)
 
 
 class ActivityType(str, Enum):
+    """Types of activities performed during an autonomous tick."""
     OBSERVATION = "observation"
     DECISION = "decision"
     EXECUTION = "execution"
@@ -58,6 +60,7 @@ class ActivityType(str, Enum):
 
 
 class ActivityPriority(str, Enum):
+    """Priority levels for autonomous activities."""
     LOW = "low"
     NORMAL = "normal"
     HIGH = "high"
@@ -65,6 +68,7 @@ class ActivityPriority(str, Enum):
 
 
 class ActivityStatus(str, Enum):
+    """Execution status of an autonomous activity."""
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -73,6 +77,7 @@ class ActivityStatus(str, Enum):
 
 
 class LoopState(str, Enum):
+    """State machine states for the autonomous loop."""
     STOPPED = "stopped"
     STARTING = "starting"
     RUNNING = "running"
@@ -83,6 +88,7 @@ class LoopState(str, Enum):
 
 @dataclass
 class AutonomousActivity:
+    """Record of a single activity performed by the autonomous loop."""
     activity_id: str
     activity_type: ActivityType
     priority: ActivityPriority
@@ -95,6 +101,7 @@ class AutonomousActivity:
 
     @property
     def duration_ms(self) -> float:
+        """Elapsed time in milliseconds since activity started."""
         if self.finished_at:
             return (self.finished_at - self.started_at) * 1000
         return (time.time() - self.started_at) * 1000
@@ -102,6 +109,7 @@ class AutonomousActivity:
 
 @dataclass
 class LoopResult:
+    """Summary of a single autonomous loop tick."""
     tick_id: str
     observations: int = 0
     decisions: int = 0
@@ -142,6 +150,7 @@ class LoopConfig:
 
 
 class LoopError(Exception):
+    """Raised when the autonomous loop encounters an unrecoverable error."""
     pass
 
 
@@ -246,6 +255,7 @@ class AutonomousLoop:
 
     @property
     def state(self) -> LoopState:
+        """Current state of the autonomous loop."""
         with self._lock:
             return self._state
 
@@ -295,12 +305,14 @@ class AutonomousLoop:
         logger.info("AutonomousLoop stopped")
 
     def pause(self) -> None:
+        """Pause the loop without stopping the background thread."""
         with self._lock:
-            if self._state == LoopState.RUNNING:
+            if self._state in (LoopState.RUNNING, LoopState.STARTING):
                 self._state = LoopState.PAUSED
                 logger.info("AutonomousLoop paused")
 
     def resume(self) -> None:
+        """Resume a paused loop."""
         with self._lock:
             if self._state == LoopState.PAUSED:
                 self._state = LoopState.RUNNING
@@ -317,7 +329,8 @@ class AutonomousLoop:
         """Main loop thread — never raises."""
         # Set state to RUNNING only after thread is actually executing
         with self._lock:
-            self._state = LoopState.RUNNING
+            if self._state == LoopState.STARTING:
+                self._state = LoopState.RUNNING
 
         while not self._stop_event.is_set():
             try:
@@ -359,8 +372,6 @@ class AutonomousLoop:
             circuit_opened_at = self._circuit_opened_at
             idle_threshold = self.config.idle_threshold_seconds
             max_actions_per_tick = self.config.max_actions_per_tick
-            action_count_today = self._action_count_today
-            failure_count = self._failure_count
 
         # Circuit breaker check
         if circuit_open:
@@ -369,6 +380,7 @@ class AutonomousLoop:
             else:
                 logger.debug("Circuit breaker open, skipping tick")
                 result.success = True
+                self._publish_tick_summary(result)
                 return result
 
         # Idle threshold check
@@ -376,6 +388,7 @@ class AutonomousLoop:
         if idle_seconds < idle_threshold:
             logger.debug("Not idle enough (%.0fs < %.0fs), skipping", idle_seconds, idle_threshold)
             result.success = True
+            self._publish_tick_summary(result)
             return result
 
         # Step 1: OBSERVE
@@ -389,6 +402,7 @@ class AutonomousLoop:
         if not observations:
             result.success = True
             result.duration_ms = (time.time() - start) * 1000
+            self._publish_tick_summary(result)
             return result
 
         # Step 2: DECIDE
@@ -403,6 +417,7 @@ class AutonomousLoop:
         if not approved:
             result.success = True
             result.duration_ms = (time.time() - start) * 1000
+            self._publish_tick_summary(result)
             return result
 
         # Limit actions per tick
@@ -415,6 +430,12 @@ class AutonomousLoop:
                 exec_results = self.executor.execute_batch(to_execute)
             except Exception as e:
                 logger.error("Execution batch failed: %s", e)
+                with self._lock:
+                    self._failure_count += 1
+                    if self._failure_count >= self.config.circuit_breaker_threshold:
+                        self._open_circuit()
+                result.success = False
+                result.error = f"execution_batch_failed: {e}"
                 exec_results = []
             result.executions = len(exec_results)
 
@@ -439,7 +460,8 @@ class AutonomousLoop:
             ):
                 logger.warning("Critical autonomous action failed")
 
-        result.success = True
+        if result.error is None:
+            result.success = True
         result.duration_ms = (time.time() - start) * 1000
 
         # Update decision engine
@@ -455,7 +477,30 @@ class AutonomousLoop:
             tick_id, result.observations, result.decisions, result.executions,
             result.duration_ms,
         )
+        self._publish_tick_summary(result)
         return result
+
+    def _publish_tick_summary(self, result: LoopResult) -> None:
+        """Publish a compact autonomous tick summary to observability event bus."""
+        try:
+            bus = get_event_bus()
+            bus.publish(
+                "autonomous_tick_summary",
+                {
+                    "tick_id": result.tick_id,
+                    "observations": result.observations,
+                    "decisions": result.decisions,
+                    "executions": result.executions,
+                    "reports": result.reports,
+                    "success": result.success,
+                    "duration_ms": result.duration_ms,
+                    "error": result.error,
+                },
+                source="autonomous_loop",
+            )
+        except Exception:
+            # Observability must never break loop execution
+            pass
 
     def _open_circuit(self) -> None:
         with self._lock:
@@ -479,6 +524,7 @@ class AutonomousLoop:
     # -- Stats & Diagnostics ----------------------------------------------------
 
     def get_stats(self) -> dict[str, Any]:
+        """Return comprehensive loop statistics and subsystem state."""
         with self._lock:
             return {
                 "state": self._state.value,
@@ -504,6 +550,7 @@ class AutonomousLoop:
             }
 
     def get_recent_activities(self, limit: int = 20) -> list[AutonomousActivity]:
+        """Return the most recent autonomous activities."""
         with self._lock:
             return self._activities[-limit:]
 

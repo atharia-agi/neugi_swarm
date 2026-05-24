@@ -13,7 +13,7 @@ Features:
 
 Usage:
     from response_format import StructuredResponse, ResponseFormatter
-    
+
     formatter = ResponseFormatter()
     response = formatter.format(
         text=llm_response.content,
@@ -21,7 +21,7 @@ Usage:
         model="qwen2.5-coder:7b",
         metadata={"thinking": "...", "confidence": 0.95}
     )
-    
+
     # Render for different channels
     text_output = response.to_text()
     html_output = response.to_html()
@@ -93,7 +93,7 @@ class ResponseMetadata:
 class StructuredResponse:
     """
     A fully structured agent response.
-    
+
     Contains:
         - text: Main response text
         - sections: Named sections
@@ -319,14 +319,14 @@ class ResponseFormatter:
     ) -> StructuredResponse:
         """
         Format raw LLM text into StructuredResponse.
-        
+
         Args:
             text: Raw LLM response text
             tool_calls: Tool calls made during generation
             model: Model name
             provider: Provider name
             metadata: Extra metadata (tokens, timing, etc.)
-            
+
         Returns:
             StructuredResponse
         """

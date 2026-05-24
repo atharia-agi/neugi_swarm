@@ -11,8 +11,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
-from .agent import Agent, AgentRole, AgentStatus
-from .agent_manager import AgentManager
+from agents.agent import Agent, AgentRole, AgentStatus
+from agents.agent_manager import AgentManager
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +107,7 @@ class Orchestrator:
 
         # Retry failed workers
         failed = [r for r in first_pass if not r.success]
-        for attempt in range(self.max_retries):
+        for _attempt in range(self.max_retries):
             if not failed:
                 break
             time.sleep(self.retry_delay)

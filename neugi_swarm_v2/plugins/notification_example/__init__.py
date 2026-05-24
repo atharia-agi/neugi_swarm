@@ -7,8 +7,8 @@ This plugin demonstrates:
 3. Plugin lifecycle hooks
 """
 
-from neugi_swarm_v2.plugins import Plugin, HookContext
 from neugi_swarm_v2.observability.event_bus import get_event_bus
+from neugi_swarm_v2.plugins import HookContext, Plugin
 
 
 class NotificationExamplePlugin(Plugin):
@@ -60,7 +60,7 @@ class NotificationExamplePlugin(Plugin):
         self.logger.info("NotificationExamplePlugin deactivating...")
 
         # Unsubscribe from events
-        for event_name in self.subscribed_events:
+        for _event_name in self.subscribed_events:
             # We would need to store the actual callbacks to unsubscribe
             # For simplicity in this example, we'll skip explicit unsubscription
             # In a real plugin, you'd store the callbacks and unsubscribe them here
@@ -69,6 +69,6 @@ class NotificationExamplePlugin(Plugin):
         self.logger.info("NotificationExamplePlugin deactivated.")
 
 
-def activate():
+def activate() -> NotificationExamplePlugin:
     """Entry point for the plugin."""
     return NotificationExamplePlugin()

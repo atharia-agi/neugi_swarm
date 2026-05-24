@@ -14,22 +14,14 @@ from __future__ import annotations
 
 import json
 import logging
-import uuid
+from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
+from neugi_swarm_v2.mcp.mcp_server import MCPServer
 from neugi_swarm_v2.mcp.messages import (
-    CallToolResult,
-    ListResourcesResult,
-    ReadResourceResult,
-    ListToolsResult,
-    GetPromptResult,
-    ListPromptsResult,
     RequestMessage,
-    ResponseMessage,
-    NotificationMessage,
 )
-from neugi_swarm_v2.mcp.server import MCPServer
 
 logger = logging.getLogger(__name__)
 
@@ -100,8 +92,20 @@ class MCPBridge:
 
             # Wire ToolExecutor
             from tools.tool_executor import ToolExecutor
+            budget_tracker = None
+            try:
+                from governance.budget import BudgetTracker
+                governance_db = getattr(self._neugi, "config", None)
+                if governance_db and hasattr(governance_db, "data_dir"):
+                    db_path = str(governance_db.data_dir / "governance.db")
+                else:
+                    db_path = "governance.db"
+                budget_tracker = BudgetTracker(db_path=db_path)
+            except Exception as e:
+                logger.debug("BudgetTracker not available: %s", e)
             self._tool_executor = ToolExecutor(
-                registry=self._neugi.tool_registry if hasattr(self._neugi, "tool_registry") else None
+                registry=self._neugi.tool_registry if hasattr(self._neugi, "tool_registry") else None,
+                budget_tracker=budget_tracker,
             )
             logger.debug("ToolExecutor connected")
 
@@ -292,8 +296,8 @@ class MCPBridge:
                             "required": required,
                         },
                     )
-                    def make_wrapper(h):
-                        def wrapper(**kwargs):
+                    def make_wrapper(h: Callable) -> Callable:
+                        def wrapper(**kwargs: Any) -> Any:
                             return h(**kwargs)
                         return wrapper
 

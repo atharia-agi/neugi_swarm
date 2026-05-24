@@ -12,24 +12,18 @@ through the A2A (Agent-to-Agent) protocol. Allows:
 
 from __future__ import annotations
 
-import json
 import logging
 import uuid
-from typing import Any, Dict, List, Optional
+from collections.abc import Callable
+from typing import Any
 
 from a2a import (
-    A2AProtocol,
     A2AMessage,
     A2AMessageType,
     A2APriority,
+    A2AProtocol,
     AgentCapability,
     AgentRegistration,
-)
-from neugi_swarm_v2.mcp.messages import (
-    CallToolResult,
-    RequestMessage,
-    ResponseMessage,
-    NotificationMessage,
 )
 
 logger = logging.getLogger(__name__)
@@ -42,15 +36,15 @@ class A2AMCPAgent:
         self,
         agent_id: str,
         name: str,
-        capabilities: List[AgentCapability] | None = None,
-        metadata: Dict[str, Any] | None = None,
+        capabilities: list[AgentCapability] | None = None,
+        metadata: dict[str, Any] | None = None,
     ):
         self.agent_id = agent_id
         self.name = name
         self.capabilities = capabilities or []
         self.metadata = metadata or {}
         self._last_heartbeat = 0.0
-        self._message_queue: List[A2AMessage] = []
+        self._message_queue: list[A2AMessage] = []
 
     def to_registration(self) -> AgentRegistration:
         return AgentRegistration(
@@ -70,7 +64,6 @@ class A2AMCPAgent:
         return (time.time() - self._last_heartbeat) < timeout_seconds
 
     def to_dict(self) -> dict:
-        import time as _time
         return {
             "agent_id": self.agent_id,
             "name": self.name,
@@ -95,16 +88,16 @@ class MCPA2AAdapter:
     def __init__(self, a2a_protocol: A2AProtocol, server: Any = None):
         self.a2a = a2a_protocol
         self.server = server
-        self._mcp_agents: Dict[str, A2AMCPAgent] = {}
-        self._callbacks: Dict[str, Callable] = {}
+        self._mcp_agents: dict[str, A2AMCPAgent] = {}
+        self._callbacks: dict[str, Callable] = {}
         self._running = False
 
     def register_mcp_agent(
         self,
         agent_id: str | None = None,
         name: str = "MCP Client",
-        capabilities: List[AgentCapability] | None = None,
-        metadata: Dict[str, Any] | None = None,
+        capabilities: list[AgentCapability] | None = None,
+        metadata: dict[str, Any] | None = None,
         message_handler: Callable | None = None,
     ) -> A2AMCPAgent:
         """Register an MCP client as an agent in the A2A mesh.
@@ -162,7 +155,7 @@ class MCPA2AAdapter:
         sender_id: str,
         recipient_id: str,
         task: str,
-        payload: Dict[str, Any] | None = None,
+        payload: dict[str, Any] | None = None,
         priority: A2APriority = A2APriority.NORMAL,
         callback: Callable | None = None,
     ) -> A2AMessage | None:
@@ -192,7 +185,7 @@ class MCPA2AAdapter:
     def delegate_task(
         self,
         task: str,
-        payload: Dict[str, Any],
+        payload: dict[str, Any],
         required_capability: str,
         sender: str = "mcp-orchestrator",
     ) -> A2AMessage | None:
@@ -218,7 +211,7 @@ class MCPA2AAdapter:
         self,
         message: A2AMessage,
         capability_filter: str | None = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Broadcast a message to all agents.
 
         Args:
@@ -234,11 +227,11 @@ class MCPA2AAdapter:
             for agent_id, resp in responses.items()
         }
 
-    def discover_capabilities(self) -> Dict[str, List[str]]:
+    def discover_capabilities(self) -> dict[str, list[str]]:
         """Discover all capabilities across the agent mesh."""
         return self.a2a.discover_capabilities()
 
-    def get_mesh_status(self) -> Dict[str, Any]:
+    def get_mesh_status(self) -> dict[str, Any]:
         """Get overall A2A mesh status."""
         mesh = self.a2a.get_mesh_status()
         mesh["mcp_agents"] = {
@@ -246,7 +239,7 @@ class MCPA2AAdapter:
         }
         return mesh
 
-    def get_agent_status(self, agent_id: str) -> Dict[str, Any] | None:
+    def get_agent_status(self, agent_id: str) -> dict[str, Any] | None:
         """Get status of a specific agent."""
         status = self.a2a.get_agent_status(agent_id)
         if status is None and agent_id in self._mcp_agents:
@@ -258,7 +251,7 @@ class MCPA2AAdapter:
         agent_id: str,
         capability_name: str,
         description: str = "",
-        parameters: Dict[str, Any] | None = None,
+        parameters: dict[str, Any] | None = None,
     ) -> None:
         """Add a capability to a registered MCP agent."""
         cap = AgentCapability(
@@ -301,7 +294,6 @@ class MCPA2AAdapter:
 
     def _heartbeat_loop(self) -> None:
         """Send heartbeats for all registered MCP agents."""
-        import time
         for agent in self._mcp_agents.values():
             agent.heartbeat()
             self.a2a.heartbeat(agent.agent_id)

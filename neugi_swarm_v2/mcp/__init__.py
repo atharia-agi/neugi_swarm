@@ -25,14 +25,13 @@ Usage:
 from __future__ import annotations
 
 import importlib
-import sys as _sys
 
 __version__ = "1.1.0"
 
 # Lazy imports to avoid circular dependencies at package init
 def __getattr__(name):
     module_map = {
-        "MCPServer": "neugi_swarm_v2.mcp.server",
+        "MCPServer": "neugi_swarm_v2.mcp.mcp_server",
         "StdioTransport": "neugi_swarm_v2.mcp.transport",
         "HttpTransport": "neugi_swarm_v2.mcp.transport",
         "HTTPTransport": "neugi_swarm_v2.mcp.transport",

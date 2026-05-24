@@ -145,7 +145,7 @@ class MultiModelRouter:
     def get_stats(self) -> dict[str, Any]:
         """Get routing statistics."""
         total = len(self._route_history)
-        by_complexity = {}
+        by_complexity: dict[str, int] = {}
         for h in self._route_history:
             c = h["complexity"]
             by_complexity[c] = by_complexity.get(c, 0) + 1

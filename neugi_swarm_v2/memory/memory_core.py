@@ -157,6 +157,7 @@ class KnowledgeTriple:
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the triple to a dictionary."""
         return {
             "entity": self.entity,
             "relation": self.relation,
@@ -168,6 +169,7 @@ class KnowledgeTriple:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> KnowledgeTriple:
+        """Deserialize a triple from a dictionary."""
         return cls(
             entity=data["entity"],
             relation=data["relation"],
@@ -399,7 +401,7 @@ class MemorySystem:
                     );
                 """)
             except Exception as e:
-                logger.warning("sqlite-vec not available, embeddings disabled: %s", e)
+                logger.info("sqlite-vec not available, embeddings disabled: %s", e)
                 self._enable_vec = False
 
         self._conn.commit()
@@ -418,7 +420,7 @@ class MemorySystem:
                         entry.id, entry.content, entry.importance, entry.created_at
                     )
             logger.info("Loaded %d memories from disk", len(self._store))
-        except Exception as e:
+        except (sqlite3.OperationalError, sqlite3.DatabaseError, json.JSONDecodeError) as e:
             logger.error("Failed to load memories from disk: %s", e)
 
     def _row_to_entry(self, row: sqlite3.Row) -> MemoryEntry:
@@ -490,8 +492,8 @@ class MemorySystem:
                 )
             conn.commit()
             logger.debug("Flushed %d entries to disk", len(entries))
-        except Exception as e:
-            logger.error("Background save failed: %s", e)
+        except (sqlite3.OperationalError, sqlite3.DatabaseError, sqlite3.IntegrityError) as e:
+            logger.error("Background save failed for %d entries: %s", len(entries), e)
             # Re-queue on failure
             with self._save_lock:
                 self._save_queue.extend(entries)
@@ -1208,7 +1210,7 @@ class MemorySystem:
             try:
                 placeholders = ",".join("?" * len(expired))
                 self._conn.execute(
-                    f"DELETE FROM memories WHERE id IN ({placeholders})", expired
+                    f"DELETE FROM memories WHERE id IN ({placeholders})", expired  # nosec B608
                 )
                 self._conn.commit()
             except Exception as e:

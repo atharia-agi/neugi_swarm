@@ -84,7 +84,7 @@ class WebTools:
                         "title": re.sub(r"<[^>]+>", "", titles[i]).strip(),
                         "snippet": re.sub(r"<[^>]+>", "", snippets[i]).strip() if i < len(snippets) else "",
                     })
-            except Exception as e:
+            except (OSError, ValueError, TimeoutError) as e:
                 return {"error": str(e), "results": []}
 
         return {"query": query, "engine": engine, "results": results, "count": len(results)}
@@ -124,7 +124,7 @@ class WebTools:
                 "content": content,
                 "url": resp.url,
             }
-        except Exception as e:
+        except (OSError, ValueError, TimeoutError) as e:
             return {"error": str(e), "status_code": 0}
 
     @staticmethod
@@ -157,18 +157,21 @@ class WebTools:
             text = re.sub(r"<[^>]+>", "\n", text)
             text = re.sub(r"\n\s*\n", "\n", text).strip()
 
-            result = {"title": title, "text": text[:5000], "url": url}
+            result: dict[str, Any] = {"title": title, "text": text[:5000], "url": url}
 
             if extract_links:
                 links = re.findall(r'<a[^>]*href=["\']([^"\']+)["\'][^>]*>(.*?)</a>', html, re.DOTALL)
-                result["links"] = [{"url": l[0], "text": re.sub(r"<[^>]+>", "", l[1]).strip()[:100]} for l in links[:50]]
+                result["links"] = [
+                    {"url": link[0], "text": re.sub(r"<[^>]+>", "", link[1]).strip()[:100]}
+                    for link in links[:50]
+                ]
 
             if extract_images:
                 images = re.findall(r'<img[^>]*src=["\']([^"\']+)["\']', html)
                 result["images"] = images[:20]
 
             return result
-        except Exception as e:
+        except (OSError, ValueError, TimeoutError) as e:
             return {"error": str(e)}
 
     @staticmethod
@@ -200,7 +203,7 @@ class WebTools:
                 "healthy": healthy,
                 "timestamp": time.time(),
             }
-        except Exception as e:
+        except (OSError, ValueError, TimeoutError) as e:
             response_time = (time.time() - start) * 1000
             return {
                 "url": url,
@@ -263,7 +266,7 @@ class CodeTools:
         try:
             proc = subprocess.run(
                 [sys.executable, "-c",
-                 "import sys; exec(open(sys.argv[1]).read(), {'__builtins__': {}})",
+                 "import sys; exec(open(sys.argv[1], encoding='utf-8').read(), {'__builtins__': {}})",
                  temp_path],
                 capture_output=True, text=True, timeout=30,
             )
@@ -274,7 +277,7 @@ class CodeTools:
             }
         except subprocess.TimeoutExpired:
             return {"stdout": "", "stderr": "Execution timeout (30s)", "return_code": -1}
-        except Exception as e:
+        except (OSError, subprocess.SubprocessError) as e:
             return {"stdout": "", "stderr": str(e), "return_code": 1}
         finally:
             try:
@@ -333,15 +336,15 @@ class CodeTools:
         if len(lines) > 100:
             findings.append({"type": "complexity", "severity": "medium", "message": "Function/file is long, consider splitting"})
 
-        func_count = len([l for l in lines if l.strip().startswith("def ")])
+        func_count = len([line for line in lines if line.strip().startswith("def ")])
         if func_count > 10:
             findings.append({"type": "complexity", "severity": "low", "message": f"File has {func_count} functions"})
 
-        has_docstrings = any('"""' in l or "'''" in l for l in lines)
+        has_docstrings = any('"""' in line or "'''" in line for line in lines)
         if not has_docstrings:
             findings.append({"type": "documentation", "severity": "low", "message": "No docstrings found"})
 
-        has_type_hints = any("->" in l and ":" in l for l in lines if l.strip().startswith("def "))
+        has_type_hints = any("->" in line and ":" in line for line in lines if line.strip().startswith("def "))
         if not has_type_hints and func_count > 0:
             findings.append({"type": "typing", "severity": "low", "message": "No type hints on functions"})
 
@@ -364,7 +367,6 @@ class CodeTools:
         refactored = []
 
         for i, line in enumerate(lines):
-            original = line
             if line.endswith(" "):
                 line = line.rstrip()
                 changes.append({"line": i + 1, "change": "Removed trailing whitespace"})
@@ -455,7 +457,7 @@ class FileTools:
                 "modified": stat.st_mtime,
                 "encoding": encoding,
             }
-        except Exception as e:
+        except (FileNotFoundError, PermissionError, OSError, UnicodeDecodeError) as e:
             return {"error": str(e)}
 
     @staticmethod
@@ -477,7 +479,7 @@ class FileTools:
             with open(path, mode, encoding=encoding) as f:
                 f.write(content)
             return {"bytes_written": len(content.encode(encoding)), "path": path}
-        except Exception as e:
+        except (FileNotFoundError, PermissionError, OSError, UnicodeEncodeError) as e:
             return {"error": str(e)}
 
     @staticmethod
@@ -514,7 +516,7 @@ class FileTools:
                         files.append(full_path)
 
             return {"files": files, "directories": dirs, "count": len(files) + len(dirs)}
-        except Exception as e:
+        except (FileNotFoundError, PermissionError, OSError) as e:
             return {"error": str(e)}
 
     @staticmethod
@@ -543,7 +545,7 @@ class FileTools:
                     if fnmatch.fnmatch(f, pattern):
                         matches.append(os.path.join(path, f))
             return {"matches": matches, "count": len(matches)}
-        except Exception as e:
+        except (FileNotFoundError, PermissionError, OSError) as e:
             return {"error": str(e)}
 
     @staticmethod
@@ -566,7 +568,7 @@ class FileTools:
                     fromfile=file1, tofile=file2, n=context,
                 ))
             return {"diff": "".join(diff), "lines_changed": len(diff)}
-        except Exception as e:
+        except (FileNotFoundError, PermissionError, OSError, UnicodeDecodeError) as e:
             return {"error": str(e)}
 
     @staticmethod
@@ -588,7 +590,7 @@ class FileTools:
             result = shutil.make_archive(base_name, format, root_dir=os.path.dirname(files[0]) if files else ".")
             stat = os.stat(result)
             return {"path": result, "size": stat.st_size, "format": format}
-        except Exception as e:
+        except (FileNotFoundError, PermissionError, OSError, ValueError) as e:
             return {"error": str(e)}
 
 
@@ -629,7 +631,7 @@ class DataTools:
         """
         try:
             return {"result": json.dumps(data, indent=indent, default=str)}
-        except Exception as e:
+        except (TypeError, ValueError, OverflowError) as e:
             return {"error": str(e)}
 
     @staticmethod
@@ -652,7 +654,7 @@ class DataTools:
                 "rows": rows,
                 "count": len(rows),
             }
-        except Exception as e:
+        except (csv.Error, ValueError, TypeError) as e:
             return {"error": str(e)}
 
     @staticmethod
@@ -667,7 +669,7 @@ class DataTools:
             Parsed XML as dict.
         """
         try:
-            root = ET.fromstring(data)
+            root = ET.fromstring(data)  # nosec B314
             result = {root.tag: {child.tag: child.text for child in root}}
             return {"result": result, "root_tag": root.tag}
         except ET.ParseError as e:
@@ -697,7 +699,7 @@ class DataTools:
             try:
                 tree = ast.parse(expr, mode="eval")
             except SyntaxError as e:
-                raise ValueError(f"Invalid expression: {e}")
+                raise ValueError(f"Invalid expression: {e}") from e
 
             # Whitelist of safe node types
             allowed_nodes = (
@@ -723,7 +725,7 @@ class DataTools:
                     else:
                         raise ValueError("Only simple function calls allowed")
 
-            return eval(compile(tree, "<safe>", "eval"), {"__builtins__": {}}, {"item": item})
+            return eval(compile(tree, "<safe>", "eval"), {"__builtins__": {}}, {"item": item})  # nosec B307
 
         result = data
         for op in operations:
@@ -837,7 +839,7 @@ class CommTools:
         try:
             resp = requests.request(method, url, json=payload, timeout=10)
             return {"status_code": resp.status_code, "response": resp.text}
-        except Exception as e:
+        except (OSError, ValueError, TimeoutError) as e:
             return {"error": str(e)}
 
     @staticmethod
@@ -859,7 +861,10 @@ class CommTools:
         try:
             import smtplib
             from email.mime.text import MIMEText
+        except ImportError:
+            return {"error": "smtplib not available"}
 
+        try:
             msg = MIMEText(body)
             msg["Subject"] = subject
             msg["To"] = to
@@ -867,7 +872,7 @@ class CommTools:
             with smtplib.SMTP(smtp_server, smtp_port) as server:
                 server.send_message(msg)
             return {"status": "sent", "to": to, "subject": subject}
-        except Exception as e:
+        except (OSError, smtplib.SMTPException, ValueError) as e:
             return {"error": str(e)}
 
     @staticmethod
@@ -894,7 +899,7 @@ class CommTools:
             payload = {"channel": channel, "text": text}
             resp = requests.post(webhook_url, json=payload, timeout=10)
             return {"status_code": resp.status_code, "response": resp.text}
-        except Exception as e:
+        except (OSError, ValueError, TimeoutError) as e:
             return {"error": str(e)}
 
     @staticmethod
@@ -916,7 +921,7 @@ class CommTools:
         try:
             resp = requests.post(webhook_url, json={"content": content}, timeout=10)
             return {"status_code": resp.status_code, "response": resp.text}
-        except Exception as e:
+        except (OSError, ValueError, TimeoutError) as e:
             return {"error": str(e)}
 
     @staticmethod
@@ -940,7 +945,7 @@ class CommTools:
             url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
             resp = requests.post(url, json={"chat_id": chat_id, "text": text}, timeout=10)
             return {"status_code": resp.status_code, "response": resp.json()}
-        except Exception as e:
+        except (OSError, ValueError, TimeoutError) as e:
             return {"error": str(e)}
 
 
@@ -982,14 +987,17 @@ class SystemTools:
                 "percent": mem.percent,
             }
         except ImportError:
-            with open("/proc/meminfo") if os.path.exists("/proc/meminfo") else open(os.devnull) as f:
-                if os.path.exists("/proc/meminfo"):
-                    lines = f.readlines()
-                    meminfo = {}
-                    for line in lines[:10]:
-                        parts = line.split()
-                        meminfo[parts[0].rstrip(":")] = int(parts[1])
-                    return {"total_kb": meminfo.get("MemTotal", 0), "free_kb": meminfo.get("MemFree", 0)}
+            if os.path.exists("/proc/meminfo"):
+                try:
+                    with open("/proc/meminfo", encoding="utf-8") as f:
+                        lines = f.readlines()
+                        meminfo = {}
+                        for line in lines[:10]:
+                            parts = line.split()
+                            meminfo[parts[0].rstrip(":")] = int(parts[1])
+                        return {"total_kb": meminfo.get("MemTotal", 0), "free_kb": meminfo.get("MemFree", 0)}
+                except OSError as e:
+                    return {"error": f"Failed to read /proc/meminfo: {e}"}
             return {"error": "psutil not available and /proc/meminfo not found"}
 
     @staticmethod
@@ -1014,7 +1022,8 @@ class SystemTools:
                     pass
             return {"partitions": partitions}
         except ImportError:
-            total, used, free = shutil.disk_usage("/") if "shutil" in dir() else (0, 0, 0)
+            import shutil as _shutil
+            total, used, free = _shutil.disk_usage("/")
             return {"total_gb": round(total / (1024**3), 2), "used_gb": round(used / (1024**3), 2)}
 
     @staticmethod
@@ -1080,9 +1089,12 @@ class SystemTools:
         Returns:
             Dict with stdout, stderr, and return_code.
         """
+        if shell:
+            return {"error": "shell=True is disabled for security. Pass a direct executable/args instead."}
+
         try:
             result = subprocess.run(
-                command, shell=shell, capture_output=True, text=True, timeout=timeout
+                command, shell=False, capture_output=True, text=True, timeout=timeout
             )
             return {
                 "stdout": result.stdout,
@@ -1091,7 +1103,7 @@ class SystemTools:
             }
         except subprocess.TimeoutExpired:
             return {"error": f"Command timed out after {timeout}s"}
-        except Exception as e:
+        except (OSError, subprocess.SubprocessError, ValueError) as e:
             return {"error": str(e)}
 
 
@@ -1118,7 +1130,7 @@ class AITools:
         if not sentences:
             return {"summary": "", "original_length": 0}
 
-        word_counts = {}
+        word_counts: dict[str, int] = {}
         words = text.lower().split()
         for word in words:
             word = re.sub(r"[^\w]", "", word)
@@ -1289,7 +1301,7 @@ class GitTools:
                 "stderr": result.stderr.strip(),
                 "return_code": result.returncode,
             }
-        except Exception as e:
+        except (FileNotFoundError, OSError, subprocess.SubprocessError, subprocess.TimeoutExpired) as e:
             return {"error": str(e)}
 
     @staticmethod
@@ -1362,7 +1374,7 @@ class DockerTools:
             }
         except FileNotFoundError:
             return {"error": "docker not found"}
-        except Exception as e:
+        except (OSError, subprocess.SubprocessError, subprocess.TimeoutExpired) as e:
             return {"error": str(e)}
 
     @staticmethod
@@ -1484,7 +1496,7 @@ class SecurityTools:
             key_bytes = key.encode()
             decrypted = bytes([e ^ key_bytes[i % len(key_bytes)] for i, e in enumerate(encrypted_bytes)])
             return {"decrypted": decrypted.decode(), "algorithm": "xor"}
-        except Exception as e:
+        except (ValueError, UnicodeDecodeError, TypeError) as e:
             return {"error": str(e)}
 
     @staticmethod
@@ -1581,7 +1593,7 @@ class SecurityTools:
                 "size": stat.st_size,
                 "findings": findings,
             }
-        except Exception as e:
+        except (FileNotFoundError, PermissionError, OSError) as e:
             return {"error": str(e)}
 
 
@@ -1946,7 +1958,7 @@ def register_builtin_tools(registry: ToolRegistry) -> dict[str, int]:
                 complexity=complexity,
             )
             counts[category.value] = counts.get(category.value, 0) + 1
-        except Exception as e:
-            logger.warning(f"Failed to register tool '{name}': {e}")
+        except (TypeError, ValueError, AttributeError) as e:
+            logger.warning("Failed to register tool '%s': %s", name, e)
 
     return counts

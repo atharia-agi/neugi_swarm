@@ -126,14 +126,17 @@ class Agent:
 
     @property
     def xp_to_next_level(self) -> int:
+        """Experience points required to reach the next level."""
         return self.level * self.XP_PER_LEVEL
 
     @property
     def skill_points(self) -> int:
+        """Available skill points based on current level."""
         return max(0, self.level - 1)
 
     @property
     def memory_size(self) -> int:
+        """Number of entries in the agent's memory."""
         return len(self._memory)
 
     # ------------------------------------------------------------------
@@ -307,6 +310,11 @@ class Agent:
             self._skills[name] = data
 
     def get_skill(self, name: str) -> Any | None:
+        """Retrieve a loaded skill by name.
+
+        Returns:
+            The skill data, or None if not loaded.
+        """
         return self._skills.get(name)
 
     # ------------------------------------------------------------------
@@ -339,6 +347,7 @@ class Agent:
         return entries[-limit:]
 
     def clear_memory(self) -> None:
+        """Erase all memory entries."""
         self._memory.clear()
 
     def _summarize_memory(self) -> dict[str, int]:
@@ -562,6 +571,7 @@ class Agent:
         )
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the agent state to a dictionary."""
         return {
             "id": self.id,
             "name": self.name,

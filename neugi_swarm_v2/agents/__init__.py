@@ -20,18 +20,18 @@ Default agents:
     Nexus   - Manager/Orchestrator
 """
 
-from .agent import Agent, AgentRole, AgentState, AgentStatus
-from .agent_manager import AgentManager
-from .evaluator_optimizer import EvaluationCriteria, EvaluationResult, EvaluatorOptimizer
-from .message_bus import (
+from agents.agent import Agent, AgentRole, AgentState, AgentStatus
+from agents.agent_manager import AgentManager
+from agents.evaluator_optimizer import EvaluationCriteria, EvaluationResult, EvaluatorOptimizer
+from agents.message_bus import (
     DeadLetterQueue,
     Message,
     MessageBus,
     MessagePriority,
     MessageType,
 )
-from .orchestrator import Orchestrator, OrchestratorReport, WorkerResult
-from .processes import (
+from agents.orchestrator import Orchestrator, OrchestratorReport, WorkerResult
+from agents.processes import (
     ConsensusProcess,
     HierarchicalProcess,
     ParallelProcess,
@@ -41,8 +41,7 @@ from .processes import (
     ProcessStep,
     SequentialProcess,
 )
-from .typed import (
-    Agent,
+from agents.typed import (
     AgentResult,
     DepsT,
     OutputT,

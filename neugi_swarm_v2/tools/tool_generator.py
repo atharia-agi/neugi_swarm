@@ -106,13 +106,13 @@ class PatternObserver:
     - Repeated transformation chains
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._usage_patterns: dict[str, list[dict[str, Any]]] = {}
         self._tool_sequences: list[list[str]] = []
         self._param_patterns: dict[str, dict[str, Any]] = {}
         self._suggestions: list[dict[str, Any]] = []
 
-    def record_usage(self, tool_name: str, params: dict[str, Any], result: Any):
+    def record_usage(self, tool_name: str, params: dict[str, Any], result: Any) -> None:
         """Record a tool usage for pattern analysis."""
         if tool_name not in self._usage_patterns:
             self._usage_patterns[tool_name] = []
@@ -124,12 +124,12 @@ class PatternObserver:
             }
         )
 
-    def record_sequence(self, tool_sequence: list[str]):
+    def record_sequence(self, tool_sequence: list[str]) -> None:
         """Record a sequence of tool calls."""
         self._tool_sequences.append(tool_sequence)
         self._analyze_sequences()
 
-    def _analyze_sequences(self):
+    def _analyze_sequences(self) -> None:
         """Analyze tool sequences for common patterns."""
         sequence_counts: dict[str, int] = {}
         for seq in self._tool_sequences:
@@ -741,7 +741,7 @@ class ToolGenerator:
             # Compile with restricted builtins
             namespace = {"__builtins__": {k: __builtins__[k] for k in self._safe_builtins if k in __builtins__}}
             code_obj = compile(tree, f"<generated_tool:{tool.name}>", "exec")
-            exec(code_obj, namespace)
+            exec(code_obj, namespace)  # nosec B102
             func = namespace.get(tool.name)
             if func is None:
                 raise ToolQualityError(f"Could not compile tool '{tool.name}'")
@@ -749,7 +749,7 @@ class ToolGenerator:
         except Exception as e:
             if isinstance(e, ToolQualityError):
                 raise
-            raise ToolQualityError(f"Compilation failed for '{tool.name}': {str(e)}")
+            raise ToolQualityError(f"Compilation failed for '{tool.name}': {str(e)}") from e
 
     def _validate_quality(self, tool: GeneratedTool) -> ToolQualityReport:
         """Validate the quality of a generated tool."""

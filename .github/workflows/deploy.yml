@@ -7,6 +7,8 @@ on:
       - 'index.html'
       - 'docs.html'
       - 'dashboard.html'
+      - 'install.ps1'
+      - 'install.sh'
       - 'assets/**'
       - '*.html'
       - 'vercel.json'
@@ -36,6 +38,7 @@ jobs:
         run: |
           mkdir -p _site
           cp -r index.html docs.html dashboard.html privacy.html terms.html wizard.html assets _site/
+          cp -r install.ps1 install.sh _site/
           cp -r .nojekyll site.webmanifest _site/ 2>/dev/null || true
           echo "NEUGI Swarm v2.1.3 - Deployed: $(date -u)" > _site/version.txt
           echo "neugi.com" > _site/CNAME

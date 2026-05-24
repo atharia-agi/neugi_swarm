@@ -156,7 +156,7 @@ class Transcript:
     def __init__(self, path: str) -> None:
         self.path = Path(path)
         self._lock = threading.Lock()
-        self._path.parent.mkdir(parents=True, exist_ok=True)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
 
         if not self.path.exists():
             self.path.touch()

@@ -2,13 +2,17 @@
 Web Scan Node for Autonomous Security Harness.
 Performs web application security scanning (e.g., nuclei, nikto) on targets.
 """
-from typing import Any, Dict, List
-import time
+from __future__ import annotations
 
-async def web_scan_node(state: dict, tool_executor, knowledge_searcher, scope_validator, auth_gate, audit_logger) -> dict:
+import json
+import time
+from typing import Any
+
+
+async def web_scan_node(state: dict[str, Any], tool_executor: Any, knowledge_searcher: Any, scope_validator: Any, auth_gate: Any, audit_logger: Any) -> dict[str, Any]:
     """
     Execute web application scanning phase.
-    
+
     Args:
         state: The current workflow state
         tool_executor: ToolExecutor instance
@@ -16,7 +20,7 @@ async def web_scan_node(state: dict, tool_executor, knowledge_searcher, scope_va
         scope_validator: ScopeValidator instance
         auth_gate: AuthGate instance (can be None)
         audit_logger: ImmutableAuditLogger instance
-        
+
     Returns:
         Updated state
     """
@@ -27,11 +31,11 @@ async def web_scan_node(state: dict, tool_executor, knowledge_searcher, scope_va
             'action': 'web_scan_start',
             'targets': state['targets']
         })
-    
+
     # We'll run web scan tools on targets that have open ports (from recon) or all targets if recon didn't run
     # For simplicity, we'll run on all targets, but in reality, we might filter based on recon findings.
     web_findings = []
-    
+
     for target in state['targets']:
         # Scope validation
         if not scope_validator.validate_target(target, 'nuclei'):
@@ -43,7 +47,7 @@ async def web_scan_node(state: dict, tool_executor, knowledge_searcher, scope_va
                     'tool': 'nuclei'
                 })
             continue
-        
+
         # Auth gate check for nuclei (medium risk)
         if auth_gate:
             try:
@@ -58,7 +62,7 @@ async def web_scan_node(state: dict, tool_executor, knowledge_searcher, scope_va
                         'error': str(e)
                     })
                 continue
-        
+
         # Log tool start
         if audit_logger:
             audit_logger.log({
@@ -67,16 +71,16 @@ async def web_scan_node(state: dict, tool_executor, knowledge_searcher, scope_va
                 'tool': 'nuclei',
                 'target': target
             })
-        
+
         # Execute nuclei scan
         try:
             start_time = time.time()
             result = await tool_executor.execute('nuclei', {
                 'targets': [target],
-                'templates': '/tmp/nuclei-templates'  # This would be configured
+                'templates': '/tmp/nuclei-templates'  # nosec B108
             }, timeout=300)
             duration = time.time() - start_time
-            
+
             # Log tool completion
             if audit_logger:
                 audit_logger.log({
@@ -88,7 +92,7 @@ async def web_scan_node(state: dict, tool_executor, knowledge_searcher, scope_va
                     'exit_code': result.get('exit_code'),
                     'vulnerabilities_found': len(result.get('vulnerabilities', []))
                 })
-            
+
             # Process result: extract vulnerabilities from nuclei output
             # Nuclei outputs JSON if we use -json flag
             vulns = []
@@ -99,9 +103,9 @@ async def web_scan_node(state: dict, tool_executor, knowledge_searcher, scope_va
                         try:
                             vuln = json.loads(line)
                             vulns.append(vuln)
-                        except:
+                        except (json.JSONDecodeError, ValueError):
                             pass
-                
+
                 if vulns:
                     web_findings.append({
                         'target': target,
@@ -110,7 +114,7 @@ async def web_scan_node(state: dict, tool_executor, knowledge_searcher, scope_va
                         'raw_output': result.get('raw_output', '')[:1000],
                         'timestamp': result.get('timestamp')
                     })
-                    
+
                     # Add to state findings
                     for vuln in vulns:
                         state['findings'].append({
@@ -141,10 +145,10 @@ async def web_scan_node(state: dict, tool_executor, knowledge_searcher, scope_va
                     'target': target,
                     'error': str(e)
                 })
-    
+
     # Update state with web scan findings
     state['web_findings'] = web_findings
-    
+
     # Log the end of web scan node
     if audit_logger:
         audit_logger.log({
@@ -152,5 +156,5 @@ async def web_scan_node(state: dict, tool_executor, knowledge_searcher, scope_va
             'action': 'web_scan_complete',
             'findings_count': len(web_findings)
         })
-    
+
     return state

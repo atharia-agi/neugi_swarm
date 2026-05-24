@@ -14,11 +14,11 @@ Features:
 Usage:
     from evals.harness import EvalHarness
     from evals.benchmarks import WebSearchBenchmark, BrowserBenchmark
-    
+
     harness = EvalHarness()
     harness.register(WebSearchBenchmark())
     harness.register(BrowserBenchmark())
-    
+
     results = harness.run_all()
     harness.report(results)
 """
@@ -148,7 +148,7 @@ class EvalHarness:
 
     def load_baseline_from_file(self, path: str) -> None:
         """Load baseline from JSON file."""
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
             for name, result_data in data.items():
                 results = [EvalResult(**r) for r in result_data["results"]]
@@ -521,7 +521,7 @@ class SkillBenchmark(Benchmark):
 
         try:
             if task.get("check_loaded"):
-                skills = self.mgr.loader.load_all()
+                self.mgr.loader.load_all()
                 success = True
                 score = 1.0
             else:

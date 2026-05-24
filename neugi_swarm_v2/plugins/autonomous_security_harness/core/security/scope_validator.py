@@ -4,30 +4,30 @@ Validates that targets are within the authorized scope.
 """
 import ipaddress
 import logging
-from typing import Any, Dict, List, Set
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 class ScopeValidator:
-    def __init__(self, scope: Dict[str, Any]):
+    def __init__(self, scope: dict[str, Any]):
         """
         Initialize the scope validator.
-        
+
         Args:
             scope: A dictionary containing scope definition.
-                   Expected keys: 
+                   Expected keys:
                    - allowed_targets: list of strings (IPs, hostnames, CIDR ranges)
                    - allow_private_ips: boolean (default False)
                    - allowed_ports: list of ints or range (default 1-65535)
         """
-        self.allowed_targets: Set[str] = set()
+        self.allowed_targets: set[str] = set()
         self.allow_private_ips: bool = scope.get('allow_private_ips', False)
-        self.allowed_ports: Set[int] = set()
-        
+        self.allowed_ports: set[int] = set()
+
         # Process allowed_targets
         for target in scope.get('allowed_targets', []):
             self.allowed_targets.add(target.strip())
-        
+
         # Process allowed_ports
         ports_config = scope.get('allowed_ports', [])
         if isinstance(ports_config, list):
@@ -55,15 +55,15 @@ class ScopeValidator:
         else:
             # Default to all ports if not specified or invalid
             self.allowed_ports = set(range(1, 65536))
-    
+
     def validate_target(self, target: str, tool: str) -> bool:
         """
         Validate if a target is within the authorized scope.
-        
+
         Args:
             target: The target to validate (IP address or hostname)
             tool: The tool that wants to use the target (for logging)
-            
+
         Returns:
             True if target is allowed, False otherwise
         """
@@ -75,13 +75,13 @@ class ScopeValidator:
         else:
             logger.warning(f"Scope validation failed: Target {target} not in allowed targets for tool {tool}")
             return False
-    
+
     def _is_target_allowed(self, target: str) -> bool:
         """Check if target matches any of the allowed targets (exact, CIDR, or hostname)."""
         # Exact match
         if target in self.allowed_targets:
             return True
-        
+
         # Check if target is an IP address and if any allowed target is a CIDR that contains it
         if self._is_ip_address(target):
             try:
@@ -98,10 +98,10 @@ class ScopeValidator:
             except ValueError:
                 # Not an IP address, so we already did exact match above
                 pass
-        
+
         # If we haven't returned True by now, it's not allowed
         return False
-    
+
     def _is_ip_address(self, target: str) -> bool:
         """Check if the target string is an IP address."""
         try:
@@ -109,7 +109,7 @@ class ScopeValidator:
             return True
         except ValueError:
             return False
-    
+
     def validate_port(self, port: int) -> bool:
         """Validate if a port is within the allowed ports."""
         return port in self.allowed_ports

@@ -2,13 +2,17 @@
 NEUGI v2 Heartbeat Engine
 ==========================
 
-DB-backed wakeup queue with coalescing, budget checks, execution locking,
-task resume across heartbeats, cron-like scheduling, and missed heartbeat
-recovery.
+Health-check watchdog subsystem with DB-backed wakeup queue, coalescing,
+budget checks, execution locking, task resume across heartbeats, and
+missed heartbeat recovery.
 
-The heartbeat engine ensures that periodic tasks execute reliably even
-across process restarts, with no double-work and intelligent merging
-of overlapping scheduled executions.
+BOUNDARY: This module is exclusively for health-check and watchdog tasks
+(liveness probes, connectivity checks, resource monitoring). It does NOT
+handle AI-driven decisions — use autonomous/loop_engine.py for that.
+
+The heartbeat engine ensures that periodic health-check tasks execute
+reliably even across process restarts, with no double-work and intelligent
+merging of overlapping scheduled executions.
 """
 
 from __future__ import annotations
@@ -386,11 +390,24 @@ class WakeupQueue:
 # -- Heartbeat Engine --------------------------------------------------------
 
 class HeartbeatEngine:
-    """Executes heartbeat tasks with reliability guarantees.
+    """Health-check watchdog engine for periodic system monitoring.
+
+    BOUNDARY: This engine handles ONLY health-check and watchdog tasks
+    (liveness probes, connectivity checks, resource monitoring). It does
+    NOT make AI-driven decisions, perform pro-active observations, or
+    invoke LLM callbacks. For pro-active AI behavior, use AutonomousLoop.
+
+    Relationship to other scheduling subsystems:
+        - CronScheduler: "run X every hour" (deterministic, cron-expression)
+        - HeartbeatEngine: "check health every N seconds" (watchdog)
+        - AutonomousLoop: "maybe do Y if conditions suggest it" (AI-driven)
+
+    All three subsystems share SQLite backends and are safe to run
+    concurrently (SQLite WAL mode provides serialization).
 
     Provides DB-backed wakeup queue, coalescing of overlapping heartbeats,
     budget checks before execution, execution lock (no double-work),
-    task resume across heartbeats, cron-like scheduling, and missed
+    task resume across heartbeats, interval-based scheduling, and missed
     heartbeat recovery.
 
     All operations are thread-safe via a reentrant lock.

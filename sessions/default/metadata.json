@@ -1,0 +1,19 @@
+{
+  "session_id": "default",
+  "state": "active",
+  "isolation_mode": "shared",
+  "created_at": "2026-05-23T08:31:25.261887+00:00",
+  "activated_at": "2026-05-24T05:12:55.619927+00:00",
+  "last_activity_at": "2026-05-24T05:13:01.480396+00:00",
+  "last_reset_at": null,
+  "terminated_at": null,
+  "peer_id": null,
+  "channel_id": null,
+  "account_id": null,
+  "transcript_path": "K:\\neugi_swarm\\sessions\\default\\transcript.jsonl",
+  "message_count": 2,
+  "token_estimate": 44,
+  "reset_count": 0,
+  "compaction_count": 0,
+  "custom_fields": {}
+}

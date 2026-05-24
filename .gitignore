@@ -57,6 +57,7 @@ node_modules/
 
 # Cache
 .ruff_cache/
+.mypy_cache/
 .pytest_cache/
 .coverage
 htmlcov/

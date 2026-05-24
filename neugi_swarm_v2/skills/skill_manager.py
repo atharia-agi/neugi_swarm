@@ -13,16 +13,16 @@ try:
 except ImportError:
     yaml = None  # type: ignore
 
-from .skill_contract import (
+from skills.skill_contract import (
     SkillAction,
     SkillContract,
     SkillFrontmatter,
     SkillState,
     SkillTier,
 )
-from .skill_loader import SkillLoader
-from .skill_matcher import MatchResult, SkillMatcher
-from .skill_prompt import CompactionResult, PromptAssembler, PromptTier
+from skills.skill_loader import SkillLoader
+from skills.skill_matcher import MatchResult, SkillMatcher
+from skills.skill_prompt import CompactionResult, PromptAssembler, PromptTier
 
 
 @dataclass

@@ -325,6 +325,28 @@
             background: rgba(255, 255, 255, 0.02);
         }
 
+        .hero-disclaimer {
+            margin-top: 12px;
+            max-width: 760px;
+            font-size: 12px;
+            color: var(--text-tertiary);
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-layer);
+            border-radius: 6px;
+            padding: 10px 12px;
+            text-align: left;
+            line-height: 1.45;
+        }
+
+        .hero-disclaimer strong {
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .hero-disclaimer a {
+            color: var(--text-secondary);
+        }
+
         /* Code Terminal Installation */
         .install-box {
             margin: 60px auto 0;
@@ -778,8 +800,13 @@
             </div>
             <div class="proof-strip" aria-label="Platform proof signals">
                 <span class="proof-chip">Release: May 1, 2026</span>
-                <span class="proof-chip">Tests: 384 passing</span>
+                <span class="proof-chip">Tests: 386 passing</span>
                 <span class="proof-chip">Security: Governance + audit logs</span>
+            </div>
+            <div class="hero-disclaimer" role="note" aria-label="Beta and risk disclosure">
+                <strong>Beta / Experimental Notice:</strong> NEUGI includes autonomous and tool-executing agentic behavior.
+                Keep human oversight enabled, use staged environments, and do not use as the sole control layer for high-risk decisions.
+                Review <a href="terms.html">Terms of Service</a> and <a href="privacy.html">Privacy Policy</a> before production use.
             </div>
 
             <div class="install-box" id="install">

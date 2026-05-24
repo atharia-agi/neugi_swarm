@@ -724,10 +724,6 @@ def resolve_dependencies(
 
     # Recalculate in-degrees properly
     in_degree = {name: 0 for name in graph}
-    for name, deps in graph.items():
-        for dep in deps:
-            if dep in in_degree:
-                pass  # dep must be loaded before name
     # Reverse: for each name, its deps must come first
     reverse_graph: dict[str, set[str]] = {name: set() for name in graph}
     for name, deps in graph.items():

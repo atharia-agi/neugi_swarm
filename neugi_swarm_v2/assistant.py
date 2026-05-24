@@ -9,6 +9,7 @@ Runtime-compatible assistant facade for the v2.1.3 subsystem APIs.
 from __future__ import annotations
 
 import json
+import os
 import time
 from collections.abc import Callable, Generator
 from pathlib import Path
@@ -98,7 +99,17 @@ class NeugiAssistantV2:
             "anthropic_compatible": ProviderType.ANTHROPIC_COMPATIBLE,
         }
         provider_type = provider_map.get(cfg.provider, ProviderType.OPENAI_COMPATIBLE)
-        base_url = cfg.ollama_url if provider_type == ProviderType.OLLAMA else cfg.base_url
+        if provider_type == ProviderType.OLLAMA:
+            base_url = cfg.ollama_url or "http://localhost:11434"
+        else:
+            base_url = cfg.base_url
+            if not base_url:
+                try:
+                    from neugi_swarm_v2.provider_catalog import get_provider
+                    provider_info = get_provider(cfg.provider)
+                    base_url = provider_info.get_base_url() if provider_info else ""
+                except Exception:
+                    base_url = ""
         base_url = self._normalize_base_url(base_url)
         provider_config = ProviderConfig(
             provider_type=provider_type,
@@ -121,7 +132,7 @@ class NeugiAssistantV2:
         cleaned = (base_url or "").rstrip("/")
         if cleaned.endswith("/v1"):
             cleaned = cleaned[:-3]
-        return cleaned or "http://localhost:11434"
+        return cleaned
 
     def _create_fallback_llm_provider(self) -> LLMProvider | None:
         fallback = self.llm.config.fallback_model
@@ -301,17 +312,30 @@ class NeugiAssistantV2:
         return json.dumps(payload, ensure_ascii=False, indent=2)
 
     def register_tool(self, name: str, func: Callable[..., str]) -> None:
+        """Register a custom tool function by name.
+
+        Args:
+            name: Tool identifier used in LLM tool calls.
+            func: Callable that accepts keyword arguments and returns a string.
+        """
         self._tools[name] = func
 
     # -- Public controls ----------------------------------------------------
 
     def enable_steering(self) -> None:
+        """Enable real-time steering message injection into conversations."""
         self._steering_enabled = True
 
     def disable_steering(self) -> None:
+        """Disable real-time steering message injection."""
         self._steering_enabled = False
 
     def send_steering_message(self, message: str) -> None:
+        """Queue a steering message for injection into the next LLM call.
+
+        Args:
+            message: Steering instruction to inject.
+        """
         if self._steering_enabled:
             self._steering_messages.append(message)
 
@@ -331,6 +355,18 @@ class NeugiAssistantV2:
         structured: bool = True,
         **_: Any,
     ) -> StructuredResponse | str:
+        """Send a message and receive an AI response with optional tool use.
+
+        Args:
+            message: User message text.
+            session_id: Session to use. Defaults to the instance session.
+            streaming: If True, collect streamed chunks into a single response.
+            stream: Alias for streaming.
+            structured: If True, return StructuredResponse; otherwise plain text.
+
+        Returns:
+            StructuredResponse with metadata, or plain text if structured=False.
+        """
         start_time = time.time()
         if self._on_user_interaction:
             self._on_user_interaction()
@@ -398,6 +434,15 @@ class NeugiAssistantV2:
         message: str,
         session_id: str | None = None,
     ) -> Generator[str, None, None]:
+        """Stream a chat response token by token.
+
+        Args:
+            message: User message text.
+            session_id: Session to use. Defaults to the instance session.
+
+        Yields:
+            Text chunks as they arrive from the LLM.
+        """
         session = self._get_session(session_id)
         messages = self._build_messages(message, session)
         full_response = ""
@@ -435,6 +480,17 @@ class NeugiAssistantV2:
                 tools=self._tool_schemas(),
             )
         except Exception as exc:
+            if self._try_auto_reroute_provider(exc):
+                try:
+                    return self.llm.chat(
+                        messages=messages,
+                        model=self.llm.config.default_model,
+                        temperature=self.config.llm.temperature,
+                        max_tokens=self.config.llm.max_tokens,
+                        tools=self._tool_schemas(),
+                    )
+                except Exception:
+                    pass
             if self.fallback_llm:
                 try:
                     return self.fallback_llm.chat(
@@ -446,7 +502,78 @@ class NeugiAssistantV2:
                     )
                 except Exception:
                     pass
-            return LLMResponse(content=f"Error: {exc}")
+            return LLMResponse(content=self._humanize_provider_error(exc))
+
+    def _try_auto_reroute_provider(self, error: Exception) -> bool:
+        # Only reroute automatically when local Ollama path is selected and unavailable.
+        if self.llm.config.provider_type != ProviderType.OLLAMA:
+            return False
+        message = str(error).lower()
+        if "localhost" not in message and "11434" not in message and "ollama" not in message:
+            return False
+
+        try:
+            from neugi_swarm_v2.provider_catalog import get_all_providers
+
+            for provider in get_all_providers():
+                if provider.name == "ollama":
+                    continue
+                if not any(os.getenv(env_var) for env_var in provider.env_vars):
+                    continue
+                provider_type = (
+                    ProviderType.ANTHROPIC_COMPATIBLE
+                    if provider.name in {"anthropic", "anthropic_compatible"}
+                    else ProviderType.OPENAI_COMPATIBLE
+                )
+                selected_api_key = ""
+                for env_var in provider.env_vars:
+                    if os.getenv(env_var):
+                        selected_api_key = os.getenv(env_var, "")
+                        break
+                if not selected_api_key:
+                    selected_api_key = self.config.llm.api_key
+                default_model = provider.default_model or self.llm.config.default_model
+                cfg = ProviderConfig(
+                    provider_type=provider_type,
+                    base_url=provider.get_base_url(),
+                    api_key=selected_api_key,
+                    default_model=default_model,
+                    fallback_model=self.config.llm.fallback_model,
+                    timeout=self.llm.config.timeout,
+                    max_retries=self.llm.config.max_retries,
+                    retry_delay=self.llm.config.retry_delay,
+                )
+                if provider_type == ProviderType.ANTHROPIC_COMPATIBLE:
+                    self.llm = AnthropicCompatibleProvider(cfg)
+                else:
+                    self.llm = OpenAICompatibleProvider(cfg)
+                self.fallback_llm = self._create_fallback_llm_provider()
+                return True
+        except Exception:
+            return False
+
+        return False
+
+    def _humanize_provider_error(self, error: Exception) -> str:
+        provider = self.llm.config.provider_type.value
+        raw = str(error)
+        lowered = raw.lower()
+        if "certificate_verify_failed" in lowered or "ssl" in lowered:
+            return (
+                "Provider connection failed (SSL verification). "
+                "Check system certificate trust/proxy inspection, then retry provider test in Setup."
+            )
+        if "401" in lowered or "403" in lowered or "unauthorized" in lowered:
+            return (
+                f"Provider authentication failed for '{provider}'. "
+                "Verify API key and base URL in Setup, then run Test Provider."
+            )
+        if "connection" in lowered or "refused" in lowered or "timed out" in lowered:
+            return (
+                f"Provider '{provider}' is unreachable. "
+                "Validate network/base URL, or switch provider in Setup and run Test Provider."
+            )
+        return f"Provider call failed for '{provider}'. Run Setup → Test Provider, then retry."
 
     def _execute_tool(self, tool_call: ToolCall) -> str:
         tool = self._tools.get(tool_call.name)
@@ -494,17 +621,22 @@ class NeugiAssistantV2:
     # -- Diagnostics --------------------------------------------------------
 
     def get_session_info(self) -> dict[str, Any]:
+        """Return metadata dict for the current session."""
         return self._get_session().to_dict()
 
     def get_memory_stats(self) -> dict[str, Any]:
+        """Return memory system statistics."""
         return self.memory.stats
 
     def get_skill_count(self) -> int:
+        """Return the number of currently enabled skills."""
         return len(self.skills.get_enabled())
 
     def reset_session(self) -> None:
+        """Reset the current session and clear pending steering messages."""
         self.sessions.reset_session(self.session_id)
         self._steering_messages.clear()
 
     def clear_memory(self) -> None:
+        """Reset the session (alias for reset_session)."""
         self.reset_session()

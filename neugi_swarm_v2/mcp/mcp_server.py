@@ -7,48 +7,40 @@ Main MCP server that integrates with NEUGI Swarm subsystems.
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import uuid
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Callable
+from typing import Any
 
 from neugi_swarm_v2.mcp.messages import (
-    CallToolResult,
-    InitializeResult,
-    ListResourcesResult,
-    ReadResourceResult,
-    ListToolsResult,
-    GetPromptResult,
-    ListPromptsResult,
-    RequestMessage,
-    ResponseMessage,
-    NotificationMessage,
-    InitializeParams,
-    JSONRPCMessage,
-    INITIALIZE,
-    INITIALIZED,
-    TOOLS_LIST,
-    TOOLS_CALL,
-    RESOURCES_LIST,
-    RESOURCES_READ,
-    PROMPTS_LIST,
-    PROMPTS_GET,
-    PING,
     CANCEL_REQUEST,
     ERROR_INTERNAL,
-    ERROR_INVALID_REQUEST,
     ERROR_METHOD_NOT_FOUND,
     ERROR_PROMPT_NOT_FOUND,
+    INITIALIZE,
+    INITIALIZED,
+    PING,
+    PROMPTS_GET,
+    PROMPTS_LIST,
+    RESOURCES_LIST,
+    RESOURCES_READ,
+    TOOLS_CALL,
+    TOOLS_LIST,
+    CallToolResult,
+    GetPromptResult,
+    InitializeParams,
+    InitializeResult,
+    NotificationMessage,
+    RequestMessage,
+    ResponseMessage,
 )
-from neugi_swarm_v2.mcp.tool_manager import ToolManager
+from neugi_swarm_v2.mcp.prompt_manager import PromptManager
 from neugi_swarm_v2.mcp.resource_manager import ResourceManager
-from neugi_swarm_v2.mcp.prompt_manager import PromptManager, PromptTemplate
+from neugi_swarm_v2.mcp.tool_manager import ToolManager
 from neugi_swarm_v2.mcp.transport import (
     BaseTransport,
-    StdioTransport,
     HTTPTransport,
-    HTTPConnection,
-    SSEConnection,
+    StdioTransport,
 )
 
 logger = logging.getLogger(__name__)
@@ -63,7 +55,7 @@ class MCPServer:
     """
 
     VERSION = "2024-11-05"
-    CAPABILITIES = {
+    CAPABILITIES: dict[str, dict[str, Any]] = {
         "tools": {},
         "resources": {},
         "prompts": {},
@@ -74,8 +66,8 @@ class MCPServer:
         self,
         name: str = "neugi-swarm",
         version: str = "2.1.3",
-        transport: Optional[BaseTransport] = None,
-        bridge: Optional[Any] = None,
+        transport: BaseTransport | None = None,
+        bridge: Any | None = None,
     ):
         self.name = name
         self.version = version
@@ -91,18 +83,18 @@ class MCPServer:
 
         # Bridge to NEUGI subsystems
         self._bridge = bridge
-        self._neugi: Optional[Any] = None
+        self._neugi: Any | None = None
 
         # Session state
         self._initialized = False
-        self._client_capabilities: Dict[str, Any] = {}
-        self._message_handlers: List[Callable] = []
+        self._client_capabilities: dict[str, Any] = {}
+        self._message_handlers: list[Callable] = []
         self._running = False
-        self._sse_publish_task: Optional[asyncio.Task] = None
+        self._sse_publish_task: asyncio.Task | None = None
 
         # Running tool tasks for cancellation support
-        self._running_tasks: Dict[str, asyncio.Task] = {}
-        self._task_events: Dict[str, asyncio.Event] = {}
+        self._running_tasks: dict[str, asyncio.Task] = {}
+        self._task_events: dict[str, asyncio.Event] = {}
 
         # Register default tools and resources
         self._install_defaults()
@@ -515,7 +507,7 @@ class MCPServer:
         """Run MCP server using stdio transport."""
         transport = StdioTransport()
 
-        async def message_handler(message):
+        async def message_handler(message: Any) -> None:
             if isinstance(message, RequestMessage):
                 response = await self.handle_request(message)
                 await transport.send_response(response)
@@ -537,7 +529,7 @@ class MCPServer:
         """
         transport = HTTPTransport(host=host, port=port, enable_sse=enable_sse)
 
-        async def message_handler(message):
+        async def message_handler(message: Any) -> dict[str, Any] | None:
             if isinstance(message, RequestMessage):
                 response = await self.handle_request(message)
                 return response.to_dict()
@@ -549,7 +541,7 @@ class MCPServer:
         self,
         name: str,
         description: str = "",
-        input_schema: Optional[dict] = None,
+        input_schema: dict | None = None,
     ) -> Callable:
         """Shortcut to register a tool."""
         return self.tools.register(name, description, input_schema)
@@ -574,7 +566,7 @@ class MCPServer:
         name: str,
         description: str,
         template: str,
-        input_variables: Optional[List[str]] = None,
+        input_variables: list[str] | None = None,
     ) -> None:
         """Shortcut to register a prompt template."""
         self.prompts.register_prompt(

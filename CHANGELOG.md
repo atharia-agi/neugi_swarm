@@ -8,7 +8,7 @@
 
 ### Setup & Install Parity
 - `neugi wizard` now uses the canonical `GeniusWizard` setup flow directly.
-- `SmartWizard` and legacy `SetupWizard` are compatibility aliases only; new setup logic belongs in `GeniusWizard`.
+- `SmartWizard` and legacy `SetupWizard` compatibility aliases have been removed; `GeniusWizard` is the sole setup wizard.
 - `RescueWizard` remains the recovery/repair tool and delegates first-time setup to `GeniusWizard`.
 - Added `neugi_swarm_v2/install.ps1` for the Windows PowerShell one-liner. Website and docs now point PowerShell users to `install.ps1` instead of piping a `.bat` file into `iex`.
 - Fixed Unix installer pathing: source installs to `~/neugi_swarm`, while runtime config remains in `~/.neugi`.
@@ -214,7 +214,7 @@
   - Custom model input for any model
   - Custom endpoint for OpenAI-compatible / Anthropic-compatible providers
   - Capability preview before saving
-- **SmartWizard / SetupWizard**: Deprecated compatibility aliases that forward to GeniusWizard
+- **SmartWizard / SetupWizard**: Removed (were deprecated compatibility aliases; GeniusWizard is now the sole wizard)
 - **RescueWizard**: Interactive auto-fix with health checks; setup path delegates to GeniusWizard
 
 ### Configuration Simplification

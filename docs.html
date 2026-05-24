@@ -254,6 +254,7 @@
             <div class="nav-group">
                 <div class="nav-group-title">Advanced</div>
                 <button class="nav-item" onclick="showPage('rescue')">Rescue & Wizard</button>
+                <button class="nav-item" onclick="showPage('risk')">Enterprise Risk & Safety</button>
                 <button class="nav-item" onclick="showPage('ecosystem')">Ecosystem</button>
             </div>
         </aside>
@@ -261,11 +262,33 @@
         <main>
             <!-- INTRODUCTION -->
             <section id="intro" class="page-section active">
-                <div class="badge">v2.1.3 - 29 Subsystems - 384 Tests Passing (2 skipped)</div>
+                <div class="badge">v2.1.3 - 29 Subsystems - 386 Tests Passing (2 skipped)</div>
                 <h1>Neugi Documentation</h1>
                 <p>Deploy, manage, and scale a multi-agent neural swarm acting autonomously on your infrastructure. NEUGI v2.1.3 delivers production-grade orchestration across 29 subsystems, 120+ modules, and ~71K lines of deterministic multi-agent state logic.</p>
 
                 <p>Welcome to the Neugi documentation. Here you will find everything you need to know about setting up and running a local fleet of specialized, deterministic AI agents capable of code generation, browser automation, web search, and raw operating system execution.</p>
+
+                <div class="tip" style="margin-top:10px;">
+                    <div class="tip-title">Verified Runtime Snapshot</div>
+                    <p style="margin:0; color:var(--text-secondary);">
+                        Verified on <code>2026-05-24</code> against runtime fingerprint:
+                        version <code>2.1.3</code>,
+                        <code>25</code> top-level CLI commands,
+                        <code>32</code> dashboard REST endpoints,
+                        <code>17</code> provider catalog entries,
+                        and <code>388</code> collected tests.
+                        Re-validate anytime with <code>python scripts/validate_doc_claims.py --mode strict</code>.
+                    </p>
+                </div>
+
+                <div class="warning" style="margin-top:12px;">
+                    <div class="warning-title">Beta / Experimental Safety Notice</div>
+                    <p style="margin:0; color:var(--text-secondary);">
+                        NEUGI can execute autonomous, tool-driven actions. Treat outputs as assistive, keep a human approval path for impactful operations,
+                        and validate workflows in staging before production rollout. For legal and policy boundaries, review
+                        <a href="terms.html">Terms of Service</a> and <a href="privacy.html">Privacy Policy</a>.
+                    </p>
+                </div>
 
                 <div class="tip" style="margin-top:14px;">
                     <div class="tip-title">New in Dashboard Ops Upgrade</div>
@@ -374,14 +397,20 @@ pip install -e "neugi_swarm_v2[dev]"</code>
                     <button class="copy-btn" onclick="copyCode(this)">Copy</button>
                 </div>
 
-                <h3>Step 4: Start Runtime + Dashboard</h3>
+                <h3>Step 4: Run Shipping Gate (Strict)</h3>
+                <div class="cmd-block">
+                    <code>neugi verify-release --json --no-tests</code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+
+                <h3>Step 5: Start Runtime + Dashboard</h3>
                 <div class="cmd-block">
                     <code>neugi start</code>
                     <button class="copy-btn" onclick="copyCode(this)">Copy</button>
                 </div>
                 <p>Then open <a href="dashboard.html">http://localhost:17901</a> for the web dashboard. The Setup tab can choose providers, search models, enter a key, test the connection, and save the AI config without using the terminal.</p>
 
-                <h3>Step 5: Run Primary Workflow</h3>
+                <h3>Step 6: Run Primary Workflow</h3>
                 <div class="cmd-block">
                     <code>neugi chat</code>
                     <button class="copy-btn" onclick="copyCode(this)">Copy</button>
@@ -395,9 +424,9 @@ pip install -e "neugi_swarm_v2[dev]"</code>
 
             <!-- ARCHITECTURE -->
             <section id="architecture" class="page-section">
-                <div class="badge">25 Subsystems</div>
+                <div class="badge">29 Subsystems</div>
                 <h1>Architecture</h1>
-                <p>Neugi v2 isn't a chatbot loop. It's a deterministic multi-agent state machine with 25 subsystems designed for production-grade reliability at scale.</p>
+                <p>Neugi v2 isn't a chatbot loop. It's a deterministic multi-agent state machine with 29 subsystems designed for production-grade reliability at scale.</p>
 
                 <h2>Core Subsystems</h2>
                 <table>
@@ -417,7 +446,7 @@ pip install -e "neugi_swarm_v2[dev]"</code>
                     <tr><td><strong>Tools</strong></td><td>61 builtins across 10 categories, composition, dynamic generation</td></tr>
                     <tr><td><strong>Channels</strong></td><td>Unified Telegram, Discord, Slack, WhatsApp manager</td></tr>
                     <tr><td><strong>Security</strong></td><td>7-layer sandbox, neuro-symbolic validation, AES-256 secrets</td></tr>
-                    <tr><td><strong>CLI + Wizard</strong></td><td>24 top-level commands, interactive chat, rescue mode, setup wizard</td></tr>
+                    <tr><td><strong>CLI + Wizard</strong></td><td>25 top-level commands, interactive chat, rescue mode, setup wizard</td></tr>
                     <tr><td><strong>Dashboard</strong></td><td>Glass-morphism HTML, 32 REST endpoints, setup provider test, approval queue, WebSocket events</td></tr>
                     <tr><td><strong>Evals</strong></td><td>Benchmark harness, regression detection, skill scoring</td></tr>
                     <tr><td><strong>Multimodal</strong></td><td>Vision input, screenshot analysis, computer use</td></tr>
@@ -521,7 +550,7 @@ class MyAgent(TypedAgent):
 
             <!-- CLI -->
             <section id="cli" class="page-section">
-                <div class="badge">24 Commands</div>
+                <div class="badge">25 Commands</div>
                 <h1>CLI Reference</h1>
                 <p>Neugi provides a robust CLI for full swarm management, interactive chat, diagnostics, and configuration. The table below highlights key commands; run <code>neugi help</code> for the complete live command tree.</p>
 
@@ -536,6 +565,7 @@ class MyAgent(TypedAgent):
                     <tr><td><code>neugi doctor</code></td><td>System diagnostics with auto-fix</td></tr>
                     <tr><td><code>neugi update</code></td><td>Check for updates</td></tr>
                     <tr><td><code>neugi smoke</code></td><td>Run fast end-to-end readiness checks</td></tr>
+                    <tr><td><code>neugi verify-release</code></td><td>Strict release-grade diagnostics and workflow validation</td></tr>
                     <tr><td><code>neugi quickstart</code></td><td>One-command setup, diagnose, smoke test, and start</td></tr>
                     <tr><td><code>neugi autonomous status</code></td><td>Show autonomous loop state and statistics</td></tr>
                     <tr><td><code>neugi agents list</code></td><td>List all active agents</td></tr>
@@ -669,6 +699,92 @@ class MyAgent(TypedAgent):
 # 3. Test connection
 # 4. Keep old config as fallback</code>
                     <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+            </section>
+
+            <!-- ENTERPRISE RISK -->
+            <section id="risk" class="page-section">
+                <div class="badge">Enterprise Controls</div>
+                <h1>Enterprise Risk & Safety</h1>
+                <p>This section is designed for due diligence, security review, and production governance. NEUGI is powerful agentic infrastructure; safe deployment requires explicit controls, human approval paths, and staged rollout discipline.</p>
+
+                <div class="warning">
+                    <div class="warning-title">Beta / Experimental Posture</div>
+                    <p style="margin:0; color:var(--text-secondary);">Autonomous and tool-executing workflows can have side effects. Treat AI outputs as assistive by default, enforce operator approval for high-impact actions, and validate behavior in staging before production.</p>
+                </div>
+
+                <h2>Risk Runbook</h2>
+                <p>Use this runbook as the standard operational loop for all environments:</p>
+                <ol style="color:var(--text-secondary); margin-left:20px; margin-bottom:20px;">
+                    <li><strong>Scope and classify task risk</strong> (info / warn / critical) before execution.</li>
+                    <li><strong>Constrain capabilities</strong>: load only required tools, providers, and channels for the task.</li>
+                    <li><strong>Gate with approval policy</strong>: require explicit human approval for medium/high impact actions.</li>
+                    <li><strong>Execute in staged environment first</strong> with representative data and limited blast radius.</li>
+                    <li><strong>Observe and audit</strong> via governance logs, approval queue, and severity triage.</li>
+                    <li><strong>Promote to production</strong> only after repeatable pass criteria are met.</li>
+                </ol>
+
+                <h2>Approval Matrix by Risk Level</h2>
+                <table>
+                    <tr><th>Risk Level</th><th>Typical Actions</th><th>Required Controls</th><th>Approval SLA</th></tr>
+                    <tr>
+                        <td><strong>Info</strong></td>
+                        <td>Read-only queries, summarization, diagnostics, safe metadata checks</td>
+                        <td>Auto-approve allowed, audit log required, reversible context</td>
+                        <td>Immediate</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Warn</strong></td>
+                        <td>Config updates, non-destructive file edits, provider/model switching</td>
+                        <td>Single human approval, dry-run preferred, rollback path mandatory</td>
+                        <td>&lt; 15 minutes</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Critical</strong></td>
+                        <td>Network/system commands, deployment mutation, privileged or irreversible operations</td>
+                        <td>Two-person approval, staged validation, explicit command preview, post-action verification</td>
+                        <td>&lt; 60 minutes</td>
+                    </tr>
+                </table>
+
+                <h2>Environment Policy Baseline</h2>
+                <table>
+                    <tr><th>Environment</th><th>Default Autonomy</th><th>Approval Policy</th><th>Notes</th></tr>
+                    <tr><td>Dev</td><td>Enabled (bounded)</td><td>Warn/Critical require approval</td><td>Fast iteration, full audit retention recommended</td></tr>
+                    <tr><td>Staging</td><td>Enabled (strict)</td><td>All non-read actions require approval</td><td>Mirror production topology and provider policies</td></tr>
+                    <tr><td>Production</td><td>Limited autonomy</td><td>Critical requires 2 approvers</td><td>Change windows, incident runbooks, rollback tested</td></tr>
+                </table>
+
+                <h2>Operational Checklist (Go / No-Go)</h2>
+                <ul style="color:var(--text-secondary); margin-left:20px; margin-bottom:20px;">
+                    <li><strong>Identity & Access</strong>: least-privilege keys, scoped credentials, rotation policy documented.</li>
+                    <li><strong>Guardrails</strong>: approval queue active, high-risk tooling gated, sandbox boundaries validated.</li>
+                    <li><strong>Observability</strong>: runtime logs, governance events, and alert routing verified.</li>
+                    <li><strong>Resilience</strong>: fallback provider strategy tested, rescue workflow practiced.</li>
+                    <li><strong>Compliance</strong>: data handling and retention aligned with internal/legal requirements.</li>
+                </ul>
+
+                <h2>Recommended Command Sequence</h2>
+                <div class="cmd-block">
+                    <code>neugi doctor --fix
+neugi smoke --strict
+neugi verify-release --json --no-tests
+neugi start
+neugi status</code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+
+                <h2>Compliance Artifact Mode</h2>
+                <p>Generate an auditable due-diligence package (JSON + executive markdown) while enforcing a governance profile:</p>
+                <div class="cmd-block">
+                    <code>neugi verify-release --json --no-tests --risk-profile enterprise --force-policy --report</code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+                <p>Artifacts are written to <code>~/.neugi/reports/</code> and include runtime fingerprint, gate results, governance stats, and active approval rules.</p>
+
+                <div class="tip">
+                    <div class="tip-title">Due Diligence Artifact Pack</div>
+                    <p style="margin:0; color:var(--text-secondary);">For partner/security review, provide: runtime fingerprint, strict docs validation report, smoke/verify-release output, governance policy snapshot, and approval matrix used in production.</p>
                 </div>
             </section>
 

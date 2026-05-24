@@ -5,10 +5,8 @@ Bridges the event bus to the dashboard WebSocket server so events
 are streamed live to all connected dashboard clients.
 """
 
-import json
 import logging
 import threading
-from typing import Any, Optional
 
 from neugi_swarm_v2.dashboard.websocket import WebSocketServer
 from neugi_swarm_v2.observability.event_bus import Event, get_event_bus
@@ -28,7 +26,7 @@ class EventWebSocketBridge:
         self.ws_server = ws_server
         self.event_bus = get_event_bus()
         self._running = False
-        self._thread: Optional[threading.Thread] = None
+        self._thread: threading.Thread | None = None
 
     def start(self) -> None:
         """Start the bridge in a background thread."""

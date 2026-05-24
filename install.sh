@@ -1,30 +1,23 @@
-#!/usr/bin/env bash
-# NEUGI Swarm v2 - Root Install Wrapper
-# Delegates to neugi_swarm_v2/install.sh
-
+#!/bin/bash
 set -e
 
-REPO_URL="https://github.com/atharia-agi/neugi_swarm.git"
-INSTALL_DIR="${NEUGI_INSTALL_DIR:-$HOME/neugi_swarm}"
-
-echo "NEUGI Swarm v2 Installer"
-echo "========================"
-echo ""
-
-if [ -d "$INSTALL_DIR/.git" ]; then
-    echo "Updating existing installation..."
-    cd "$INSTALL_DIR"
-    git pull origin master
-else
-    echo "Cloning repository..."
-    if [ -e "$INSTALL_DIR" ] && [ "$(find "$INSTALL_DIR" -mindepth 1 -maxdepth 1 2>/dev/null | head -n 1)" ]; then
-        echo "[ERROR] Install directory exists but is not a NEUGI git repo: $INSTALL_DIR"
-        echo "Set NEUGI_INSTALL_DIR to an empty directory or remove the directory first."
-        exit 1
-    fi
-    git clone "$REPO_URL" "$INSTALL_DIR"
-    cd "$INSTALL_DIR"
+cat <<'EOF'
+ _   _ _____ _   _  ____ ___
+| \ | | ____| | | |/ ___|_ _|
+|  \| |  _| | | | | |  _ | |
+| |\  | |___| |_| | |_| || |
+|_| \_|_____|\___/ \____|___|
+EOF
+echo "NEUGI Installer Safety Notice"
+echo "- This framework can execute autonomous and tool-driven actions."
+echo "- Outputs can be incorrect; keep human oversight and staged rollout."
+echo "- Use implies acceptance of Terms/Privacy at https://neugi.com."
+echo
+read -r -p "Continue installer bootstrap? [y/N]: " NEUGI_BOOTSTRAP_CONSENT
+if [[ ! "$NEUGI_BOOTSTRAP_CONSENT" =~ ^[Yy]$ ]]; then
+  echo "[NEUGI] Installation cancelled by user."
+  exit 0
 fi
 
-echo "Running v2 installer..."
-bash neugi_swarm_v2/install.sh
+SCRIPT_URL="https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm_v2/install.sh"
+curl -fsSL "$SCRIPT_URL" | bash

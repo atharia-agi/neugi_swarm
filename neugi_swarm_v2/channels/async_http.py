@@ -5,10 +5,10 @@ Provides async HTTP requests with fallback to thread executor.
 
 Usage:
     from channels.async_http import AsyncHTTPClient
-    
+
     client = AsyncHTTPClient()
     result = await client.post("https://api.example.com", json={"key": "value"})
-    
+
     # Or as context manager
     async with AsyncHTTPClient() as client:
         result = await client.get("https://api.example.com")
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 class AsyncHTTPClient:
     """
     Async HTTP client with aiohttp preferred, requests fallback.
-    
+
     Automatically detects available backend:
         1. aiohttp (truly async, preferred)
         2. requests + asyncio.to_thread (fallback)
@@ -160,7 +160,7 @@ class AsyncHTTPClient:
         import requests
 
         def _do_request():
-            kwargs = {"timeout": timeout}
+            kwargs: dict[str, Any] = {}
             if headers:
                 kwargs["headers"] = headers
             if json_data:
@@ -169,11 +169,11 @@ class AsyncHTTPClient:
                 kwargs["data"] = data
 
             if method == "GET":
-                return requests.get(url, **kwargs)
+                return requests.get(url, timeout=timeout, **kwargs)
             elif method == "POST":
-                return requests.post(url, **kwargs)
+                return requests.post(url, timeout=timeout, **kwargs)
             else:
-                return requests.request(method, url, **kwargs)
+                return requests.request(method, url, timeout=timeout, **kwargs)
 
         loop = asyncio.get_event_loop()
         resp = await loop.run_in_executor(None, _do_request)

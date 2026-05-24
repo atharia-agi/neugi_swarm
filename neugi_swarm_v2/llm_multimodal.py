@@ -13,7 +13,7 @@ Features:
 
 Usage:
     from llm_multimodal import MultimodalProvider, ImageMessage
-    
+
     provider = MultimodalProvider.from_provider(ollama_provider)
     response = provider.chat_with_image(
         messages=[{"role": "user", "content": "What's in this screenshot?"}],
@@ -43,7 +43,7 @@ class ImageMessage:
 
     def to_ollama_format(self) -> dict[str, Any]:
         """Convert to Ollama API format."""
-        message = {"role": "user", "content": self.text}
+        message: dict[str, Any] = {"role": "user", "content": self.text}
         if self.image_b64:
             message["images"] = [self.image_b64]
         elif self.image_path:
@@ -53,7 +53,7 @@ class ImageMessage:
 
     def to_openai_format(self) -> dict[str, Any]:
         """Convert to OpenAI API format."""
-        content = [{"type": "text", "text": self.text}]
+        content: list[dict[str, Any]] = [{"type": "text", "text": self.text}]
 
         if self.image_b64:
             content.append({
@@ -77,7 +77,7 @@ class ImageMessage:
 
     def to_anthropic_format(self) -> dict[str, Any]:
         """Convert to Anthropic API format."""
-        content = [{"type": "text", "text": self.text}]
+        content: list[dict[str, Any]] = [{"type": "text", "text": self.text}]
 
         if self.image_b64:
             content.append({
@@ -131,7 +131,7 @@ class MultimodalProvider:
     ) -> LLMResponse:
         """
         Send a chat message with an image.
-        
+
         Args:
             messages: Previous message history
             image_b64: Base64-encoded image (PNG/JPEG)
@@ -139,7 +139,7 @@ class MultimodalProvider:
             model: Model override
             temperature: Sampling temperature
             max_tokens: Max output tokens
-            
+
         Returns:
             LLMResponse with description/analysis
         """
@@ -173,12 +173,12 @@ class MultimodalProvider:
     ) -> LLMResponse:
         """
         Analyze a screenshot for Computer Use.
-        
+
         Args:
             screenshot_b64: Base64 screenshot
             task: What to analyze
             model: Vision model override
-            
+
         Returns:
             LLMResponse with structured analysis
         """
@@ -312,7 +312,7 @@ class VisionComputerUse:
     ) -> dict[str, Any]:
         """
         Use vision model to determine next action.
-        
+
         Returns:
             Dict with action, selector, text, url, reason
         """

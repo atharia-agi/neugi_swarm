@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .agent import Agent, AgentRole, AgentStatus
+from agents.agent import Agent, AgentRole, AgentStatus
 
 logger = logging.getLogger(__name__)
 
@@ -199,15 +199,18 @@ class AgentManager:
         return agents
 
     def get_agent(self, agent_id: str) -> Agent | None:
+        """Look up an agent by its unique ID."""
         return self._agents.get(agent_id)
 
     def get_agent_by_name(self, name: str) -> Agent | None:
+        """Look up an agent by display name (case-insensitive)."""
         for agent in self._agents.values():
             if agent.name.lower() == name.lower():
                 return agent
         return None
 
     def list_agents(self) -> list[Agent]:
+        """Return all registered agents."""
         return list(self._agents.values())
 
     def remove_agent(self, agent_id: str) -> bool:
@@ -219,6 +222,7 @@ class AgentManager:
         return False
 
     def start_agent(self, agent_id: str) -> bool:
+        """Transition an idle or sleeping agent to active state."""
         agent = self._agents.get(agent_id)
         if agent and agent.status in (AgentStatus.IDLE, AgentStatus.SLEEPING):
             agent.status = AgentStatus.IDLE
@@ -226,6 +230,7 @@ class AgentManager:
         return False
 
     def stop_agent(self, agent_id: str) -> bool:
+        """Put an agent to sleep."""
         agent = self._agents.get(agent_id)
         if agent and agent.status != AgentStatus.SLEEPING:
             agent.status = AgentStatus.SLEEPING
@@ -233,6 +238,7 @@ class AgentManager:
         return False
 
     def pause_agent(self, agent_id: str) -> bool:
+        """Pause an idle agent (transition to waiting)."""
         agent = self._agents.get(agent_id)
         if agent and agent.status == AgentStatus.IDLE:
             agent.status = AgentStatus.WAITING
@@ -240,6 +246,7 @@ class AgentManager:
         return False
 
     def resume_agent(self, agent_id: str) -> bool:
+        """Resume a paused agent (transition from waiting to idle)."""
         agent = self._agents.get(agent_id)
         if agent and agent.status == AgentStatus.WAITING:
             agent.status = AgentStatus.IDLE
@@ -247,6 +254,7 @@ class AgentManager:
         return False
 
     def terminate_agent(self, agent_id: str) -> bool:
+        """Terminate and remove an agent from the registry."""
         agent = self._agents.get(agent_id)
         if agent:
             agent.status = AgentStatus.ERROR
@@ -351,6 +359,11 @@ class AgentManager:
         perf["total_response_time"] += duration
 
     def get_performance(self, agent_id: str) -> dict[str, Any]:
+        """Get performance metrics for a specific agent.
+
+        Returns:
+            Dict with success_rate, avg_response_time, and error_rate.
+        """
         perf = self._performance[agent_id]
         total = perf["total_tasks"]
         return {
@@ -362,6 +375,7 @@ class AgentManager:
         }
 
     def get_all_performance(self) -> dict[str, dict[str, Any]]:
+        """Get performance metrics for all agents."""
         return {aid: self.get_performance(aid) for aid in self._performance}
 
     # ------------------------------------------------------------------
@@ -493,6 +507,11 @@ class AgentManager:
     # ------------------------------------------------------------------
 
     def start_all(self) -> int:
+        """Start all agents that are idle or sleeping.
+
+        Returns:
+            Number of agents successfully started.
+        """
         count = 0
         for agent in self._agents.values():
             if self.start_agent(agent.id):
@@ -500,6 +519,11 @@ class AgentManager:
         return count
 
     def stop_all(self) -> int:
+        """Stop all running agents.
+
+        Returns:
+            Number of agents successfully stopped.
+        """
         count = 0
         for agent in self._agents.values():
             if self.stop_agent(agent.id):
@@ -507,12 +531,15 @@ class AgentManager:
         return count
 
     def get_agents_by_status(self, status: AgentStatus) -> list[Agent]:
+        """Filter agents by their current status."""
         return [a for a in self._agents.values() if a.status == status]
 
     def get_agents_by_role(self, role: AgentRole) -> list[Agent]:
+        """Filter agents by their assigned role."""
         return [a for a in self._agents.values() if a.role == role]
 
     def summary(self) -> dict[str, Any]:
+        """Return a summary of all agents grouped by status and role."""
         return {
             "total_agents": len(self._agents),
             "by_status": {

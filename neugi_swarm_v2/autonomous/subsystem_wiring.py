@@ -279,7 +279,7 @@ class SubsystemWiring:
         Uses existing event loop if one is running, else creates new.
         """
         try:
-            loop = asyncio.get_running_loop()
+            asyncio.get_running_loop()
             # Already in an async context — schedule and wait
             import concurrent.futures
             with concurrent.futures.ThreadPoolExecutor() as pool:

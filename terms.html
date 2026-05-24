@@ -2,37 +2,101 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Terms of Service — NEUGI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="https://neugi.com/assets/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://neugi.com/assets/favicon-32x32.png">
+    <title>Terms of Service - NEUGI</title>
     <style>
-        body {
-            background: #000;
-            color: #a1a1aa;
-            font-family: 'Inter', -apple-system, sans-serif;
-            line-height: 1.6;
-            max-width: 800px;
-            margin: 60px auto;
-            padding: 0 24px;
+        :root {
+            --bg: #0d0d0d;
+            --panel: #111111;
+            --border: rgba(255, 255, 255, 0.06);
+            --text: #f4f4f5;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
         }
-        h1 { color: #fff; font-size: 32px; margin-bottom: 8px; }
-        h2 { color: #fff; font-size: 20px; margin-top: 32px; }
-        a { color: #6366f1; }
-        .updated { color: #71717a; font-size: 14px; margin-bottom: 32px; }
+        * { box-sizing: border-box; }
+        body {
+            background: var(--bg);
+            color: var(--text-secondary);
+            font-family: "Inter", -apple-system, "Segoe UI", sans-serif;
+            font-size: 13px;
+            line-height: 1.55;
+            max-width: 860px;
+            margin: 32px auto;
+            padding: 0 24px 36px;
+        }
+        h1 { color: var(--text); font-size: 24px; margin: 0 0 8px; letter-spacing: -0.02em; }
+        h2 { color: var(--text); font-size: 14px; margin: 24px 0 8px; }
+        p, li { margin: 0 0 10px; }
+        ul { margin: 0 0 10px 18px; padding: 0; }
+        a { color: #e4e4e7; }
+        .updated { color: var(--text-muted); font-size: 12px; margin-bottom: 18px; }
+        .banner {
+            border: 1px solid rgba(245, 158, 11, 0.28);
+            background: rgba(245, 158, 11, 0.08);
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin-bottom: 18px;
+            color: #fbbf24;
+            font-weight: 500;
+        }
+        .card {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--panel);
+            padding: 14px;
+            margin-top: 12px;
+        }
     </style>
 </head>
 <body>
     <h1>Terms of Service</h1>
-    <p class="updated">Last updated: April 2026</p>
+    <p class="updated">Last updated: May 24, 2026</p>
 
-    <h2>License</h2>
-    <p>NEUGI Swarm is released under the MIT License. You are free to use, modify, and distribute it for personal and commercial purposes.</p>
+    <div class="banner">
+        Beta / Experimental Notice: NEUGI is an advanced agentic framework. Features may evolve rapidly and can produce unexpected behavior if deployed without safeguards.
+    </div>
 
-    <h2>No Warranty</h2>
-    <p>NEUGI is provided "as is" without warranty of any kind. The authors are not liable for any damages arising from the use of this software.</p>
+    <h2>1. Scope</h2>
+    <p>These terms govern your use of NEUGI websites, documentation, and software distributions. By using NEUGI, you agree to these terms and applicable law.</p>
 
-    <h2>Responsible Use</h2>
-    <p>Users are responsible for ensuring their use of NEUGI complies with applicable laws and the terms of any third-party services (LLM providers, APIs) they connect to.</p>
+    <h2>2. Open-Source License</h2>
+    <p>NEUGI source code is distributed under the MIT License. License permissions and obligations are defined by that license file in the repository.</p>
 
-    <h2>Contributions</h2>
-    <p>Contributions to the NEUGI project are welcome and governed by the project's Contributor License Agreement implied by the MIT License.</p>
+    <h2>3. Beta and Experimental Features</h2>
+    <p>NEUGI includes autonomous and tool-executing capabilities. You acknowledge that:</p>
+    <ul>
+        <li>Outputs may be incorrect, incomplete, or unsafe for direct execution.</li>
+        <li>Behavior may change between versions, including defaults and integrations.</li>
+        <li>You are responsible for testing in non-production environments before broader rollout.</li>
+    </ul>
+
+    <h2>4. Human Oversight Requirement</h2>
+    <p>You are responsible for implementing review and approval controls appropriate for your risk level. NEUGI should not be the sole decision-maker in safety-critical, legal, medical, financial, or other high-impact contexts.</p>
+
+    <h2>5. Third-Party Provider Responsibility</h2>
+    <p>When you connect external model or infrastructure providers (for example OpenAI-compatible or Anthropic-compatible services), your use is also governed by those providers' terms, pricing, and policies.</p>
+
+    <h2>6. Acceptable Use</h2>
+    <p>You agree not to use NEUGI for unlawful activity, rights violations, or unauthorized access. You must comply with relevant security, data protection, and export-control requirements in your jurisdiction.</p>
+
+    <h2>7. No Warranty</h2>
+    <p>NEUGI is provided "as is" and "as available," without warranties of any kind, express or implied, including merchantability, fitness for a particular purpose, and non-infringement.</p>
+
+    <h2>8. Limitation of Liability</h2>
+    <p>To the maximum extent permitted by law, contributors and maintainers are not liable for any direct, indirect, incidental, special, consequential, or exemplary damages arising from use of NEUGI.</p>
+
+    <h2>9. Security and Operations</h2>
+    <p>You are responsible for operational controls including credential management, environment hardening, access control, monitoring, and incident response for your own deployment.</p>
+
+    <h2>10. Changes to Terms</h2>
+    <p>These terms may be updated over time. Continued use after updates means you accept the revised terms.</p>
+
+    <div class="card">
+        <p style="margin:0;">
+            Questions about these terms: <a href="mailto:atharia.agi@gmail.com">atharia.agi@gmail.com</a>
+        </p>
+    </div>
 </body>
 </html>

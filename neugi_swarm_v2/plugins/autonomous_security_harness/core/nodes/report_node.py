@@ -2,13 +2,16 @@
 Report Node for Autonomous Security Harness.
 Generates a final report from the state.
 """
-from typing import Any, Dict, List
-import time
+from __future__ import annotations
 
-async def report_node(state: dict, tool_executor, knowledge_searcher, scope_validator, auth_gate, audit_logger) -> dict:
+import time
+from typing import Any
+
+
+async def report_node(state: dict[str, Any], tool_executor: Any, knowledge_searcher: Any, scope_validator: Any, auth_gate: Any, audit_logger: Any) -> dict[str, Any]:
     """
     Execute reporting phase.
-    
+
     Args:
         state: The current workflow state
         tool_executor: ToolExecutor instance
@@ -16,7 +19,7 @@ async def report_node(state: dict, tool_executor, knowledge_searcher, scope_vali
         scope_validator: ScopeValidator instance
         auth_gate: AuthGate instance (can be None)
         audit_logger: ImmutableAuditLogger instance
-        
+
     Returns:
         Updated state (with a final_report field)
     """
@@ -27,7 +30,7 @@ async def report_node(state: dict, tool_executor, knowledge_searcher, scope_vali
             'action': 'report_start',
             'findings_count': len(state.get('findings', []))
         })
-    
+
     # Generate a report based on the state
     # We'll create a simple dictionary report, but in reality, this could be JSON, PDF, etc.
     report = {
@@ -50,11 +53,11 @@ async def report_node(state: dict, tool_executor, knowledge_searcher, scope_vali
             'compliance_frameworks': list(set(state.get('compliance_tags', [])))
         }
     }
-    
+
     # Optionally, we could generate a more formatted report (e.g., markdown, HTML, PDF)
     # For now, we'll just store the report in the state.
     state['final_report'] = report
-    
+
     # Log the end of report node
     if audit_logger:
         audit_logger.log({
@@ -62,8 +65,8 @@ async def report_node(state: dict, tool_executor, knowledge_searcher, scope_vali
             'action': 'report_complete',
             'report_size': len(str(report))
         })
-    
+
     # Set next to END (the workflow will end after this node)
     state['next'] = 'END'
-    
+
     return state

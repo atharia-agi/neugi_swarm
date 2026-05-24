@@ -39,6 +39,11 @@ from tools.builtins import (
     WebTools,
     register_builtin_tools,
 )
+from tools.plugin_validator import (
+    PluginValidationError,
+    validate_plugin,
+    validate_plugin_structure,
+)
 from tools.tool_composer import (
     CompositionResult,
     CompositionType,
@@ -85,11 +90,6 @@ from tools.web_search import (
     WebSearch,
     WebSearchConfig,
     WebSearchError,
-)
-from tools.plugin_validator import (
-    validate_plugin,
-    validate_plugin_structure,
-    PluginValidationError,
 )
 
 __all__ = [

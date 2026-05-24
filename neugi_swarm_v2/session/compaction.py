@@ -508,7 +508,7 @@ class CompactionEngine:
         try:
             session = ctx.session
             if hasattr(session, "metadata") and session.metadata.transcript_path:
-                from .transcript import Transcript
+                from session.transcript import Transcript
                 transcript = Transcript(session.metadata.transcript_path)
                 transcript.prune_old_tool_results(keep_recent=10)
         except Exception:

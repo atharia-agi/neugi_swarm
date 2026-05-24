@@ -34,6 +34,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
+import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -457,7 +458,7 @@ class SoulEngine:
                 )
                 if results:
                     lines.append("## Recent Events")
-                    for entry, score, _ in results[:10]:
+                    for entry, _score, _ in results[:10]:
                         ts = entry.created_at.strftime("%Y-%m-%d %H:%M") if hasattr(entry.created_at, "strftime") else str(entry.created_at)[:16]
                         lines.append(f"- [{ts}] {entry.content}")
                     lines.append("")
@@ -470,7 +471,7 @@ class SoulEngine:
                 )
                 if task_results:
                     lines.append("## Active Tasks")
-                    for entry, score, _ in task_results[:5]:
+                    for entry, _score, _ in task_results[:5]:
                         lines.append(f"- {entry.content}")
                     lines.append("")
 
@@ -501,7 +502,7 @@ class SoulEngine:
             .replace("{{tech_stack}}", "Python")
             .replace("{{os_name}}", os.name)
             .replace("{{shell}}", os.environ.get("SHELL", "unknown"))
-            .replace("{{python_version}}", f"{os.sys.version_info.major}.{os.sys.version_info.minor}")
+            .replace("{{python_version}}", f"{sys.version_info.major}.{sys.version_info.minor}")
             .replace("{{neugi_version}}", "2.1.3")
         )
 

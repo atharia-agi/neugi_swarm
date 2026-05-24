@@ -7,7 +7,7 @@ import textwrap
 from dataclasses import dataclass
 from enum import Enum
 
-from .skill_contract import SkillContract, SkillState
+from skills.skill_contract import SkillContract, SkillState
 
 
 class PromptTier(Enum):

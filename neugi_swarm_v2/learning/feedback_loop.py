@@ -613,14 +613,13 @@ class FeedbackLoop:
         Returns:
             List of TuningRecommendation objects.
         """
-        recommendations = []
+        recommendations: list[TuningRecommendation] = []
         try:
             summaries = self.get_all_summaries()
 
             if not summaries:
                 return recommendations
 
-            overall_avg = sum(s.avg_rating for s in summaries) / len(summaries)
             overall_recent = sum(s.recent_avg for s in summaries) / len(summaries)
 
             low_performers = [s for s in summaries if s.avg_rating < 3.0]

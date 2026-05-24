@@ -1,5 +1,6 @@
 """Compliance framework checker (ISO 27001, GDPR, NIST)."""
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 logger = __import__("logging").getLogger(__name__)
 
 COMPLIANCE_FRAMEWORKS = {
@@ -30,7 +31,7 @@ COMPLIANCE_FRAMEWORKS = {
     },
 }
 
-def check_compliance(targets: List[str], frameworks: List[str]) -> Dict[str, Any]:
+def check_compliance(targets: list[str], frameworks: list[str]) -> dict[str, Any]:
     """Check targets against compliance frameworks.
 
     Args:
@@ -58,11 +59,11 @@ def check_compliance(targets: List[str], frameworks: List[str]) -> Dict[str, Any
         "results": results, "overall_score": _calculate_score(results),
     }
 
-def _estimate_coverage(framework: str, targets: List[str]) -> float:
+def _estimate_coverage(framework: str, targets: list[str]) -> float:
     base = {"NIST": 0.45, "ISO27001": 0.35, "GDPR": 0.50, "OWASP": 0.60, "MITRE": 0.40}
     return base.get(framework, 0.5)
 
-def _get_recommendations(framework: str) -> List[str]:
+def _get_recommendations(framework: str) -> list[str]:
     recs = {
         "NIST": ["Implement continuous monitoring (DE.CM)", "Conduct risk assessment (ID.RA)"],
         "ISO27001": ["Establish ISMS policy (A.5.1)", "Implement access control (A.9.1)"],
@@ -72,6 +73,6 @@ def _get_recommendations(framework: str) -> List[str]:
     }
     return recs.get(framework, [])
 
-def _calculate_score(results: Dict) -> float:
+def _calculate_score(results: dict) -> float:
     scores = [r.get("coverage", 0) for r in results.values() if isinstance(r, dict)]
     return round(sum(scores) / len(scores), 2) if scores else 0.0

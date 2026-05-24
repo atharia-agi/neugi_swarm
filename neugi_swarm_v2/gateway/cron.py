@@ -2,9 +2,14 @@
 NEUGI v2 Cron Scheduler
 ========================
 
-Cron expression parsing, job registration, execution with isolation,
-history tracking, pause/resume/disable, concurrent job limiting,
-and job dependency chains.
+Deterministic task scheduler for time-based recurring jobs. Provides cron
+expression parsing, job registration, execution with isolation, history
+tracking, pause/resume/disable, concurrent job limiting, and job dependency
+chains.
+
+BOUNDARY: This module is exclusively for deterministic, time-triggered tasks
+(backups, cleanup, log rotation, history pruning). It does NOT handle
+AI-driven decisions — use autonomous/loop_engine.py for that.
 
 Supports standard 5-field cron expressions: minute, hour, day, month, day-of-week.
 """
@@ -401,7 +406,20 @@ class CronExecutionTimeoutError(CronError):
 # -- Cron Scheduler ----------------------------------------------------------
 
 class CronScheduler:
-    """Manages cron job scheduling, execution, and history.
+    """Deterministic task scheduler for time-based recurring jobs.
+
+    BOUNDARY: This scheduler handles ONLY deterministic, time-triggered tasks
+    (backups, cleanup, log rotation, history pruning). It does NOT make
+    AI-driven decisions, perform pro-active observations, or invoke LLM
+    callbacks. For pro-active AI behavior, use AutonomousLoop.
+
+    Relationship to other scheduling subsystems:
+        - CronScheduler: "run X every hour" (deterministic, cron-expression)
+        - HeartbeatEngine: "check health every N seconds" (watchdog)
+        - AutonomousLoop: "maybe do Y if conditions suggest it" (AI-driven)
+
+    All three subsystems share SQLite backends and are safe to run
+    concurrently (SQLite WAL mode provides serialization).
 
     Provides cron expression parsing, job registration with isolation,
     execution history, pause/resume/disable controls, concurrent job
@@ -918,11 +936,11 @@ class CronScheduler:
             future = executor.submit(handler, *args, **kwargs)
             try:
                 return future.result(timeout=timeout)
-            except concurrent.futures.TimeoutError:
+            except concurrent.futures.TimeoutError as e:
                 future.cancel()
                 raise CronExecutionTimeoutError(
                     f"Job execution exceeded {timeout}s timeout"
-                )
+                ) from e
 
     def _dependencies_satisfied(self, job: CronJob) -> bool:
         """Check if all dependencies for a job have run successfully.

@@ -341,7 +341,7 @@ class ChainOfVerification:
         supporting = 0
         total = len(answers)
 
-        for question, answer in zip(questions, answers):
+        for question, answer in zip(questions, answers, strict=False):
             if answer.supports_claim:
                 supporting += 1
             else:
@@ -439,7 +439,7 @@ class ChainOfVerification:
     ) -> str:
         qa_pairs = "\n".join(
             f"Q: {q.question}\nA: {a.answer}\nSupports: {'Yes' if a.supports_claim else 'No'}\n"
-            for q, a in zip(questions, answers)
+            for q, a in zip(questions, answers, strict=False)
         )
 
         return (
@@ -461,7 +461,7 @@ class ChainOfVerification:
     ) -> str:
         verified = "\n".join(
             f"- {q.question} -> {a.answer} ({'confirmed' if a.supports_claim else 'disputed'})"
-            for q, a in zip(questions, answers)
+            for q, a in zip(questions, answers, strict=False)
         )
 
         disc_text = "\n".join(f"- {d}" for d in discrepancies)
@@ -517,7 +517,7 @@ class ChainOfVerification:
             for s in text.replace("\n", " ").split(".")
             if s.strip() and "?" in s
         ]
-        for i, sentence in enumerate(
+        for _i, sentence in enumerate(
             sentences[: self.config.questions_per_round]
         ):
             questions.append(
@@ -609,7 +609,7 @@ class ChainOfVerification:
             "-" * 40,
         ]
 
-        for q, a in zip(result.questions, result.answers):
+        for q, a in zip(result.questions, result.answers, strict=False):
             status = "✓" if a.supports_claim else "✗"
             lines.append(f"  {status} {q.question}")
             lines.append(f"    Claim: {q.claim_span}")

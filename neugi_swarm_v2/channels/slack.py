@@ -12,11 +12,11 @@ import hashlib
 import hmac
 import logging
 import time
+from collections.abc import Callable
 from typing import Any
 
 import requests
-
-from .base import (
+from channels.base import (
     Attachment,
     BaseChannel,
     ChannelCapabilities,
@@ -118,7 +118,6 @@ class SlackChannel(BaseChannel):
 
             remaining = response.headers.get("X-RateLimit-Remaining")
             reset = response.headers.get("X-RateLimit-Reset")
-            retry = response.headers.get("Retry-After")
             if remaining is not None and reset is not None:
                 self._health.record_rate_limit(
                     int(remaining), float(reset)
@@ -639,11 +638,11 @@ class SlackChannel(BaseChannel):
             return self._parse_user(result["user"])
         return None
 
-    def register_slash_command(self, command: str, handler) -> None:
+    def register_slash_command(self, command: str, handler: Callable) -> None:
         """Register a slash command handler."""
         self._slash_commands[command] = handler
 
-    def register_block_action(self, action_id: str, handler) -> None:
+    def register_block_action(self, action_id: str, handler: Callable) -> None:
         """Register a block action handler."""
         self._block_actions[action_id] = handler
 

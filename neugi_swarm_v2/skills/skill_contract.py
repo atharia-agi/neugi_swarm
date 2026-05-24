@@ -164,8 +164,8 @@ class SkillFrontmatter:
         """Serialize to YAML string (without --- delimiters)."""
         try:
             import yaml
-        except ImportError:
-            raise RuntimeError("PyYAML is required for YAML serialization")
+        except ImportError as e:
+            raise RuntimeError("PyYAML is required for YAML serialization") from e
 
         data: dict[str, Any] = {
             "name": self.name,

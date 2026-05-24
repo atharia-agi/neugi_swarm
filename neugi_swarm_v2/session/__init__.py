@@ -5,13 +5,13 @@ Provides session lifecycle management, context compaction,
 real-time steering, and transcript handling.
 """
 
-from .compaction import (
+from session.compaction import (
     CompactionConfig,
     CompactionEngine,
     CompactionResult,
     CompactionStrategy,
 )
-from .session_manager import (
+from session.session_manager import (
     Session,
     SessionCheckpoint,
     SessionConfig,
@@ -21,7 +21,7 @@ from .session_manager import (
     SessionRegistry,
     SessionState,
 )
-from .steering import (
+from session.steering import (
     MessageQueuePolicy,
     SteeringConfig,
     SteeringEngine,
@@ -29,7 +29,7 @@ from .steering import (
     SteeringMessage,
     SteeringPriority,
 )
-from .transcript import (
+from session.transcript import (
     Transcript,
     TranscriptEntry,
     TranscriptFormat,

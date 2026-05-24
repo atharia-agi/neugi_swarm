@@ -13,14 +13,14 @@ Features:
 
 Usage:
     from a2a import A2AProtocol, AgentCapability, A2AMessage
-    
+
     protocol = A2AProtocol()
-    
+
     # Register agent with capabilities
     protocol.register_agent("cipher", capabilities=[
         AgentCapability(name="code", description="Write and review code")
     ])
-    
+
     # Send message to another agent
     protocol.send("cipher", A2AMessage(
         task="review this Python function",
@@ -161,7 +161,7 @@ class MessageExpiredError(A2AError):
 class A2AProtocol:
     """
     Agent-to-Agent communication protocol.
-    
+
     Implements:
     - Agent registry with capability discovery
     - Message routing and delivery
@@ -170,7 +170,7 @@ class A2AProtocol:
     - Load balancing for multi-agent tasks
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._agents: dict[str, AgentRegistration] = {}
         self._message_handlers: dict[str, Callable[[A2AMessage], A2AMessage | None]] = {}
         self._message_queue: list[A2AMessage] = []
@@ -188,14 +188,14 @@ class A2AProtocol:
     ) -> AgentRegistration:
         """
         Register an agent with the protocol.
-        
+
         Args:
             agent_id: Unique agent identifier
             name: Human-readable name
             capabilities: List of capabilities this agent provides
             handler: Callback for incoming messages
             metadata: Additional agent metadata
-            
+
         Returns:
             AgentRegistration object
         """
@@ -230,12 +230,12 @@ class A2AProtocol:
     ) -> A2AMessage | None:
         """
         Send a message to an agent.
-        
+
         Args:
             recipient_id: Target agent ID
             message: Message to send
             callback: Optional callback for response
-            
+
         Returns:
             Response message if synchronous, None if async
         """
@@ -301,11 +301,11 @@ class A2AProtocol:
     ) -> dict[str, A2AMessage | None]:
         """
         Broadcast message to all agents (or those with specific capability).
-        
+
         Args:
             message: Message to broadcast
             capability_filter: Only send to agents with this capability
-            
+
         Returns:
             Dict mapping agent_id to response
         """
@@ -329,13 +329,13 @@ class A2AProtocol:
     ) -> A2AMessage | None:
         """
         Delegate a task to the best agent with a capability.
-        
+
         Args:
             task: Task description
             payload: Task payload
             required_capability: Required agent capability
             sender: Delegating agent ID
-            
+
         Returns:
             Response from chosen agent
         """

@@ -23,6 +23,8 @@ from __future__ import annotations
 import logging
 import os
 import sys
+from urllib import request
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -221,11 +223,19 @@ from neugi_swarm_v2.memory.embeddings import (
 from neugi_swarm_v2.model_capability_router import (
     CapabilityProfile,
     CapabilityProfileBuilder,
-    CapabilityRouter,
+    CapabilityRouter,  # noqa: F401
     ModelTier,
-    TaskComplexity,
+    TaskComplexity,  # noqa: F401
 )
-from neugi_swarm_v2.model_registry import ModelCapabilities, ModelCapabilityDetector
+from neugi_swarm_v2.model_registry import ModelCapabilities, ModelCapabilityDetector  # noqa: F401
+
+# -- Observability -----------------------------------------------------------
+from neugi_swarm_v2.observability import (
+    Event,
+    EventBus,
+    get_event_bus,
+    setup_event_bus_persistence,
+)
 from neugi_swarm_v2.response_format import (
     Citation,
     CodeBlock,
@@ -262,7 +272,7 @@ from neugi_swarm_v2.skills import (
     CompactionResult,
     GatingResult,
     MatchResult,
-    PromptAssembler,
+    PromptAssembler,  # noqa: F401
     PromptTier,
     SkillAction,
     SkillContract,
@@ -289,14 +299,6 @@ from neugi_swarm_v2.tools.stealth_browser import (
     BrowserFingerprint,
     StealthBrowser,
     StealthConfig,
-)
-
-# -- Observability -----------------------------------------------------------
-from neugi_swarm_v2.observability import (
-    EventBus,
-    Event,
-    get_event_bus,
-    setup_event_bus_persistence,
 )
 
 # -- Unified Entry Point -----------------------------------------------------
@@ -420,7 +422,7 @@ class NeugiSwarmV2:
             config = LoopConfig(enabled=True, autostart=autostart)
             self.autonomous_loop = AutonomousLoop(swarm=self, config=config)
             logger.info("AutonomousLoop initialized and auto-started")
-        except Exception as e:
+        except (ImportError, RuntimeError, OSError, TypeError) as e:
             logger.warning("Failed to initialize AutonomousLoop: %s", e)
             self.autonomous_loop = None
 
@@ -433,7 +435,7 @@ class NeugiSwarmV2:
                 db_path = str(self.config.data_dir / "events.db")
                 setup_event_bus_persistence(db_path)
                 logger.info("Event bus persistence enabled: %s", db_path)
-        except Exception as e:
+        except (ImportError, OSError, RuntimeError) as e:
             logger.debug("Event bus persistence skipped: %s", e)
 
     def _init_memory_monitor(self) -> None:
@@ -446,7 +448,7 @@ class NeugiSwarmV2:
                     compaction_callback=self._on_memory_critical,
                 )
                 logger.info("Memory leak monitor started")
-        except Exception as e:
+        except (ImportError, OSError, RuntimeError) as e:
             logger.debug("Memory monitor skipped: %s", e)
             self._memory_monitor = None
 
@@ -457,7 +459,7 @@ class NeugiSwarmV2:
             if hasattr(self.memory, 'consolidate'):
                 self.memory.consolidate()
             self._setup_compaction()
-        except Exception as e:
+        except (OSError, RuntimeError, ValueError) as e:
             logger.error("Memory compaction failed: %s", e)
 
     def start_autonomous(self) -> bool:
@@ -487,7 +489,7 @@ class NeugiSwarmV2:
         session_id: str | None = None,
         streaming: bool = False,
         **kwargs,
-    ) -> AssistantResponse:
+    ) -> StructuredResponse | str:
         """Send a message and get a response.
 
         Args:
@@ -497,7 +499,7 @@ class NeugiSwarmV2:
             **kwargs: Passed to the assistant.
 
         Returns:
-            AssistantResponse with text, tool calls, and metadata.
+            StructuredResponse with text, tool calls, and metadata.
         """
         from neugi_swarm_v2.assistant import NeugiAssistantV2
 
@@ -553,8 +555,8 @@ class NeugiSwarmV2:
                     raw = json.load(f)
                 if raw.get("routing", {}).get("enabled", False):
                     return MultiModelRouter.from_config(raw)
-        except Exception:
-            pass
+        except (ImportError, OSError, json.JSONDecodeError, KeyError, ValueError) as e:
+            logger.debug("Multi-model router init skipped: %s", e)
         return None
 
     def _build_capability_profile(self) -> CapabilityProfile:
@@ -601,8 +603,8 @@ class NeugiSwarmV2:
                     env_key = os.environ.get(env_var, "")
                     if env_key:
                         return env_key
-        except Exception:
-            pass
+        except (ImportError, AttributeError, KeyError) as e:
+            logger.debug("Provider catalog lookup failed: %s", e)
 
         # 2. SecretManager (encrypted storage)
         try:
@@ -613,8 +615,8 @@ class NeugiSwarmV2:
                 entry = manager.get_secret("llm_api_key")
                 if entry and entry.value:
                     return entry.value
-        except Exception:
-            pass
+        except (ImportError, OSError, ValueError) as e:
+            logger.debug("SecretManager API key retrieval failed: %s", e)
 
         # 3. Config fallback (legacy, will be empty after migration)
         return self.config.llm.api_key
@@ -645,6 +647,8 @@ class NeugiSwarmV2:
             "perplexity": ProviderType.OPENAI_COMPATIBLE,
             "together": ProviderType.OPENAI_COMPATIBLE,
             "fireworks": ProviderType.OPENAI_COMPATIBLE,
+            "cerebras": ProviderType.OPENAI_COMPATIBLE,
+            "nvidia_nim": ProviderType.OPENAI_COMPATIBLE,
             "moonshot": ProviderType.OPENAI_COMPATIBLE,
             "alibaba": ProviderType.OPENAI_COMPATIBLE,
             "zhipu": ProviderType.OPENAI_COMPATIBLE,
@@ -654,15 +658,46 @@ class NeugiSwarmV2:
             "minimax": ProviderType.OPENAI_COMPATIBLE,
             "nvidia": ProviderType.OPENAI_COMPATIBLE,
         }
-        ptype = provider_type_map.get(llm_cfg.provider, ProviderType.OPENAI_COMPATIBLE)
+        provider_name = (llm_cfg.provider or "").strip().lower() or "openai_compatible"
+        ptype = provider_type_map.get(provider_name, ProviderType.OPENAI_COMPATIBLE)
+
+        # If config is still pinned to Ollama but daemon is unavailable, prefer a cloud
+        # provider that already has an environment key configured.
+        if provider_name == "ollama" and not self._is_ollama_reachable(llm_cfg.ollama_url):
+            from neugi_swarm_v2.provider_catalog import get_all_providers
+
+            for provider in get_all_providers():
+                if provider.name == "ollama":
+                    continue
+                if any(os.getenv(env_var) for env_var in provider.env_vars):
+                    provider_name = provider.name
+                    ptype = provider_type_map.get(provider_name, ProviderType.OPENAI_COMPATIBLE)
+                    logger.info(
+                        "Ollama is unavailable; auto-routing to provider '%s' from environment readiness.",
+                        provider_name,
+                    )
+                    break
+
+        from neugi_swarm_v2.provider_catalog import get_provider
+        provider_info = get_provider(provider_name)
+        default_base_url = provider_info.get_base_url() if provider_info else ""
         api_key = self._resolve_api_key()
+        if ptype == ProviderType.OLLAMA:
+            resolved_base_url = self._normalize_base_url(llm_cfg.ollama_url or default_base_url or "http://localhost:11434")
+        else:
+            resolved_base_url = self._normalize_base_url(llm_cfg.base_url or default_base_url)
+
+        resolved_model = llm_cfg.model
+        if provider_info and (not resolved_model or resolved_model == "qwen2.5-coder:7b"):
+            # Avoid leaking local-model defaults to cloud providers.
+            if getattr(provider_info, "models", None):
+                resolved_model = provider_info.models[0].id
+
         cfg = ProviderConfig(
             provider_type=ptype,
-            base_url=self._normalize_base_url(
-                llm_cfg.ollama_url if ptype == ProviderType.OLLAMA else llm_cfg.base_url
-            ),
+            base_url=resolved_base_url,
             api_key=api_key,
-            default_model=llm_cfg.model,
+            default_model=resolved_model,
             fallback_model=llm_cfg.fallback_model,
             timeout=int(llm_cfg.timeout_seconds),
             max_retries=llm_cfg.max_retries,
@@ -679,7 +714,15 @@ class NeugiSwarmV2:
         cleaned = (base_url or "").rstrip("/")
         if cleaned.endswith("/v1"):
             cleaned = cleaned[:-3]
-        return cleaned or "http://localhost:11434"
+        return cleaned
+
+    def _is_ollama_reachable(self, base_url: str) -> bool:
+        url = ((base_url or "").rstrip("/") or "http://localhost:11434") + "/api/tags"
+        try:
+            with request.urlopen(url, timeout=1.5) as resp:  # nosec B310 - local health probe
+                return 200 <= int(getattr(resp, "status", 0)) < 500
+        except Exception:
+            return False
 
     def _resolve_skill_tier(self, path: str) -> SkillTier:
         """Resolve a skill directory path to a SkillTier."""
@@ -703,7 +746,7 @@ class NeugiSwarmV2:
         try:
             result = self.skill_manager.assemble_prompt(tier=PromptTier.FULL)
             return result.content
-        except Exception as e:
+        except (AttributeError, TypeError, ValueError) as e:
             logger.debug("Skill prompt injection skipped: %s", e)
             return ""
 
@@ -724,7 +767,7 @@ class NeugiSwarmV2:
                 tags = ", ".join(getattr(entry, "tags", []) or [])
                 lines.append(f"- [{entry.tier.value}] {entry.content} (tags: {tags})")
             return "\n".join(lines)
-        except Exception as e:
+        except (AttributeError, TypeError, ValueError) as e:
             logger.debug("Memory prompt injection skipped: %s", e)
             return ""
 
@@ -736,7 +779,7 @@ class NeugiSwarmV2:
                 self.session_manager.register_pre_compact_hook(
                     lambda: self.memory.sync() if hasattr(self.memory, 'sync') else None
                 )
-        except Exception as e:
+        except (AttributeError, TypeError, RuntimeError) as e:
             logger.debug("Compaction setup skipped: %s", e)
 
     def __enter__(self) -> NeugiSwarmV2:

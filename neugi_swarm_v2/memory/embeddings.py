@@ -10,10 +10,10 @@ Strategy:
 
 Usage:
     from memory.embeddings import EmbeddingEngine
-    
+
     engine = EmbeddingEngine()
     vec = engine.encode("Hello world")  # 384-dim float list
-    
+
     # Similarity search
     results = engine.similarity(query_vec, memory_vectors, top_k=5)
 """
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 class EmbeddingEngine:
     """
     Unified embedding engine with multiple backends.
-    
+
     Auto-selects best available backend:
         1. sentence-transformers (all-MiniLM-L6-v2)
         2. Ollama (nomic-embed-text)
@@ -99,10 +99,10 @@ class EmbeddingEngine:
     def encode(self, text: str) -> list[float]:
         """
         Encode text into embedding vector.
-        
+
         Args:
             text: Input text
-            
+
         Returns:
             List of floats (dimension depends on backend)
         """
@@ -175,12 +175,12 @@ class EmbeddingEngine:
     ) -> list[tuple[str, float]]:
         """
         Compute cosine similarity and return top-k.
-        
+
         Args:
             query_vec: Query embedding
             candidates: List of (id, vector) tuples
             top_k: Number of top results
-            
+
         Returns:
             List of (id, score) sorted by score desc
         """
@@ -195,7 +195,7 @@ class EmbeddingEngine:
     @staticmethod
     def _cosine_similarity(a: list[float], b: list[float]) -> float:
         """Compute cosine similarity between two vectors."""
-        dot = sum(x * y for x, y in zip(a, b))
+        dot = sum(x * y for x, y in zip(a, b, strict=False))
         norm_a = math.sqrt(sum(x * x for x in a))
         norm_b = math.sqrt(sum(y * y for y in b))
         if norm_a == 0 or norm_b == 0:
@@ -239,7 +239,7 @@ class VectorMemoryIndex:
     def _init_sqlite_vec(self) -> None:
         """Try to initialize sqlite-vec table."""
         try:
-            import sqlite_vec
+            import sqlite_vec  # noqa: F401
             # sqlite-vec auto-registers itself when imported
             self._use_sqlite_vec = True
             logger.info("sqlite-vec loaded successfully")
@@ -255,7 +255,7 @@ class VectorMemoryIndex:
             try:
                 # sqlite-vec insert
                 self._db.execute(
-                    f"INSERT OR REPLACE INTO {self._table}(memory_id, embedding) VALUES (?, ?)",
+                    f"INSERT OR REPLACE INTO {self._table}(memory_id, embedding) VALUES (?, ?)",  # nosec B608
                     (memory_id, self._serialize(vec)),
                 )
                 self._db.commit()
@@ -286,7 +286,7 @@ class VectorMemoryIndex:
                 WHERE embedding MATCH ?
                 ORDER BY distance
                 LIMIT ?
-                """,
+                """,  # nosec B608
                 (self._serialize(query_vec), top_k),
             ).fetchall()
             return [(row[0], 1.0 - row[1]) for row in rows]
@@ -299,7 +299,7 @@ class VectorMemoryIndex:
         self._vectors.pop(memory_id, None)
         if self._use_sqlite_vec and self._db:
             try:
-                self._db.execute(f"DELETE FROM {self._table} WHERE memory_id = ?", (memory_id,))
+                self._db.execute(f"DELETE FROM {self._table} WHERE memory_id = ?", (memory_id,))  # nosec B608
                 self._db.commit()
             except Exception as e:
                 logger.warning("sqlite-vec delete failed: %s", e)

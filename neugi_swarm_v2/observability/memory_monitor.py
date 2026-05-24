@@ -9,9 +9,9 @@ import gc
 import logging
 import threading
 import time
-from typing import Any, Callable, Optional
+from collections.abc import Callable
 
-from neugi_swarm_v2.observability.event_bus import Event, get_event_bus
+from neugi_swarm_v2.observability.event_bus import get_event_bus
 
 logger = logging.getLogger(__name__)
 
@@ -31,14 +31,14 @@ class MemoryLeakDetector:
         check_interval: float = 60.0,
         warning_mb: int = 500,
         critical_mb: int = 1000,
-        compaction_callback: Optional[Callable[[], None]] = None,
+        compaction_callback: Callable[[], None] | None = None,
     ):
         self.check_interval = check_interval
         self.warning_mb = warning_mb
         self.critical_mb = critical_mb
         self.compaction_callback = compaction_callback
         self._running = False
-        self._thread: Optional[threading.Thread] = None
+        self._thread: threading.Thread | None = None
         self._last_object_count = 0
         self.event_bus = get_event_bus()
 
@@ -113,7 +113,7 @@ class MemoryLeakDetector:
 def setup_memory_monitor(
     warning_mb: int = 500,
     critical_mb: int = 1000,
-    compaction_callback: Optional[Callable[[], None]] = None,
+    compaction_callback: Callable[[], None] | None = None,
 ) -> MemoryLeakDetector:
     """Create and start the memory leak detector."""
     detector = MemoryLeakDetector(

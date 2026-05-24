@@ -2,12 +2,16 @@
 Autonomous Security Harness Plugin for NEUGI Swarm.
 """
 import logging
+import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from plugins.plugin_sdk import (
-    PluginBase, PluginContext, PluginCapability,
-    register_tool, register_skill, register_hook,
+    PluginBase,
+    PluginContext,
+    register_hook,
+    register_skill,
+    register_tool,
 )
 
 logger = logging.getLogger(__name__)
@@ -83,12 +87,11 @@ class AutonomousSecurityHarnessPlugin(PluginBase):
         # Initialize knowledge base
         kb_path = self._config.get("kb_path", str(Path.home() / ".neugi" / "knowledge"))
         index_path = self._config.get("index_path", str(Path.home() / ".neugi" / "data" / "kb_index"))
-        use_vectors = self._config.get("use_vectors", True)
 
         # Import and initialize knowledge indexer and searcher
         try:
-            from .core.knowledge.indexer import KnowledgeIndexer
-            from .core.knowledge.searcher import KnowledgeSearcher
+            from plugins.autonomous_security_harness.core.knowledge.indexer import KnowledgeIndexer
+            from plugins.autonomous_security_harness.core.knowledge.searcher import KnowledgeSearcher
             _knowledge_indexer = KnowledgeIndexer(kb_path, index_path)
             # Build index if not exists
             if not any(Path(index_path).glob('*.idx')):
@@ -101,7 +104,7 @@ class AutonomousSecurityHarnessPlugin(PluginBase):
 
         # Initialize tool executor (Docker sandbox)
         try:
-            from .core.tools.executor import ToolExecutor
+            from plugins.autonomous_security_harness.core.tools.executor import ToolExecutor
             _tool_executor = ToolExecutor()
             logger.info("Tool executor initialized")
         except Exception as e:
@@ -109,6 +112,7 @@ class AutonomousSecurityHarnessPlugin(PluginBase):
 
         # Initialize security components
         try:
+            from plugins.autonomous_security_harness.core.security.scope_validator import ScopeValidator
             scope_config = self._config.get("scope", {
                 "allowed_targets": [],
                 "allow_private_ips": False,
@@ -128,6 +132,7 @@ class AutonomousSecurityHarnessPlugin(PluginBase):
             logger.warning(f"Failed to initialize auth gate: {e}")
 
         try:
+            from plugins.autonomous_security_harness.core.security.audit_logger import ImmutableAuditLogger
             log_path = self._config.get("audit_log_path", str(Path.home() / ".neugi" / "data" / "logs" / "audit.jsonl"))
             _audit_logger = ImmutableAuditLogger(log_path)
             logger.info("Audit logger initialized")
@@ -136,7 +141,7 @@ class AutonomousSecurityHarnessPlugin(PluginBase):
 
         # Initialize the LangGraph application
         try:
-            from .core.workflow import create_security_workflow
+            from plugins.autonomous_security_harness.core.workflow import create_security_workflow
             _app = create_security_workflow(
                 tool_executor=_tool_executor,
                 knowledge_searcher=_knowledge_searcher,
@@ -199,7 +204,7 @@ class AutonomousSecurityHarnessPlugin(PluginBase):
 
     # -- Tool implementations ---------------------------------------------------
 
-    def tool_security_assessment(self, targets: List[str], options: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def tool_security_assessment(self, targets: list[str], options: dict[str, Any] | None = None) -> dict[str, Any]:
         """Run autonomous security assessment on targets via LangGraph workflow.
 
         Args:
@@ -241,7 +246,7 @@ class AutonomousSecurityHarnessPlugin(PluginBase):
             logger.error(f"Security assessment failed: {e}")
             return {"error": str(e), "task_id": initial_state["task_id"]}
 
-    def tool_harness_status(self) -> Dict[str, Any]:
+    def tool_harness_status(self) -> dict[str, Any]:
         """Get status of the security harness."""
         return {
             "plugin": "autonomous_security_harness",
@@ -256,11 +261,11 @@ class AutonomousSecurityHarnessPlugin(PluginBase):
             }
         }
 
-    def tool_workflow_history(self, limit: int = 10) -> Dict[str, Any]:
+    def tool_workflow_history(self, limit: int = 10) -> dict[str, Any]:
         """Get history of workflow executions from audit log."""
         if not _audit_logger:
             return {"error": "Audit logger not initialized"}
-        
+
         # In a real implementation, we would query the audit log
         # For now, return placeholder
         return {

@@ -1,0 +1,12 @@
+{"ts": 1779525085.2788863, "role": "user", "content": "halo"}
+{"ts": 1779525106.727371, "role": "assistant", "content": "Error: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/chat (Caused by NewConnectionError(\"HTTPConnection(host='localhost', port=11434): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it\"))"}
+{"ts": 1779527822.7437038, "role": "user", "content": "hello"}
+{"ts": 1779527843.0303829, "role": "assistant", "content": "Error: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/chat (Caused by NewConnectionError(\"HTTPConnection(host='localhost', port=11434): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it\"))"}
+{"ts": 1779598630.1214347, "role": "user", "content": "Halo, test first chat end-to-end. Balas singkat: OK"}
+{"ts": 1779598649.4780755, "role": "assistant", "content": "Error: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/chat (Caused by NewConnectionError(\"HTTPConnection(host='localhost', port=11434): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it\"))"}
+{"ts": 1779599290.042478, "role": "user", "content": "Halo, test first chat end-to-end. Balas singkat: OK"}
+{"ts": 1779599298.239812, "role": "assistant", "content": "Error: HTTPSConnectionPool(host='api.openai.com', port=443): Max retries exceeded with url: /v1/chat/completions (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1010)')))"}
+{"ts": 1779599340.4675255, "role": "user", "content": "Halo, test first chat end-to-end. Balas singkat: OK"}
+{"ts": 1779599352.1893, "role": "assistant", "content": "Provider connection failed (SSL verification). Check system certificate trust/proxy inspection, then retry provider test in Setup."}
+{"ts": 1779599575.621926, "role": "user", "content": "Halo, test first chat end-to-end. Balas singkat: OK"}
+{"ts": 1779599581.4803965, "role": "assistant", "content": "Provider connection failed (SSL verification). Check system certificate trust/proxy inspection, then retry provider test in Setup."}

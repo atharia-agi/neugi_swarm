@@ -1,6 +1,28 @@
 #!/bin/bash
 set -e
 
+cat <<'EOF'
+ _   _ _____ _   _  ____ ___
+| \ | | ____| | | |/ ___|_ _|
+|  \| |  _| | | | | |  _ | |
+| |\  | |___| |_| | |_| || |
+|_| \_|_____|\___/ \____|___|
+EOF
+echo "NEUGI Swarm v2.1.3 Installer"
+echo
+echo "Safety Notice (Beta / Experimental)"
+echo "- NEUGI can run autonomous and tool-executing agent workflows."
+echo "- Actions may affect files, systems, and connected provider resources."
+echo "- Keep human approval controls enabled for high-impact operations."
+echo "- Review terms/privacy: https://neugi.com/terms.html and https://neugi.com/privacy.html"
+echo
+read -r -p "Do you want to continue installation? [y/N]: " NEUGI_INSTALL_CONSENT
+if [[ ! "$NEUGI_INSTALL_CONSENT" =~ ^[Yy]$ ]]; then
+    echo "[NEUGI] Installation cancelled by user."
+    exit 0
+fi
+echo
+
 echo "========================================="
 echo "  NEUGI Swarm V2.1.3 - Installer"
 echo "========================================="
@@ -100,8 +122,19 @@ echo -e "${GREEN}  NEUGI Swarm V2 installed successfully!${NC}"
 echo -e "${GREEN}=========================================${NC}"
 echo ""
 echo "Quick start:"
+echo "  neugi quickstart  # Recommended: auto-fix, smoke test, and start"
 echo "  neugi wizard      # Pick provider, enter API key, choose model"
 echo "  neugi chat        # Start chatting"
 echo "  neugi status      # Check system health"
 echo ""
 echo "Documentation: https://neugi.com/docs.html"
+echo ""
+read -r -p "Run 'neugi quickstart' now? [Y/n]: " RUN_QS
+if [[ ! "$RUN_QS" =~ ^[Nn]$ ]]; then
+    read -r -p "Run non-interactive mode (best for CI/server)? [y/N]: " RUN_QS_NONINT
+    if [[ "$RUN_QS_NONINT" =~ ^[Yy]$ ]]; then
+        neugi quickstart --non-interactive --json
+    else
+        neugi quickstart
+    fi
+fi

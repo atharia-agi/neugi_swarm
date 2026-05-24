@@ -11,6 +11,7 @@ import enum
 import logging
 import time
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -576,11 +577,11 @@ class BaseChannel(ABC):
     async def _health_check(self) -> None:
         """Perform platform-specific health check."""
 
-    def on_message(self, handler) -> None:
+    def on_message(self, handler: Callable) -> None:
         """Register a message handler callback."""
         self._message_handlers.append(handler)
 
-    def on_error(self, handler) -> None:
+    def on_error(self, handler: Callable) -> None:
         """Register an error handler callback."""
         self._error_handlers.append(handler)
 

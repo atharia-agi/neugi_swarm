@@ -14,24 +14,24 @@ Usage:
     from typing_extensions import TypedDict
     from pydantic import BaseModel
     from agents.typed import Agent, RunContext
-    
+
     class Deps:
         db: DatabaseConn
         user_id: int
-    
+
     class Output(BaseModel):
         answer: str
         confidence: float
-    
+
     agent = Agent[Deps, Output](
         model="ollama:qwen2.5-coder:7b",
         instructions="Be helpful"
     )
-    
+
     @agent.tool
     async def get_user(ctx: RunContext[Deps], user_id: int) -> str:
         return await ctx.deps.db.get_user(user_id)
-    
+
     result = await agent.run("What's my name?", deps=Deps(db=db, user_id=123))
     print(result.output.answer)
 """
@@ -71,7 +71,7 @@ OutputT = TypeVar("OutputT")
 class RunContext(Generic[DepsT]):
     """
     Typed context carrying dependencies into tool functions.
-    
+
     Usage:
         @agent.tool
         async def my_tool(ctx: RunContext[MyDeps], arg: str) -> str:
@@ -130,7 +130,7 @@ class TypedAgentError(Exception):
 class TypedAgent(Generic[DepsT, OutputT]):
     """
     Type-safe agent with dependency injection and structured output.
-    
+
     This is a lightweight implementation inspired by Pydantic AI.
     For full Pydantic AI integration, users can install pydantic-ai separately.
     """
@@ -167,7 +167,7 @@ class TypedAgent(Generic[DepsT, OutputT]):
     ) -> Callable:
         """
         Decorator to register a tool.
-        
+
         The first parameter should be RunContext[Deps].
         Other parameters become the tool schema.
         """
@@ -233,12 +233,12 @@ class TypedAgent(Generic[DepsT, OutputT]):
     ) -> AgentResult[OutputT]:
         """
         Run the agent with typed dependencies.
-        
+
         Args:
             prompt: User prompt
             deps: Typed dependencies
             message_history: Previous messages for context
-            
+
         Returns:
             AgentResult with validated output
         """
@@ -453,7 +453,7 @@ class TypedAgent(Generic[DepsT, OutputT]):
                         logger.warning(f"Output validation failed, retrying: {e}")
                         # In real implementation, ask LLM to fix
                         continue
-                    raise TypedAgentError(f"Failed to validate output: {e}")
+                    raise TypedAgentError(f"Failed to validate output: {e}") from e
 
         # Simple type conversion
         return self.output_type(text)  # type: ignore

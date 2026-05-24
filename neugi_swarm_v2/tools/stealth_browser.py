@@ -13,7 +13,7 @@ Features:
 
 Usage:
     from tools.stealth_browser import StealthBrowser
-    
+
     browser = StealthBrowser()
     browser.navigate("https://bot-detector.example.com")
     print(browser.stealth_info)
@@ -264,7 +264,7 @@ class StealthBrowser(BrowserTool):
         scripts.append("""
             const originalQuery = window.navigator.permissions.query;
             window.navigator.permissions.query = (parameters) => (
-                parameters.name === 'notifications' 
+                parameters.name === 'notifications'
                     ? Promise.resolve({ state: Notification.permission })
                     : originalQuery(parameters)
             );
@@ -281,8 +281,8 @@ class StealthBrowser(BrowserTool):
             for script in self._stealth_scripts:
                 try:
                     page.evaluate(script)
-                except Exception as e:
-                    logger.warning(f"Stealth script injection failed: {e}")
+                except (RuntimeError, OSError) as e:
+                    logger.warning("Stealth script injection failed: %s", e)
             self._stealth_injected = True
 
         return page
@@ -296,8 +296,8 @@ class StealthBrowser(BrowserTool):
             for script in self._stealth_scripts:
                 try:
                     self._page.evaluate(script)
-                except Exception as e:
-                    logger.warning(f"Stealth re-injection failed: {e}")
+                except (RuntimeError, OSError) as e:
+                    logger.warning("Stealth re-injection failed: %s", e)
 
         return self
 
@@ -333,19 +333,19 @@ class StealthBrowser(BrowserTool):
                 chrome: window.chrome ? 'ok' : 'suspicious',
                 notification_permission: 'default',
             };
-            
+
             // Check notification permission
             if (typeof Notification !== 'undefined') {
                 checks.notification_permission = Notification.permission;
             }
-            
+
             return checks;
         }
         """
 
         try:
             return page.evaluate(detection_script)
-        except Exception as e:
+        except (RuntimeError, OSError) as e:
             return {"error": str(e)}
 
     def rotate_fingerprint(self) -> None:

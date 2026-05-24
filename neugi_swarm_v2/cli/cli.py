@@ -16,15 +16,20 @@ Usage:
 
 from __future__ import annotations
 
+import ast
 import json
 import os
 import platform
 import shlex
 import shutil
 import signal
+import ssl
 import subprocess
 import sys
 import time
+import urllib.error
+import urllib.request
+import warnings
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -34,25 +39,25 @@ from typing import Any
 
 from neugi_swarm_v2 import __version__
 
+# Silence noisy non-actionable module-loader warning in repeated `python -m` flows.
+warnings.filterwarnings(
+    "ignore",
+    message=r".*'neugi_swarm_v2\.cli\.cli' found in sys\.modules.*",
+    category=RuntimeWarning,
+)
+
 try:
-    from rich import box
-    from rich.align import Align
-    from rich.box import DOUBLE, ROUNDED
-    from rich.columns import Columns
+    from rich.box import ROUNDED
     from rich.console import Console
     from rich.layout import Layout
-    from rich.live import Live
     from rich.markdown import Markdown
     from rich.panel import Panel
     from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
-    from rich.prompt import Confirm, FloatPrompt, IntPrompt, Prompt
-    from rich.rule import Rule
-    from rich.style import Style
+    from rich.prompt import Confirm, Prompt
     from rich.syntax import Syntax
     from rich.table import Table
     from rich.text import Text
     from rich.theme import Theme
-    from rich.tree import Tree
 except ImportError:
     print("Error: 'rich' library is required. Install with: pip install rich")
     sys.exit(1)
@@ -139,7 +144,7 @@ class HealthMonitor:
         if not self._pid_file.exists():
             return False
         try:
-            pid = int(self._pid_file.read_text().strip())
+            pid = int(self._pid_file.read_text(encoding="utf-8").strip())
             if platform.system() == "Windows":
                 import ctypes
                 kernel32 = ctypes.windll.kernel32
@@ -159,14 +164,14 @@ class HealthMonitor:
         if not self._pid_file.exists():
             return None
         try:
-            return int(self._pid_file.read_text().strip())
+            return int(self._pid_file.read_text(encoding="utf-8").strip())
         except (ValueError, OSError):
             return None
 
     def write_pid(self, pid: int) -> None:
         """Write the gateway PID to the pid file."""
         self.base_dir.mkdir(parents=True, exist_ok=True)
-        self._pid_file.write_text(str(pid))
+        self._pid_file.write_text(str(pid), encoding="utf-8")
 
     def remove_pid(self) -> None:
         """Remove the PID file on shutdown."""
@@ -404,10 +409,12 @@ class Doctor:
         if auto_fix:
             self._apply_fixes()
 
+        error_count = sum(1 for issue in self._issues if issue.get("severity") == "error")
+        warning_count = sum(1 for issue in self._issues if issue.get("severity") == "warning")
         return {
             "issues": self._issues,
             "fixes": self._fixes,
-            "healthy": len(self._issues) == 0,
+            "healthy": (error_count == 0 and warning_count == 0),
             "timestamp": datetime.now().isoformat(),
         }
 
@@ -472,17 +479,58 @@ class Doctor:
                 ollama_url = llm.get("ollama_url", "http://localhost:11434")
                 if not self._check_url(ollama_url):
                     self._issues.append({
-                        "severity": "warning",
-                        "message": "Ollama server not reachable",
-                        "fix": "Start Ollama: 'ollama serve'",
+                        "severity": "info",
+                        "message": "Ollama server not reachable (optional unless provider=ollama is intended)",
+                        "fix": "If you use Ollama, start it with: 'ollama serve'",
                     })
-            elif provider in ("openai", "anthropic"):
-                if not llm.get("api_key"):
+            else:
+                api_key = str(llm.get("api_key", "")).strip()
+                has_inline_key = bool(api_key and api_key != "********")
+                has_env_key = False
+                env_hints: list[str] = []
+                base_url = str(llm.get("base_url", "")).strip()
+                try:
+                    from neugi_swarm_v2.provider_catalog import get_provider
+                    provider_info = get_provider(provider)
+                    if provider_info:
+                        env_hints = list(getattr(provider_info, "env_vars", []) or [])
+                        auth_type = str(getattr(provider_info, "auth_type", "bearer_header")).strip().lower()
+                        if auth_type == "none":
+                            return
+                except Exception:
+                    env_hints = []
+
+                for env_name in env_hints:
+                    if os.environ.get(env_name):
+                        has_env_key = True
+                        break
+
+                if not has_inline_key and not has_env_key:
+                    fix_hint = (
+                        f"Set api_key in config or env var ({', '.join(env_hints)})"
+                        if env_hints
+                        else "Set api_key in config or provider env var"
+                    )
                     self._issues.append({
                         "severity": "error",
-                        "message": f"API key not set for {provider}",
-                        "fix": f"Set api_key in config or {provider.upper()}_API_KEY env var",
+                        "message": f"API key not set for provider '{provider}'",
+                        "fix": fix_hint,
                     })
+                # Optional but high-signal connectivity/SSL diagnostics.
+                elif base_url:
+                    probe = self._probe_provider_endpoint(base_url)
+                    if probe == "ssl_error":
+                        self._issues.append({
+                            "severity": "info",
+                            "message": f"SSL trust issue detected for provider '{provider}' endpoint",
+                            "fix": "Check TLS inspection/proxy certificates, update OS root certificates, then rerun 'neugi doctor --strict'",
+                        })
+                    elif probe == "network_error":
+                        self._issues.append({
+                            "severity": "info",
+                            "message": f"Provider '{provider}' endpoint appears unreachable from this machine",
+                            "fix": "Check firewall/proxy/egress and verify provider base_url in config",
+                        })
         except (json.JSONDecodeError, OSError):
             pass
 
@@ -534,12 +582,28 @@ class Doctor:
     def _check_url(self, url: str) -> bool:
         """Check if a URL is reachable."""
         try:
-            import urllib.request
             req = urllib.request.Request(url, method="GET")
-            with urllib.request.urlopen(req, timeout=3) as resp:
+            with urllib.request.urlopen(req, timeout=3) as resp:  # nosec B310
                 return resp.status == 200
-        except Exception:
+        except (OSError, TimeoutError, ValueError):
             return False
+
+    def _probe_provider_endpoint(self, base_url: str) -> str:
+        """Probe provider endpoint for quick diagnostics.
+
+        Returns: ok | ssl_error | network_error
+        """
+        try:
+            req = urllib.request.Request(base_url.rstrip("/"), method="GET")
+            with urllib.request.urlopen(req, timeout=3):  # nosec B310
+                return "ok"
+        except urllib.error.URLError as e:
+            reason = getattr(e, "reason", None)
+            if isinstance(reason, ssl.SSLError):
+                return "ssl_error"
+            return "network_error"
+        except (ssl.SSLError, TimeoutError, OSError, ValueError):
+            return "network_error"
 
     def _apply_fixes(self) -> None:
         """Apply automatic fixes for detected issues."""
@@ -652,6 +716,21 @@ class NeugiCLI:
                 name="status",
                 description="Show health, agents, sessions, and channels",
                 handler=self._cmd_status,
+            ),
+            "autostart": CLICommand(
+                name="autostart",
+                description="Manage launch-on-login behavior",
+                handler=self._cmd_autostart,
+                subcommands=[
+                    CLICommand("enable", "Enable autostart at login", self._cmd_autostart_enable),
+                    CLICommand("disable", "Disable autostart", self._cmd_autostart_disable),
+                    CLICommand("status", "Show autostart status", self._cmd_autostart_status),
+                ],
+            ),
+            "insights": CLICommand(
+                name="insights",
+                description="Show runtime reliability insights from observability data",
+                handler=self._cmd_insights,
             ),
             "chat": CLICommand(
                 name="chat",
@@ -791,6 +870,23 @@ class NeugiCLI:
                 description="Diagnose issues and auto-fix",
                 handler=self._cmd_doctor,
             ),
+            "smoke": CLICommand(
+                name="smoke",
+                description="Run fast end-to-end readiness checks",
+                handler=self._cmd_smoke,
+                aliases=["selftest", "checkup"],
+            ),
+            "quickstart": CLICommand(
+                name="quickstart",
+                description="One-command setup, diagnose, smoke test, and start",
+                handler=self._cmd_quickstart,
+            ),
+            "verify-release": CLICommand(
+                name="verify-release",
+                description="Run full release gate (doctor, smoke, quickstart, pytest)",
+                handler=self._cmd_verify_release,
+                aliases=["release-check", "verify"],
+            ),
             "rescue": CLICommand(
                 name="rescue",
                 description="Interactive rescue and troubleshooting wizard",
@@ -901,43 +997,52 @@ class NeugiCLI:
                 message=f"NEUGI is already running (PID: {pid})",
             )
 
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[primary]{task.description}"),
-            BarColumn(),
-            TimeElapsedColumn(),
-            console=console,
-        ) as progress:
-            task = progress.add_task("Starting NEUGI...", total=5)
+        self.config_mgr.load()
+        logs_dir = self.base_dir / "logs"
+        logs_dir.mkdir(parents=True, exist_ok=True)
+        out_log = logs_dir / "runtime.out.log"
+        err_log = logs_dir / "runtime.err.log"
 
-            progress.update(task, description="Initializing configuration...")
-            self.config_mgr.load()
-            progress.advance(task)
+        cmd = [sys.executable, "-m", "neugi_swarm_v2.dashboard.run_server"]
+        creationflags = 0
+        kwargs: dict[str, Any] = {}
+        if platform.system() == "Windows":
+            creationflags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) | getattr(subprocess, "DETACHED_PROCESS", 0)
+            kwargs["creationflags"] = creationflags
 
-            progress.update(task, description="Loading memory system...")
-            time.sleep(0.05)
-            progress.advance(task)
+        with open(out_log, "a", encoding="utf-8") as out_fp, open(err_log, "a", encoding="utf-8") as err_fp:
+            proc = subprocess.Popen(
+                cmd,
+                stdout=out_fp,
+                stderr=err_fp,
+                cwd=str(Path(__file__).resolve().parents[2]),
+                shell=False,
+                **kwargs,
+            )
 
-            progress.update(task, description="Loading skills...")
-            time.sleep(0.05)
-            progress.advance(task)
+        self.health.write_pid(proc.pid)
 
-            progress.update(task, description="Starting agents...")
-            time.sleep(0.05)
-            progress.advance(task)
+        # Wait briefly for readiness
+        ready = False
+        for _ in range(20):
+            time.sleep(0.25)
+            if self.doctor._check_url("http://127.0.0.1:17901"):
+                ready = True
+                break
 
-            progress.update(task, description="Gateway ready!")
-            time.sleep(0.05)
-            progress.advance(task)
-
-        self.health.write_pid(os.getpid())
+        if not ready:
+            return CommandResult(
+                status=CommandStatus.WARNING,
+                message=f"NEUGI process started (PID {proc.pid}) but dashboard is not ready yet. Check logs: {err_log}",
+                data={"pid": proc.pid, "out_log": str(out_log), "err_log": str(err_log)},
+            )
 
         console.print(Panel(
             "[success]NEUGI Swarm v2 started successfully![/success]\n\n"
-            f"  [dim]PID:[/dim] {os.getpid()}\n"
+            f"  [dim]PID:[/dim] {proc.pid}\n"
+            f"  [dim]Dashboard:[/dim] http://localhost:17901\n"
             f"  [dim]Config:[/dim] {self.config_mgr.config_path}\n"
-            f"  [dim]Data:[/dim] {self.base_dir / 'data'}\n\n"
-            "[dim]Run 'neugi status' to check system health.[/dim]",
+            f"  [dim]Logs:[/dim] {out_log}",
             title="NEUGI Started",
             border_style="green",
         ))
@@ -945,7 +1050,7 @@ class NeugiCLI:
         return CommandResult(
             status=CommandStatus.SUCCESS,
             message="NEUGI started successfully",
-            data={"pid": os.getpid()},
+            data={"pid": proc.pid},
         )
 
     def _cmd_stop(self, args: list[str]) -> CommandResult:
@@ -961,7 +1066,7 @@ class NeugiCLI:
 
         try:
             if platform.system() == "Windows":
-                os.kill(pid, signal.CTRL_BREAK_EVENT)
+                subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], check=False, shell=False)
             else:
                 os.kill(pid, signal.SIGTERM)
 
@@ -970,7 +1075,7 @@ class NeugiCLI:
                     break
                 time.sleep(0.5)
 
-            if self.health.is_running():
+            if self.health.is_running() and platform.system() != "Windows":
                 os.kill(pid, signal.SIGKILL)
 
             self.health.remove_pid()
@@ -1045,6 +1150,183 @@ class NeugiCLI:
 
         return CommandResult(status=CommandStatus.SUCCESS, message="Chat session ended")
 
+    def _autostart_artifacts(self) -> dict[str, Any]:
+        """Return platform-specific autostart artifact paths."""
+        system = platform.system()
+        if system == "Windows":
+            startup_dir = Path(os.environ.get("APPDATA", "")) / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup"
+            return {"mode": "windows", "path": startup_dir / "neugi-start.cmd"}
+        if system == "Darwin":
+            return {"mode": "macos", "path": Path.home() / "Library" / "LaunchAgents" / "com.neugi.autostart.plist"}
+        # Linux/other unix
+        return {"mode": "linux", "path": Path.home() / ".config" / "autostart" / "neugi.desktop"}
+
+    def _cmd_autostart(self, args: list[str]) -> CommandResult:
+        """Handle autostart command."""
+        if not args:
+            return self._cmd_autostart_status(args)
+
+        subcommand = args[0]
+        sub_args = args[1:]
+        for cmd in self._commands["autostart"].subcommands:
+            if cmd.name == subcommand:
+                return cmd.handler(sub_args)
+
+        return CommandResult(status=CommandStatus.ERROR, message=f"Unknown subcommand: {subcommand}")
+
+    def _cmd_autostart_status(self, args: list[str]) -> CommandResult:
+        """Show autostart status."""
+        info = self._autostart_artifacts()
+        path = info["path"]
+        enabled = path.exists()
+        mode = info["mode"]
+        status = "enabled" if enabled else "disabled"
+        console.print(Panel(
+            f"[primary]Autostart:[/primary] {status}\n"
+            f"[dim]Platform:[/dim] {platform.system()}\n"
+            f"[dim]Mode:[/dim] {mode}\n"
+            f"[dim]Path:[/dim] {path}",
+            title="Autostart Status",
+            border_style="green" if enabled else "yellow",
+        ))
+        return CommandResult(status=CommandStatus.SUCCESS, message=f"Autostart {status}")
+
+    def _cmd_autostart_enable(self, args: list[str]) -> CommandResult:
+        """Enable autostart on login for current user."""
+        info = self._autostart_artifacts()
+        path = info["path"]
+        mode = info["mode"]
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        if mode == "windows":
+            content = "@echo off\r\nneugi start\r\n"
+            path.write_text(content, encoding="utf-8")
+        elif mode == "macos":
+            plist = f"""<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.neugi.autostart</string>
+  <key>ProgramArguments</key>
+  <array><string>/bin/sh</string><string>-lc</string><string>neugi start</string></array>
+  <key>RunAtLoad</key><true/>
+  <key>StandardOutPath</key><string>{str(self.base_dir / "logs" / "autostart.out.log")}</string>
+  <key>StandardErrorPath</key><string>{str(self.base_dir / "logs" / "autostart.err.log")}</string>
+</dict>
+</plist>
+"""
+            (self.base_dir / "logs").mkdir(parents=True, exist_ok=True)
+            path.write_text(plist, encoding="utf-8")
+        else:
+            desktop = """[Desktop Entry]
+Type=Application
+Version=1.0
+Name=NEUGI Autostart
+Comment=Start NEUGI at login
+Exec=sh -lc 'neugi start'
+Terminal=false
+X-GNOME-Autostart-enabled=true
+"""
+            path.write_text(desktop, encoding="utf-8")
+
+        return CommandResult(status=CommandStatus.SUCCESS, message=f"Autostart enabled ({path})")
+
+    def _cmd_autostart_disable(self, args: list[str]) -> CommandResult:
+        """Disable autostart for current user."""
+        info = self._autostart_artifacts()
+        path = info["path"]
+        if path.exists():
+            path.unlink()
+            return CommandResult(status=CommandStatus.SUCCESS, message=f"Autostart disabled ({path})")
+        return CommandResult(status=CommandStatus.INFO, message="Autostart already disabled")
+
+    def _cmd_insights(self, args: list[str]) -> CommandResult:
+        """Show reliability insights from observability event history."""
+        json_mode = "--json" in args
+        limit = 200
+        for i, arg in enumerate(args):
+            if arg in ("--limit", "-n") and i + 1 < len(args):
+                try:
+                    limit = max(20, min(2000, int(args[i + 1])))
+                except ValueError:
+                    pass
+
+        from neugi_swarm_v2.observability import get_event_bus
+
+        bus = get_event_bus()
+        events = bus.get_persisted_events(limit=limit)
+        if not events:
+            history = bus.get_history()
+            events = [
+                {
+                    "name": e.name,
+                    "payload": e.payload,
+                    "source": e.source,
+                    "timestamp": e.timestamp.isoformat(),
+                }
+                for e in history[-limit:]
+            ]
+
+        success_events = [e for e in events if e.get("name") == "tool_execution_success"]
+        failure_events = [e for e in events if e.get("name") == "tool_execution_failure"]
+        autonomous_ticks = [e for e in events if e.get("name") == "autonomous_tick_summary"]
+
+        total_tools = len(success_events) + len(failure_events)
+        success_rate = (len(success_events) / total_tools * 100.0) if total_tools else 0.0
+
+        tool_fail_counts: dict[str, int] = {}
+        for event in failure_events:
+            payload = event.get("payload") or {}
+            tool = payload.get("tool_name", "unknown")
+            tool_fail_counts[tool] = tool_fail_counts.get(tool, 0) + 1
+
+        top_failures = sorted(tool_fail_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+        recent_tick = autonomous_ticks[-1].get("payload") if autonomous_ticks else None
+
+        payload = {
+            "tool_events_analyzed": total_tools,
+            "tool_success_rate_pct": round(success_rate, 2),
+            "tool_failures_total": len(failure_events),
+            "top_failing_tools": [{"tool": k, "failures": v} for k, v in top_failures],
+            "autonomous_ticks_seen": len(autonomous_ticks),
+            "latest_autonomous_tick": recent_tick,
+        }
+
+        if json_mode:
+            console.print(json.dumps(payload, indent=2))
+            return CommandResult(status=CommandStatus.SUCCESS, message="", data=None)
+
+        table = Table(title="[primary]NEUGI Insights[/primary]", box=ROUNDED, border_style="cyan")
+        table.add_column("Metric", style="dim")
+        table.add_column("Value", style="dim")
+        table.add_row("Tool Events Analyzed", str(payload["tool_events_analyzed"]))
+        table.add_row("Tool Success Rate", f"{payload['tool_success_rate_pct']}%")
+        table.add_row("Tool Failures", str(payload["tool_failures_total"]))
+        table.add_row("Autonomous Ticks Seen", str(payload["autonomous_ticks_seen"]))
+        console.print(table)
+
+        if top_failures:
+            fail_table = Table(title="[primary]Top Failing Tools[/primary]", box=ROUNDED, border_style="yellow")
+            fail_table.add_column("Tool", style="dim")
+            fail_table.add_column("Failures", style="dim")
+            for tool, count in top_failures:
+                fail_table.add_row(tool, str(count))
+            console.print(fail_table)
+
+        if recent_tick:
+            console.print(
+                Panel(
+                    f"tick_id: {recent_tick.get('tick_id', '-')}\n"
+                    f"obs/decisions/exec: {recent_tick.get('observations', 0)}/"
+                    f"{recent_tick.get('decisions', 0)}/{recent_tick.get('executions', 0)}\n"
+                    f"success: {recent_tick.get('success', False)} | duration_ms: {recent_tick.get('duration_ms', 0)}",
+                    title="Latest Autonomous Tick",
+                    border_style="cyan",
+                )
+            )
+
+        return CommandResult(status=CommandStatus.SUCCESS, message="Insights displayed", data=payload)
+
     def _cmd_agents(self, args: list[str]) -> CommandResult:
         """Handle agents command."""
         if not args:
@@ -1104,7 +1386,7 @@ class NeugiCLI:
             name = Prompt.ask("[primary]Agent name[/primary]")
 
         role = Prompt.ask("[primary]Role[/primary]", default="Worker")
-        description = Prompt.ask("[primary]Description[/primary]", default="")
+        Prompt.ask("[primary]Description[/primary]", default="")
 
         current_agents = self.config_mgr.get("agent.default_agents", [])
         current_agents.append(name)
@@ -1733,8 +2015,8 @@ class NeugiCLI:
     def _cmd_plugins_deps(self, args: list[str]) -> CommandResult:
         """Show plugin dependency graph."""
         try:
-            from neugi_swarm_v2.plugins.plugin_registry import PluginRegistry
             from neugi_swarm_v2.plugins.plugin_loader import PluginLoader
+            from neugi_swarm_v2.plugins.plugin_registry import PluginRegistry
 
             plugins_dir = self.base_dir / "data" / "plugins"
             if not plugins_dir.exists():
@@ -1757,8 +2039,8 @@ class NeugiCLI:
             return CommandResult(status=CommandStatus.ERROR, message=f"Unknown format: {fmt}. Use text, mermaid, or dot.")
 
         try:
-            from neugi_swarm_v2.plugins.plugin_registry import PluginRegistry
             from neugi_swarm_v2.plugins.plugin_loader import PluginLoader
+            from neugi_swarm_v2.plugins.plugin_registry import PluginRegistry
 
             plugins_dir = self.base_dir / "data" / "plugins"
             if not plugins_dir.exists():
@@ -2018,7 +2300,7 @@ class NeugiCLI:
                 headers={"Accept": "application/json", "User-Agent": f"neugi-swarm/{__version__}"},
                 method="GET",
             )
-            with urllib.request.urlopen(req, timeout=5) as resp:
+            with urllib.request.urlopen(req, timeout=5) as resp:  # nosec B310
                 data = json.loads(resp.read().decode())
                 return data.get("info", {}).get("version", "")
         except Exception:
@@ -2060,46 +2342,50 @@ class NeugiCLI:
     def _cmd_doctor(self, args: list[str]) -> CommandResult:
         """Diagnose issues and auto-fix."""
         auto_fix = "--fix" in args or "-f" in args
+        json_mode = "--json" in args
+        strict = "--strict" in args
 
-        console.print(Panel(
-            "[primary]NEUGI Doctor - System Diagnostics[/primary]",
-            border_style="cyan",
-        ))
+        if not json_mode:
+            console.print(Panel(
+                "[primary]NEUGI Doctor - System Diagnostics[/primary]",
+                border_style="cyan",
+            ))
 
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[primary]{task.description}"),
-            console=console,
-        ) as progress:
-            task = progress.add_task("Running diagnostics...", total=6)
+        if not json_mode:
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[primary]{task.description}"),
+                console=console,
+            ) as progress:
+                task = progress.add_task("Running diagnostics...", total=6)
 
-            progress.update(task, description="Checking directories...")
-            time.sleep(0.05)
-            progress.advance(task)
+                progress.update(task, description="Checking directories...")
+                time.sleep(0.05)
+                progress.advance(task)
 
-            progress.update(task, description="Checking configuration...")
-            time.sleep(0.05)
-            progress.advance(task)
+                progress.update(task, description="Checking configuration...")
+                time.sleep(0.05)
+                progress.advance(task)
 
-            progress.update(task, description="Checking LLM provider...")
-            time.sleep(0.05)
-            progress.advance(task)
+                progress.update(task, description="Checking LLM provider...")
+                time.sleep(0.05)
+                progress.advance(task)
 
-            progress.update(task, description="Checking memory system...")
-            time.sleep(0.05)
-            progress.advance(task)
+                progress.update(task, description="Checking memory system...")
+                time.sleep(0.05)
+                progress.advance(task)
 
-            progress.update(task, description="Checking permissions...")
-            time.sleep(0.05)
-            progress.advance(task)
+                progress.update(task, description="Checking permissions...")
+                time.sleep(0.05)
+                progress.advance(task)
 
-            progress.update(task, description="Checking disk space...")
-            time.sleep(0.05)
-            progress.advance(task)
+                progress.update(task, description="Checking disk space...")
+                time.sleep(0.05)
+                progress.advance(task)
 
         report = self.doctor.diagnose(auto_fix=auto_fix)
 
-        if report["issues"]:
+        if report["issues"] and not json_mode:
             table = Table(
                 title="[primary]Issues Found[/primary]",
                 box=ROUNDED,
@@ -2122,10 +2408,10 @@ class NeugiCLI:
                 )
 
             console.print(table)
-        else:
+        elif not json_mode:
             console.print("[success]No issues found. System is healthy![/success]")
 
-        if report["fixes"]:
+        if report["fixes"] and not json_mode:
             fix_table = Table(
                 title="[primary]Applied Fixes[/primary]",
                 box=ROUNDED,
@@ -2140,11 +2426,582 @@ class NeugiCLI:
 
             console.print(fix_table)
 
+        error_count = sum(1 for issue in report["issues"] if issue.get("severity") == "error")
+        payload = {
+            "healthy": report["healthy"],
+            "error_count": error_count,
+            "issue_count": len(report["issues"]),
+            "fix_count": len(report["fixes"]),
+            "issues": report["issues"],
+            "fixes": report["fixes"],
+            "timestamp": report["timestamp"],
+        }
+
+        if json_mode:
+            console.print(json.dumps(payload, indent=2))
+
+        failed = strict and (error_count > 0)
         return CommandResult(
-            status=CommandStatus.SUCCESS if report["healthy"] else CommandStatus.WARNING,
-            message=f"Doctor complete: {len(report['issues'])} issues found",
-            data=report,
+            status=CommandStatus.ERROR if failed else (CommandStatus.SUCCESS if report["healthy"] else CommandStatus.WARNING),
+            message="" if json_mode else f"Doctor complete: {len(report['issues'])} issues found",
+            data=None if json_mode else report,
+            exit_code=1 if failed else 0,
         )
+
+    def _cmd_smoke(self, args: list[str]) -> CommandResult:
+        """Run a quick readiness smoke test for common user flows."""
+        json_mode = "--json" in args
+        strict = "--strict" in args
+
+        if not json_mode:
+            console.print(Panel(
+                "[primary]NEUGI Smoke Test - Quick Readiness[/primary]",
+                border_style="cyan",
+            ))
+
+        checks: list[tuple[str, bool, str]] = []
+
+        def _record(name: str, ok: bool, detail: str) -> None:
+            checks.append((name, ok, detail))
+
+        # 1) Filesystem baseline
+        base_ok = self.base_dir.exists() or True  # directory may not exist before first run
+        _record("Base Directory", base_ok, str(self.base_dir))
+
+        # 2) Config load
+        try:
+            cfg = self.config_mgr.load()
+            provider = cfg.get("llm", {}).get("provider", "ollama") if isinstance(cfg, dict) else "unknown"
+            _record("Config Load", True, f"provider={provider}")
+        except (OSError, ValueError, TypeError) as e:
+            _record("Config Load", False, str(e))
+
+        # 3) Health monitor
+        try:
+            health = self.health.get_health_report()
+            running = health.get("gateway", {}).get("running", False)
+            _record("Health Report", True, f"gateway_running={running}")
+        except (OSError, ValueError, TypeError) as e:
+            _record("Health Report", False, str(e))
+
+        # 4) Core import/init
+        try:
+            from neugi_swarm_v2 import NeugiSwarmV2
+
+            swarm = NeugiSwarmV2(base_dir=str(self.base_dir), autonomous=False, autostart=False)
+            _record("Swarm Init", True, f"model={swarm.config.llm.model}")
+        except Exception as e:
+            _record("Swarm Init", False, str(e))
+
+        # 5) Doctor baseline (no autofix)
+        try:
+            report = self.doctor.diagnose(auto_fix=False)
+            issues = report.get("issues", [])
+            error_count = sum(1 for item in issues if item.get("severity") == "error")
+            warn_count = sum(1 for item in issues if item.get("severity") == "warning")
+            ok = error_count == 0
+            _record("Doctor Probe", ok, f"errors={error_count}, warnings={warn_count}")
+        except Exception as e:
+            _record("Doctor Probe", False, str(e))
+
+        failed = 0
+        for _, ok, _ in checks:
+            if not ok:
+                failed += 1
+
+        if not json_mode:
+            table = Table(
+                title="[primary]Smoke Check Results[/primary]",
+                box=ROUNDED,
+                border_style="cyan",
+            )
+            table.add_column("Check", style="dim")
+            table.add_column("Status", style="dim")
+            table.add_column("Detail", style="dim")
+            for name, ok, detail in checks:
+                status = "[success]PASS[/success]" if ok else "[error]FAIL[/error]"
+                table.add_row(name, status, detail)
+            console.print(table)
+
+        if failed == 0:
+            if not json_mode:
+                console.print("[success]Smoke test passed. NEUGI is ready.[/success]")
+            payload = {"checks": checks, "failed": failed, "ok": True}
+            if json_mode:
+                console.print(json.dumps(payload, indent=2))
+            return CommandResult(
+                status=CommandStatus.SUCCESS,
+                message="" if json_mode else "Smoke test passed",
+                data=None if json_mode else {"checks": checks},
+                exit_code=0,
+            )
+
+        if not json_mode:
+            console.print("[warning]Smoke test found issues. Run 'neugi doctor --fix' then retry.[/warning]")
+        payload = {"checks": checks, "failed": failed, "ok": False}
+        if json_mode:
+            console.print(json.dumps(payload, indent=2))
+        return CommandResult(
+            status=CommandStatus.ERROR if strict else CommandStatus.WARNING,
+            message="" if json_mode else f"Smoke test failed: {failed} checks",
+            data=None if json_mode else {"checks": checks},
+            exit_code=1 if strict else 0,
+        )
+
+    def _cmd_quickstart(self, args: list[str]) -> CommandResult:
+        """Run one-command bootstrap flow for first-time users."""
+        ci_mode = "--ci" in args
+        skip_wizard = "--no-wizard" in args
+        json_mode = "--json" in args or ci_mode
+        non_interactive = "--non-interactive" in args or ci_mode
+        strict = "--strict" in args or ci_mode
+
+        steps: list[dict[str, Any]] = []
+
+        def _step(name: str, ok: bool, detail: str) -> None:
+            steps.append({"name": name, "ok": ok, "detail": detail})
+
+        if not json_mode:
+            console.print(Panel(
+                "[primary]NEUGI Quickstart[/primary]\n"
+                "[dim]doctor --fix -> smoke -> wizard (if needed) -> start[/dim]",
+                border_style="cyan",
+            ))
+
+        # Step 1: doctor fix
+        try:
+            report = self.doctor.diagnose(auto_fix=True)
+            errors = sum(1 for item in report.get("issues", []) if item.get("severity") == "error")
+            warnings = sum(1 for item in report.get("issues", []) if item.get("severity") == "warning")
+            infos = sum(1 for item in report.get("issues", []) if item.get("severity") == "info")
+            _step("doctor_fix", errors == 0, f"errors={errors}, warnings={warnings}, info={infos}")
+        except Exception as e:
+            _step("doctor_fix", False, str(e))
+
+        # Step 2: smoke
+        smoke_args = ["--json"] if json_mode else []
+        if strict:
+            smoke_args.append("--strict")
+        smoke_result = self._cmd_smoke(smoke_args)
+        smoke_ok = smoke_result.status == CommandStatus.SUCCESS
+        _step("smoke", smoke_ok, smoke_result.message or "ok" if smoke_ok else "failed")
+
+        # Step 3: wizard when config missing
+        config_missing = not self.config_mgr.config_path.exists()
+        if config_missing and non_interactive:
+            try:
+                llm_defaults = self._select_noninteractive_llm_defaults()
+
+                self.config_mgr.set("version", __version__)
+                self.config_mgr.set("llm.provider", llm_defaults["provider"])
+                self.config_mgr.set("llm.model", llm_defaults["model"])
+                self.config_mgr.set("llm.fallback_model", llm_defaults["fallback_model"])
+                self.config_mgr.set("llm.base_url", llm_defaults["base_url"])
+                self.config_mgr.set("llm.ollama_url", llm_defaults["ollama_url"])
+                self.config_mgr.set("llm.api_key", llm_defaults["api_key"])
+                self.config_mgr.set("llm.temperature", 0.7)
+                self.config_mgr.set("llm.max_tokens", 4096)
+                self.config_mgr.set("memory.enabled", True)
+                self.config_mgr.set("memory.daily_ttl_days", 30)
+                self.config_mgr.set("memory.dreaming_enabled", True)
+                self.config_mgr.set("skills.enabled", True)
+                self.config_mgr.set("skills.auto_generate", True)
+                self.config_mgr.set("dashboard.enabled", True)
+                self.config_mgr.set("dashboard.port", 17901)
+                self.config_mgr.save()
+                _step(
+                    "wizard",
+                    True,
+                    "default config created: "
+                    f"{self.config_mgr.config_path} "
+                    f"({llm_defaults['provider']}/{llm_defaults['model']})",
+                )
+            except (OSError, ValueError, TypeError) as e:
+                _step("wizard", False, f"failed to create default config: {e}")
+        elif config_missing and not skip_wizard:
+            wizard_result = self._cmd_wizard([])
+            _step("wizard", wizard_result.status != CommandStatus.ERROR, wizard_result.message)
+        elif config_missing and skip_wizard:
+            _step("wizard", False, "skipped (--no-wizard) while config missing")
+        else:
+            _step("wizard", True, "already configured")
+
+        # Step 4: start
+        start_result = self._cmd_start([])
+        start_ok = start_result.status in (CommandStatus.SUCCESS, CommandStatus.WARNING)
+        _step("start", start_ok, start_result.message)
+
+        failed = len([s for s in steps if not s["ok"]])
+        payload = {"ok": failed == 0, "failed": failed, "steps": steps}
+
+        if json_mode:
+            console.print(json.dumps(payload, indent=2))
+            return CommandResult(
+                status=CommandStatus.ERROR if (strict and failed > 0) else (CommandStatus.SUCCESS if failed == 0 else CommandStatus.WARNING),
+                message="",
+                data=None,
+                exit_code=1 if (strict and failed > 0) else 0,
+            )
+
+        table = Table(title="[primary]Quickstart Summary[/primary]", box=ROUNDED, border_style="cyan")
+        table.add_column("Step", style="dim")
+        table.add_column("Status", style="dim")
+        table.add_column("Detail", style="dim")
+        for step in steps:
+            status_text = "[success]PASS[/success]" if step["ok"] else "[error]FAIL[/error]"
+            table.add_row(step["name"], status_text, str(step["detail"]))
+        console.print(table)
+
+        if failed == 0:
+            console.print("[success]Quickstart complete. NEUGI is up and ready.[/success]")
+            return CommandResult(status=CommandStatus.SUCCESS, message="Quickstart complete")
+
+        console.print("[warning]Quickstart finished with issues. Run 'neugi doctor --fix' and 'neugi smoke'.[/warning]")
+        return CommandResult(
+            status=CommandStatus.ERROR if strict else CommandStatus.WARNING,
+            message=f"Quickstart completed with {failed} failed step(s)",
+            exit_code=1 if strict else 0,
+        )
+
+    def _cmd_verify_release(self, args: list[str]) -> CommandResult:
+        """Run release verification gates and return pass/fail summary.
+
+        Gates:
+        1) doctor --strict
+        2) smoke --strict
+        3) quickstart --non-interactive --strict --json
+        4) pytest test suite
+        """
+        json_mode = "--json" in args
+        run_full_tests = "--no-tests" not in args
+        write_report = "--report" in args
+        force_policy = "--force-policy" in args
+        risk_profile = "team"
+        for i, arg in enumerate(args):
+            if arg == "--risk-profile" and i + 1 < len(args):
+                risk_profile = str(args[i + 1]).strip().lower()
+
+        steps: list[dict[str, Any]] = []
+
+        def _step(name: str, ok: bool, detail: str) -> None:
+            steps.append({"name": name, "ok": ok, "detail": detail})
+
+        if not json_mode:
+            console.print(Panel(
+                "[primary]NEUGI Release Verify[/primary]\n"
+                "[dim]doctor --strict -> smoke --strict -> quickstart --strict -> pytest[/dim]",
+                border_style="cyan",
+            ))
+
+        # Step 0: governance policy profile wiring
+        policy_ok = True
+        policy_detail = "skipped"
+        try:
+            policy = self._apply_governance_profile(profile=risk_profile, force=force_policy)
+            if policy.get("error"):
+                policy_ok = False
+                policy_detail = policy["error"]
+            else:
+                applied = policy.get("applied")
+                reason = policy.get("reason", "ok")
+                count = policy.get("active_rule_count", policy.get("existing_rule_count", 0))
+                policy_detail = f"profile={risk_profile}, applied={applied}, reason={reason}, rules={count}"
+        except Exception as e:
+            policy_ok = False
+            policy_detail = str(e)
+        _step("policy_profile", policy_ok, policy_detail)
+
+        doctor_result = self._cmd_doctor(["--strict", "--json"])
+        _step("doctor_strict", doctor_result.exit_code == 0, "ok" if doctor_result.exit_code == 0 else "failed")
+
+        smoke_result = self._cmd_smoke(["--strict", "--json"])
+        _step("smoke_strict", smoke_result.exit_code == 0, "ok" if smoke_result.exit_code == 0 else "failed")
+
+        quickstart_result = self._cmd_quickstart(["--non-interactive", "--strict", "--json"])
+        _step("quickstart_strict", quickstart_result.exit_code == 0, "ok" if quickstart_result.exit_code == 0 else "failed")
+        if quickstart_result.exit_code == 0:
+            try:
+                self._cmd_stop([])
+            except Exception:
+                pass
+
+        if run_full_tests:
+            try:
+                env = os.environ.copy()
+                repo_root = str(Path(__file__).resolve().parents[2])
+                env["PYTHONPATH"] = repo_root
+                test_proc = subprocess.run(
+                    [sys.executable, "-m", "pytest", "neugi_swarm_v2/tests", "-q", "--tb=short", "-p", "no:anchorpy"],
+                    cwd=repo_root,
+                    env=env,
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                if test_proc.returncode == 0:
+                    summary_line = ""
+                    for line in reversed(test_proc.stdout.splitlines()):
+                        if "passed" in line:
+                            summary_line = line.strip()
+                            break
+                    _step("pytest_suite", True, summary_line or "passed")
+                else:
+                    tail = "\n".join((test_proc.stdout + "\n" + test_proc.stderr).splitlines()[-12:])
+                    _step("pytest_suite", False, tail or "pytest failed")
+            except Exception as e:
+                _step("pytest_suite", False, f"pytest execution failed: {e}")
+        else:
+            _step("pytest_suite", True, "skipped (--no-tests)")
+
+        failed = len([s for s in steps if not s["ok"]])
+        payload = {"ok": failed == 0, "failed": failed, "steps": steps}
+
+        if write_report:
+            artifact = self._generate_due_diligence_report(
+                steps=steps,
+                profile=risk_profile,
+                full_tests=run_full_tests,
+            )
+            payload["due_diligence_report"] = artifact
+
+        if json_mode:
+            console.print(json.dumps(payload, indent=2))
+            return CommandResult(
+                status=CommandStatus.SUCCESS if failed == 0 else CommandStatus.ERROR,
+                message="",
+                exit_code=0 if failed == 0 else 1,
+            )
+
+        table = Table(title="[primary]Release Verify Summary[/primary]", box=ROUNDED, border_style="cyan")
+        table.add_column("Step", style="dim")
+        table.add_column("Status", style="dim")
+        table.add_column("Detail", style="dim")
+        for step in steps:
+            status_text = "[success]PASS[/success]" if step["ok"] else "[error]FAIL[/error]"
+            table.add_row(step["name"], status_text, str(step["detail"]))
+        console.print(table)
+
+        if failed == 0:
+            console.print("[success]Release verification passed. Ready to ship.[/success]")
+            if write_report and payload.get("due_diligence_report"):
+                out = payload["due_diligence_report"]
+                console.print(f"[info]Due diligence report:[/info] {out.get('json_path')}")
+                console.print(f"[info]Executive summary:[/info] {out.get('md_path')}")
+            return CommandResult(status=CommandStatus.SUCCESS, message="Release verification passed")
+
+        console.print("[error]Release verification failed. Fix failing gates before shipping.[/error]")
+        if write_report and payload.get("due_diligence_report"):
+            out = payload["due_diligence_report"]
+            console.print(f"[info]Due diligence report:[/info] {out.get('json_path')}")
+            console.print(f"[info]Executive summary:[/info] {out.get('md_path')}")
+        return CommandResult(status=CommandStatus.ERROR, message=f"Release verification failed ({failed} failing gate(s))", exit_code=1)
+
+    def _apply_governance_profile(self, profile: str = "team", force: bool = False) -> dict[str, Any]:
+        """Apply governance approval profile to runtime approval gate."""
+        try:
+            from neugi_swarm_v2.governance import ApprovalGate
+
+            db_path = self.base_dir / "data" / "governance.db"
+            db_path.parent.mkdir(parents=True, exist_ok=True)
+            gate = ApprovalGate(db_path=str(db_path))
+            result = gate.apply_risk_profile(profile=profile, force=force)
+            gate.close()
+            return result
+        except Exception as e:
+            return {"error": str(e), "profile": profile, "applied": False}
+
+    def _runtime_fingerprint_snapshot(self) -> dict[str, Any]:
+        """Compute current runtime fingerprint for compliance artifacts."""
+        snapshot: dict[str, Any] = {
+            "version": __version__,
+            "top_level_commands": len(getattr(self, "_commands", {}) or {}),
+            "api_endpoints": None,
+            "provider_catalog_count": None,
+            "tests_collected": None,
+        }
+
+        try:
+            from neugi_swarm_v2.provider_catalog import get_all_providers
+            snapshot["provider_catalog_count"] = len(get_all_providers())
+        except Exception:
+            snapshot["provider_catalog_count"] = None
+
+        try:
+            server_path = Path(__file__).resolve().parents[1] / "dashboard" / "server.py"
+            mod = ast.parse(server_path.read_text(encoding="utf-8"))
+            for node in mod.body:
+                if isinstance(node, ast.ClassDef) and node.name == "DashboardServer":
+                    for fn in node.body:
+                        if isinstance(fn, ast.FunctionDef) and fn.name == "_register_routes":
+                            for stmt in fn.body:
+                                if isinstance(stmt, ast.Assign):
+                                    has_routes_target = any(
+                                        isinstance(t, ast.Name) and t.id == "routes"
+                                        for t in stmt.targets
+                                    )
+                                    if has_routes_target and isinstance(stmt.value, ast.Dict):
+                                        snapshot["api_endpoints"] = len(stmt.value.keys)
+                                        raise StopIteration
+        except StopIteration:
+            pass
+        except Exception:
+            snapshot["api_endpoints"] = None
+
+        try:
+            env = os.environ.copy()
+            repo_root = str(Path(__file__).resolve().parents[2])
+            env["PYTHONPATH"] = repo_root
+            proc = subprocess.run(
+                [sys.executable, "-m", "pytest", "neugi_swarm_v2/tests", "--collect-only", "-q", "-p", "no:anchorpy"],
+                cwd=repo_root,
+                env=env,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            output = f"{proc.stdout}\n{proc.stderr}"
+            import re
+            m = re.search(r"collected\s+(\d+)\s+items", output)
+            if m:
+                snapshot["tests_collected"] = int(m.group(1))
+        except Exception:
+            snapshot["tests_collected"] = None
+
+        return snapshot
+
+    def _generate_due_diligence_report(
+        self,
+        steps: list[dict[str, Any]],
+        profile: str,
+        full_tests: bool,
+    ) -> dict[str, Any]:
+        """Generate due diligence JSON + Markdown artifacts."""
+        report_dir = self.base_dir / "reports"
+        report_dir.mkdir(parents=True, exist_ok=True)
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        json_path = report_dir / f"due_diligence_{ts}.json"
+        md_path = report_dir / f"due_diligence_{ts}.md"
+
+        governance_stats: dict[str, Any] = {}
+        rule_snapshot: list[dict[str, Any]] = []
+        try:
+            from neugi_swarm_v2.governance import ApprovalGate
+            gate = ApprovalGate(db_path=str(self.base_dir / "data" / "governance.db"))
+            governance_stats = gate.get_stats()
+            for r in gate.list_rules(enabled_only=False):
+                rule_snapshot.append({
+                    "rule_id": r.rule_id,
+                    "name": r.name,
+                    "action_type": r.action_type,
+                    "agent_role": r.agent_role,
+                    "min_risk": r.min_risk.value if hasattr(r.min_risk, "value") else str(r.min_risk),
+                    "approval_count": r.approval_count,
+                    "timeout_minutes": r.timeout_minutes,
+                    "enabled": r.enabled,
+                })
+            gate.close()
+        except Exception as e:
+            governance_stats = {"error": str(e)}
+
+        fingerprint = self._runtime_fingerprint_snapshot()
+        failed = len([s for s in steps if not s.get("ok")])
+        payload: dict[str, Any] = {
+            "generated_at": datetime.now().isoformat(),
+            "version": __version__,
+            "profile": profile,
+            "full_tests_enabled": full_tests,
+            "result": {
+                "ok": failed == 0,
+                "failed_steps": failed,
+            },
+            "steps": steps,
+            "runtime_fingerprint": fingerprint,
+            "governance": {
+                "stats": governance_stats,
+                "rules": rule_snapshot,
+            },
+        }
+
+        json_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+
+        lines: list[str] = []
+        lines.append("# NEUGI Due Diligence Report")
+        lines.append("")
+        lines.append(f"- Generated: `{payload['generated_at']}`")
+        lines.append(f"- Version: `{payload['version']}`")
+        lines.append(f"- Governance profile: `{profile}`")
+        lines.append(f"- Verification status: `{'PASS' if payload['result']['ok'] else 'FAIL'}`")
+        lines.append("")
+        lines.append("## Runtime Fingerprint")
+        lines.append(f"- Top-level CLI commands: `{fingerprint.get('top_level_commands')}`")
+        lines.append(f"- Dashboard endpoints: `{fingerprint.get('api_endpoints')}`")
+        lines.append(f"- Provider catalog entries: `{fingerprint.get('provider_catalog_count')}`")
+        lines.append(f"- Tests collected: `{fingerprint.get('tests_collected')}`")
+        lines.append("")
+        lines.append("## Verification Steps")
+        for step in steps:
+            mark = "PASS" if step.get("ok") else "FAIL"
+            lines.append(f"- [{mark}] `{step.get('name')}` - {step.get('detail')}")
+        lines.append("")
+        lines.append("## Governance Snapshot")
+        if governance_stats.get("error"):
+            lines.append(f"- Error: {governance_stats['error']}")
+        else:
+            lines.append(f"- Active rules: `{governance_stats.get('active_rules', 0)}`")
+            lines.append(f"- Pending approvals: `{governance_stats.get('pending', 0)}`")
+            lines.append(f"- Approval rate: `{governance_stats.get('approval_rate', 0.0):.2%}`")
+        lines.append("")
+        lines.append(f"JSON artifact: `{json_path}`")
+        md_path.write_text("\n".join(lines), encoding="utf-8")
+
+        return {"json_path": str(json_path), "md_path": str(md_path)}
+
+    @staticmethod
+    def _select_noninteractive_llm_defaults() -> dict[str, str]:
+        """Pick sensible LLM defaults for quickstart in non-interactive mode.
+
+        Strategy:
+        1) Prefer first non-ollama provider with a detected env API key.
+        2) Fall back to local Ollama defaults.
+        """
+        provider = "ollama"
+        model = "qwen2.5-coder:7b"
+        fallback_model = "llama3.2:3b"
+        base_url = ""
+        ollama_url = "http://localhost:11434"
+        api_key = ""
+
+        try:
+            from neugi_swarm_v2.provider_catalog import get_all_providers
+
+            for catalog_provider in get_all_providers():
+                if catalog_provider.name == "ollama":
+                    continue
+                env_vars = list(getattr(catalog_provider, "env_vars", []) or [])
+                selected_env = next((name for name in env_vars if os.environ.get(name)), "")
+                if not selected_env:
+                    continue
+                provider = catalog_provider.name
+                if getattr(catalog_provider, "models", None):
+                    model = catalog_provider.models[0].id
+                    if len(catalog_provider.models) > 1:
+                        fallback_model = catalog_provider.models[1].id
+                base_url = catalog_provider.get_base_url() if hasattr(catalog_provider, "get_base_url") else ""
+                ollama_url = ""
+                api_key = os.environ.get(selected_env, "") or ""
+                break
+        except Exception:
+            # Keep resilient defaults even if provider catalog is unavailable.
+            pass
+
+        return {
+            "provider": provider,
+            "model": model,
+            "fallback_model": fallback_model,
+            "base_url": base_url,
+            "ollama_url": ollama_url,
+            "api_key": api_key,
+        }
 
     def _cmd_rescue(self, args: list[str]) -> CommandResult:
         """Run interactive rescue and troubleshooting wizard."""

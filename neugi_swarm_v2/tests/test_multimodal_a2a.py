@@ -111,7 +111,6 @@ class TestStealthBrowser(unittest.TestCase):
 
     def test_rotate_fingerprint(self):
         sb = StealthBrowser()
-        old_ua = sb.fingerprint.user_agent
         sb.rotate_fingerprint()
         new_ua = sb.fingerprint.user_agent
         # Might be same by chance, but usually different

@@ -1,22 +1,23 @@
 """Knowledge Base Indexer for Cybersecurity Expert Plugin."""
 
-import json, os, re, sqlite3
+import json
+import re
+import sqlite3
 from pathlib import Path
-from typing import Any, Dict, List, Optional
 
 logger = __import__("logging").getLogger(__name__)
 
 try:
     from whoosh import index
-    from whoosh.fields import Schema, TEXT, ID, KEYWORD, STORED
     from whoosh.analysis import StemmingAnalyzer
+    from whoosh.fields import ID, KEYWORD, STORED, TEXT, Schema
     HAS_WHOOSH = True
 except ImportError:
     HAS_WHOOSH = False
 
 try:
-    from sentence_transformers import SentenceTransformer
     import numpy as np
+    from sentence_transformers import SentenceTransformer
     HAS_SENTENCE_TRANSFORMERS = True
 except ImportError:
     HAS_SENTENCE_TRANSFORMERS = False
@@ -87,7 +88,7 @@ def _whoosh_index(md_files, kb_path, idx_path, embedder=None):
         headings = re.findall(r"^#{1,6}\s+(.+)$", clean, re.MULTILINE)
         title = fm.get("title") or (headings[0] if headings else fp.stem)
         tags = _infer_tags(fp, fm, headings)
-        
+
         # Generate vector embedding if embedder is available
         vector_bytes = None
         if embedder and clean.strip():
@@ -97,7 +98,7 @@ def _whoosh_index(md_files, kb_path, idx_path, embedder=None):
                 vector_bytes = embedding.astype(np.float32).tobytes()
             except Exception as e:
                 logger.debug("Failed to generate embedding for %s: %s", fp.name, e)
-        
+
         try:
             writer.add_document(
                 path=str(fp.relative_to(kb_path)), title=title, content=clean,
@@ -141,7 +142,7 @@ def _sqlite_index(md_files, kb_path, idx_path, embedder=None):
         title = fm.get("title") or (headings[0] if headings else fp.stem)
         tags = ",".join(_infer_tags(fp, fm, headings))
         rel = str(fp.relative_to(kb_path))
-        
+
         # Generate vector embedding if embedder is available
         vector_bytes = None
         if embedder and clean.strip():
@@ -151,7 +152,7 @@ def _sqlite_index(md_files, kb_path, idx_path, embedder=None):
                 vector_bytes = embedding.astype(np.float32).tobytes()
             except Exception as e:
                 logger.debug("Failed to generate embedding for %s: %s", fp.name, e)
-        
+
         try:
             conn.execute("INSERT OR REPLACE INTO knowledge VALUES (?,?,?,?,?,?,?,?,?,?)",
                          (rel, title, clean[:50000], ",".join(headings[:10]), tags,

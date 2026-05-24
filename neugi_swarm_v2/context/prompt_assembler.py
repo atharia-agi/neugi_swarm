@@ -804,7 +804,7 @@ class PromptAssembler:
     def _join_sections(self, sections: list[tuple[str, str]]) -> str:
         """Join sections with separators."""
         parts: list[str] = []
-        for name, content in sections:
+        for _name, content in sections:
             if content:
                 parts.append(content)
 

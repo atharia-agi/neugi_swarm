@@ -13,7 +13,7 @@ Features:
 
 Usage:
     from tools.web_search import WebSearch
-    
+
     ws = WebSearch()
     results = ws.search("latest AI breakthroughs 2026")
     content = ws.read_url("https://example.com/article")
@@ -24,6 +24,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 import warnings
@@ -79,9 +80,9 @@ class WebSearch:
     def _check_ddgs(self) -> bool:
         """Check if duckduckgo-search is available."""
         try:
-            import duckduckgo_search
-            return True
-        except ImportError:
+            import importlib.util
+            return importlib.util.find_spec("duckduckgo_search") is not None
+        except (ImportError, ModuleNotFoundError):
             logger.info("duckduckgo-search not installed. Fallback disabled.")
             return False
 
@@ -113,14 +114,14 @@ class WebSearch:
             }
         )
         try:
-            with urllib.request.urlopen(req, timeout=self.config.timeout_seconds) as resp:
+            with urllib.request.urlopen(req, timeout=self.config.timeout_seconds) as resp:  # nosec B310
                 return resp.read().decode("utf-8", errors="replace")
-        except Exception as e:
-            raise WebSearchError(f"Fetch failed: {e}")
+        except (urllib.error.URLError, OSError, TimeoutError) as e:
+            raise WebSearchError(f"Fetch failed: {e}") from e
 
     def read_url(self, url: str) -> str:
         """Read any URL and convert to LLM-friendly markdown.
-        
+
         Uses Jina AI Reader: https://r.jina.ai/https://URL
         """
         cache_key = self._cache_key("read", url)
@@ -144,12 +145,12 @@ class WebSearch:
                 content = self._fetch(url)
                 self._set_cached(cache_key, content)
                 return content
-            except Exception:
-                raise WebSearchError(f"Failed to read URL: {url}")
+            except (WebSearchError, OSError, TimeoutError) as e:
+                raise WebSearchError(f"Failed to read URL: {url}") from e
 
     def search(self, query: str, max_results: int | None = None) -> list[SearchResult]:
         """Search the web and return LLM-friendly results.
-        
+
         Primary: Jina AI Search (https://s.jina.ai/)
         Fallback: DuckDuckGo Search (ddgs)
         """
@@ -167,8 +168,8 @@ class WebSearch:
             if results:
                 self._set_cached(cache_key, results)
                 return results
-        except Exception as e:
-            logger.warning(f"Jina Search failed: {e}")
+        except (WebSearchError, OSError, TimeoutError, ValueError) as e:
+            logger.warning("Jina Search failed: %s", e)
 
         # Fallback to DDGS
         if self.config.fallback_to_ddgs and self._ddgs_available:
@@ -177,8 +178,8 @@ class WebSearch:
                 if results:
                     self._set_cached(cache_key, results)
                     return results
-            except Exception as e:
-                logger.warning(f"DDGS fallback failed: {e}")
+            except (OSError, TimeoutError, ValueError, RuntimeError) as e:
+                logger.warning("DDGS fallback failed: %s", e)
 
         return results
 

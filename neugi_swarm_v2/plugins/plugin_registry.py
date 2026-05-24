@@ -192,7 +192,7 @@ class PluginRegistry:
         else:
             return self._graph_to_text(plugins)
 
-    def _graph_to_text(self, plugins: dict[str, "PluginInfo"]) -> str:
+    def _graph_to_text(self, plugins: dict[str, PluginInfo]) -> str:
         """Render a text-based dependency tree."""
         lines = ["Plugin Dependency Graph", "=" * 40, ""]
         for name, info in sorted(plugins.items()):
@@ -208,10 +208,10 @@ class PluginRegistry:
         lines.append(f"Total: {len(plugins)} plugin(s)")
         return "\n".join(lines)
 
-    def _graph_to_mermaid(self, plugins: dict[str, "PluginInfo"]) -> str:
+    def _graph_to_mermaid(self, plugins: dict[str, PluginInfo]) -> str:
         """Render a Mermaid.js dependency graph."""
         lines = ["```mermaid", "graph TD;"]
-        for name, info in sorted(plugins.items()):
+        for name, _info in sorted(plugins.items()):
             node_id = name.replace("-", "_").replace(".", "_")
             lines.append(f"    {node_id}[\"{name}\"];")
         for name, info in sorted(plugins.items()):
@@ -223,7 +223,7 @@ class PluginRegistry:
         lines.append("```")
         return "\n".join(lines)
 
-    def _graph_to_dot(self, plugins: dict[str, "PluginInfo"]) -> str:
+    def _graph_to_dot(self, plugins: dict[str, PluginInfo]) -> str:
         """Render a Graphviz DOT dependency graph."""
         lines = ["digraph PluginDeps {", "    rankdir=LR;", "    node [shape=box,style=rounded];", ""]
         for name, info in sorted(plugins.items()):

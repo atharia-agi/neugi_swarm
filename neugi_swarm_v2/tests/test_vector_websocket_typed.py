@@ -35,7 +35,6 @@ class TestEmbeddingEngine(unittest.TestCase):
         self.assertEqual(len(vecs[0]), engine.dimension)
 
     def test_cosine_similarity(self):
-        engine = EmbeddingEngine()
         a = [1.0, 0.0, 0.0]
         b = [1.0, 0.0, 0.0]
         sim = EmbeddingEngine._cosine_similarity(a, b)

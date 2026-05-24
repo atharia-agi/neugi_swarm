@@ -15,7 +15,7 @@ try:
 except ImportError:
     yaml = None  # type: ignore
 
-from .skill_contract import (
+from skills.skill_contract import (
     SkillAction,
     SkillContract,
     SkillFrontmatter,
@@ -43,6 +43,7 @@ class GatingResult:
 
     @classmethod
     def ok(cls, reason: str = "") -> GatingResult:
+        """Create a passing gating result."""
         result = cls(passed=True)
         if reason:
             result.reasons.append(reason)
@@ -50,6 +51,12 @@ class GatingResult:
 
     @classmethod
     def fail(cls, check: str, reason: str) -> GatingResult:
+        """Create a failing gating result.
+
+        Args:
+            check: Name of the gating check that failed.
+            reason: Human-readable explanation.
+        """
         return cls(passed=False, reasons=[reason], failed_check=check)
 
 

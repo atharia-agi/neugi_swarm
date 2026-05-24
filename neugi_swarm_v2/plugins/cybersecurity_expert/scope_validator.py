@@ -1,6 +1,8 @@
 """Validate targets against authorized scope before scanning."""
-import ipaddress, re
-from typing import Any, Dict, List, Optional
+import ipaddress
+import re
+from typing import Any
+
 logger = __import__("logging").getLogger(__name__)
 
 ALLOWED_SCOPES = [
@@ -14,8 +16,8 @@ ALLOWED_SCOPES = [
 BLOCKED_DOMAINS = [r"\.gov$", r"\.mil$", r"\.int$", r"\.local$"]
 BLOCKED_IPS = []
 
-def validate_targets(targets: List[str],
-                     allowed_scopes: Optional[List[Dict]] = None) -> Dict[str, Any]:
+def validate_targets(targets: list[str],
+                     allowed_scopes: list[dict] | None = None) -> dict[str, Any]:
     """Validate that targets are within authorized scope.
 
     Args:
@@ -62,7 +64,7 @@ def _is_blocked(target: str) -> bool:
         pass
     return False
 
-def _in_scope(target: str, scopes: List[Dict]) -> bool:
+def _in_scope(target: str, scopes: list[dict]) -> bool:
     for scope in scopes:
         if scope["type"] == "domain" and re.match(scope["pattern"], target, re.IGNORECASE):
             return True

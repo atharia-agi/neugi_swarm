@@ -122,7 +122,7 @@ class ToolStats:
     avg_latency_ms: float = 0.0
     success_rate: float = 1.0
 
-    def record_call(self, latency_ms: float, success: bool, error: str | None = None):
+    def record_call(self, latency_ms: float, success: bool, error: str | None = None) -> None:
         """Record a tool call."""
         self.call_count += 1
         self.total_latency_ms += latency_ms
@@ -150,13 +150,13 @@ class ToolHealth:
     uptime_ratio: float = 1.0
     circuit_open: bool = False
 
-    def record_success(self):
+    def record_success(self) -> None:
         """Record a successful call."""
         self.consecutive_failures = 0
         self.status = "healthy"
         self.last_check = time.time()
 
-    def record_failure(self, error: str):
+    def record_failure(self, error: str) -> None:
         """Record a failed call."""
         self.consecutive_failures += 1
         self.last_error = error
@@ -205,7 +205,7 @@ class ToolRegistry:
         >>> result = tool.func("World")
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._tools: dict[str, ToolMetadata] = {}
         self._stats: dict[str, ToolStats] = {}
         self._health: dict[str, ToolHealth] = {}
@@ -437,7 +437,7 @@ class ToolRegistry:
         """
         # Import here to avoid circular dependency
         try:
-            from model_capability_router import ModelTier
+            from model_capability_router import ModelTier  # noqa: F401
         except ImportError:
             return True  # Can't check, allow all
 
@@ -499,7 +499,7 @@ class ToolRegistry:
         results.sort(key=lambda x: x[0], reverse=True)
         return [schema for _, schema in results]
 
-    def set_agent_allowlist(self, agent_id: str, tool_names: set[str]):
+    def set_agent_allowlist(self, agent_id: str, tool_names: set[str]) -> None:
         """
         Set the allowlist of tools for a specific agent.
 
@@ -542,7 +542,7 @@ class ToolRegistry:
 
     def record_stats(
         self, name: str, latency_ms: float, success: bool, error: str | None = None
-    ):
+    ) -> None:
         """
         Record usage statistics for a tool call.
 
@@ -629,7 +629,7 @@ class ToolRegistry:
                 if names
             }
 
-    def deprecate_tool(self, name: str, message: str = "This tool is deprecated"):
+    def deprecate_tool(self, name: str, message: str = "This tool is deprecated") -> None:
         """
         Mark a tool as deprecated.
 

@@ -456,7 +456,7 @@ class ExecutionSandbox:
         memory_kb = 0
         try:
             if platform.system() != "Windows" and proc.pid:
-                with open(f"/proc/{proc.pid}/status") as f:
+                with open(f"/proc/{proc.pid}/status", encoding="utf-8") as f:
                     for line in f:
                         if line.startswith("VmHWM:"):
                             memory_kb = int(line.split()[1])

@@ -134,7 +134,7 @@ class Connection:
         self.last_activity = time.time()
         self._pending_requests: dict[str, asyncio.Future] = {}
 
-    async def send(self, data: str):
+    async def send(self, data: str) -> None:
         """Send data to the client."""
         self.last_activity = time.time()
         try:
@@ -142,11 +142,11 @@ class Connection:
         except Exception as e:
             logger.error(f"Send error on {self.conn_id}: {e}")
 
-    async def send_event(self, event: Event):
+    async def send_event(self, event: Event) -> None:
         """Send a server-push event."""
         await self.send(event.to_json())
 
-    async def send_response(self, response: RPCResponse):
+    async def send_response(self, response: RPCResponse) -> None:
         """Send an RPC response."""
         await self.send(json.dumps(response.to_dict()))
 
@@ -168,7 +168,7 @@ class GatewayServer:
 
     def __init__(
         self,
-        host: str = "0.0.0.0",
+        host: str = "0.0.0.0",  # nosec B104
         ws_port: int = 19887,
         http_port: int = 19888,
         data_dir: str = "",
@@ -211,7 +211,7 @@ class GatewayServer:
         self.register_handler("subscribe", self._handle_subscribe)
         self.register_handler("unsubscribe", self._handle_unsubscribe)
 
-    def register_handler(self, method: str, handler: Callable):
+    def register_handler(self, method: str, handler: Callable) -> None:
         """Register an RPC method handler."""
         self._handlers[method] = handler
 
@@ -460,7 +460,6 @@ class GatewayServer:
         """Send a chat message through the gateway."""
         message = params.get("message", "")
         session_id = params.get("session_id", "default")
-        agent_id = params.get("agent_id", "")
 
         if not message:
             raise ValueError("Message is required")
@@ -489,7 +488,7 @@ class GatewayServer:
 
     # ========== Event Broadcasting ==========
 
-    async def broadcast(self, event: Event, exclude_conn: str | None = None):
+    async def broadcast(self, event: Event, exclude_conn: str | None = None) -> None:
         """Broadcast an event to all connected devices."""
         targets = [
             c for c in self._connections.values()
@@ -504,7 +503,7 @@ class GatewayServer:
 
             asyncio.create_task(conn.send_event(event))
 
-    async def send_to_device(self, device_id: str, event: Event):
+    async def send_to_device(self, device_id: str, event: Event) -> bool:
         """Send an event to a specific device."""
         for conn in self._connections.values():
             if conn.device.id == device_id and conn.is_alive():
@@ -526,7 +525,7 @@ class GatewayServer:
         conn = Connection(conn_id, device, send_fn)
         return conn
 
-    async def on_disconnect(self, conn_id: str):
+    async def on_disconnect(self, conn_id: str) -> None:
         """Handle a connection disconnect."""
         conn = self._connections.pop(conn_id, None)
         if conn:
@@ -545,7 +544,7 @@ class GatewayServer:
                 },
             ))
 
-    def cleanup_stale_connections(self, timeout: float = 120.0):
+    def cleanup_stale_connections(self, timeout: float = 120.0) -> None:
         """Remove connections that haven't sent a heartbeat."""
         stale = [
             cid for cid, c in self._connections.items()
@@ -583,8 +582,8 @@ class GatewayServer:
         try:
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
-        except Exception as e:
-            logger.error(f"Failed to save devices: {e}")
+        except OSError as e:
+            logger.error("Failed to save devices to %s: %s", path, e)
 
     def _load_devices(self):
         """Load device registry from disk."""
@@ -616,7 +615,7 @@ class GatewayServer:
 
     # ========== Server Lifecycle ==========
 
-    def start(self):
+    def start(self) -> None:
         """Start the gateway server."""
         self._running = True
         self._start_time = time.time()
@@ -627,7 +626,7 @@ class GatewayServer:
 
         logger.info(f"Gateway started on {self.host}:{self.http_port}")
 
-    def stop(self):
+    def stop(self) -> None:
         """Stop the gateway server."""
         self._running = False
         logger.info("Gateway stopped")
@@ -637,7 +636,7 @@ class GatewayServer:
         gateway = self
 
         class GatewayHTTPHandler(BaseHTTPRequestHandler):
-            def do_GET(self):
+            def do_GET(self) -> None:
                 if self.path == "/health":
                     self._send_json(gateway.get_health())
                 elif self.path == "/api/devices":
@@ -652,7 +651,7 @@ class GatewayServer:
                 else:
                     self.send_error(404)
 
-            def do_POST(self):
+            def do_POST(self) -> None:
                 if self.path == "/api/pair":
                     length = int(self.headers.get("Content-Length", 0))
                     body = json.loads(self.rfile.read(length))
@@ -703,7 +702,7 @@ class GatewayServer:
                 self.end_headers()
                 self.wfile.write(json.dumps(data).encode())
 
-            def log_message(self, format, *args):
+            def log_message(self, format: str, *args: Any) -> None:
                 pass  # Suppress default logging
 
         try:
