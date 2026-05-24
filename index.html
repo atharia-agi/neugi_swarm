@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neugi v2.1.3 — The Ultimate Agentic Framework</title>
-    <meta name="description" content="Neugi v2.1.3: 29 subsystems, 120+ modules, ~65K lines. The most advanced open-source agentic AI framework. Surpassing OpenClaw, CrewAI, AutoGen, LangGraph, and Paperclip combined.">
+    <title>Neugi v2.1.3 - Production Agentic Framework</title>
+    <meta name="description" content="Neugi v2.1.3: 29 subsystems, 120+ modules, ~71K lines, and production-first autonomous infrastructure for multi-agent execution.">
     <style>body{background:#000;margin:0}html.dark body{background:#000}</style>
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://atharia-agi.github.io/neugi_swarm/">
-    <meta property="og:title" content="Neugi v2.1.3 — The Ultimate Agentic Framework">
-    <meta property="og:description" content="29 subsystems, 120+ modules, ~65K lines. The most advanced open-source agentic AI framework ever built.">
+    <meta property="og:title" content="Neugi v2.1.3 - Production Agentic Framework">
+    <meta property="og:description" content="29 subsystems, 120+ modules, ~71K lines, and production-first autonomous infrastructure for multi-agent execution.">
     <meta property="og:image" content="https://atharia-agi.github.io/neugi_swarm/assets/hero_logo_mascot.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -19,14 +19,14 @@
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:url" content="https://atharia-agi.github.io/neugi_swarm/">
-    <meta name="twitter:title" content="Neugi v2.1.3 — The Ultimate Agentic Framework">
-    <meta name="twitter:description" content="29 subsystems, 120+ modules, ~65K lines. The most advanced open-source agentic AI framework ever built.">
+    <meta name="twitter:title" content="Neugi v2.1.3 - Production Agentic Framework">
+    <meta name="twitter:description" content="29 subsystems, 120+ modules, ~71K lines, and production-first autonomous infrastructure for multi-agent execution.">
     <meta name="twitter:image" content="https://atharia-agi.github.io/neugi_swarm/assets/hero_logo_mascot.png">
 
-    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
-    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/favicon-192x192.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+    <link rel="icon" type="image/x-icon" href="https://neugi.com/assets/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://neugi.com/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="https://neugi.com/assets/favicon-192x192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://neugi.com/assets/apple-touch-icon.png">
     <link rel="manifest" href="site.webmanifest">
 ...
         .top-banner {
@@ -41,7 +41,7 @@
 </head>
 <body>
     <div class="top-banner">
-        🚀 NEUGI v2.1.3 IS HERE — 29 Subsystems · 120+ Modules · ~65K Lines of Agentic Intelligence
+        NEUGI v2.1.3 IS HERE - 29 Subsystems · 120+ Modules · ~71K Lines of Agentic Intelligence
     </div>
     
     <!-- Preconnect & Fonts -->
@@ -235,7 +235,7 @@
 
         /* Hero Section */
         .hero {
-            padding: 180px 0 100px;
+            padding: 124px 0 100px;
             text-align: center;
             display: flex;
             flex-direction: column;
@@ -271,9 +271,9 @@
             max-width: 480px;
             width: 100%;
             height: auto;
-            border-radius: 16px;
+            border-radius: 6px;
             border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            box-shadow: none;
         }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
@@ -308,16 +308,33 @@
             justify-content: center;
         }
 
+        .proof-strip {
+            margin-top: 18px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .proof-chip {
+            font-size: 11px;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 4px;
+            padding: 4px 8px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
         /* Code Terminal Installation */
         .install-box {
             margin: 60px auto 0;
             max-width: 640px;
             background: var(--bg-elevated);
             border: 1px solid var(--border-subtle);
-            border-radius: 12px;
+            border-radius: 4px;
             overflow: hidden;
             text-align: left;
-            box-shadow: 0 24px 48px rgba(0,0,0,0.5);
+            box-shadow: none;
         }
 
         .install-header {
@@ -405,6 +422,39 @@
             text-align: center;
         }
 
+        .ops-proof {
+            margin-top: 22px;
+            border: 1px solid var(--border-subtle);
+            border-radius: 4px;
+            background: rgba(255,255,255,0.02);
+            padding: 12px;
+        }
+        .ops-proof-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+        }
+        .ops-proof-item {
+            border: 1px solid var(--border-subtle);
+            border-radius: 4px;
+            padding: 8px;
+            background: rgba(255,255,255,0.01);
+        }
+        .ops-proof-item h4 {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        .ops-proof-item p {
+            margin: 0;
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.35;
+        }
+
         .metric-value {
             font-size: 32px;
             font-weight: 600;
@@ -463,7 +513,7 @@
         .feature-card {
             background: var(--bg-elevated);
             border: 1px solid var(--border-subtle);
-            border-radius: 12px;
+            border-radius: 4px;
             padding: 32px;
             transition: all 0.3s ease;
         }
@@ -638,9 +688,49 @@
             .features-grid { grid-template-columns: 1fr; }
             .agents-grid { grid-template-columns: repeat(2, 1fr); }
             .metrics-grid { grid-template-columns: repeat(2, 1fr); gap: 40px; }
+            .ops-proof-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .footer-grid { grid-template-columns: 1fr; }
             .footer-bottom { flex-direction: column; gap: 16px; text-align: center; }
         }
+
+        /* NEUGI native IDE refinement: compact, flat, expensive. */
+        :root {
+            --bg-base: #0d0d0d;
+            --bg-elevated: #111111;
+            --bg-layer: rgba(255,255,255,0.035);
+            --bg-layer-hover: rgba(255,255,255,0.055);
+            --border-subtle: rgba(255,255,255,0.06);
+            --border-hover: rgba(255,255,255,0.12);
+            --text-primary: #f4f4f5;
+            --text-secondary: #a1a1aa;
+            --text-tertiary: #71717a;
+        }
+        body { font-size: 13px; line-height: 1.45; background:#0d0d0d; }
+        .ambient-mesh, .dot-matrix { display:none; }
+        .global-nav { height:52px; background:rgba(13,13,13,0.96); backdrop-filter:none; border-bottom:1px solid var(--border-subtle); }
+        .nav-inner { height:52px; }
+        .brand-logo { font-size:13px; gap:8px; }
+        .brand-logo img { width:22px !important; height:22px !important; border-radius:4px !important; }
+        .nav-links a, .btn { font-size:12px; }
+        .btn { padding:7px 10px; border-radius:4px; box-shadow:none !important; }
+        .btn-primary { color:#0d0d0d; }
+        .hero { padding-top:34px; padding-bottom:52px; }
+        .hero-video img, .hero-video video { border-radius:6px !important; box-shadow:none !important; border:1px solid var(--border-subtle); }
+        .hero h1 { font-size:42px; line-height:1.04; letter-spacing:-0.03em; }
+        .hero p { font-size:13px; max-width:620px; }
+        .hero-badge { border-radius:4px; padding:5px 8px; font-size:11px; }
+        .hero-actions { padding:8px; border-radius:6px; box-shadow:none; }
+        .section { padding:56px 0; }
+        .section-label { font-size:10px; letter-spacing:0.08em; }
+        .section-title { font-size:24px; letter-spacing:-0.02em; }
+        .section-desc, .feature-desc, .agent-desc, .contact-copy { font-size:13px; }
+        .features-grid { gap:10px; }
+        .feature-card, .agent-card, .partner-card, #form-container { border-radius:4px !important; padding:14px !important; box-shadow:none !important; }
+        .feature-card:hover, .agent-card:hover, .partner-card:hover { transform:none; box-shadow:none !important; border-color:var(--border-hover); }
+        .feature-icon { width:26px; height:26px; border-radius:4px; margin-bottom:14px; color:#d4d4d8 !important; }
+        .feature-icon svg { width:14px; height:14px; }
+        .feature-title { font-size:13px; }
+        input, textarea { border-radius:4px !important; font-size:13px !important; padding:8px !important; }
     </style>
 </head>
 <body>
@@ -657,11 +747,12 @@
                 <a href="#architecture">Architecture</a>
                 <a href="#agents">Swarm</a>
                 <a href="#features">What's New</a>
+                <a href="https://smar.neugi.com" target="_blank" rel="noopener noreferrer">SMAR Research</a>
                 <a href="docs.html">Documentation</a>
             </div>
             <div style="display:flex; gap: 12px;">
                 <a href="dashboard.html" class="btn btn-secondary">Console</a>
-                <a href="https://github.com/atharia-agi/neugi_swarm" class="btn btn-primary" target="_blank">Build</a>
+                <a href="https://github.com/atharia-agi/neugi_swarm" class="btn btn-primary" target="_blank">GitHub Repo</a>
             </div>
         </div>
     </nav>
@@ -672,17 +763,23 @@
                 <video autoplay loop muted playsinline
                     poster="assets/hero_logo_mascot.png">
                     <source src="assets/loop_hero.webm" type="video/webm">
-                    <picture><source srcset="assets/hero_logo_mascot.webp" type="image/webp"><img src="assets/hero_logo_mascot.png" alt="NEUGI Agent Swarm" style="max-width: 480px; width: 100%; height: auto; border-radius: 16px;"></picture>
+                    <picture><source srcset="assets/hero_logo_mascot.webp" type="image/webp"><img src="assets/hero_logo_mascot.png" alt="NEUGI Agent Swarm" style="max-width: 480px; width: 100%; height: auto; border-radius: 6px;"></picture>
                 </video>
             </div>
 
-            <div class="hero-badge">🚀 v2.1.3 — The Ultimate Agentic Framework</div>
+            <div class="hero-badge">v2.1.3 - Production Agentic Framework</div>
             <h1>Neural General Intelligence</h1>
-            <p>The most advanced open-source agentic AI framework ever built. 29 subsystems. 120+ modules. ~65K lines. Surpassing OpenClaw, CrewAI, AutoGen, LangGraph, and Paperclip combined.</p>
+            <p>Production-grade autonomous framework for serious multi-agent execution. 29 subsystems, 120+ modules, and ~71K LOC with governance, memory, and durable orchestration built in.</p>
             
             <div class="hero-actions">
-                <a href="dashboard.html" class="btn btn-primary">Launch Console</a>
-                <a href="#ecosystem" class="btn btn-secondary">Ecosystem Partners</a>
+                <a href="dashboard.html" class="btn btn-primary">Start in 5 Minutes</a>
+                <a href="#architecture" class="btn btn-secondary">Read Architecture</a>
+                <a href="https://github.com/atharia-agi/neugi_swarm" class="btn btn-secondary" target="_blank" rel="noopener noreferrer">View GitHub</a>
+            </div>
+            <div class="proof-strip" aria-label="Platform proof signals">
+                <span class="proof-chip">Release: May 1, 2026</span>
+                <span class="proof-chip">Tests: 384 passing</span>
+                <span class="proof-chip">Security: Governance + audit logs</span>
             </div>
 
             <div class="install-box" id="install">
@@ -695,7 +792,7 @@
                 </div>
                 <div class="install-body">
                     <div class="install-cmd" id="install-cmd-text">
-                        <span class="prompt">PS></span> irm https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm_v2/install.ps1 | iex
+                        <span class="prompt">PS></span> irm https://neugi.com/install.ps1 | iex
                     </div>
                     <button class="copy-btn" onclick="copyInstall()">
                         <svg viewBox="0 0 24 24" fill="none" class="feather" width="14" height="14" stroke="currentColor"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -717,12 +814,32 @@
                         <div class="metric-label">Modules</div>
                     </div>
                     <div>
-                        <div class="metric-value">~65K</div>
+                        <div class="metric-value">~71K</div>
                         <div class="metric-label">Lines of Code</div>
                     </div>
                     <div>
-                        <div class="metric-value">365</div>
+                        <div class="metric-value">384</div>
                         <div class="metric-label">Tests Passing</div>
+                    </div>
+                </div>
+                <div class="ops-proof">
+                    <div class="ops-proof-grid">
+                        <div class="ops-proof-item">
+                            <h4>Release</h4>
+                            <p>v2.1.3 - May 1, 2026</p>
+                        </div>
+                        <div class="ops-proof-item">
+                            <h4>Verification</h4>
+                            <p>384 tests passing in CI</p>
+                        </div>
+                        <div class="ops-proof-item">
+                            <h4>Security</h4>
+                            <p>Governance, approvals, audit logs</p>
+                        </div>
+                        <div class="ops-proof-item">
+                            <h4>Runtime</h4>
+                            <p>MCP + autonomous loop + memory tiers</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -731,7 +848,7 @@
         <section class="section container" id="architecture">
             <div class="section-header">
                 <span class="section-badge">Architecture</span>
-                <h2 class="section-title">Built for absolute scale.</h2>
+                <h2 class="section-title">Built for production scale.</h2>
                 <p class="section-desc">Neugi v2 isn't just a chatbot loop. It's a deterministic multi-agent state machine with 29 subsystems designed for production-grade reliability at scale.</p>
             </div>
 
@@ -816,7 +933,7 @@
                         <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
                             <path d="M4 6h16v12H4zm2 2v8h12V8H6z" opacity="0.2"/>
                             <rect x="8" y="10" width="2" height="2" fill="#ef4444"/>
-                            <rect x="14" y="10" width="2" height="2" fill="#3b82f6"/>
+                            <rect x="14" y="10" width="2" height="2" fill="#a1a1aa"/>
                             <rect x="11" y="13" width="2" height="2" fill="#10b981"/>
                         </svg>
                     </div>
@@ -843,50 +960,50 @@
 
         <section class="section container" id="features">
             <div class="section-header">
-                <span class="section-badge">What's New v2.1.3</span>
-                <h2 class="section-title">The Ultimate Agent Platform</h2>
-                <p class="section-desc">Most powerful. Most beginner-friendly. Features that no other platform has.</p>
+                <span class="section-badge">Release Highlights</span>
+                <h2 class="section-title">What's New in v2.1.3</h2>
+                <p class="section-desc">Practical upgrades for reliability, autonomy, and day-to-day developer workflows.</p>
             </div>
 
             <div class="features-grid">
                 <div class="feature-card">
                     <div class="feature-icon" style="color:#10b981"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg></div>
-                    <h3 class="feature-title">🧠 Karpathy Dreaming</h3>
+                    <h3 class="feature-title">Karpathy Dreaming</h3>
                     <p class="feature-desc">Hierarchical memory with sleep-cycle consolidation. Episodic, semantic, and procedural memory scopes.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon" style="color:#8b5cf6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
-                    <h3 class="feature-title">📚 6-Tier Skills</h3>
+                    <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+                    <h3 class="feature-title">6-Tier Skills</h3>
                     <p class="feature-desc">Global to ephemeral skill loading with gating, token budgets, and SKILL.md v3 spec compliance.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon" style="color:#f59e0b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
-                    <h3 class="feature-title">🌳 Tree of Thoughts</h3>
+                    <h3 class="feature-title">Tree of Thoughts</h3>
                     <p class="feature-desc">Multi-step planning with branching, scoring, and backtracking. Handles complex goals autonomously.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon" style="color:#ef4444"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div>
-                    <h3 class="feature-title">🛡️ 7-Layer Sandbox</h3>
+                    <h3 class="feature-title">7-Layer Sandbox</h3>
                     <p class="feature-desc">Neuro-symbolic validation, exploit prevention, and AES-256 secrets. Security by design.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon" style="color:#06b6d4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-                    <h3 class="feature-title">🔌 MCP Server</h3>
+                    <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+                    <h3 class="feature-title">MCP Server</h3>
                     <p class="feature-desc">Full Model Context Protocol spec. stdio and HTTP transports. Auto-registers all NEUGI tools.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon" style="color:#ec4899"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-                    <h3 class="feature-title">📡 Multi-Channel</h3>
+                    <h3 class="feature-title">Multi-Channel</h3>
                     <p class="feature-desc">Unified Telegram, Discord, Slack, WhatsApp manager. One API, all platforms.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon" style="color:#3b82f6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg></div>
-                    <h3 class="feature-title">⚡ Auto-Learning</h3>
+                    <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg></div>
+                    <h3 class="feature-title">Auto-Learning</h3>
                     <p class="feature-desc">Pattern tracking and automatic skill generation from every successful task completion.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon" style="color:#14b8a6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg></div>
-                    <h3 class="feature-title">🔧 61 Built-in Tools</h3>
+                    <h3 class="feature-title">61 Built-in Tools</h3>
                     <p class="feature-desc">File, system, web, data, dev, LLM, utility, and more. Composable and dynamically generated.</p>
                 </div>
             </div>
@@ -899,7 +1016,7 @@
                 <a href="index.html" class="brand-logo">
                     <picture><source srcset="assets/logo_text_neugi.webp" type="image/webp"><img src="assets/logo_text_neugi.png" alt="Neugi" style="height:32px; width: auto; border-radius:4px;"></picture>
                 </a>
-                <p class="footer-desc">The ultimate open-source agentic framework. 29 subsystems, 120+ modules, ~65K LOC. Bridging the gap between raw hardware capabilities and human intent.</p>
+                <p class="footer-desc">Production-focused open-source agentic framework: 29 subsystems, 120+ modules, and ~71K LOC built for reliable autonomous execution.</p>
             </div>
             <div class="footer-col">
                 <h4>Ecosystem</h4>
@@ -937,9 +1054,9 @@
 
     <script>
         const cmds = {
-            'windows': { prompt: 'PS>', cmd: 'irm https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm_v2/install.ps1 | iex' },
-            'macos': { prompt: '$', cmd: 'curl -fsSL https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm_v2/install.sh | bash' },
-            'linux': { prompt: '$', cmd: 'curl -fsSL https://raw.githubusercontent.com/atharia-agi/neugi_swarm/master/neugi_swarm_v2/install.sh | bash' }
+            'windows': { prompt: 'PS>', cmd: 'irm https://neugi.com/install.ps1 | iex' },
+            'macos': { prompt: '$', cmd: 'curl -fsSL https://neugi.com/install.sh | bash' },
+            'linux': { prompt: '$', cmd: 'curl -fsSL https://neugi.com/install.sh | bash' }
         };
 
         let currentOs = 'windows';
@@ -1015,10 +1132,10 @@
 
             <!-- About & Contact Section -->
             <div id="contact" style="margin-top: 80px; display: grid; grid-template-columns: 1fr 1.5fr; gap: 40px;">
-                <div style="padding: 40px; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 16px;">
+                <div style="padding: 14px; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 4px;">
                     <h3 style="margin-bottom: 16px;">About Neugi</h3>
                     <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.6; margin-bottom: 24px;">
-                        Neugi v2.1.3 is the most advanced open-source agentic AI framework ever built. With 29 subsystems, 120+ modules, and ~65K lines of code, it surpasses OpenClaw, CrewAI, AutoGen, LangGraph, and Paperclip combined. Secure, private, and highly efficient.
+                        Neugi v2.1.3 is a production-grade open-source agentic AI framework. With 29 subsystems, 120+ modules, and ~71K lines of code, it prioritizes reliability, governance, and secure autonomous operation.
                     </p>
                     <div style="display: flex; flex-direction: column; gap: 16px;">
                         <a href="https://twitter.com/Atharia_AGI" target="_blank" style="display: flex; align-items: center; gap: 12px; color: var(--text-primary); text-decoration: none; font-size: 14px; font-weight: 500;">
@@ -1032,7 +1149,7 @@
                     </div>
                 </div>
 
-                <div id="form-container" style="padding: 40px; background: rgba(255,255,255,0.01); border: 1px solid var(--border-subtle); border-radius: 16px; transition: all 0.5s ease;">
+                <div id="form-container" style="padding: 14px; background: rgba(255,255,255,0.01); border: 1px solid var(--border-subtle); border-radius: 4px; transition: all 0.5s ease;">
                     <h3 id="form-title" style="margin-bottom: 24px;">Partnership Inquiry</h3>
                     <form id="contact-form" action="#" onsubmit="handleInquiry(event)">
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
@@ -1051,9 +1168,10 @@
         .partner-card:hover {
             transform: translateY(-8px);
             border-color: var(--text-primary) !important;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            box-shadow: none;
         }
     </style>
 
 </body>
 </html>
+
