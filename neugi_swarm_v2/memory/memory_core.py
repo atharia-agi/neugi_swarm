@@ -43,16 +43,19 @@ logger = logging.getLogger(__name__)
 
 class MemoryError(Exception):
     """Base exception for memory system errors."""
+
     pass
 
 
 class MemoryNotFoundError(MemoryError):
     """Raised when a requested memory entry does not exist."""
+
     pass
 
 
 class MemoryWriteError(MemoryError):
     """Raised when a memory write operation fails."""
+
     pass
 
 
@@ -64,6 +67,7 @@ class MemoryTier(Enum):
     DAILY: Session notes with TTL (auto-expire after configured days)
     WORKING: Active task context (fast access, volatile)
     """
+
     CORE = "core"
     DAILY = "daily"
     WORKING = "working"
@@ -216,6 +220,7 @@ def _keyword_categorize(content: str) -> tuple[list[str], float]:
 
 
 # -- Main Memory System ------------------------------------------------------
+
 
 class MemorySystem:
     """
@@ -416,9 +421,7 @@ class MemorySystem:
                 entry = self._row_to_entry(row)
                 if not entry.is_expired():
                     self._store[entry.id] = entry
-                    self.scoring.index(
-                        entry.id, entry.content, entry.importance, entry.created_at
-                    )
+                    self.scoring.index(entry.id, entry.content, entry.importance, entry.created_at)
             logger.info("Loaded %d memories from disk", len(self._store))
         except (sqlite3.OperationalError, sqlite3.DatabaseError, json.JSONDecodeError) as e:
             logger.error("Failed to load memories from disk: %s", e)
@@ -454,9 +457,7 @@ class MemorySystem:
     def _start_background_saver(self) -> None:
         """Start the background save thread."""
         self._running = True
-        self._save_thread = threading.Thread(
-            target=self._background_save_loop, daemon=True, name="memory-saver"
-        )
+        self._save_thread = threading.Thread(target=self._background_save_loop, daemon=True, name="memory-saver")
         self._save_thread.start()
 
     def _background_save_loop(self) -> None:
@@ -742,9 +743,7 @@ class MemorySystem:
 
         return results
 
-    def _like_search(
-        self, query: str, scope: ScopePath | None, limit: int
-    ) -> list[MemoryEntry]:
+    def _like_search(self, query: str, scope: ScopePath | None, limit: int) -> list[MemoryEntry]:
         """Fallback LIKE-based search."""
         with self._store_lock:
             candidates = list(self._store.values())
@@ -857,16 +856,13 @@ class MemorySystem:
                         (entity, relation, target, confidence, source_memory_id, created_at)
                         VALUES (?, ?, ?, ?, ?, ?)
                         """,
-                        (t.entity, t.relation, t.target, t.confidence,
-                         t.source_memory_id, t.created_at.isoformat()),
+                        (t.entity, t.relation, t.target, t.confidence, t.source_memory_id, t.created_at.isoformat()),
                     )
                 self._conn.commit()
             except Exception as e:
                 logger.error("Failed to persist triples: %s", e)
 
-    def _simple_triple_extraction(
-        self, content: str, source_id: str
-    ) -> list[KnowledgeTriple]:
+    def _simple_triple_extraction(self, content: str, source_id: str) -> list[KnowledgeTriple]:
         """
         Extract simple (entity, relation, target) triples from text.
 
@@ -896,13 +892,15 @@ class MemorySystem:
                         entity = parts[0].strip().rstrip("s").strip()
                         target = parts[1].strip().rstrip(".").strip()
                         if entity and target and len(entity) > 2 and len(target) > 2:
-                            triples.append(KnowledgeTriple(
-                                entity=entity,
-                                relation=relation,
-                                target=target,
-                                confidence=0.6,
-                                source_memory_id=source_id,
-                            ))
+                            triples.append(
+                                KnowledgeTriple(
+                                    entity=entity,
+                                    relation=relation,
+                                    target=target,
+                                    confidence=0.6,
+                                    source_memory_id=source_id,
+                                )
+                            )
                             break  # One triple per sentence
 
         return triples
@@ -955,9 +953,14 @@ class MemorySystem:
                     (entity, relation, target, confidence, source_memory_id, created_at)
                     VALUES (?, ?, ?, ?, ?, ?)
                     """,
-                    (triple.entity, triple.relation, triple.target,
-                     triple.confidence, triple.source_memory_id,
-                     triple.created_at.isoformat()),
+                    (
+                        triple.entity,
+                        triple.relation,
+                        triple.target,
+                        triple.confidence,
+                        triple.source_memory_id,
+                        triple.created_at.isoformat(),
+                    ),
                 )
                 self._conn.commit()
             except Exception as e:
@@ -984,7 +987,7 @@ class MemorySystem:
         for i, entry_a in enumerate(entries):
             if entry_a.id in seen:
                 continue
-            for entry_b in entries[i + 1:]:
+            for entry_b in entries[i + 1 :]:
                 if entry_b.id in seen:
                     continue
                 # Quick check: same scope and tier
@@ -1027,10 +1030,9 @@ class MemorySystem:
         scope = ScopePath.agent_scope(agent_id) if agent_id else None
         with self._store_lock:
             entries = [
-                e for e in self._store.values()
-                if e.tier == MemoryTier.DAILY
-                and (scope is None or e.scope.is_subtree_of(scope))
-                and not e.is_expired()
+                e
+                for e in self._store.values()
+                if e.tier == MemoryTier.DAILY and (scope is None or e.scope.is_subtree_of(scope)) and not e.is_expired()
             ]
 
         promoted = 0
@@ -1106,10 +1108,7 @@ class MemorySystem:
         core_path = dir_path / "CORE.md"
 
         with self._store_lock:
-            entries = [
-                e for e in self._store.values()
-                if e.tier == MemoryTier.CORE and e.scope.is_subtree_of(scope)
-            ]
+            entries = [e for e in self._store.values() if e.tier == MemoryTier.CORE and e.scope.is_subtree_of(scope)]
 
         entries.sort(key=lambda e: e.importance, reverse=True)
 
@@ -1142,9 +1141,7 @@ class MemorySystem:
 
         with self._store_lock:
             entries = [
-                e for e in self._store.values()
-                if e.tier == MemoryTier.DAILY
-                and e.created_at.date() == date.date()
+                e for e in self._store.values() if e.tier == MemoryTier.DAILY and e.created_at.date() == date.date()
             ]
 
         with open(filepath, "w", encoding="utf-8") as f:
@@ -1154,9 +1151,11 @@ class MemorySystem:
 
             for entry in entries:
                 f.write(f"### [{entry.id}] {entry.scope} (source: {entry.source})\n\n")
-                f.write(f"Tags: {', '.join(entry.tags)} | "
-                        f"Importance: {entry.importance:.2f} | "
-                        f"Accesses: {entry.access_count}\n\n")
+                f.write(
+                    f"Tags: {', '.join(entry.tags)} | "
+                    f"Importance: {entry.importance:.2f} | "
+                    f"Accesses: {entry.access_count}\n\n"
+                )
                 f.write(f"{entry.content}\n\n")
                 f.write("---\n\n")
 
@@ -1173,9 +1172,9 @@ class MemorySystem:
 
         with self._store_lock:
             entries = [
-                e for e in self._store.values()
-                if e.tier == MemoryTier.WORKING
-                and (agent_id is None or e.source == agent_id)
+                e
+                for e in self._store.values()
+                if e.tier == MemoryTier.WORKING and (agent_id is None or e.source == agent_id)
             ]
 
         data = {
@@ -1210,7 +1209,8 @@ class MemorySystem:
             try:
                 placeholders = ",".join("?" * len(expired))
                 self._conn.execute(
-                    f"DELETE FROM memories WHERE id IN ({placeholders})", expired  # nosec B608
+                    f"DELETE FROM memories WHERE id IN ({placeholders})",
+                    expired,  # nosec B608
                 )
                 self._conn.commit()
             except Exception as e:
@@ -1219,6 +1219,29 @@ class MemorySystem:
         if expired:
             logger.info("Cleaned up %d expired memories", len(expired))
         return len(expired)
+
+    def vacuum(self) -> dict[str, int]:
+        """Reclaim free space in the memory SQLite file (VACUUM).
+
+        Flushes pending saves first so nothing is lost, then runs VACUUM
+        and reports the file size before/after.
+
+        Returns:
+            Dict with bytes_before, bytes_after, bytes_reclaimed.
+        """
+        self._flush_save_queue()
+        if not self._conn or not self._db_path.exists():
+            return {"bytes_before": 0, "bytes_after": 0, "bytes_reclaimed": 0}
+        bytes_before = self._db_path.stat().st_size
+        with self._store_lock:
+            self._conn.commit()
+            self._conn.execute("VACUUM")
+            self._conn.commit()
+        bytes_after = self._db_path.stat().st_size
+        reclaimed = max(0, bytes_before - bytes_after)
+        if reclaimed:
+            logger.info("Vacuumed memory DB: reclaimed %d bytes", reclaimed)
+        return {"bytes_before": bytes_before, "bytes_after": bytes_after, "bytes_reclaimed": reclaimed}
 
     # -- Lifecycle -----------------------------------------------------------
 

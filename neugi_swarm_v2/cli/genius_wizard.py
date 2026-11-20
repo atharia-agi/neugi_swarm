@@ -26,11 +26,11 @@ import json
 import os
 import platform
 import shutil
+import ssl
 import subprocess
 import sys
 import tempfile
 import time
-import ssl
 import urllib.error
 import urllib.request
 import webbrowser
@@ -1072,7 +1072,7 @@ class GeniusWizard:
         # API key is NOT stored here — it's in SecretManager encrypted storage
         config = {
             "_readme": "NEUGI Config — Edit this file to change your AI setup",
-            "version": "2.1.3",
+            "version": "2.1.4",
             "llm": {
                 "_comment": "Your AI provider and model",
                 "provider": provider,
@@ -1174,7 +1174,7 @@ class GeniusWizard:
 {Colors.CYAN}  ██║╚██╗██║██╔══╝   ██╔██╗ ██║   ██║╚════██║{Colors.END}
 {Colors.CYAN}  ██║ ╚████║███████╗██╔╝ ██╗╚██████╔╝███████║{Colors.END}
 {Colors.CYAN}  ╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝{Colors.END}
-{Colors.DIM}        Setup Wizard v2.1.3 — Provider Search Edition{Colors.END}
+{Colors.DIM}        Setup Wizard v2.1.4 — Provider Search Edition{Colors.END}
         """)
 
     def _typewrite(self, text: str, delay: float = 0.01) -> None:

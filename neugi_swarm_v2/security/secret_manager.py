@@ -41,18 +41,22 @@ logger = logging.getLogger(__name__)
 
 # -- Exceptions ----------------------------------------------------------------
 
+
 class SecretNotFoundError(Exception):
     """Raised when a requested secret does not exist."""
+
     pass
 
 
 class SecretDecryptionError(Exception):
     """Raised when a secret cannot be decrypted."""
+
     pass
 
 
 class SecretClass(Enum):
     """Classification of secret types."""
+
     API_KEY = "api_key"
     PASSWORD = "password"
     TOKEN = "token"
@@ -64,6 +68,7 @@ class SecretClass(Enum):
 
 class SecretStatus(Enum):
     """Lifecycle status of a secret."""
+
     ACTIVE = "active"
     EXPIRED = "expired"
     REVOKED = "revoked"
@@ -72,6 +77,7 @@ class SecretStatus(Enum):
 
 
 # -- Data Classes --------------------------------------------------------------
+
 
 @dataclass
 class SecretEntry:
@@ -90,6 +96,7 @@ class SecretEntry:
         metadata: Additional metadata dictionary.
         description: Human-readable description.
     """
+
     name: str
     value: str = ""
     secret_class: SecretClass = SecretClass.GENERIC
@@ -149,29 +156,67 @@ class SecretEntry:
 
 # -- Encryption ----------------------------------------------------------------
 
-class SecretEncryption:
-    """AES-256-GCM-like encryption using standard library.
 
-    Uses HMAC-SHA256 for integrity and XOR-based encryption with
-    key-derived keystream. For production, use the `cryptography` library.
+class SecretEncryption:
+    """AES-256-GCM encryption.
+
+    Requires the `cryptography` package — construction fails loudly when
+    it is missing instead of silently falling back to weaker encryption.
+
+    The key is derived with PBKDF2-HMAC-SHA256 from the master key and a
+    random per-install salt (16 bytes). The salt is persisted by
+    SecretManager in the database `meta` table, so the same install can
+    decrypt its secrets after restart while other installs derive a
+    different key from the same master key.
+
+    Legacy data: installs created before per-install salts used the fixed
+    salt `LEGACY_SALT`; SecretManager migrates those values on first open.
+    Values written by the old XOR fallback (used only when `cryptography`
+    was absent) remain readable through `_legacy_fallback_decrypt` and can
+    be re-encrypted with `SecretManager.migrate_legacy_secrets()`. No new
+    value is ever written with the XOR fallback.
     """
 
-    def __init__(self, master_key: str) -> None:
+    LEGACY_SALT = b"neugi_secret_v2"
+
+    def __init__(self, master_key: str, salt: bytes | None = None) -> None:
         """Initialize with a master key.
 
         Args:
             master_key: Master encryption key (min 32 chars recommended).
+            salt: KDF salt. Random per install when omitted; pass the stored
+                salt to decrypt values written by the same install.
+
+        Raises:
+            ImportError: If the `cryptography` package is not installed.
         """
+        try:
+            from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+        except ImportError as e:
+            raise ImportError(
+                "SecretManager requires the 'cryptography' package for AES-256-GCM. "
+                "Install it with: pip install cryptography>=41.0"
+            ) from e
+        self._aesgcm_cls = AESGCM
         self._master_key = master_key
-        self._key_bytes = self._derive_key(master_key)
+        self._salt = salt if salt is not None else os.urandom(16)
+        self._key_bytes = self._derive_key(master_key, self._salt)
+        # Key for reading pre-2.1.4 values (fixed salt + XOR fallback).
+        self._legacy_key_bytes = self._derive_key(master_key, self.LEGACY_SALT)
+
+    @property
+    def salt(self) -> bytes:
+        """The KDF salt in use (persist it to decrypt later)."""
+        return self._salt
 
     @staticmethod
-    def _derive_key(key: str, salt: bytes = b"neugi_secret_v2") -> bytes:
-        """Derive a 32-byte key from the master key.
+    def _derive_key(key: str, salt: bytes) -> bytes:
+        """Derive a 32-byte key from the master key and salt.
 
         Args:
             key: Master key string.
-            salt: Salt for key derivation.
+            salt: Salt for key derivation (must be per-install random for
+                new installs; the fixed legacy salt is only for migration).
 
         Returns:
             32-byte derived key.
@@ -185,25 +230,25 @@ class SecretEncryption:
         )
 
     def encrypt(self, plaintext: str) -> str:
-        """Encrypt a plaintext string.
+        """Encrypt a plaintext string with AES-256-GCM.
 
         Args:
             plaintext: Text to encrypt.
 
         Returns:
-            Base64-encoded ciphertext with IV and MAC.
+            Base64-encoded ciphertext with IV and auth tag.
         """
-        try:
-            from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-            iv = os.urandom(12)
-            aesgcm = AESGCM(self._key_bytes)
-            ciphertext = aesgcm.encrypt(iv, plaintext.encode("utf-8"), None)
-            return base64.b64encode(iv + ciphertext).decode("ascii")
-        except ImportError:
-            return self._fallback_encrypt(plaintext)
+        iv = os.urandom(12)
+        aesgcm = self._aesgcm_cls(self._key_bytes)
+        ciphertext = aesgcm.encrypt(iv, plaintext.encode("utf-8"), None)
+        return base64.b64encode(iv + ciphertext).decode("ascii")
 
     def decrypt(self, ciphertext: str) -> str:
         """Decrypt a ciphertext string.
+
+        Tries AES-256-GCM first; values written by the old XOR fallback
+        are still readable through the legacy path (read-only migration
+        support, never used for new encryption).
 
         Args:
             ciphertext: Base64-encoded ciphertext.
@@ -215,60 +260,31 @@ class SecretEncryption:
             ValueError: If decryption fails.
         """
         try:
-            from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-            raw = base64.b64decode(ciphertext)
-            iv = raw[:12]
-            ct = raw[12:]
-            aesgcm = AESGCM(self._key_bytes)
-            return aesgcm.decrypt(iv, ct, None).decode("utf-8")
-        except ImportError:
-            return self._fallback_decrypt(ciphertext)
+            return self._aesgcm_decrypt(ciphertext)
+        except ValueError:
+            pass
+        try:
+            value = self._legacy_fallback_decrypt(ciphertext)
+        except ValueError as e:
+            raise ValueError(f"Decryption failed: {e}") from e
+        logger.warning(
+            "Decrypted a legacy XOR-encrypted value; re-encrypt it with SecretManager.migrate_legacy_secrets()."
+        )
+        return value
+
+    def _aesgcm_decrypt(self, ciphertext: str) -> str:
+        """Decrypt with AES-256-GCM only (no legacy fallback)."""
+        raw = base64.b64decode(ciphertext)
+        aesgcm = self._aesgcm_cls(self._key_bytes)
+        try:
+            return aesgcm.decrypt(raw[:12], raw[12:], None).decode("utf-8")
         except Exception as e:
             raise ValueError(f"Decryption failed: {e}") from e
 
-    def _fallback_encrypt(self, plaintext: str) -> str:
-        """Fallback encryption without cryptography library.
+    def _legacy_fallback_decrypt(self, ciphertext: str) -> str:
+        """Read-only decrypt for values written by the old XOR fallback.
 
-        Uses XOR with key-derived keystream + HMAC for integrity.
-        WARNING: Not as secure as AES-GCM. Use `cryptography` library when possible.
-
-        Args:
-            plaintext: Text to encrypt.
-
-        Returns:
-            Base64-encoded encrypted data.
-        """
-        data = plaintext.encode("utf-8")
-        iv = os.urandom(16)
-
-        # Generate keystream
-        keystream = b""
-        counter = 0
-        while len(keystream) < len(data):
-            block = hashlib.sha256(self._key_bytes + iv + counter.to_bytes(4, "big")).digest()
-            keystream += block
-            counter += 1
-        keystream = keystream[:len(data)]
-
-        # XOR encrypt
-        encrypted = bytes(a ^ b for a, b in zip(data, keystream, strict=False))
-
-        # HMAC for integrity
-        mac = hmac.new(self._key_bytes, iv + encrypted, hashlib.sha256).digest()
-
-        return base64.b64encode(iv + encrypted + mac).decode("ascii")
-
-    def _fallback_decrypt(self, ciphertext: str) -> str:
-        """Fallback decryption.
-
-        Args:
-            ciphertext: Base64-encoded encrypted data.
-
-        Returns:
-            Decrypted plaintext.
-
-        Raises:
-            ValueError: If integrity check fails.
+        Uses the legacy fixed-salt key. Never used for new encryption.
         """
         raw = base64.b64decode(ciphertext)
         iv = raw[:16]
@@ -276,7 +292,7 @@ class SecretEncryption:
         encrypted = raw[16:-32]
 
         # Verify integrity
-        expected_mac = hmac.new(self._key_bytes, iv + encrypted, hashlib.sha256).digest()
+        expected_mac = hmac.new(self._legacy_key_bytes, iv + encrypted, hashlib.sha256).digest()
         if not hmac.compare_digest(mac, expected_mac):
             raise ValueError("Integrity check failed — data may be tampered")
 
@@ -284,10 +300,10 @@ class SecretEncryption:
         keystream = b""
         counter = 0
         while len(keystream) < len(encrypted):
-            block = hashlib.sha256(self._key_bytes + iv + counter.to_bytes(4, "big")).digest()
+            block = hashlib.sha256(self._legacy_key_bytes + iv + counter.to_bytes(4, "big")).digest()
             keystream += block
             counter += 1
-        keystream = keystream[:len(encrypted)]
+        keystream = keystream[: len(encrypted)]
 
         # XOR decrypt
         decrypted = bytes(a ^ b for a, b in zip(encrypted, keystream, strict=False))
@@ -308,6 +324,7 @@ class SecretEncryption:
 
 
 # -- Secret Manager ------------------------------------------------------------
+
 
 class SecretManager:
     """Encrypted secret lifecycle manager.
@@ -334,10 +351,93 @@ class SecretManager:
         if not self._master_key:
             logger.warning("No master key provided — encrypt/decrypt operations will fail")
         self._auto_rotate_days = auto_rotate_days
-        self._encryption = SecretEncryption(self._master_key) if self._master_key else None
         self._value_hashes: dict[str, str] = {}  # name -> hash for scanning
         self._access_log: list[dict[str, Any]] = []
         self._init_db()
+        self._encryption = self._init_encryption() if self._master_key else None
+
+    def _init_encryption(self) -> SecretEncryption:
+        """Build the encryption object, loading or creating the KDF salt.
+
+        The salt is stored in the `meta` table. A database without a stored
+        salt is a legacy install: its values were derived with the fixed
+        salt, so they are re-encrypted under a fresh random salt on first
+        open (see `_reencrypt_all`).
+        """
+        assert self._master_key
+        with self._get_conn() as conn:
+            row = conn.execute("SELECT value FROM meta WHERE key = 'kdf_salt'").fetchone()
+        if row is not None:
+            return SecretEncryption(self._master_key, salt=base64.b64decode(row["value"]))
+
+        legacy = SecretEncryption(self._master_key, salt=SecretEncryption.LEGACY_SALT)
+        new_salt = os.urandom(16)
+        new_enc = SecretEncryption(self._master_key, salt=new_salt)
+        with self._get_conn() as conn:
+            conn.execute(
+                "INSERT INTO meta (key, value) VALUES ('kdf_salt', ?)",
+                (base64.b64encode(new_salt).decode("ascii"),),
+            )
+        self._reencrypt_all(legacy, new_enc)
+        return new_enc
+
+    def _reencrypt_all(self, old_enc: SecretEncryption, new_enc: SecretEncryption) -> dict[str, int]:
+        """Re-encrypt every stored secret from `old_enc` to `new_enc`.
+
+        Values that cannot be decrypted with the old key are left untouched
+        and counted as skipped (never deleted).
+        """
+        with self._get_conn() as conn:
+            rows = conn.execute("SELECT name, value_encrypted FROM secrets").fetchall()
+        migrated = 0
+        skipped = 0
+        for row in rows:
+            try:
+                plaintext = old_enc.decrypt(row["value_encrypted"])
+            except ValueError as e:
+                logger.warning("Skipping secret '%s' during salt migration: %s", row["name"], e)
+                skipped += 1
+                continue
+            with self._get_conn() as conn:
+                conn.execute(
+                    "UPDATE secrets SET value_encrypted = ?, value_hash = ? WHERE name = ?",
+                    (new_enc.encrypt(plaintext), new_enc.hash_value(plaintext), row["name"]),
+                )
+            migrated += 1
+        if migrated:
+            logger.info("Migrated %d secrets to the new KDF salt (%d skipped)", migrated, skipped)
+        return {"migrated": migrated, "skipped": skipped}
+
+    def migrate_legacy_secrets(self) -> dict[str, int]:
+        """Re-encrypt secrets still stored with the legacy XOR fallback.
+
+        Safe to run repeatedly; no-op when nothing is legacy. Corrupt
+        values are left untouched (get() will report them).
+        """
+        if not self._encryption:
+            raise SecretDecryptionError("No master key configured")
+        with self._get_conn() as conn:
+            rows = conn.execute("SELECT name, value_encrypted FROM secrets").fetchall()
+        migrated = 0
+        for row in rows:
+            try:
+                self._encryption._aesgcm_decrypt(row["value_encrypted"])
+                continue  # already AES-GCM
+            except ValueError:
+                pass
+            try:
+                plaintext = self._encryption.decrypt(row["value_encrypted"])
+            except ValueError:
+                continue
+            with self._get_conn() as conn:
+                conn.execute(
+                    "UPDATE secrets SET value_encrypted = ? WHERE name = ?",
+                    (self._encryption.encrypt(plaintext), row["name"]),
+                )
+            migrated += 1
+        if migrated:
+            logger.info("Migrated %d legacy XOR secrets to AES-GCM", migrated)
+        return {"migrated": migrated}
 
     def _init_db(self) -> None:
         """Initialize the SQLite database schema."""
@@ -372,6 +472,11 @@ class SecretManager:
                 CREATE INDEX IF NOT EXISTS idx_secrets_expiry ON secrets(expires_at);
                 CREATE INDEX IF NOT EXISTS idx_access_log_name ON access_log(secret_name);
                 CREATE INDEX IF NOT EXISTS idx_access_log_time ON access_log(timestamp);
+
+                CREATE TABLE IF NOT EXISTS meta (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL
+                );
             """)
 
     def _get_conn(self) -> sqlite3.Connection:
@@ -417,7 +522,9 @@ class SecretManager:
         expires_at = (now + expires_in_days * 86400) if expires_in_days else None
 
         encrypted = self._encrypt_value(value)
-        value_hash = self._encryption.hash_value(value) if self._encryption else hashlib.sha256(value.encode()).hexdigest()
+        value_hash = (
+            self._encryption.hash_value(value) if self._encryption else hashlib.sha256(value.encode()).hexdigest()
+        )
 
         entry = SecretEntry(
             name=name,
@@ -438,9 +545,16 @@ class SecretManager:
                         created_at, expires_at, last_rotated, metadata, description)
                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (
-                        name, encrypted, value_hash, secret_class.value,
-                        SecretStatus.ACTIVE.value, now, expires_at, now,
-                        json.dumps(entry.metadata), description,
+                        name,
+                        encrypted,
+                        value_hash,
+                        secret_class.value,
+                        SecretStatus.ACTIVE.value,
+                        now,
+                        expires_at,
+                        now,
+                        json.dumps(entry.metadata),
+                        description,
                     ),
                 )
             except sqlite3.IntegrityError as e:
@@ -461,9 +575,7 @@ class SecretManager:
             SecretEntry with decrypted value, or None if not found.
         """
         with self._get_conn() as conn:
-            row = conn.execute(
-                "SELECT * FROM secrets WHERE name = ?", (name,)
-            ).fetchone()
+            row = conn.execute("SELECT * FROM secrets WHERE name = ?", (name,)).fetchone()
 
         if row is None:
             return None
@@ -524,9 +636,7 @@ class SecretManager:
             SecretDecryptionError: If decryption fails.
         """
         with self._get_conn() as conn:
-            row = conn.execute(
-                "SELECT * FROM secrets WHERE name = ?", (name,)
-            ).fetchone()
+            row = conn.execute("SELECT * FROM secrets WHERE name = ?", (name,)).fetchone()
 
         if row is None:
             raise SecretNotFoundError(f"Secret '{name}' not found")
@@ -536,23 +646,17 @@ class SecretManager:
         if status in (SecretStatus.REVOKED, SecretStatus.COMPROMISED):
             logger.warning("Attempted access to %s secret: %s", status.value, name)
             self._log_access(name, f"access_denied_{status.value}")
-            raise SecretNotFoundError(
-                f"Secret '{name}' is {status.value} and cannot be accessed"
-            )
+            raise SecretNotFoundError(f"Secret '{name}' is {status.value} and cannot be accessed")
 
         # Decrypt value
         try:
             value = self._decrypt_value(row["value_encrypted"])
         except (ValueError, Exception) as e:
             logger.error("Failed to decrypt secret '%s': %s", name, e)
-            raise SecretDecryptionError(
-                f"Failed to decrypt secret '{name}': {e}"
-            ) from e
+            raise SecretDecryptionError(f"Failed to decrypt secret '{name}': {e}") from e
 
         if not value:
-            raise SecretDecryptionError(
-                f"Secret '{name}' decrypted to empty value"
-            )
+            raise SecretDecryptionError(f"Secret '{name}' decrypted to empty value")
 
         # Update access metadata
         now = time.time()
@@ -592,7 +696,9 @@ class SecretManager:
 
         if value is not None:
             encrypted = self._encrypt_value(value)
-            value_hash = self._encryption.hash_value(value) if self._encryption else hashlib.sha256(value.encode()).hexdigest()
+            value_hash = (
+                self._encryption.hash_value(value) if self._encryption else hashlib.sha256(value.encode()).hexdigest()
+            )
             updates.append("value_encrypted = ?")
             updates.append("value_hash = ?")
             params.extend([encrypted, value_hash])
@@ -641,9 +747,7 @@ class SecretManager:
             True if rotation succeeded.
         """
         with self._get_conn() as conn:
-            row = conn.execute(
-                "SELECT status FROM secrets WHERE name = ?", (name,)
-            ).fetchone()
+            row = conn.execute("SELECT status FROM secrets WHERE name = ?", (name,)).fetchone()
 
         if row is None:
             return False
@@ -653,7 +757,11 @@ class SecretManager:
             return False
 
         encrypted = self._encrypt_value(new_value)
-        value_hash = self._encryption.hash_value(new_value) if self._encryption else hashlib.sha256(new_value.encode()).hexdigest()
+        value_hash = (
+            self._encryption.hash_value(new_value)
+            if self._encryption
+            else hashlib.sha256(new_value.encode()).hexdigest()
+        )
         now = time.time()
 
         with self._get_conn() as conn:
@@ -762,18 +870,20 @@ class SecretManager:
 
         entries: list[SecretEntry] = []
         for row in rows:
-            entries.append(SecretEntry(
-                name=row["name"],
-                secret_class=SecretClass(row["secret_class"]),
-                status=SecretStatus(row["status"]),
-                created_at=row["created_at"],
-                expires_at=row["expires_at"],
-                last_rotated=row["last_rotated"],
-                last_accessed=row["last_accessed"],
-                access_count=row["access_count"],
-                metadata=json.loads(row["metadata"]) if row["metadata"] else {},
-                description=row["description"],
-            ))
+            entries.append(
+                SecretEntry(
+                    name=row["name"],
+                    secret_class=SecretClass(row["secret_class"]),
+                    status=SecretStatus(row["status"]),
+                    created_at=row["created_at"],
+                    expires_at=row["expires_at"],
+                    last_rotated=row["last_rotated"],
+                    last_accessed=row["last_accessed"],
+                    access_count=row["access_count"],
+                    metadata=json.loads(row["metadata"]) if row["metadata"] else {},
+                    description=row["description"],
+                )
+            )
 
         return entries
 
@@ -930,11 +1040,13 @@ class SecretManager:
                 end = min(len(text), idx + len(entry.value) + 20)
                 context = text[start:end]
 
-                leaks.append({
-                    "name": name,
-                    "secret_class": row["secret_class"],
-                    "match_context": f"...{context}...",
-                })
+                leaks.append(
+                    {
+                        "name": name,
+                        "secret_class": row["secret_class"],
+                        "match_context": f"...{context}...",
+                    }
+                )
 
         return leaks
 
@@ -1055,23 +1167,13 @@ class SecretManager:
         """
         with self._get_conn() as conn:
             total = conn.execute("SELECT COUNT(*) FROM secrets").fetchone()[0]
-            active = conn.execute(
-                "SELECT COUNT(*) FROM secrets WHERE status = 'active'"
-            ).fetchone()[0]
-            expired = conn.execute(
-                "SELECT COUNT(*) FROM secrets WHERE status = 'expired'"
-            ).fetchone()[0]
-            revoked = conn.execute(
-                "SELECT COUNT(*) FROM secrets WHERE status = 'revoked'"
-            ).fetchone()[0]
-            compromised = conn.execute(
-                "SELECT COUNT(*) FROM secrets WHERE status = 'compromised'"
-            ).fetchone()[0]
+            active = conn.execute("SELECT COUNT(*) FROM secrets WHERE status = 'active'").fetchone()[0]
+            expired = conn.execute("SELECT COUNT(*) FROM secrets WHERE status = 'expired'").fetchone()[0]
+            revoked = conn.execute("SELECT COUNT(*) FROM secrets WHERE status = 'revoked'").fetchone()[0]
+            compromised = conn.execute("SELECT COUNT(*) FROM secrets WHERE status = 'compromised'").fetchone()[0]
 
             by_class: dict[str, int] = {}
-            for row in conn.execute(
-                "SELECT secret_class, COUNT(*) as cnt FROM secrets GROUP BY secret_class"
-            ):
+            for row in conn.execute("SELECT secret_class, COUNT(*) as cnt FROM secrets GROUP BY secret_class"):
                 by_class[row["secret_class"]] = row["cnt"]
 
         return {

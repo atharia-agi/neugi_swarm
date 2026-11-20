@@ -189,9 +189,7 @@ class CacheBackend:
             self._hits += 1
             return True, self._cache[key]
 
-    def set(
-        self, tool_name: str, args: tuple, kwargs: dict, value: Any, ttl: float | None = None
-    ) -> None:
+    def set(self, tool_name: str, args: tuple, kwargs: dict, value: Any, ttl: float | None = None) -> None:
         """Cache a result with optional TTL."""
         key = self._make_key(tool_name, args, kwargs)
         with self._lock:
@@ -208,6 +206,20 @@ class CacheBackend:
         with self._lock:
             self._cache.clear()
             self._expiry.clear()
+
+    def prune_expired(self) -> int:
+        """Remove expired entries without touching live ones.
+
+        Returns:
+            Number of entries removed.
+        """
+        now = time.time()
+        with self._lock:
+            expired = [key for key, exp in self._expiry.items() if now > exp]
+            for key in expired:
+                del self._cache[key]
+                del self._expiry[key]
+            return len(expired)
 
     def invalidate(self, tool_name: str) -> None:
         """Invalidate all cache entries for a tool."""
@@ -253,6 +265,7 @@ class RateLimiter:
             self._limits[tool_name] = calls_per_minute
             if tool_name not in self._windows:
                 from collections import deque
+
                 self._windows[tool_name] = deque()
 
     def check(self, tool_name: str) -> bool:
@@ -266,6 +279,7 @@ class RateLimiter:
             limit = self._limits.get(tool_name, 60)
             if tool_name not in self._windows:
                 from collections import deque
+
                 self._windows[tool_name] = deque()
 
             window = self._windows[tool_name]
@@ -368,9 +382,7 @@ class CircuitBreaker:
                 self._states[tool_name] = self.OPEN
                 self._last_failure_time[tool_name] = time.time()
             else:
-                self._failure_counts[tool_name] = (
-                    self._failure_counts.get(tool_name, 0) + 1
-                )
+                self._failure_counts[tool_name] = self._failure_counts.get(tool_name, 0) + 1
                 self._last_failure_time[tool_name] = time.time()
                 if self._failure_counts[tool_name] >= self._failure_threshold:
                     self._states[tool_name] = self.OPEN
@@ -379,6 +391,11 @@ class CircuitBreaker:
         """Get current circuit state."""
         with self._lock:
             return self._states.get(tool_name, self.CLOSED)
+
+    def open_circuits(self) -> list[str]:
+        """Return tool names whose circuit is currently OPEN."""
+        with self._lock:
+            return [name for name, state in self._states.items() if state == self.OPEN]
 
     def reset(self, tool_name: str) -> None:
         """Reset circuit breaker for a tool."""
@@ -432,8 +449,11 @@ class ToolExecutor:
 
         # Adapt execution parameters based on model capability
         adapted = self._adapt_execution_params(
-            max_retries, base_backoff, max_backoff,
-            circuit_failure_threshold, circuit_recovery_timeout,
+            max_retries,
+            base_backoff,
+            max_backoff,
+            circuit_failure_threshold,
+            circuit_recovery_timeout,
         )
         self.max_retries = adapted["max_retries"]
         self.base_backoff = adapted["base_backoff"]
@@ -564,9 +584,7 @@ class ToolExecutor:
             func = metadata.func
 
             if schema.deprecated:
-                logger.warning(
-                    f"Calling deprecated tool '{tool_name}': {schema.deprecation_message}"
-                )
+                logger.warning(f"Calling deprecated tool '{tool_name}': {schema.deprecation_message}")
 
             errors = schema.validate_params(kwargs)
             if errors:
@@ -582,6 +600,7 @@ class ToolExecutor:
             if self.approval_gate and schema.complexity in (ToolComplexity.COMPLEX, ToolComplexity.STRATEGIC):
                 try:
                     from governance.approval import RiskLevel
+
                     needs_approval, _ = self.approval_gate.requires_approval(
                         action_type=tool_name,
                         risk_level=RiskLevel.HIGH,
@@ -594,7 +613,11 @@ class ToolExecutor:
                             risk_level=RiskLevel.HIGH,
                         )
                         if hasattr(request, "status") and request.status.value != "auto_approved":
-                            logger.warning("Approval required for tool %s (request: %s)", tool_name, getattr(request, "request_id", "?"))
+                            logger.warning(
+                                "Approval required for tool %s (request: %s)",
+                                tool_name,
+                                getattr(request, "request_id", "?"),
+                            )
                             return ExecutionResult(
                                 tool_name=tool_name,
                                 success=False,
@@ -625,7 +648,12 @@ class ToolExecutor:
                     logger.warning("Budget check failed for %s: %s", tool_name, e)
 
             # -- Security: Command Validator (subprocess-based tools) -------
-            if self.command_validator and tool_name in ("system_execute_command", "docker_run", "docker_exec", "docker_compose_up"):
+            if self.command_validator and tool_name in (
+                "system_execute_command",
+                "docker_run",
+                "docker_exec",
+                "docker_compose_up",
+            ):
                 try:
                     command = kwargs.get("command", "")
                     if command:
@@ -677,7 +705,12 @@ class ToolExecutor:
 
             # -- Security: ExecutionSandbox (subprocess-based tools) --------
             sandbox_executed = False
-            if self.sandbox and tool_name in ("system_execute_command", "docker_run", "docker_exec", "docker_compose_up"):
+            if self.sandbox and tool_name in (
+                "system_execute_command",
+                "docker_run",
+                "docker_exec",
+                "docker_compose_up",
+            ):
                 try:
                     command = self._build_command_for_sandbox(tool_name, kwargs)
                     if command:
@@ -711,13 +744,10 @@ class ToolExecutor:
                         last_error = str(e)
                         retries = attempt
                         if attempt < self.max_retries:
-                            backoff = min(
-                                self.base_backoff * (2**attempt), self.max_backoff
-                            )
+                            backoff = min(self.base_backoff * (2**attempt), self.max_backoff)
                             time.sleep(backoff)
                             logger.warning(
-                                f"Tool '{tool_name}' attempt {attempt + 1} failed: {e}, "
-                                f"retrying in {backoff:.2f}s"
+                                f"Tool '{tool_name}' attempt {attempt + 1} failed: {e}, retrying in {backoff:.2f}s"
                             )
 
             if result is None and last_error:
@@ -755,9 +785,9 @@ class ToolExecutor:
                     "latency_ms": latency,
                     "retries": retries,
                     "trace_id": trace_id,
-                    "result_type": type(result).__name__ if result is not None else "None"
+                    "result_type": type(result).__name__ if result is not None else "None",
                 },
-                source="tool_executor"
+                source="tool_executor",
             )
 
             return exec_result
@@ -775,9 +805,9 @@ class ToolExecutor:
                     "latency_ms": latency,
                     "retries": retries,
                     "trace_id": trace_id,
-                    "failure_type": type(e).__name__
+                    "failure_type": type(e).__name__,
                 },
-                source="tool_executor"
+                source="tool_executor",
             )
             return ExecutionResult(
                 tool_name=tool_name,
@@ -802,9 +832,9 @@ class ToolExecutor:
                     "latency_ms": latency,
                     "retries": retries,
                     "trace_id": trace_id,
-                    "failure_type": type(e).__name__
+                    "failure_type": type(e).__name__,
                 },
-                source="tool_executor"
+                source="tool_executor",
             )
             return ExecutionResult(
                 tool_name=tool_name,
@@ -819,7 +849,9 @@ class ToolExecutor:
             latency = (time.time() - start_time) * 1000
             logger.error(
                 "Unexpected error executing tool '%s' (kwargs=%s): %s",
-                tool_name, list(kwargs.keys()), e,
+                tool_name,
+                list(kwargs.keys()),
+                e,
             )
             self.registry.record_stats(tool_name, latency, False, str(e))
             self.circuit_breaker.record_failure(tool_name)
@@ -833,9 +865,9 @@ class ToolExecutor:
                     "latency_ms": latency,
                     "retries": retries,
                     "trace_id": trace_id,
-                    "failure_type": type(e).__name__
+                    "failure_type": type(e).__name__,
                 },
-                source="tool_executor"
+                source="tool_executor",
             )
             return ExecutionResult(
                 tool_name=tool_name,
@@ -846,9 +878,7 @@ class ToolExecutor:
                 trace_id=trace_id or "",
             )
 
-    def _execute_with_timeout(
-        self, func: Callable, kwargs: dict[str, Any], timeout: float
-    ) -> Any:
+    def _execute_with_timeout(self, func: Callable, kwargs: dict[str, Any], timeout: float) -> Any:
         """Execute a function with a timeout."""
         import concurrent.futures
 
@@ -862,9 +892,7 @@ class ToolExecutor:
                     f"Tool execution timed out after {timeout}s",
                 ) from e
 
-    def _build_command_for_sandbox(
-        self, tool_name: str, kwargs: dict[str, Any]
-    ) -> list[str] | None:
+    def _build_command_for_sandbox(self, tool_name: str, kwargs: dict[str, Any]) -> list[str] | None:
         """Build a command list for sandbox execution from tool kwargs.
 
         Args:
@@ -937,6 +965,7 @@ class ToolExecutor:
     def create_trace(self, root_tool: str) -> ExecutionTrace:
         """Create a new execution trace."""
         import uuid
+
         trace_id = str(uuid.uuid4())[:8]
         trace = ExecutionTrace(trace_id=trace_id, root_tool=root_tool)
         with self._lock:
@@ -956,9 +985,7 @@ class ToolExecutor:
         """Record a step in an execution trace."""
         with self._lock:
             if trace_id in self._traces:
-                self._traces[trace_id].add_step(
-                    tool_name, success, latency_ms, error, cached, retries
-                )
+                self._traces[trace_id].add_step(tool_name, success, latency_ms, error, cached, retries)
 
     def get_trace(self, trace_id: str) -> ExecutionTrace | None:
         """Get an execution trace by ID."""

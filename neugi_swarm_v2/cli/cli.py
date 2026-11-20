@@ -52,7 +52,7 @@ try:
     from rich.layout import Layout
     from rich.markdown import Markdown
     from rich.panel import Panel
-    from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
+    from rich.progress import Progress, SpinnerColumn, TextColumn
     from rich.prompt import Confirm, Prompt
     from rich.syntax import Syntax
     from rich.table import Table
