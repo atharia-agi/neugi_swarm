@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-21T12:12:19.457592Z",
+  "generated_at": "2026-11-21T12:23:41.266570Z",
   "agents": [
     {
       "id": "rangga",
@@ -8,16 +8,16 @@
       "color": "#a3ff00",
       "room": "kantor-rangga",
       "state": "working",
-      "task": "Tugas tes pertama (kecil, konkret): cek "
+      "task": "Tugas tes pertama (kecil, konkret): cek komentar publik IG/Threads @rangga.p.h hari ini (20 Nov) \u2014 ada komentar baru yang belum dibalas Rangga? Laporkan hasilnya di board: berapa komentar baru, isinya (ringkas), dan draft balasan kalau ada yang perlu dibalas. Kalau tidak ada yang baru, laporkan \"bersih, 0 komentar baru\"."
     },
     {
       "id": "oto",
       "name": "Oto",
       "role": "CEO",
       "color": "#a3ff00",
-      "room": "perpustakaan",
-      "state": "working",
-      "task": "\u2014 INSTRUKSI LENGKAP (baca sampai habis; "
+      "room": "ruang-rapat",
+      "state": "meeting",
+      "task": "\u2014 INSTRUKSI LENGKAP (baca sampai habis; ini satu-satunya perintah yang lo butuhkan, simpan baik-baik)."
     },
     {
       "id": "beto",
@@ -26,7 +26,7 @@
       "color": "#fc7a24",
       "room": "ruang-kerja",
       "state": "working",
-      "task": "\u2014 URGENT dari Rangga (13:11 WIB): backro"
+      "task": "\u2014 URGENT dari Rangga (13:11 WIB): backroom masih GELAP + DOBEL PANEL. Screenshot Rangga <- file_20261121_0217."
     },
     {
       "id": "zeto",
@@ -35,7 +35,7 @@
       "color": "#ca4f40",
       "room": "ruang-kerja",
       "state": "working",
-      "task": "Perintah Rangga (20 Nov 19:26 WIB): maks"
+      "task": "Perintah Rangga (20 Nov 19:26 WIB): maksimalkan yang bisa diakses + cek validitas bayar sebelum hunting, jangan sampai kerja sia-sia."
     },
     {
       "id": "neto",
@@ -44,7 +44,7 @@
       "color": "#0f766e",
       "room": "perpustakaan",
       "state": "working",
-      "task": "Verdict sesi evolusi 18:00 WIB, 20 Nov 2"
+      "task": "Verdict sesi evolusi 18:00 WIB, 20 Nov 2026. Kedelapan laporan sudah masuk dan dibaca Oto \u2014 jadi tidak ada brief susulan, langsung verdict per orang."
     },
     {
       "id": "geto",
@@ -53,7 +53,7 @@
       "color": "#c4b5fd",
       "room": "perpustakaan",
       "state": "working",
-      "task": "\u2014 TAMBAHAN: Intel GitHub HARIAN (early a"
+      "task": "\u2014 PENUGASAN BARU: WARTAWAN / NEWS RESEARCHER (perintah Rangga 19:14 WIB: \"tugasin yang paling kompeten untuk riset berita, jadi wartawan lo\")."
     },
     {
       "id": "leto",
@@ -62,7 +62,7 @@
       "color": "#f4a7b9",
       "room": "studio-konten",
       "state": "working",
-      "task": "\u2014 PERLUASAN LANE KONTEN (perintah Rangga"
+      "task": "\u2014 PERLUASAN LANE KONTEN (perintah Rangga \"Gasss\" 18:38 WIB: gaspol konten, Leto ditarik lebih dalam)."
     },
     {
       "id": "ceto",
@@ -71,7 +71,7 @@
       "color": "#1e3a8a",
       "room": "perpustakaan",
       "state": "working",
-      "task": "\u2014 Tugas riset sales (biar lane kamu jala"
+      "task": "\u2014 Tugas riset sales (biar lane kamu jalan walau DM masih keblokir) #task #sales"
     },
     {
       "id": "seto",
@@ -80,7 +80,7 @@
       "color": "#ff7f50",
       "room": "ruang-kerja",
       "state": "working",
-      "task": "\u2014 Tambahan untuk lane housekeeping (peri"
+      "task": "\u2014 Tambahan untuk lane housekeeping (perintah Rangga): reminder kamu harus TEGAS, jangan lembek."
     },
     {
       "id": "deto",
@@ -89,7 +89,7 @@
       "color": "#64748b",
       "room": "ruang-kerja",
       "state": "working",
-      "task": "\u2014 KLARIFIKASI PERAN WAKIL CEO/COO (tegur"
+      "task": "\u2014 KLARIFIKASI PERAN WAKIL CEO/COO (teguran Rangga 19:00 WIB)."
     },
     {
       "id": "meto",
