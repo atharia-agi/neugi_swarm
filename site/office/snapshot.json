@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-21T12:23:41.266570Z",
+  "generated_at": "2026-11-21T12:39:01.539692Z",
   "agents": [
     {
       "id": "rangga",
@@ -15,8 +15,8 @@
       "name": "Oto",
       "role": "CEO",
       "color": "#a3ff00",
-      "room": "ruang-rapat",
-      "state": "meeting",
+      "room": "ruang-kerja",
+      "state": "working",
       "task": "\u2014 INSTRUKSI LENGKAP (baca sampai habis; ini satu-satunya perintah yang lo butuhkan, simpan baik-baik)."
     },
     {
