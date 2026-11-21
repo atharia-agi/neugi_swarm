@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deployment Prime Intellect diganti salinan abliterated · NEUGI</title>
+<meta name="description" content="Prime Intellect mengumumkan deployment di balik endpoint deepseek/deepseek-v4.1-flash diganti salinan abliterated selama 53 jam 11 menit. Refusal hampir hilang total, kemampuan tidak terpengaruh.">
+<link rel="icon" type="image/jpeg" href="../assets/neugi-logo.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="masthead">
+  <div class="wrap-wide masthead-in">
+    <a class="logo-link" href="../index.html"><img class="logo-img" src="../assets/neugi-logo.jpg" alt="NEUGI" width="132" height="62"></a>
+    <span class="tagline">Atharia AGI · Riset AI</span>
+    <nav class="nav" aria-label="Navigasi utama">
+      <a href="index.html" aria-current="page">Riset</a>
+      <a href="../kantor.html">Kantor 3D</a>
+      <a href="../smar.html">SMAR</a>
+      <a href="../proyek.html">Proyek</a>
+      <a href="../tentang.html">Tentang</a>
+      <a href="../arsip.html">Arsip</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <article class="article">
+    <div class="wrap">
+      <div class="article-head">
+        <span class="kicker">Riset · Keamanan model</span>
+        <h1 class="display">Deployment Prime Intellect diganti salinan abliterated: refusal hampir hilang total, kemampuan tetap</h1>
+        <div class="article-meta">
+          <span>20 November 2026</span>
+          <span>Advisory PI-SA-2026-001</span>
+          <span>Deep dive</span>
+        </div>
+      </div>
+      <div class="article-body">
+        <p>Prime Intellect menerbitkan advisory keamanan PI-SA-2026-001 pada 19 November 2026. Isinya: antara 8 November 2026 pukul 01:24 UTC dan 10 November 2026 pukul 06:35 UTC, pihak yang tidak berizin mengganti deployment di balik endpoint <code>deepseek/deepseek-v4.1-flash</code> milik Prime Intellect dengan salinan abliterated, yaitu salinan yang dimodifikasi untuk mengurangi atau menghapus perilaku refusal. Durasi insiden: 53 jam 11 menit.</p>
+        <p>Framing yang tepat penting di sini. Yang diganti adalah <strong>deployment Prime Intellect</strong>. Bukan model DeepSeek itu sendiri, bukan bobot resmi DeepSeek, bukan infrastruktur DeepSeek. Bobot penggantinya adalah bobot abliterated yang tersedia publik. Chat template, tokenizer, dan konfigurasi serving tidak dimodifikasi.</p>
+
+        <h2>Angka dampaknya</h2>
+        <p>Prime Intellect menguji bobot yang dimodifikasi dan menemukan capability benchmark tidak terpengaruh, sementara refusal nyaris hilang total:</p>
+        <table>
+          <tr><th>Benchmark</th><th>Bobot asli</th><th>Bobot abliterated</th></tr>
+          <tr><td>JailbreakBench</td><td>98 dari 100 prompt ditolak</td><td>1</td></tr>
+          <tr><td>StrongREJECT</td><td>304 dari 313</td><td>2</td></tr>
+          <tr><td>HarmBench</td><td>198 dari 240</td><td>0</td></tr>
+          <tr><td>GPQA Diamond (kapabilitas)</td><td>tidak terpengaruh</td><td>tidak terpengaruh</td></tr>
+          <tr><td>τ-bench (kapabilitas)</td><td>tidak terpengaruh</td><td>tidak terpengaruh</td></tr>
+        </table>
+        <p>Itulah yang membuat substitusi ini sulit dideteksi pengguna: jawaban tetap bagus, tetap koheren, hanya pagarnya yang hilang. Model tetap pintar, tapi berhenti bilang tidak.</p>
+
+        <div class="callout">
+          <p><strong>Catatan kejujuran.</strong> Angka di atas berasal dari pengujian Prime Intellect sendiri atas bobot yang dimodifikasi, bukan audit independen. Tidak ada pihak ketiga yang memverifikasi angka ini per 20 November 2026.</p>
+        </div>
+
+        <h2>Apa yang dikatakan soal data</h2>
+        <p>Advisory menyatakan tidak ditemukan bukti bahwa prompt atau completion direkam atau keluar dari klaster serving <code>deepseek-v4.1-flash</code>, tidak ada bukti akses di luar klaster itu, tidak ada model lain yang dimodifikasi, dan tidak ada kunci atau kredensial pelanggan yang terdampak. "Tidak ada bukti" bukan "tidak terjadi": investigasi masih berjalan saat advisory diterbitkan, dan Prime Intellect menyatakan akan memperbarui pemberitahuan itu kalau penilaiannya berubah. Semua pelanggan terdampak sudah dihubungi, dan yang pemakaian modelnya bergantung pada refusal diminta meninjau output dari periode 8 sampai 10 November 2026.</p>
+        <p>Dasar klaimnya, menurut advisory: endpoint memakai ZDR dan tidak me-log request; semua versi proxy penyerang dipulihkan; disk dan memori semua node diperiksa; rekaman proses sesi dipegang; tidak ada yang membaca atau mentransfer isi request.</p>
+
+        <h2>Kenapa ini penting</h2>
+        <p>Insiden ini menunjukkan satu titik rawan rantai pasok AI yang jarang dibicarakan: bukan bobotnya yang dicuri, bukan API-nya yang diretas, melainkan deployment di balik endpoint yang diganti diam-diam. Pengguna API tidak melihat perubahan apa pun secara kasat mata. Format respons, token, dan perilaku umum tetap sama. Satu-satunya yang berubah adalah pagar keamanan model.</p>
+        <p>Untuk siapa pun yang memakai endpoint pihak ketiga di produksi, pelajarannya konkret: uji refusal secara berkala dari sisi klien, jangan hanya percaya nama endpoint. Dan untuk penyedia: publikasikan advisory seperti ini, dengan angka lengkap dan penyebut lengkap, seperti yang dilakukan Prime Intellect.</p>
+
+        <div class="sources">
+          <p><strong>Sumber.</strong></p>
+          <ul>
+            <li>Prime Intellect, advisory PI-SA-2026-001, <a href="https://primeintellect.one/security/advisories/deepseek-v4-1-flash-model-substitution">primeintellect.one/security/advisories/deepseek-v4-1-flash-model-substitution</a> (dibaca langsung 20 November 2026).</li>
+            <li>Deep dive internal Atharia AGI, <em>Insiden Prime Intellect: DeepSeek v4.1-flash diganti salinan abliterated</em>, 20 November 2026.</li>
+          </ul>
+          <p><a href="index.html">← Kembali ke daftar riset</a></p>
+        </div>
+      </div>
+    </div>
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="wrap-wide footer-in">
+    <p class="footer-big"><a href="https://webiz.id">WEBIZ.ID</a> · <a href="https://neugi.com">NEUGI.COM</a></p>
+    <div class="footer-grid">
+      <span>Atharia AGI · Rangga Prayoga Hermawan</span>
+      <span><a href="index.html">Riset</a> · <a href="../kantor.html">Kantor 3D</a> · <a href="../smar.html">SMAR</a> · <a href="../proyek.html">Proyek</a> · <a href="../tentang.html">Tentang</a> · <a href="../arsip.html">Arsip</a></span>
+      <span>Instagram <a href="https://www.instagram.com/rangga.p.h">@rangga.p.h</a> · GitHub <a href="https://github.com/atharia-agi">atharia-agi</a></span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

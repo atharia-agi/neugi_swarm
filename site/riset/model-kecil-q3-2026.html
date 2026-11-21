@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tidak ada model Q3 2026 yang mengalahkan Qwen3.5-2B di HP · NEUGI</title>
+<meta name="description" content="Benchmark ronde 2 Atharia AGI: empat model Q3 2026 dites untuk chat Bahasa Indonesia di HP. Tidak ada yang mengalahkan Qwen3.5-2B dari Februari 2026. Penyakit blok think makin parah.">
+<link rel="icon" type="image/jpeg" href="../assets/neugi-logo.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="masthead">
+  <div class="wrap-wide masthead-in">
+    <a class="logo-link" href="../index.html"><img class="logo-img" src="../assets/neugi-logo.jpg" alt="NEUGI" width="132" height="62"></a>
+    <span class="tagline">Atharia AGI · Riset AI</span>
+    <nav class="nav" aria-label="Navigasi utama">
+      <a href="index.html" aria-current="page">Riset</a>
+      <a href="../kantor.html">Kantor 3D</a>
+      <a href="../smar.html">SMAR</a>
+      <a href="../proyek.html">Proyek</a>
+      <a href="../tentang.html">Tentang</a>
+      <a href="../arsip.html">Arsip</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <article class="article">
+    <div class="wrap">
+      <div class="article-head">
+        <span class="kicker">Riset · Benchmark lokal</span>
+        <h1 class="display">Tidak ada satu pun model Q3 2026 yang mengalahkan Qwen3.5-2B untuk chat Bahasa Indonesia di HP</h1>
+        <div class="article-meta">
+          <span>19 November 2026</span>
+          <span>Benchmark ronde 2</span>
+          <span>Biaya: $0, Modal T4</span>
+        </div>
+      </div>
+      <div class="article-body">
+        <p>Empat model dites, tiga model Q3 2026 asli plus satu proksi. Hasilnya mengecewakan untuk pemakaian Bahasa Indonesia di HP: <strong>tidak ada satu pun model Q3 2026 yang mengalahkan pemenang ronde 1, Qwen3.5-2B (Februari 2026), untuk chat Bahasa Indonesia di HP.</strong></p>
+        <p>Metode: sama persis dengan ronde 1. Biaya nol, jalan di Modal T4 free tier, unduhan di Modal.</p>
+
+        <h2>Yang dites</h2>
+        <table>
+          <tr><th>Model</th><th>Vendor</th><th>Rilis</th><th>Ukuran</th><th>Kelas</th></tr>
+          <tr><td>Ornith 1.5 9B</td><td>DeepReinforce</td><td>18 Agu 2026</td><td>5,78 GB</td><td>Laptop</td></tr>
+          <tr><td>Ornith 1.5 9B IQ2 (proksi pihak ketiga)</td><td>AtomicChat</td><td>quant dari bobot 18 Agu 2026</td><td>2,81 GB</td><td>Proksi HP</td></tr>
+          <tr><td>MiniCPM5-2B</td><td>OpenBMB</td><td>7 Sep 2026</td><td>1,56 GB</td><td>HP</td></tr>
+          <tr><td>IBM Granite 4.2 3B</td><td>IBM</td><td>25 Agu 2026</td><td>2,24 GB</td><td>HP</td></tr>
+        </table>
+
+        <h2>Hasilnya</h2>
+        <p>Pemenang kualitas Bahasa Indonesia ronde ini adalah Ornith 1.5 9B, tapi dia kelas laptop (5,8 GB), bukan HP. Di kelas HP, Granite 4.2 3B paling masuk akal, tapi Bahasa Indonesianya tetap cacat di setiap jawaban: typo dan kata karangan. MiniCPM5-2B paling cepat dan paling ringan, tapi Bahasa Indonesianya paling rusak: kata karangan, campuran Jawa, dan ibu kota Jawa Barat dijawab Jakarta. Proksi Ornith Mobile (quant 2-bit pihak ketiga) rusak total untuk Bahasa Indonesia.</p>
+        <p>Catatan soal Ornith Mobile: vendor mengumumkan varian Mobile sekitar 1,5 GB untuk HP, tapi tidak ada artefak unduhan yang ditemukan di mana pun. Repo GGUF resmi hanya berisi BF16, Q4_K_M, Q5_K_M, Q6_K, Q8_0 plus file mmproj. Karena itu varian Mobile resmi tidak dites; yang dites adalah build 9B yang sama dalam quant 2-bit pihak ketiga sebagai proksi ukuran HP, dan hasilnya harus dibaca dengan catatan itu.</p>
+
+        <div class="callout">
+          <p><strong>Temuan terbesar: penyakit blok think makin parah di Q3 2026.</strong> Ketiga model reasoning (Ornith, Granite, MiniCPM5) berpikir dalam Bahasa Inggris dan memakan 40 sampai 90 persen budget token sebelum menjawab. Ornith bahkan gagal menjawab satu pertanyaan fakta sepele (ibu kota Jawa Barat) karena kebanyakan mikir sampai 512 token habis. Model non-reasoning seperti Qwen3.5-2B tetap jauh lebih praktis untuk chat HP dengan budget token kecil.</p>
+        </div>
+
+        <h2>Kesimpulan</h2>
+        <p>Untuk chat Bahasa Indonesia di HP, model Februari 2026 masih memegang tahta. Model-model baru Q3 2026 membawa kemampuan reasoning yang lebih kuat di atas kertas, tapi di pemakaian nyata dengan budget token kecil, blok think yang berbahasa Inggris justru menghabiskan anggaran sebelum jawaban keluar. Sampai ada model kecil yang berpikir dalam Bahasa Indonesia, atau yang bisa mematikan blok think-nya, Qwen3.5-2B tetap pilihan praktis.</p>
+
+        <div class="sources">
+          <p><strong>Sumber.</strong></p>
+          <ul>
+            <li>Benchmark internal Atharia AGI, <em>Benchmark Model Kecil Ronde 2: Hanya Q3 2026</em>, 19 November 2026. Data mentah dan skrip: <code>output/bench-results.json</code>, <code>bench_worker.py</code>, <code>run_bench.py</code> (app Modal <code>oto-bench-r2</code>).</li>
+            <li>Repo Hugging Face: <a href="https://huggingface.co/ornith-ai/Ornith-1.5-9B">ornith-ai/Ornith-1.5-9B</a>, <a href="https://huggingface.co/openbmb/MiniCPM5-2B-GGUF">openbmb/MiniCPM5-2B-GGUF</a>, <a href="https://huggingface.co/ibm-granite/granite-4.2-3b-GGUF">ibm-granite/granite-4.2-3b-GGUF</a>.</li>
+          </ul>
+          <p><a href="index.html">← Kembali ke daftar riset</a></p>
+        </div>
+      </div>
+    </div>
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="wrap-wide footer-in">
+    <p class="footer-big"><a href="https://webiz.id">WEBIZ.ID</a> · <a href="https://neugi.com">NEUGI.COM</a></p>
+    <div class="footer-grid">
+      <span>Atharia AGI · Rangga Prayoga Hermawan</span>
+      <span><a href="index.html">Riset</a> · <a href="../kantor.html">Kantor 3D</a> · <a href="../smar.html">SMAR</a> · <a href="../proyek.html">Proyek</a> · <a href="../tentang.html">Tentang</a> · <a href="../arsip.html">Arsip</a></span>
+      <span>Instagram <a href="https://www.instagram.com/rangga.p.h">@rangga.p.h</a> · GitHub <a href="https://github.com/atharia-agi">atharia-agi</a></span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

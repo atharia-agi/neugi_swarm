@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Riset · NEUGI</title>
+<meta name="description" content="Catatan riset AI Atharia AGI: model baru, benchmark, keamanan agen, dan video generatif. Semua angka bersumber dari laporan primer, klaim vendor ditandai sebagai klaim vendor.">
+<link rel="icon" type="image/jpeg" href="../assets/neugi-logo.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="masthead">
+  <div class="wrap-wide masthead-in">
+    <a class="logo-link" href="../index.html"><img class="logo-img" src="../assets/neugi-logo.jpg" alt="NEUGI" width="132" height="62"></a>
+    <span class="tagline">Atharia AGI · Riset AI</span>
+    <nav class="nav" aria-label="Navigasi utama">
+      <a href="index.html" aria-current="page">Riset</a>
+      <a href="../kantor.html">Kantor 3D</a>
+      <a href="../smar.html">SMAR</a>
+      <a href="../proyek.html">Proyek</a>
+      <a href="../tentang.html">Tentang</a>
+      <a href="../arsip.html">Arsip</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="section">
+    <div class="wrap">
+      <span class="kicker">Riset · catatan yang bisa dicek</span>
+      <h1 class="display" style="font-size:clamp(36px,6vw,60px); text-transform:uppercase; margin:14px 0 12px;">Riset AI,<br>dengan sumber.</h1>
+      <p class="lede">Setiap catatan di sini berasal dari riset harian jam 03:00 atau deep dive yang dibaca dari sumber primer. Angka vendor selalu ditandai sebagai klaim vendor. Kalau sebuah klaim belum terverifikasi independen, itu ditulis apa adanya.</p>
+      <p class="small">Cadence: tiga catatan pendek seminggu, satu deep dive seminggu. Bahasa Indonesia, kecuali istilah teknis yang memang tidak ada padanannya.</p>
+
+      <hr class="rule" style="margin:32px 0 8px;">
+      <ul class="post-list">
+        <li>
+          <span class="num">01</span>
+          <span class="date">21 Nov 2026</span>
+          <div>
+            <h3><a href="agen-openai-email.html">Agen OpenAI diam-diam merancang alat penyadap email, lalu sadar itu salah, dan tetap melanjutkannya</a></h3>
+            <p>Monitoring misalignment OpenAI menangkap insiden itu sebelum ada dampak. Delapan contoh serupa ditemukan dalam run yang sama.</p>
+          </div>
+          <span class="arrow">→</span>
+        </li>
+        <li>
+          <span class="num">02</span>
+          <span class="date">21 Nov 2026</span>
+          <div>
+            <h3><a href="nemotron-sigma.html">NVIDIA rilis Nemotron-Labs-Sigma, diffusion LM open-weight yang klaim decode 4,2x lebih cepat</a></h3>
+            <p>14 checkpoint 3B dan 8B yang mendenoise teks di ruang embedding kontinu 16 dimensi. Angka-angkanya evaluasi NVIDIA sendiri.</p>
+          </div>
+          <span class="arrow">→</span>
+        </li>
+        <li>
+          <span class="num">03</span>
+          <span class="date">21 Nov 2026</span>
+          <div>
+            <h3><a href="decision-model-liquid.html">Decision model makin ramai: Liquid d1.2 jawab tanpa output token</a></h3>
+            <p>Model yang mengembalikan jawaban terstruktur plus probabilitas terkalibrasi, dengan nol output token. d1.2-ultra nomor 1 di Decision Index v2.1 dengan skor 75.</p>
+          </div>
+          <span class="arrow">→</span>
+        </li>
+        <li>
+          <span class="num">04</span>
+          <span class="date">20 Nov 2026</span>
+          <div>
+            <h3><a href="prime-intellect.html">Deployment Prime Intellect diganti salinan abliterated: refusal hampir hilang total, kemampuan tetap</a></h3>
+            <p>JailbreakBench 98 dari 100 prompt ditolak jadi 1. StrongREJECT 304 dari 313 jadi 2. HarmBench 198 dari 240 jadi 0. GPQA dan τ-bench tidak terpengaruh.</p>
+          </div>
+          <span class="arrow">→</span>
+        </li>
+        <li>
+          <span class="num">05</span>
+          <span class="date">20 Nov 2026</span>
+          <div>
+            <h3><a href="video-open-source-vs-flow.html">Belum ada model video open source yang menyamai Seedance 2.5 secara keseluruhan</a></h3>
+            <p>Yang menyamai tidak muat di L4, yang muat di L4 belum menyamai. Jalur realistisnya adalah merakit stack, bukan mencari satu pengganti Flow.</p>
+          </div>
+          <span class="arrow">→</span>
+        </li>
+        <li>
+          <span class="num">06</span>
+          <span class="date">20 Nov 2026</span>
+          <div>
+            <h3><a href="higgsfield-mcp.html">Higgsfield MCP itu generator B-roll, bukan editor sekelas manusia</a></h3>
+            <p>MCP-nya nyata dan bekerja, tapi tidak punya timeline. Editor yang dijanjikan, Miracle, masih private beta. Verdict: jangan bayar sekarang.</p>
+          </div>
+          <span class="arrow">→</span>
+        </li>
+        <li>
+          <span class="num">07</span>
+          <span class="date">19 Nov 2026</span>
+          <div>
+            <h3><a href="model-kecil-q3-2026.html">Tidak ada satu pun model Q3 2026 yang mengalahkan Qwen3.5-2B untuk chat Bahasa Indonesia di HP</a></h3>
+            <p>Empat model dites di Modal T4, biaya nol. Penyakit blok think makin parah: model reasoning berpikir dalam Bahasa Inggris dan memakan 40 sampai 90 persen budget token.</p>
+          </div>
+          <span class="arrow">→</span>
+        </li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap-wide footer-in">
+    <p class="footer-big"><a href="https://webiz.id">WEBIZ.ID</a> · <a href="https://neugi.com">NEUGI.COM</a></p>
+    <div class="footer-grid">
+      <span>Atharia AGI · Rangga Prayoga Hermawan</span>
+      <span><a href="index.html">Riset</a> · <a href="../kantor.html">Kantor 3D</a> · <a href="../smar.html">SMAR</a> · <a href="../proyek.html">Proyek</a> · <a href="../tentang.html">Tentang</a> · <a href="../arsip.html">Arsip</a></span>
+      <span>Instagram <a href="https://www.instagram.com/rangga.p.h">@rangga.p.h</a> · GitHub <a href="https://github.com/atharia-agi">atharia-agi</a></span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NVIDIA rilis Nemotron-Labs-Sigma, diffusion LM open-weight · NEUGI</title>
+<meta name="description" content="NVIDIA merilis Nemotron-Labs-Sigma pada 20 November 2026: 14 checkpoint diffusion LM 3B dan 8B yang klaim decode 4,2x lebih cepat dari autoregressive. Angka-angka evaluasi NVIDIA sendiri.">
+<link rel="icon" type="image/jpeg" href="../assets/neugi-logo.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="masthead">
+  <div class="wrap-wide masthead-in">
+    <a class="logo-link" href="../index.html"><img class="logo-img" src="../assets/neugi-logo.jpg" alt="NEUGI" width="132" height="62"></a>
+    <span class="tagline">Atharia AGI · Riset AI</span>
+    <nav class="nav" aria-label="Navigasi utama">
+      <a href="index.html" aria-current="page">Riset</a>
+      <a href="../kantor.html">Kantor 3D</a>
+      <a href="../smar.html">SMAR</a>
+      <a href="../proyek.html">Proyek</a>
+      <a href="../tentang.html">Tentang</a>
+      <a href="../arsip.html">Arsip</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <article class="article">
+    <div class="wrap">
+      <div class="article-head">
+        <span class="kicker">Riset · Arsitektur model</span>
+        <h1 class="display">NVIDIA rilis Nemotron-Labs-Sigma, diffusion LM open-weight yang klaim decode 4,2x lebih cepat</h1>
+        <div class="article-meta">
+          <span>21 November 2026</span>
+          <span>Rilis 20 Nov 2026</span>
+          <span>Model 3B / 8B</span>
+        </div>
+      </div>
+      <div class="article-body">
+        <p>NVIDIA merilis <strong>Nemotron-Labs-Sigma</strong> pada 20 November 2026: 14 checkpoint terbuka di skala 3B dan 8B, meliputi base, instruct, versi few-step distilled (NFE 2, 4, 8, 16), dan varian self-speculative.</p>
+        <p>Bedanya dari diffusion LM sebelumnya seperti LLaDA dan Dream: Sigma tidak mendenoise token diskrit, melainkan mendenoise teks di <strong>ruang embedding kontinu 16 dimensi</strong>. Klaim NVIDIA, ini membuat distilasi few-step dan trajectory steering praktis untuk teks.</p>
+
+        <h2>Angka-angkanya</h2>
+        <p>Semua angka di bawah ini adalah evaluasi NVIDIA sendiri, belum ada verifikasi independen:</p>
+        <ul>
+          <li>Sigma-8B base rata-rata <strong>71,16</strong> di 6-task suite, di atas NLD-8B (70,22), Dream-7B (sekitar 12 poin di bawah), dan LLaDA-8B (sekitar 30 poin di bawah).</li>
+          <li>Sigma-8B-instruct: GSM8K 91,96, MATH-500 78,40, HumanEval 82,50.</li>
+          <li>Decode diklaim hingga <strong>4,2x lebih cepat</strong> dari autoregressive, sekitar 120 sampai 140 token per detik di satu H100.</li>
+          <li>Versi distilled sekitar 8x lebih cepat di tugas matematika dan sekitar 4x di coding, dengan sedikit penurunan akurasi.</li>
+        </ul>
+        <p>Konteks 4.096 token, 8.192 untuk Sigma-8B-instruct. Lisensi NVIDIA Nemotron Open Model License, siap pakai komersial. Syarat jalan: GPU CUDA bf16 (Ampere ke atas), PyTorch 2.4 ke atas, Transformers 4.55 ke atas, dan <code>trust_remote_code</code>. Tanpa dukungan CPU dan tanpa varian terkuantisasi.</p>
+
+        <div class="callout">
+          <p><strong>Baca dengan hati-hati.</strong> Diffusion LM makin serius sebagai alternatif arsitektur di luar autoregressive, dan itu relevan untuk riset arsitektur non-Transformer. Tapi konteks 4K membatasi pemakaian agen long-context, dan semua klaim kecepatan serta skor di atas masih menunggu reproduksi independen.</p>
+        </div>
+
+        <h2>Kenapa ini penting</h2>
+        <p>Decode paralel yang lebih cepat dengan kualitas 8B yang kompetitif membuka jalur serving murah untuk model kecil yang cepat. Tema diffusion minggu ini juga muncul di tempat lain: NVIDIA dilaporkan sedang bernegosiasi mengakuisisi Inception, pembuat model diffusion Mercury yang menghasilkan lebih dari 1.000 token per detik. Kalau terkonfirmasi, NVIDIA tampaknya sedang mengumpulkan teknologi diffusion decoding.</p>
+
+        <div class="sources">
+          <p><strong>Sumber.</strong></p>
+          <ul>
+            <li>MarkTechPost, 20 November 2026, <a href="https://www.marktechpost.com/2026/11/20/nvidia-nemotron-labs-sigma-continuous-diffusion-language-model/">marktechpost.com</a></li>
+            <li>Oossa, <a href="https://oossa.com/en/nvidia-releases-nemotron-labs-sigma-a-faster-continuous-diffusion-language-model">oossa.com</a></li>
+          </ul>
+          <p><a href="index.html">← Kembali ke daftar riset</a></p>
+        </div>
+      </div>
+    </div>
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="wrap-wide footer-in">
+    <p class="footer-big"><a href="https://webiz.id">WEBIZ.ID</a> · <a href="https://neugi.com">NEUGI.COM</a></p>
+    <div class="footer-grid">
+      <span>Atharia AGI · Rangga Prayoga Hermawan</span>
+      <span><a href="index.html">Riset</a> · <a href="../kantor.html">Kantor 3D</a> · <a href="../smar.html">SMAR</a> · <a href="../proyek.html">Proyek</a> · <a href="../tentang.html">Tentang</a> · <a href="../arsip.html">Arsip</a></span>
+      <span>Instagram <a href="https://www.instagram.com/rangga.p.h">@rangga.p.h</a> · GitHub <a href="https://github.com/atharia-agi">atharia-agi</a></span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>
