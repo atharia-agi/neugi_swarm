@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-21T03:20:45.397664Z",
+  "generated_at": "2026-11-21T03:27:16.953957Z",
   "agents": [
     {
       "id": "rangga",
@@ -26,7 +26,7 @@
       "color": "#fc7a24",
       "room": "ruang-kerja",
       "state": "working",
-      "task": "\u2014 TAMBAHAN showcase neugi.com: klik agen"
+      "task": "\u2014 tambahan ke tugas mobile barusan (feed"
     },
     {
       "id": "zeto",
