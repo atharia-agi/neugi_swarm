@@ -206,27 +206,52 @@ const JOINT_ROLES = {
      jadi kakinya tidak pernah terukur saat duduk. */
   meto: { shoulderL: 6, shoulderR: 10, thighL: 14, thighR: 18, shinL: 15, shinR: 19, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 12, handL: 9, handR: 13, fingerL: null, fingerR: null },
 };
-/* DUDUK: tinggi turun saat duduk.
-   FEET FIX 2026-11-21 — SIT_DROP=0.5 (tebakan "TUNING VISUAL") SALAH:
-   kaki duduk semua avatar melayang 0.03–0.29 di ATAS lantai (grup turun
-   0.5 padahal kaki terlipat cuma naik segitu), jadi avatar duduk
-   tenggelam 0.2–0.47 ke dalam kursi. Nilai di bawah DIUKUR per avatar
-   di harness (pose duduk penuh thigh +90/shin −90, grup di y=0, kaki
-   = minY bbox skinned hasil render): drop = minY itu supaya kaki
-   tepat y=0. Cocok dengan ukur independen fix backroom (rangga 0.255,
-   oto 0.077, beto 0.104). Kursi (dudukan y=0.50) tetap pas: kepala
-   duduk ~1.5–1.6, di atas meja 0.81. */
+/* DUDUK LESEHAN 2026-11-21 (Item 2+3) — grup turun sebesar drop saat
+   duduk supaya PANAT menyentuh permukaan pad (PAD_TOP 0.10).
+   ROOT CAUSE drop lama SALAH UKUR: drop lama = minY bbox KESELURUHAN
+   saat duduk — untuk Rangga/Oto itu ujung TANGAN/JARI yang menjuntai
+   (0.255 / 0.077), bukan kaki/pantat. Akibatnya pinggul Rangga di
+   0.49-0.255 = 0.24 — 0.26 DI BAWAH dudukan kursi 0.50 — avatar
+   tenggelam menembus kursi (sandaran di depan wajah, dudukan
+   memotong dada; lihat README work-B-sitting). Drop baru DIUKUR
+   per avatar di harness (pose duduk baru: paha sumbu-X dunia -90,
+   betis lokal +170, grup di y=0): seatUnder = titik terendah massa
+   duduk di dekat pinggul (vertex dominan bone pelvis 0 / paha,
+   dalam 0.18 dari sendi pinggul — jendela ini membuang ekor
+   Deto/Seto + perut Neto dari ukur); drop = seatUnder - PAD_TOP,
+   dijepit [0, 0.35]. Nilai 0.000 (zeto/neto/deto) = seatUnder sudah
+   di/bawah PAD_TOP saat grup y=0 (kaki pendek + badan rendah) —
+   grup tidak dinaikkan; pantat/badan rendah mereka menekan pad
+   (zabuton) alih-alih melayang. Puncak kepala duduk 1.31–1.60
+   (di atas monitor 0.98), lutut ke depan (+0.07..+0.27),
+   ujung kaki terlipat di belakang lutut 0.05-0.24 di atas lantai. */
 const SIT_DROPS = {
-  rangga: 0.255, oto: 0.077, beto: 0.104, zeto: 0.055, neto: 0.047,
-  geto: 0.289, leto: 0.187, ceto: 0.125, deto: 0.034, seto: 0.121, meto: 0.173,
+  rangga: 0.239, oto: 0.052, beto: 0.128, zeto: 0.000, neto: 0.000,
+  geto: 0.234, leto: 0.187, ceto: 0.142, deto: 0.000, seto: 0.163, meto: 0.169,
 };
 const SIT_DROP_DEFAULT = 0.12; /* avatar baru tanpa ukur: tengah-tengah */
 function sitDropFor(name) {
   const v = SIT_DROPS[name];
   return typeof v === 'number' ? v : SIT_DROP_DEFAULT;
 }
-const SIT_THIGH_DEG = 90;   /* paha ke depan (terverifikasi) */
-const SIT_SHIN_DEG = -90;   /* betis ke belakang, relatif thd paha */
+/* LESEHAN 2026-11-21 (Item 2+3) — pose duduk ditulis ulang dari ukur harness:
+   - Paha HARUS tentang sumbu-X DUNIA (bukan sumbu-X lokal bone).
+     Bukti: thigh +90 lokal (kode lama) mengayun lutut ke (±0.25, -0.11)
+     — menyebar ke samping + sedikit ke BELAKANG pinggul, bukan ke depan;
+     klaim lama "thigh +90 = paha ke depan (terverifikasi)" SALAH arah
+     (yang terverifikasi dulu cuma besar sudutnya, 90.0°, bukan arahnya).
+     Rotasi -90° tentang sumbu-X dunia menaruh lutut di (±lebar pinggul,
+     tinggi pinggul, +0.07..+0.27 ke depan) untuk 11/11 avatar — paha
+     lurus ke arah meja. Sumbu lokalnya dihitung per bone dari base
+     quaternion (sitWorldAxis, di-cache di sitThighAxis saat load).
+   - Betis +170° (sumbu-X lokal, dulu -90): betis terlipat ke belakang
+     di bawah paha, ujung kaki di belakang pantat ~0.05-0.26 di atas
+     lantai (tidak menembus lantai); -90 lama membuat betis tegak ke
+     bawah (kaki menggantung di samping badan). */
+const SIT_THIGH_DEG = -90;  /* paha ke depan, tentang sumbu-X DUNIA */
+const SIT_SHIN_DEG = 170;   /* betis terlipat ke belakang, sumbu-X lokal */
+const PAD_TOP = 0.10;       /* permukaan pad lesehan (zabuton 0.7 x 0.10 x 0.7) */
+const DESK_TOP_Y = 0.36;    /* permukaan meja rendah ala chabudai (lihat buildDesk) */
 const SIT_SPINE_DEG = 10;   /* badan condong ke depan */
 const SIT_HEAD_DEG = 10;    /* kepala menunduk sedikit */
 /* Easing 100/10: semua transisi pose ~400 ms (easeInOutCubic),
@@ -331,7 +356,16 @@ function captureBoneBase(obj, name) {
       }
     }
   });
-  if (refs.size) { boneRefs[name] = refs; boneBase[name] = bases; }
+  if (refs.size) {
+    boneRefs[name] = refs; boneBase[name] = bases;
+    /* Sumbu-X dunia untuk paha (dipakai sitDeltas) — dari base
+       quaternion tiap paha; bahu idle tidak menyentuh paha, jadi
+       sumbu ini = bind orientation, stabil. */
+    sitThighAxis[name] = {
+      L: sitWorldAxis(name, roles.thighL),
+      R: sitWorldAxis(name, roles.thighR),
+    };
+  }
 }
 /* Kontrak: deltas = [{bone, axis:[x,y,z], deg}] — set
    bone.quaternion = base.clone().multiply(deltaQ). Tanpa skeleton
@@ -369,10 +403,28 @@ function resetBones(name) {
   }
 }
 
-function sitDeltas(roles) {
+/* Sumbu-X dunia dalam frame lokal sebuah bone: delta quaternion
+   diterapkan di frame lokal bone (base * delta), jadi rotasi tentang
+   sumbu dunia harus dikonjugasi dengan base quaternion bone itu
+   (local = base^-1 * world). Dihitung sekali per avatar di
+   captureBoneBase; fallback [1,0,0] (perilaku lama) bila bone belum
+   dimuat (stand-in tanpa skeleton — applyBoneDeltas no-op). */
+const sitThighAxis = {};    /* name -> {L:[x,y,z], R:[x,y,z]} */
+function sitWorldAxis(name, boneIdx) {
+  const bases = boneBase[name];
+  if (!bases) return [1, 0, 0];
+  const base = bases.get(boneIdx);
+  if (!base) return [1, 0, 0];
+  const v = new THREE.Vector3(1, 0, 0).applyQuaternion(base.clone().invert());
+  return [v.x, v.y, v.z];
+}
+function sitDeltas(name, roles) {
+  const ax = sitThighAxis[name] || {};
+  const axL = ax.L || [1, 0, 0];
+  const axR = ax.R || [1, 0, 0];
   return [
-    { bone: roles.thighL, axis: [1, 0, 0], deg: SIT_THIGH_DEG },
-    { bone: roles.thighR, axis: [1, 0, 0], deg: SIT_THIGH_DEG },
+    { bone: roles.thighL, axis: axL, deg: SIT_THIGH_DEG },
+    { bone: roles.thighR, axis: axR, deg: SIT_THIGH_DEG },
     { bone: roles.shinL, axis: [1, 0, 0], deg: SIT_SHIN_DEG },
     { bone: roles.shinR, axis: [1, 0, 0], deg: SIT_SHIN_DEG },
     { bone: roles.spine, axis: [1, 0, 0], deg: SIT_SPINE_DEG },
@@ -441,7 +493,7 @@ function applyPoseWeighted(name, nowMs = performance.now()) {
   const anim = poseAnim[name] || { sittingW: 0, activityW: 0, activity: null };
   const deltas = [];
   if (anim.sittingW > 0.001) {
-    for (const d of sitDeltas(roles)) deltas.push({ ...d, deg: d.deg * anim.sittingW });
+    for (const d of sitDeltas(name, roles)) deltas.push({ ...d, deg: d.deg * anim.sittingW });
   }
   if (anim.activityW > 0.001 && anim.activity) {
     for (const d of activityDeltas(name, anim.activity, nowMs)) {
@@ -936,7 +988,7 @@ function aaaDeskTopSize(group) {
     if (!p || typeof p.width !== 'number') return;
     if (!top || p.width > top.geometry.parameters.width) top = o;
   });
-  if (!top) return { w: 2.2, d: 0.9, topY: 0.81 };
+  if (!top) return { w: 2.2, d: 0.9, topY: DESK_TOP_Y };
   const p = top.geometry.parameters;
   return { w: p.width, d: p.depth, topY: top.position.y + p.height / 2 };
 }
@@ -1152,7 +1204,7 @@ function addAAAWallDetail(scene) {
 const AAA_BOOK_COLORS = [0x4a3b32, 0x33404d, 0x3d4a3a, 0x54423a, 0x2f3a44];
 const AAA_MUG_COLORS = [0x6b5a44, 0x44586b, 0x5a6b4a, 0x715a5a];
 function addAAADeskProps(scene) {
-  let tableTopY = 0.81; /* fallback = konvensi buildDesk/buildPantry */
+  let tableTopY = DESK_TOP_Y; /* fallback = konvensi buildDesk/buildPantry */
   desks.forEach((d, i) => {
     const g = d.group;
     const ts = aaaDeskTopSize(g);
@@ -1554,7 +1606,7 @@ function wrapText(g, text, x, y, maxW, lh) {
   if (line) g.fillText(line, x, yy);
 }
 
-/* Meja kerja: permukaan + kaki + kursi + monitor (layar judul
+/* Meja kerja: permukaan + kaki + pad + monitor (layar judul
    tugas aktif, data nyata) + pelat nama di sisi depan (nama ·
    jumlah tugas · terakhir aktif HH:MM, §5.5). Monitor + pelat
    milik MEJA (tetap di tempat); applyState mengisinya dengan data
@@ -1563,38 +1615,44 @@ function wrapText(g, text, x, y, maxW, lh) {
 const desks = []; /* {x, z, slotX, slotZ, monTex, plateTex, group} */
 function buildDesk(x, z, w) {
   const g = new THREE.Group();
+  /* Meja rendah ala chabudai (Item 3): permukaan DESK_TOP_Y 0.36
+     (dulu 0.81) + kaki panel pendek mengikuti. Warna/material sama. */
   const top = box(w, 0.12, 0.9, C.deskTop);
-  top.position.y = 0.75;
+  top.position.y = DESK_TOP_Y - 0.06;
   g.add(top);
   for (const sx of [-w / 2 + 0.08, w / 2 - 0.08]) {
-    const leg = box(0.1, 0.75, 0.8, C.desk);
-    leg.position.set(sx, 0.375, 0);
+    const leg = box(0.1, DESK_TOP_Y - 0.12, 0.8, C.desk);
+    leg.position.set(sx, (DESK_TOP_Y - 0.12) / 2, 0);
     g.add(leg);
   }
-  const chair = box(0.7, 0.1, 0.7, C.chair);
-  chair.position.set(0, 0.45, -0.75);
-  g.add(chair);
-  const chairBack = box(0.7, 0.7, 0.1, C.chair);
-  chairBack.position.set(0, 0.85, -1.05);
-  g.add(chairBack);
+  /* Pad lesehan (zabuton) MENGGANTIKAN kursi berkaki (Item 3).
+     ROOT CAUSE kursi lama: dudukan di z -0.75 (0.35 di DEPAN slot)
+     + sandaran di z -1.05 (0.05 di depan avatar, bukan di belakang)
+     sehingga sandaran memotong wajah + dudukan memotong dada avatar
+     yang duduk di slot (z -1.1) — terverifikasi visual harness.
+     Pad dipusatkan TEPAT di slot (z -1.1) supaya pantat avatar di
+     tengah pad; tanpa sandaran, avatar tidak menembus apa pun. */
+  const pad = box(0.7, 0.1, 0.7, C.chair);
+  pad.position.set(0, PAD_TOP - 0.05, -1.1);
+  g.add(pad);
   /* Monitor: layar menghadap kamera (selatan) supaya judul tugas
      kebaca dari tampilan isometrik; dudukan kecil di belakang. */
   const monTex = textTexture(256, 128, () => {});
   const mon = box(1.0, 0.62, 0.06, 0x111111);
-  mon.position.set(0.25, 1.12, -0.12);
+  mon.position.set(0.25, DESK_TOP_Y + 0.31, -0.12);
   mon.rotation.x = -0.22;
   g.add(mon);
   const monScreen = panelPlane(0.92, 0.54, monTex);
-  monScreen.position.set(0.25, 1.13, -0.08);
+  monScreen.position.set(0.25, DESK_TOP_Y + 0.32, -0.08);
   monScreen.rotation.x = -0.22;
   g.add(monScreen);
   const monStand = box(0.08, 0.32, 0.08, 0x111111);
-  monStand.position.set(0.25, 0.86, -0.12);
+  monStand.position.set(0.25, DESK_TOP_Y + 0.05, -0.12);
   g.add(monStand);
   /* Pelat nama di sisi depan meja (menghadap kamera). */
   const plateTex = textTexture(256, 64, () => {});
   const plate = panelPlane(1.7, 0.42, plateTex);
-  plate.position.set(0, 0.62, 0.47);
+  plate.position.set(0, DESK_TOP_Y - 0.19, 0.47);
   plate.rotation.x = -0.35;
   g.add(plate);
   g.position.set(x, 0, z);
@@ -1606,19 +1664,239 @@ function buildDesk(x, z, w) {
   return g;
 }
 
+/* --- animasi monitor: mengetik kode (Item 6 punch list, 2026-11-21)
+   Layar monitor workspace BUKAN lagi judul tugas statis: monitor di
+   meja yang penghuninya sedang bekerja menampilkan kode yang
+   "diketik" — baris muncul karakter demi karakter, jendela 5 baris
+   bergeser pelan ke atas saat baris baru mulai diketik, kursor blok
+   hijau berkedip. Judul tugas nyata tetap kebaca sebagai baris
+   komentar paling atas layar. Meja kosong / agen tanpa tugas tetap
+   layar redup statis seperti dulu (tidak ada timer, tidak ada
+   render). TV + papan dinding TIDAK disentuh — hanya monitor
+   buildDesk (semua 12 meja memakai pola yang sama).
+   Biaya: SATU interval global 250 ms (bukan rAF, bukan loop 60 fps);
+   tiap tick hanya menggambar ulang kanvas 256x128 milik meja yang
+   sedang beranimasi + SATU requestRender — dan hanya bila tab
+   terlihat, bukan REDUCED, dan ada meja beranimasi. Bila semua meja
+   kosong/idle: 0 render/detik dari timer ini. REDUCED
+   (prefers-reduced-motion): timer tidak jalan, monitor menampilkan
+   satu frame kode penuh yang statis. */
+const MONITOR_TICK_MS = 250;
+const MONITOR_CHARS_PER_TICK = 2;
+const MONITOR_VISIBLE_LINES = 5;
+const MONITOR_HOLD_TICKS = 8; /* ~2 dtk tahan frame penuh sebelum ganti snippet */
+const MONITOR_FONT = '12px ui-monospace, monospace';
+const MONITOR_HEAD_FONT = '12px ui-monospace, monospace';
+const MONITOR_CODE_Y0 = 36; /* baseline baris kode pertama */
+const MONITOR_CODE_LH = 17; /* jarak antar baris kode */
+/* Potongan kode generik yang masuk akal (JS + 1 Python), tiap baris
+   maks 30 karakter supaya muat di kanvas 256 px pada font 12 px
+   (1 karakter monospace ~7,2 px -> 30 karakter ~217 px + margin 8). */
+const MONITOR_SNIPPETS = [
+  [
+    'const res = await fetch(',
+    "  '/api/tasks');",
+    'const data = await res.json();',
+    'for (const t of data.tasks) {',
+    "  if (t.status === 'done')",
+    '    continue;',
+    '  renderCard(t);',
+    '}',
+  ],
+  [
+    'function planWalk(agent) {',
+    '  const path = [];',
+    '  for (const s of slots) {',
+    '    if (s.busy) continue;',
+    '    path.push(s);',
+    '  }',
+    '  return path;',
+    '}',
+  ],
+  [
+    'def snapshot_state(agents):',
+    '    rows = []',
+    '    for a in agents:',
+    '        if not a.task:',
+    '            continue',
+    '        rows.append(a.name)',
+    '    return rows',
+  ],
+  [
+    'const open = tasks.filter(',
+    '  t => t.open);',
+    'open.sort((a, b) =>',
+    '  a.priority - b.priority);',
+    'const next = open[0];',
+    'if (next) assign(next);',
+    'console.log(next.id);',
+  ],
+];
+/* Pewarna sintaks sederhana: string #ce9178, keyword #569cd6,
+   angka #b5cea8, nama fungsi (kata diikuti '(') #dcdcaa, sisanya
+   #d4d4d4. Grup regex: 1=string, 2=keyword, 3=angka, 4=nama fungsi. */
+const MON_TOKEN_RE = /('[^'\n]*'|"[^"\n]*")|\b(const|let|var|function|return|if|else|for|of|in|await|async|import|from|class|def|continue|break)\b|\b(\d+)\b|([A-Za-z_$][\w$]*)(?=\()/g;
+let monitorTimer = null;
+
+function monitorSnippetStats(idx) {
+  const lines = MONITOR_SNIPPETS[idx];
+  const offsets = [];
+  let off = 0;
+  for (const ln of lines) { offsets.push(off); off += ln.length; }
+  return { totalChars: off, lineOffsets: offsets };
+}
+
+function newMonitorAnim(st, key) {
+  let h = 0;
+  for (let i = 0; i < st.name.length; i++) h = (h + st.name.charCodeAt(i)) % MONITOR_SNIPPETS.length;
+  const stats = monitorSnippetStats(h);
+  const a = {
+    key,
+    title: st.activeTask.title,
+    snippetIdx: h,
+    typed: 0,
+    hold: 0,
+    cursorOn: false,
+    totalChars: stats.totalChars,
+    lineOffsets: stats.lineOffsets,
+  };
+  if (REDUCED) { a.typed = a.totalChars; a.cursorOn = false; }
+  return a;
+}
+
+/* Gambar satu baris kode (prefix yang sudah "diketik") dengan warna
+   sintaks; mengembalikan x akhir teks (dipakai posisi kursor). */
+function drawMonitorCodeLine(g, text, x, y) {
+  g.font = MONITOR_FONT;
+  let cx = x;
+  let last = 0;
+  MON_TOKEN_RE.lastIndex = 0;
+  let m;
+  while ((m = MON_TOKEN_RE.exec(text)) !== null) {
+    if (m.index > last) {
+      g.fillStyle = '#d4d4d4';
+      const seg = text.slice(last, m.index);
+      g.fillText(seg, cx, y);
+      cx += g.measureText(seg).width;
+    }
+    const tok = m[0];
+    if (m[1] !== undefined) g.fillStyle = '#ce9178';
+    else if (m[2] !== undefined) g.fillStyle = '#569cd6';
+    else if (m[3] !== undefined) g.fillStyle = '#b5cea8';
+    else g.fillStyle = '#dcdcaa';
+    g.fillText(tok, cx, y);
+    cx += g.measureText(tok).width;
+    last = m.index + tok.length;
+  }
+  if (last < text.length) {
+    g.fillStyle = '#d4d4d4';
+    const seg = text.slice(last);
+    g.fillText(seg, cx, y);
+    cx += g.measureText(seg).width;
+  }
+  return cx;
+}
+
+function drawMonitorFrame(d) {
+  const a = d.monAnim;
+  if (!a) return;
+  const g = d.monTex.ctx;
+  const lines = MONITOR_SNIPPETS[a.snippetIdx];
+  g.fillStyle = '#0d1a05';
+  g.fillRect(0, 0, 256, 128);
+  /* Baris komentar = judul tugas nyata (maks 34 karakter). */
+  g.font = MONITOR_HEAD_FONT;
+  g.fillStyle = '#6a9955';
+  g.fillText('// ' + trunc(a.title, 34), 8, 15);
+  g.fillStyle = '#2d333b';
+  g.fillRect(8, 20, 240, 1);
+  /* Baris yang sedang diketik = baris pertama yang belum penuh;
+     bila semua penuh, baris terakhir (kursor di ujung kode). */
+  let cur = lines.length - 1;
+  for (let i = 0; i < lines.length; i++) {
+    if (a.typed < a.lineOffsets[i] + lines[i].length) { cur = i; break; }
+  }
+  /* Jendela 5 baris: baris aktif selalu jadi baris terbawah, jadi
+     jendela bergeser pelan ke atas saat baris baru mulai diketik. */
+  const winStart = Math.max(0, cur - (MONITOR_VISIBLE_LINES - 1));
+  let cursorX = 8;
+  let cursorY = MONITOR_CODE_Y0;
+  for (let r = 0; r < MONITOR_VISIBLE_LINES; r++) {
+    const li = winStart + r;
+    if (li > cur) break;
+    const revealed = Math.max(0, Math.min(lines[li].length, a.typed - a.lineOffsets[li]));
+    const y = MONITOR_CODE_Y0 + r * MONITOR_CODE_LH;
+    const endX = drawMonitorCodeLine(g, lines[li].slice(0, revealed), 8, y);
+    if (li === cur) { cursorX = endX; cursorY = y; }
+  }
+  /* Kursor blok berkedip (periode 500 ms = 2 tick). */
+  if (a.cursorOn) {
+    g.fillStyle = '#a3ff00';
+    g.fillRect(cursorX + 1, cursorY - 11, 7, 13);
+  }
+  d.monTex.tex.needsUpdate = true;
+}
+
 function drawMonitor(texObj, st) {
   const g = texObj.ctx;
-  g.fillStyle = st && st.activeTask ? '#0d1a05' : '#111111';
-  g.fillRect(0, 0, 256, 128);
-  g.font = '22px ui-monospace, monospace';
-  if (st && st.activeTask) {
-    g.fillStyle = '#a3ff00';
-    wrapText(g, trunc(st.activeTask.title, 44), 12, 34, 232, 28);
-  } else {
+  const d = desks.find((dd) => dd.monTex === texObj);
+  if (!st || !st.activeTask) {
+    /* Meja kosong / tanpa tugas: layar redup STATIS seperti dulu. */
+    if (d) d.monAnim = null;
+    g.fillStyle = '#111111';
+    g.fillRect(0, 0, 256, 128);
+    g.font = '22px ui-monospace, monospace';
     g.fillStyle = '#555';
     g.fillText('— layar redup —', 12, 60);
+    texObj.tex.needsUpdate = true;
+    return;
   }
-  texObj.tex.needsUpdate = true;
+  if (!d) {
+    /* Bukan meja buildDesk (tidak terjadi saat ini): judul statis. */
+    g.fillStyle = '#0d1a05';
+    g.fillRect(0, 0, 256, 128);
+    g.font = '22px ui-monospace, monospace';
+    g.fillStyle = '#a3ff00';
+    wrapText(g, trunc(st.activeTask.title, 44), 12, 34, 232, 28);
+    texObj.tex.needsUpdate = true;
+    return;
+  }
+  /* Penghuni/tugas sama -> lanjutkan ketikan yang sedang berjalan
+     (jangan reset tiap refreshDesks/poll 60 dtk); penghuni atau
+     judul tugas berubah -> mulai snippet baru dari karakter 0. */
+  const key = st.name + '|' + st.activeTask.title;
+  if (!d.monAnim || d.monAnim.key !== key) d.monAnim = newMonitorAnim(st, key);
+  drawMonitorFrame(d);
+}
+
+function startMonitorTimer() {
+  if (monitorTimer || REDUCED) return;
+  monitorTimer = setInterval(() => {
+    if (document.hidden || !state || !renderer || !webglOK) return;
+    let changed = false;
+    for (const d of desks) {
+      const a = d.monAnim;
+      if (!a) continue; /* meja kosong / tanpa tugas: tidak digambar */
+      a.cursorOn = !a.cursorOn;
+      if (a.hold > 0) {
+        a.hold--;
+        if (a.hold === 0 && a.typed >= a.totalChars) {
+          /* Frame penuh sudah ditahan ~2 dtk: ganti snippet. */
+          a.snippetIdx = (a.snippetIdx + 1) % MONITOR_SNIPPETS.length;
+          const stats = monitorSnippetStats(a.snippetIdx);
+          a.typed = 0;
+          a.totalChars = stats.totalChars;
+          a.lineOffsets = stats.lineOffsets;
+        }
+      } else if (a.typed < a.totalChars) {
+        a.typed = Math.min(a.totalChars, a.typed + MONITOR_CHARS_PER_TICK);
+        if (a.typed >= a.totalChars) a.hold = MONITOR_HOLD_TICKS;
+      }
+      drawMonitorFrame(d);
+      changed = true;
+    }
+    if (changed) requestRender();
+  }, MONITOR_TICK_MS);
 }
 
 function drawPlate(texObj, name, st) {
@@ -1659,24 +1937,19 @@ function buildMeetingRoom() {
   carpet.position.set(-5, 0.012, -9);
   scene.add(carpet);
   const table = box(3.6, 0.14, 1.8, C.deskTop);
-  table.position.set(-5, 0.8, -9);
+  table.position.set(-5, DESK_TOP_Y - 0.07, -9);
   scene.add(table);
   for (const [lx, lz] of [[-6.5, -9.7], [-3.5, -9.7], [-6.5, -8.3], [-3.5, -8.3]]) {
-    scene.add(place(box(0.14, 0.8, 0.14, C.desk), lx, 0.4, lz));
+    scene.add(place(box(0.14, DESK_TOP_Y - 0.12, 0.14, C.desk), lx, (DESK_TOP_Y - 0.12) / 2, lz));
   }
-  /* Kursi di sudut meja — BUKAN di belakang slot seperti dulu.
-     Kursi di baris slot menghalangi jalur jalan (kursi barat di
-     (-8.35,-9) menutup koridor lane x=-9.5). Kursi slot sisi-gang
-     (-5,-6.4) diletakkan KE ARAH meja (-5,-7.15) supaya jalan
-     keluarnya tidak tertutup kursi sendiri (LAYOUT.md §5). */
-  scene.add(place(box(0.7, 0.1, 0.7, C.chair), -5, 0.45, -12.35));   /* utara, menjauhi meja */
-  scene.add(place(box(0.7, 0.7, 0.1, C.chair), -5, 0.85, -12.65, 0));
-  scene.add(place(box(0.7, 0.1, 0.7, C.chair), -5, 0.45, -7.15));    /* selatan, ke arah meja */
-  scene.add(place(box(0.7, 0.7, 0.1, C.chair), -5, 0.85, -6.85, 0));
-  scene.add(place(box(0.7, 0.1, 0.7, C.chair), -7.6, 0.45, -10.2));  /* barat-daya */
-  scene.add(place(box(0.7, 0.7, 0.1, C.chair), -7.9, 0.85, -10.2, Math.PI / 2));
-  scene.add(place(box(0.7, 0.1, 0.7, C.chair), -2.4, 0.45, -10.2));  /* timur-daya */
-  scene.add(place(box(0.7, 0.7, 0.1, C.chair), -2.1, 0.85, -10.2, -Math.PI / 2));
+  /* Pad lesehan di KEEMPAT slot rapat (Item 3) — dipusatkan di slot,
+     bukan meleset 0.75 (utara/selatan) / 1.2 (barat/timur, ke utara
+     slot, bukan ke arah meja) seperti kursi lama. Pad rata lantai
+     (0.10) tidak menutup koridor lane mana pun (LAYOUT.md §5). */
+  scene.add(place(box(0.7, 0.1, 0.7, C.chair), -5, PAD_TOP - 0.05, -11.6));  /* utara */
+  scene.add(place(box(0.7, 0.1, 0.7, C.chair), -5, PAD_TOP - 0.05, -6.4));   /* selatan */
+  scene.add(place(box(0.7, 0.1, 0.7, C.chair), -7.6, PAD_TOP - 0.05, -9));   /* barat */
+  scene.add(place(box(0.7, 0.1, 0.7, C.chair), -2.4, PAD_TOP - 0.05, -9));   /* timur */
 }
 
 function buildLounge() {
@@ -1702,20 +1975,19 @@ function buildLounge() {
 }
 
 function buildPantry() {
-  /* Meja pantry + kursi (pusat (-1.5,7) dari ROOMS). */
+  /* Meja pantry + pad (pusat (-1.5,7) dari ROOMS). */
   const table = box(2.4, 0.12, 1.4, C.deskTop);
-  table.position.set(-1.5, 0.75, 7);
+  table.position.set(-1.5, DESK_TOP_Y - 0.06, 7);
   scene.add(table);
   for (const [lx, lz] of [[-2.5, 6.5], [-0.5, 6.5], [-2.5, 7.5], [-0.5, 7.5]]) {
-    scene.add(place(box(0.1, 0.75, 0.1, C.desk), lx, 0.375, lz));
+    scene.add(place(box(0.1, DESK_TOP_Y - 0.12, 0.1, C.desk), lx, (DESK_TOP_Y - 0.12) / 2, lz));
   }
-  /* Kursi di sudut meja (0.42 dari baris slot — tidak memotong
-     jalur lateral slot; dulu kursi dihitung dari slot dan
-     menempel baris jalan). */
-  scene.add(place(box(0.65, 0.1, 0.65, C.chair), -3, 0.45, 7.75));
-  scene.add(place(box(0.65, 0.1, 0.65, C.chair), 0, 0.45, 7.75));
-  scene.add(place(box(0.65, 0.1, 0.65, C.chair), -1.5, 0.45, 4.75));
-  scene.add(place(box(0.65, 0.1, 0.65, C.chair), -1.5, 0.45, 9.25));
+  /* Pad lesehan di KEEMPAT slot pantry (Item 3) — dipusatkan di slot
+     (dulu kursi 0.75 meleset dari slot). */
+  scene.add(place(box(0.65, 0.1, 0.65, C.chair), -3, PAD_TOP - 0.05, 7));
+  scene.add(place(box(0.65, 0.1, 0.65, C.chair), 0, PAD_TOP - 0.05, 7));
+  scene.add(place(box(0.65, 0.1, 0.65, C.chair), -1.5, PAD_TOP - 0.05, 5.5));
+  scene.add(place(box(0.65, 0.1, 0.65, C.chair), -1.5, PAD_TOP - 0.05, 8.5));
   /* Meja kopi (counter) + mesin kopi + rak camilan. Rak pindah
      ke z=11 (dulu z=1.5): rak lama menghalangi lane x=1.3. */
   scene.add(place(box(0.8, 1.0, 6, C.desk), -4.6, 0.5, 7));
@@ -1789,18 +2061,21 @@ function buildStudioKonten() {
 }
 
 function buildWarRoom() {
-  /* Meja operasi tengah + papan besar di dinding timur + kursi
-     utara/selatan saja. Kursi barat/timur SENGAJA tidak ada:
+  /* Meja operasi tengah + papan besar di dinding timur + pad
+     utara/selatan saja. Pad barat/timur SENGAJA tidak ada:
      koridor lane di kedua sisi meja (x=9.6 / x=14.3) harus
      tetap lega (LAYOUT.md §5). */
   const table = box(3.2, 0.14, 2.0, C.deskTop);
-  table.position.set(12, 0.8, 7);
+  table.position.set(12, DESK_TOP_Y - 0.07, 7);
   scene.add(table);
   for (const [lx, lz] of [[10.7, 6.3], [13.3, 6.3], [10.7, 7.7], [13.3, 7.7]]) {
-    scene.add(place(box(0.14, 0.8, 0.14, C.desk), lx, 0.4, lz));
+    scene.add(place(box(0.14, DESK_TOP_Y - 0.12, 0.14, C.desk), lx, (DESK_TOP_Y - 0.12) / 2, lz));
   }
-  scene.add(place(box(0.7, 0.1, 0.7, C.chair), 12, 0.45, 3.85));
-  scene.add(place(box(0.7, 0.1, 0.7, C.chair), 12, 0.45, 10.15));
+  /* Pad lesehan di dua slot utara/selatan (Item 3) — dipusatkan di slot
+     (dulu kursi 0.75 meleset). Slot barat/timur tetap tanpa alas:
+     koridor lane di kedua sisi meja (x=9.6 / x=14.3) harus tetap lega. */
+  scene.add(place(box(0.7, 0.1, 0.7, C.chair), 12, PAD_TOP - 0.05, 4.6));
+  scene.add(place(box(0.7, 0.1, 0.7, C.chair), 12, PAD_TOP - 0.05, 9.4));
   /* Papan besar menempel sekat timur (x=15) + bidang putih. */
   scene.add(place(box(0.1, 2.2, 4.5, C.panel), 14.82, 1.6, 7));
   const board = new THREE.Mesh(
@@ -1881,36 +2156,188 @@ function normalizeAvatar(obj) {
   return obj;
 }
 
+/* LIGHTING FIX 2026-11-21 (item 4 punch list — muka/pundak menghitam).
+   ROOT CAUSE (terukur harness, bukan tebakan): GLB TRELLIS hanya menyimpan
+   baseColorTexture — TANPA metallicFactor/roughnessFactor — sehingga
+   GLTFLoader memakai default glTF: metalness=1, roughness=1. Material
+   metal MURNI tidak punya diffuse: ambient/hemisphere/key TIDAK BISA
+   meneranginya (terukur: ambient-only, hemi-only, dan ambient+hemi =
+   luminance 0 di muka & pundak; lantai Standard yang sama = 154-227).
+   Tanpa scene.environment (AAA_ENV=false) tidak ada yang bisa dipantulkan
+   avatar → hitam. Hipotesis Rangga BENAR secara efek ("ga ada global
+   light yang kena pundak") — mekanismenya di material, bukan di lampu:
+   menaikkan ambient/hemi (V5/V10) dan exposure (V8) terukur NOL efek.
+   FIX (V18 = usulan riset independen + emissive): metalness=0 (diffuse
+   kembali; cahaya global yang SUDAH ADA — ambient 1.6 + hemi 2.0 +
+   key 3.4 — langsung bekerja: muka Rangga 15→152, pundak 0→144) +
+   roughness 0.75 (vinyl lembut; terukur ≈ metal0 saja — diffuse tidak
+   dipengaruhi roughness) + envMapIntensity 0.35 (samakan dengan material
+   ruangan aaaStd; no-op tanpa scene.environment, jaga-jaga bila AAA_ENV
+   suatu saat dinyalakan) + emissive kecil = warna rata-rata tekstur
+   × 0.15 untuk mengangkat area albedo gelap (hoodie hitam Rangga)
+   tanpa bikin flat (V18 vs V17: pundak +10–20, muka tetap kontras).
+   Tanpa lampu baru, tanpa update per-frame — render-on-demand tetap
+   hemat. Palet/warna tidak disentuh.
+   (V14 env-map-only DITOLAK: muka cuma 15→20; V4 emissive saja DITOLAK:
+   flat, muka ≈ pundak; V2/V3 fill light DITOLAK: pundak tetap ~0
+   selama metalness=1.) */
+const AVATAR_EMISSIVE_LIFT = 0.15;
+function avatarTextureAverage(tex) {
+  try {
+    const img = tex && tex.image;
+    if (!img || !img.width || !img.height) return null;
+    const c = document.createElement('canvas');
+    c.width = 32; c.height = 32;
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return null;
+    ctx.drawImage(img, 0, 0, 32, 32);
+    const d = ctx.getImageData(0, 0, 32, 32).data;
+    let r = 0, g = 0, b = 0, n = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] < 128) continue;
+      r += d[i]; g += d[i + 1]; b += d[i + 2]; n++;
+    }
+    if (!n) return null;
+    return new THREE.Color(r / n / 255, g / n / 255, b / n / 255);
+  } catch (e) { return null; }
+}
+function fixAvatarMaterials(obj) {
+  const seen = new Set();
+  obj.traverse((o) => {
+    if (!o.isMesh || !o.material || !o.material.isMeshStandardMaterial) return;
+    const m = o.material;
+    if (seen.has(m.uuid)) return;
+    seen.add(m.uuid);
+    m.metalness = 0; /* TRELLIS default 1 = cermin hitam tanpa env map */
+    m.roughness = 0.75; /* vinyl lembut (usulan riset independen) */
+    m.envMapIntensity = 0.35; /* samakan dgn material ruangan */
+    const avg = avatarTextureAverage(m.map) || m.color.clone();
+    m.emissive.copy(avg).multiplyScalar(AVATAR_EMISSIVE_LIFT);
+  });
+}
+
 /* Pose idle: lengan turun dari T-pose (joint-map.json).
-   TERVERIFIKASI visual di harness pose-test 2026-11-20 (oto.glb):
-   bahu Z L -75 / R +75 menurunkan lengan; delta quaternion di
-   frame lokal bone, BUKAN set rotasi absolut (bind rotation sendi
-   non-identity). shoulder_L = bone_6 di semua avatar KECUALI Seto
-   (bone_7); shoulder_R beda per avatar (lihat tabel). */
-const IDLE_SHOULDER_L = { seto: 7 };
-/* SHOWCASE (Meto, Oto msg_0367 + msg_0373): joint map 11 avatar
-   (file_20261121_0216) — shoulder_L bone_6 (default, tanpa entri di
-   IDLE_SHOULDER_L), shoulder_R bone_10. Cross-check: peta joint
-   cocok dengan tabel BASE untuk 10 agen lama (10/10), jadi baca
-   Meto dari peta yang sama tervalidasi. */
-const IDLE_SHOULDER_R = { rangga: 10, geto: 10, zeto: 13, neto: 13, leto: 13, ceto: 13, beto: 16, oto: 16, seto: 11, deto: 16, meto: 10 };
+   SHOULDER FIX 2026-11-21 (Item A punch list) — ROOT CAUSE TERUKUR:
+   kode lama memutar bahu +-75 deg pada sumbu Z LOKAL bone. Sumbu Z
+   lokal itu BUKAN sumbu frontal: bind quaternion TRELLIS tiap GLB
+   non-identity, jadi sumbu Z lokal menunjuk miring ke depan/atas/
+   luar (contoh rangga: Z lokal = [-0.45, 0.39, 0.81] di dunia).
+   Akibatnya 75 deg itu bocor ke bidang sagital (+-5..20 deg, Geto
+   -19.5 / Zeto +19.8) dan kurang di bidang frontal — lengan atas
+   idle terukur 9.4..25.1 deg dari vertikal (tangan 0.11..0.24 di
+   luar bahu), bukan ~15 deg yang diharapkan; Seto paling parah
+   (55.5 deg frontal, -65.9 sagital — sumbu Z lokalnya hampir
+   sejajar lengan, jadi rotasi lama hampir tidak menurunkan lengan).
+   Lengan bawah ikut miring 17..41 deg. Hasilnya postur huruf A.
+   FIX: delta quaternion per-avatar per-sendi, DIUKUR di harness
+   (solve.html): sumbu+ sudut di frame lokal bone yang memetakan
+   arah lengan bind ke target — lengan atas 5 deg ke luar dari
+   vertikal, lengan bawah 8 deg ke luar, sagital 0. Terverifikasi
+   harness: semua 11 avatar tepat 5.00/8.00/0.00 deg (L/R).
+   Delta diterapkan dgn pola lama yang sama (base.multiply(delta),
+   frame lokal bone) + guard Set supaya satu bone tidak kena dua
+   kali bila GLB punya >1 SkinnedMesh dgn skeleton yang sama.
+   Tanpa entri di tabel (avatar baru tanpa ukur): fallback ke
+   perilaku lama Z +-75 di bahu saja. Nomor bone TIDAK ditulis di
+   tabel ini — diambil dari JOINT_ROLES (satu sumber).
+   SHOWCASE: tabel 11 avatar termasuk Meto (joint-map-11-avatars.json).
+*/
+const IDLE_ARM_DELTAS = {
+  rangga: {
+    shoulderL: { axis: [-0.5745, 0.0703, -0.8155], deg: 66.15 },
+    shoulderR: { axis: [-0.5745, -0.0703, 0.8155], deg: 66.15 },
+    forearmL: { axis: [-0.9763, -0.0252, 0.2149], deg: 13.94 },
+    forearmR: { axis: [-0.9762, 0.0252, -0.2154], deg: 14.00 },
+  },
+  oto: {
+    shoulderL: { axis: [-0.6306, 0.0000, -0.7761], deg: 78.52 },
+    shoulderR: { axis: [-0.6306, 0.0000, 0.7761], deg: 78.52 },
+    forearmL: { axis: [-0.9939, 0.0000, 0.1104], deg: 3.48 },
+    forearmR: { axis: [-0.9939, 0.0000, -0.1104], deg: 3.48 },
+  },
+  beto: {
+    shoulderL: { axis: [-0.7511, 0.0172, -0.6600], deg: 77.88 },
+    shoulderR: { axis: [-0.7513, -0.0168, 0.6598], deg: 78.02 },
+    forearmL: { axis: [-0.9748, -0.0317, -0.2207], deg: 4.28 },
+    forearmR: { axis: [-0.9736, 0.0301, 0.2264], deg: 4.13 },
+  },
+  zeto: {
+    shoulderL: { axis: [-0.8124, 0.0580, -0.5803], deg: 73.96 },
+    shoulderR: { axis: [-0.8240, 0.1007, 0.5575], deg: 73.98 },
+    forearmL: { axis: [-0.9487, -0.1897, 0.2530], deg: 10.90 },
+    forearmR: { axis: [-0.8772, -0.1136, -0.4664], deg: 11.21 },
+  },
+  neto: {
+    shoulderL: { axis: [-0.7499, 0.0235, -0.6611], deg: 81.12 },
+    shoulderR: { axis: [-0.7499, -0.0235, 0.6611], deg: 81.12 },
+    forearmL: { axis: [-0.9440, 0.0245, 0.3290], deg: 3.30 },
+    forearmR: { axis: [-0.9440, -0.0245, -0.3290], deg: 3.30 },
+  },
+  geto: {
+    shoulderL: { axis: [-0.4650, -0.1147, -0.8778], deg: 78.37 },
+    shoulderR: { axis: [-0.4650, 0.1147, 0.8778], deg: 78.37 },
+    forearmL: { axis: [0.0207, -0.0855, 0.9961], deg: 11.21 },
+    forearmR: { axis: [0.0207, 0.0855, -0.9961], deg: 11.21 },
+  },
+  leto: {
+    shoulderL: { axis: [-0.6402, 0.0000, -0.7682], deg: 75.79 },
+    shoulderR: { axis: [-0.6402, 0.0000, 0.7682], deg: 75.79 },
+    forearmL: { axis: [-0.8781, 0.0194, 0.4781], deg: 4.67 },
+    forearmR: { axis: [-0.8781, -0.0194, -0.4781], deg: 4.67 },
+  },
+  ceto: {
+    shoulderL: { axis: [-0.6017, 0.0190, -0.7985], deg: 71.34 },
+    shoulderR: { axis: [-0.6017, -0.0190, 0.7985], deg: 71.34 },
+    forearmL: { axis: [-0.9109, -0.0349, 0.4111], deg: 9.12 },
+    forearmR: { axis: [-0.9109, 0.0349, -0.4111], deg: 9.12 },
+  },
+  deto: {
+    shoulderL: { axis: [-0.6444, -0.0010, -0.7646], deg: 75.12 },
+    shoulderR: { axis: [-0.6456, 0.0023, 0.7637], deg: 74.87 },
+    forearmL: { axis: [-0.2238, -0.0147, 0.9745], deg: 11.83 },
+    forearmR: { axis: [-0.2443, 0.0134, -0.9696], deg: 11.82 },
+  },
+  seto: {
+    shoulderL: { axis: [-0.6319, -0.6782, -0.3753], deg: 75.17 },
+    shoulderR: { axis: [-0.6319, 0.6782, 0.3753], deg: 75.17 },
+    forearmL: { axis: [-0.0035, -0.1671, 0.9859], deg: 44.53 },
+    forearmR: { axis: [-0.0035, 0.1671, -0.9859], deg: 44.53 },
+  },
+  meto: {
+    shoulderL: { axis: [-0.7180, -0.0187, -0.6958], deg: 72.91 },
+    shoulderR: { axis: [-0.7182, 0.0191, 0.6955], deg: 72.62 },
+    forearmL: { axis: [-0.5971, -0.0346, 0.8014], deg: 8.92 },
+    forearmR: { axis: [-0.6260, 0.0289, -0.7793], deg: 9.13 },
+  },
+};
 function applyIdlePose(obj, name) {
-  const shoulderR = IDLE_SHOULDER_R[name];
-  if (shoulderR === undefined) return;
-  const shoulderL = IDLE_SHOULDER_L[name] === undefined ? 6 : IDLE_SHOULDER_L[name];
+  const roles = JOINT_ROLES[name];
+  if (!roles) return;
+  const deltas = IDLE_ARM_DELTAS[name];
+  const applied = new Set(); /* bone yang sudah diputar (anti double-apply antar mesh) */
   obj.traverse((o) => {
     if (!o.isSkinnedMesh || !o.skeleton) return;
     const bones = {};
     o.skeleton.bones.forEach((b) => { bones[b.name] = b; });
-    const qL = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), THREE.MathUtils.degToRad(-75));
-    const qR = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), THREE.MathUtils.degToRad(75));
-    const bL = bones['bone_' + shoulderL];
-    if (bL) bL.quaternion.multiply(qL);
-    const bR = bones['bone_' + shoulderR];
-    if (bR) bR.quaternion.multiply(qR);
+    const apply = (boneIdx, axis, deg) => {
+      const b = bones['bone_' + boneIdx];
+      if (!b || applied.has(b)) return;
+      applied.add(b);
+      b.quaternion.multiply(deltaQuat(axis, deg));
+    };
+    if (deltas) {
+      apply(roles.shoulderL, deltas.shoulderL.axis, deltas.shoulderL.deg);
+      apply(roles.shoulderR, deltas.shoulderR.axis, deltas.shoulderR.deg);
+      apply(roles.forearmL, deltas.forearmL.axis, deltas.forearmL.deg);
+      apply(roles.forearmR, deltas.forearmR.axis, deltas.forearmR.deg);
+    } else {
+      /* Fallback avatar tanpa delta terukur: perilaku lama Z +-75 di bahu saja.
+         (IDLE_SHOULDER_* dihapus Item A — nomor bone dari JOINT_ROLES.) */
+      apply(roles.shoulderL, [0, 0, 1], -75);
+      apply(roles.shoulderR, [0, 0, 1], 75);
+    }
   });
 }
-
 function fallbackAvatar(name) {
   const g = new THREE.Group();
   const col = new THREE.Color(KNOWN_AGENTS[name].color);
@@ -1940,7 +2367,7 @@ function loadOneAvatar(name) {
     }, 8000);
     gltfLoader.load(
       MODULE_BASE + 'models/' + name + '.glb',
-      (gltf) => { clearTimeout(timer); const obj = normalizeAvatar(gltf.scene); applyIdlePose(obj, name); captureBoneBase(obj, name); finish(obj); },
+      (gltf) => { clearTimeout(timer); const obj = normalizeAvatar(gltf.scene); fixAvatarMaterials(obj); applyIdlePose(obj, name); captureBoneBase(obj, name); finish(obj); },
       undefined,
       () => { clearTimeout(timer); console.warn('GLB gagal dimuat, pakai stand-in:', name); finish(fallbackAvatar(name)); });
   });
@@ -2503,7 +2930,7 @@ function walkAgent(name, toSlot, toRoom, opts = {}) {
           { bone: roles.shoulderR, axis: [1, 0, 0], deg: -15 * s * swingAmp },
         ];
         if (sitW > 0.001) {
-          for (const sd of sitDeltas(roles)) deltas.push({ ...sd, deg: sd.deg * sitW });
+          for (const sd of sitDeltas(name, roles)) deltas.push({ ...sd, deg: sd.deg * sitW });
         }
         resetBones(name);
         addBoneDeltas(name, deltas);
@@ -3635,6 +4062,7 @@ async function init() {
   startWorkTimer();
   startActivityTimer();
   startClockTimer();
+  startMonitorTimer();
   markReady();
 }
 
