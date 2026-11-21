@@ -10,6 +10,12 @@ on:
 env:
   PIP_DISABLE_PIP_VERSION_CHECK: 1
   PIP_ROOT_USER_ACTION: ignore
+  # The repo uses a src-less layout (project dir IS the package dir), so the
+  # editable install does not expose the top-level `neugi_swarm_v2` package.
+  # `python -m neugi_swarm_v2.cli.cli` only resolves from the repo root;
+  # jobs that run it with working-directory ./neugi_swarm_v2 fail with
+  # ModuleNotFoundError without this.
+  PYTHONPATH: ${{ github.workspace }}
 
 jobs:
   docs-claims:
@@ -23,7 +29,9 @@ jobs:
       - name: Install minimal deps for claim validation
         run: |
           python -m pip install --upgrade pip
-          pip install pytest
+          # requests is imported transitively (generate_provider_matrix ->
+          # neugi_swarm_v2/__init__ -> assistant -> llm_provider).
+          pip install pytest requests
       - name: Regenerate provider matrix
         run: python scripts/generate_provider_matrix.py
       - name: Ensure provider matrix is committed
@@ -170,6 +178,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
+          # bandit is not part of the [dev] extra; without it the security
+          # scan step fails with `bandit: command not found` (exit 127).
+          pip install bandit
 
       - name: Lint
         run: |
