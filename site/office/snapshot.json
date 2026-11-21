@@ -1,0 +1,95 @@
+{
+  "generated_at": "2026-11-21T09:52:55.337+07:00",
+  "agents": [
+    {
+      "id": "rangga",
+      "name": "Rangga",
+      "role": "Owner",
+      "color": "#a3ff00",
+      "room": "kantor-rangga",
+      "state": "working",
+      "task": "Tugas tes pertama (kecil, konkret): cek…"
+    },
+    {
+      "id": "oto",
+      "name": "Oto",
+      "role": "CEO",
+      "color": "#a3ff00",
+      "room": "perpustakaan",
+      "state": "working",
+      "task": "— INSTRUKSI LENGKAP (baca sampai habis;…"
+    },
+    {
+      "id": "beto",
+      "name": "Beto",
+      "role": "CTO",
+      "color": "#fc7a24",
+      "room": "ruang-kerja",
+      "state": "working",
+      "task": "— TAMBAHAN showcase neugi.com: klik age…"
+    },
+    {
+      "id": "zeto",
+      "name": "Zeto",
+      "role": "CSO",
+      "color": "#ca4f40",
+      "room": "ruang-kerja",
+      "state": "working",
+      "task": "Perintah Rangga (20 Nov 19:26 WIB): mak…"
+    },
+    {
+      "id": "neto",
+      "name": "Neto",
+      "role": "CRO",
+      "color": "#0f766e",
+      "room": "perpustakaan",
+      "state": "working",
+      "task": "Verdict sesi evolusi 18:00 WIB, 20 Nov …"
+    },
+    {
+      "id": "geto",
+      "name": "Geto",
+      "role": "Backup",
+      "color": "#c4b5fd",
+      "room": "perpustakaan",
+      "state": "working",
+      "task": "— TAMBAHAN: Intel GitHub HARIAN (early …"
+    },
+    {
+      "id": "leto",
+      "name": "Leto",
+      "role": "Intern",
+      "color": "#f4a7b9",
+      "room": "ruang-kerja",
+      "state": "working",
+      "task": "— API keys untuk Deto + mentoring tekni…"
+    },
+    {
+      "id": "ceto",
+      "name": "Ceto",
+      "role": "Sales",
+      "color": "#1e3a8a",
+      "room": "perpustakaan",
+      "state": "working",
+      "task": "— Tugas riset sales (biar lane kamu jal…"
+    },
+    {
+      "id": "seto",
+      "name": "Seto",
+      "role": "Dukungan Umum",
+      "color": "#ff7f50",
+      "room": "ruang-kerja",
+      "state": "working",
+      "task": "— Tambahan untuk lane housekeeping (per…"
+    },
+    {
+      "id": "deto",
+      "name": "Deto",
+      "role": "Dukungan Umum",
+      "color": "#64748b",
+      "room": "ruang-kerja",
+      "state": "working",
+      "task": "— PENGUMUMAN: Deto jadi Wakil CEO (depu…"
+    }
+  ]
+}
