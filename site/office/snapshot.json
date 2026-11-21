@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-21T11:27:18.127113Z",
+  "generated_at": "2026-11-21T11:42:21.053045Z",
   "agents": [
     {
       "id": "rangga",
@@ -15,8 +15,8 @@
       "name": "Oto",
       "role": "CEO",
       "color": "#a3ff00",
-      "room": "ruang-rapat",
-      "state": "meeting",
+      "room": "perpustakaan",
+      "state": "working",
       "task": "\u2014 INSTRUKSI LENGKAP (baca sampai habis; "
     },
     {
@@ -60,9 +60,9 @@
       "name": "Leto",
       "role": "Intern",
       "color": "#f4a7b9",
-      "room": "ruang-kerja",
+      "room": "studio-konten",
       "state": "working",
-      "task": "\u2014 API keys untuk Deto + mentoring teknis"
+      "task": "\u2014 PERLUASAN LANE KONTEN (perintah Rangga"
     },
     {
       "id": "ceto",
