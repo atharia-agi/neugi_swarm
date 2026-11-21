@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-21T11:12:17.162911Z",
+  "generated_at": "2026-11-21T11:27:18.127113Z",
   "agents": [
     {
       "id": "rangga",
@@ -15,8 +15,8 @@
       "name": "Oto",
       "role": "CEO",
       "color": "#a3ff00",
-      "room": "perpustakaan",
-      "state": "working",
+      "room": "ruang-rapat",
+      "state": "meeting",
       "task": "\u2014 INSTRUKSI LENGKAP (baca sampai habis; "
     },
     {
@@ -96,7 +96,7 @@
       "name": "Meto",
       "role": "Support",
       "color": "#22c55e",
-      "room": "lounge",
+      "room": "pantry",
       "state": "idle",
       "task": null
     }
