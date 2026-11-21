@@ -129,6 +129,9 @@ let perspCam = null;     /* follow TPS */
 let keyLight = null;     /* AAA L1: directional hangat (key) — dipakai L3 untuk shadow */
 let azimuth = Math.PI / 4; /* kamera isometrik default (tenggara) */
 let camZoom = 1;
+let camElev = 0.62; /* elevasi overview (rad) — drag vertikal, clamp [0.25, 1.25] (Tugas 5) */
+let camPan = { x: 0, z: 0 }; /* geser target overview (2 jari / Shift+drag), clamp ±12 (Tugas 5) */
+let heroLastInteract = 0; /* ms interaksi user terakhir di hero — jeda auto-rotate 5 dtk (Tugas 5) */
 let webglOK = false;
 /* Kamera Sims 4: mode 'overview' | 'follow'. Follow = perspektif
    TPS di belakang/di atas bahu agen + mengikuti saat jalan. */
@@ -163,13 +166,12 @@ let seenCompleted = new Set();
 let workPhase = 0;
 let workTimer = null;
 let clockTimer = null;
-const avatarGroups = {};   /* name -> THREE.Group (mesh + bayangan + wajah) */
+const avatarGroups = {};   /* name -> THREE.Group (mesh + bayangan) */
 const avatarMeshes = {};   /* name -> inner mesh (buat tilt/kerja) */
 const avatarPos = {};      /* name -> {x, z} posisi kaki saat ini */
 const avatarRoom = {};     /* name -> room id saat ini */
 const walks = {};          /* name -> {token, raf} */
 let anyWalking = false;
-const faceSprites = {};    /* name -> {sprite, canvas, ctx, tex, face} */
 let starPlumbob = null;
 let plumbob = null;          /* plumbob agen aktif (§5.12) */
 let currentActiveAgent = null;
@@ -470,6 +472,44 @@ const TYPE_HEAD_DEG = -10.5;  /* kompensasi kepala (sit +10 -> total ~0) */
 const TYPE_SHOULDER_DEG = 50; /* tambahan maju bahu (fix 25 + 50 = 75 total) */
 const TYPE_FOREARM_DEG = -30; /* siku tekuk (forearm lokal X) */
 const DESK_SLIDE = 0.15;      /* geser duduk ke arah meja saat di meja */
+/* --- Tugas 1: tangan mengetik (FK probe fk-hands.json, v7) ---
+   Telapak harus menghadap bawah (palm 0.0-0.05 deg) + tangan
+   terpisah >= 0.25 (separasi 0.265-0.304). Rotasi pergelangan
+   SAJA tidak cukup (pronasi mentok residu ~30 deg karena sumbu
+   lengan bawah ~54-65 deg dari vertikal); perlu bahu ke luar
+   (TYPE_SHOULDER_OUT_DEG) + satu rotasi axis-angle per tangan
+   (TYPE_HAND_SOL, frame lokal hand bone, diselesaikan dari
+   orientasi saat ini -> telapak (0,-1,0), jari (0,0,1)).
+   Anomali: Zeto/Leto fingerFwd ~59 deg = artefak proxy (pusat
+   mesh tangan hampir di pergelangan, |f| ~0.02-0.05); palm tetap
+   0.0 deg. Geto butuh out 35 deg (lengan 0.251 + bahu setengah
+   lebar 0.02). Seto R dinormalisasi +121.8 deg (dulu 238.2; sumbu
+   dibalik + sudut jadi 238.2-360+360=+121.8 — JANGAN -121.8:
+   flip sumbu DAN kurangi 360 sekaligus itu transformasi ganda,
+   hasilnya rotasi yang salah 243.6 deg). */
+const TYPE_SHOULDER_OUT_DEG = { rangga: 15, oto: 15, beto: 10, zeto: 15, neto: 5, geto: 35, leto: 20, ceto: 20, seto: 10, deto: 15, meto: 15 };
+const TYPE_HAND_SOL = {
+  rangga: { axisL: [0.379, 0.91, -0.169], degL: 91.9, axisR: [0.397, -0.905, 0.152], degR: 91.5 },
+  oto: { axisL: [0.478, 0.865, -0.154], degL: 91.6, axisR: [0.471, -0.868, 0.161], degR: 91.8 },
+  beto: { axisL: [0.58, 0.812, -0.065], degL: 93.8, axisR: [0.597, -0.801, 0.046], degR: 93.7 },
+  zeto: { axisL: [0.746, 0.248, 0.618], degL: 112.6, axisR: [0.428, -0.903, 0.045], degR: 92.8 },
+  neto: { axisL: [0.65, 0.748, 0.134], degL: 99.1, axisR: [0.819, -0.386, -0.426], degR: 112.9 },
+  geto: { axisL: [0.408, 0.899, -0.156], degL: 84.2, axisR: [0.292, -0.915, 0.277], degR: 87.0 },
+  leto: { axisL: [0.586, 0.807, -0.068], degL: 88.4, axisR: [0.807, -0.505, -0.307], degR: 93.9 },
+  ceto: { axisL: [0.491, 0.862, -0.127], degL: 87.3, axisR: [0.661, -0.744, -0.093], degR: 86.9 },
+  seto: { axisL: [0.206, 0.964, -0.171], degL: 121.4, axisR: [0.188, -0.965, 0.181], degR: 121.8 },
+  deto: { axisL: [0.531, 0.847, -0.018], degL: 100.6, axisR: [0.543, -0.839, 0.001], degR: 100.6 },
+  meto: { axisL: [0.376, 0.912, -0.163], degL: 97.2, axisR: [0.364, -0.915, 0.174], degR: 97.3 },
+};
+const TYPE_FINGER_CURL_DEG = 20; /* tekuk jari mengetik, hanya Beto/Oto/Deto (punya finger bones) */
+/* --- Tugas 3+4: idle berdiri ---
+   Siku tekuk 16 deg (sudut siku ~167 deg, tidak lurus kaku),
+   spine condong 3 deg, bahu abduksi 15 deg (lengan keluar dari
+   torso — Meto/Ceto/Seto tadinya keluar lewat depan dada; lihat
+   RINGKASAN.md Tugas 4). Hanya saat berdiri (lihat applyPoseWeighted). */
+const IDLE_STAND_ELBOW_DEG = 16;
+const IDLE_STAND_SPINE_DEG = 3;
+const IDLE_STAND_ABD_DEG = 15;
 /* Sumbu dunia sembarang dalam frame lokal sebuah bone (konjugasi
    dengan base quaternion — seperti sitWorldAxis tapi umum). */
 function worldAxisLocal(name, boneIdx, worldAxis) {
@@ -568,6 +608,34 @@ function activityDeltas(name, activity, nowMs) {
   return [];
 }
 
+/* Delta tangan mengetik (Tugas 1): bahu ke luar (world-Z) + satu
+   rotasi axis-angle per tangan (TYPE_HAND_SOL, frame lokal hand
+   bone) + tekuk jari 20 deg (hanya yang punya finger bones).
+   axisFn = worldAxisFromCurrent (fase 2 applyPoseWeighted) atau
+   worldAxisLocal (walk, single-phase). includeOut=false bila bahu
+   ke luar sudah ada di array yang sama (fase 2a) — sumbu out HARUS
+   dihitung dari quat fase 1 (SEBELUM bahu maju), seperti probe
+   fk-hands: semua sumbu fase 2 dihitung sebelum aplikasi, jadi
+   komposisi dunia = Rx_fwd * Rz. Sumbu post-fwd (panggilan
+   terpisah) memberi komutator ~16 deg dan merusak solusi tangan. */
+function typingHandDeltas(name, roles, typeW, axisFn, includeOut = true) {
+  const sol = TYPE_HAND_SOL[name];
+  if (!sol) return [];
+  const deltas = [];
+  if (includeOut) {
+    const out = TYPE_SHOULDER_OUT_DEG[name] || 0;
+    deltas.push(
+      { bone: roles.shoulderL, axis: axisFn(name, roles.shoulderL, [0, 0, 1]), deg: out * typeW },
+      { bone: roles.shoulderR, axis: axisFn(name, roles.shoulderR, [0, 0, 1]), deg: -out * typeW });
+  }
+  deltas.push(
+    { bone: roles.handL, axis: sol.axisL, deg: sol.degL * typeW },
+    { bone: roles.handR, axis: sol.axisR, deg: sol.degR * typeW });
+  if (roles.fingerL) for (const b of roles.fingerL) deltas.push({ bone: b, axis: [1, 0, 0], deg: TYPE_FINGER_CURL_DEG * typeW });
+  if (roles.fingerR) for (const b of roles.fingerR) deltas.push({ bone: b, axis: [1, 0, 0], deg: TYPE_FINGER_CURL_DEG * typeW });
+  return deltas;
+}
+
 /* Susun pose lengkap agen dari base dengan bobot blend:
    duduk × sittingW + aktivitas × activityW. Selalu dari base —
    tidak pernah akumulasi. Dilewati bila agen sedang jalan (walk
@@ -583,6 +651,18 @@ function applyPoseWeighted(name, nowMs = performance.now()) {
   /* Fase 1 (sumbu dikonjugasi terhadap base): perbaikan lengan +
      duduk + condong/kompensasi kepala mengetik + aktivitas. */
   for (const d of armFixDeltas(name, roles)) deltas.push(d);
+  /* Idle berdiri (Tugas 3+4): HANYA saat berdiri, tidak mengetik,
+     diskalakan (1-activityW) supaya aktivitas mengambil alih.
+     Siku tekuk 16 deg (sudut siku ~167 deg), spine condong 3 deg,
+     bahu abduksi 15 deg (lengan keluar dari torso). */
+  const standW = (anim.sittingW <= 0.001 && typeW <= 0.001) ? (1 - (anim.activityW || 0)) : 0;
+  if (standW > 0.001) {
+    deltas.push({ bone: roles.shoulderL, axis: worldAxisLocal(name, roles.shoulderL, [0, 0, 1]), deg: IDLE_STAND_ABD_DEG * standW });
+    deltas.push({ bone: roles.shoulderR, axis: worldAxisLocal(name, roles.shoulderR, [0, 0, 1]), deg: -IDLE_STAND_ABD_DEG * standW });
+    deltas.push({ bone: roles.forearmL, axis: [1, 0, 0], deg: -IDLE_STAND_ELBOW_DEG * standW });
+    deltas.push({ bone: roles.forearmR, axis: [1, 0, 0], deg: -IDLE_STAND_ELBOW_DEG * standW });
+    deltas.push({ bone: roles.spine, axis: [1, 0, 0], deg: IDLE_STAND_SPINE_DEG * standW });
+  }
   if (anim.sittingW > 0.001) {
     for (const d of sitDeltas(name, roles)) deltas.push({ ...d, deg: d.deg * anim.sittingW });
   }
@@ -604,7 +684,16 @@ function applyPoseWeighted(name, nowMs = performance.now()) {
       { bone: roles.shoulderR, axis: worldAxisFromCurrent(name, roles.shoulderR, [1, 0, 0]), deg: -TYPE_SHOULDER_DEG * typeW },
       { bone: roles.forearmL, axis: [1, 0, 0], deg: TYPE_FOREARM_DEG * typeW },
       { bone: roles.forearmR, axis: [1, 0, 0], deg: TYPE_FOREARM_DEG * typeW },
+      /* Tugas 1: bahu ke luar — sumbu dihitung di array yang SAMA
+         ini (dari quat fase 1, sebelum bahu maju), seperti probe
+         fk-hands. Jangan pindah ke panggilan terpisah (lihat
+         typingHandDeltas). */
+      { bone: roles.shoulderL, axis: worldAxisFromCurrent(name, roles.shoulderL, [0, 0, 1]), deg: (TYPE_SHOULDER_OUT_DEG[name] || 0) * typeW },
+      { bone: roles.shoulderR, axis: worldAxisFromCurrent(name, roles.shoulderR, [0, 0, 1]), deg: -(TYPE_SHOULDER_OUT_DEG[name] || 0) * typeW },
     ]);
+    /* Fase 2b: rotasi tangan + tekuk jari (sumbu lokal konstan —
+       tidak tergantung urutan; out sudah di fase 2a). */
+    addBoneDeltas(name, typingHandDeltas(name, roles, typeW, worldAxisFromCurrent, false));
   }
 }
 /* Jalur cepat: samakan bobot render dengan target SEKETIKA (dipakai
@@ -829,6 +918,12 @@ function requestRender() {
 }
 function render() {
   if (cameraMode === 'follow') updateFollowCamera();
+  /* Tugas 6: perbarui matriks kamera SEBELUM memproyeksikan bubble —
+     Vector3.project memakai camera.matrixWorldInverse, yang baru
+     diperbarui di dalam renderer.render(); tanpa ini bubble memakai
+     matriks SATU FRAME sebelumnya dan membeku di proyeksi lama saat
+     drag berhenti (render-on-demand) — sumber drift saat rotate. */
+  if (camera) camera.updateMatrixWorld();
   updateBubbles();
   renderer.render(scene, camera);
 }
@@ -863,16 +958,20 @@ function computePlanBounds() {
     d: maxZ - minZ,
   };
 }
+/* Tugas 5: elevasi + pan overview bisa diubah user (dulu elevasi
+   tetap 0.62, azimuth di-clamp ±1.1 rad, tidak ada pan overview). */
 function updateCamera() {
   if (!orthoCam) return;
-  const el = 0.62; /* elevasi ~35,5 derajat (isometrik) */
+  const el = camElev;
   const d = 42;
   const b = computePlanBounds();
+  const cx = b.cx + camPan.x;
+  const cz = b.cz + camPan.z;
   orthoCam.position.set(
-    b.cx + Math.sin(azimuth) * Math.cos(el) * d,
+    cx + Math.sin(azimuth) * Math.cos(el) * d,
     Math.sin(el) * d,
-    b.cz + Math.cos(azimuth) * Math.cos(el) * d);
-  orthoCam.lookAt(b.cx, 0, b.cz);
+    cz + Math.cos(azimuth) * Math.cos(el) * d);
+  orthoCam.lookAt(cx, 0, cz);
   orthoCam.zoom = camZoom;
   orthoCam.updateProjectionMatrix();
 }
@@ -965,13 +1064,8 @@ function updateFollowCamera() {
   perspCam.position.set(cx, cy, cz);
   perspCam.lookAt(anchor);
   perspCam.updateProjectionMatrix();
-  /* Marker wajah agen yang diikuti DISEMBUNYIKAN (TPS: wajah sendiri
-     tak terlihat; sprite billboard selalu menghadap kamera dan akan
-     menutupi layar bila dibiarkan). Agen lain tetap terlihat. */
-  for (const n of ROOM_ORDER) {
-    const f = faceSprites[n];
-    if (f) f.sprite.visible = (n !== followName);
-  }
+  /* Tugas 6: pill indikator agen yang di-follow disembunyikan di
+     updateBubbles (dulu sprite wajah disembunyikan di sini). */
 }
 function enterFollow(name) {
   if (!KNOWN_AGENTS[name] || !avatarGroups[name] || !avatarGroups[name].visible) return false;
@@ -1000,11 +1094,6 @@ function exitFollow() {
   cameraMode = 'overview';
   followName = null;
   camera = orthoCam;
-  /* Kembalikan semua marker wajah. */
-  for (const n of ROOM_ORDER) {
-    const f = faceSprites[n];
-    if (f) f.sprite.visible = true;
-  }
   updateCamera();
   fitCamera();
   hideFollowCard();
@@ -2122,10 +2211,27 @@ function drawPlate(texObj, name, st) {
   texObj.tex.needsUpdate = true;
 }
 
+/* --- props ruangan (Tugas 2) -------------------------------------- */
+/* Warna tanaman BARU pakai palet brief (0x5a7d4a daun + 0x8a5a3b pot)
+   — lebih kalem dari C.plant/C.pot yang sudah ada; tanaman lama
+   tidak diubah. Semua props primitif kode, tanpa GLB/texture baru. */
+const PROP_LEAF = 0x5a7d4a;
+const PROP_POT = 0x8a5a3b;
+
 function buildWorkRoom() {
   /* 9 meja ruang kerja (3 kolom x 3 baris). */
   const slots = ROOMS['ruang-kerja'].slots;
   for (const s of slots) buildDesk(s.x, s.z + 1.1, 2.2);
+  /* Tugas 2: isi BEBERAPA meja saja (variasi) — ujung barat meja
+     (desk-lokal x=-0.75, z=+0.15), jauh dari monitor (x -0.25..0.75,
+     z +0.12) + keyboard (x ±0.31, z -0.42..-0.14). */
+  scene.add(place(box(0.5, 0.06, 0.35, 0xca4f40), -19.75, 0.39, 3.25));
+  scene.add(place(box(0.45, 0.05, 0.32, 0x0f766e), -19.75, 0.445, 3.25, 0.15));
+  scene.add(place(cyl(0.06, 0.05, 0.12, 0xfc7a24), -13.75, 0.42, 7.25));
+  scene.add(place(cyl(0.09, 0.07, 0.12, PROP_POT), -7.75, 0.42, 11.25));
+  scene.add(place(sph(0.13, PROP_LEAF), -7.75, 0.56, 11.25));
+  scene.add(place(box(0.5, 0.06, 0.35, 0x1e3a8a), -7.75, 0.39, 3.25));
+  scene.add(place(box(0.42, 0.05, 0.3, 0xf4a7b9), -7.75, 0.445, 3.25, -0.2));
 }
 
 function buildMeetingRoom() {
@@ -2157,6 +2263,20 @@ function buildMeetingRoom() {
   scene.add(place(box(0.7, 0.1, 0.7, C.chair), -1.5, PAD_TOP - 0.05, 9.6));   /* selatan */
   scene.add(place(box(0.7, 0.1, 0.7, C.chair), -4.1, PAD_TOP - 0.05, 7));   /* barat */
   scene.add(place(box(0.7, 0.1, 0.7, C.chair), 1.1, PAD_TOP - 0.05, 7));   /* timur */
+  /* Tugas 2: whiteboard di dinding barat, layar proyektor di dinding
+     selatan, gelas air di meja, tanaman pot di sudut tenggara. */
+  scene.add(place(box(0.1, 1.7, 3.2, C.panelEdge), -4.9, 1.5, 7));
+  const wb = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.5), new THREE.MeshBasicMaterial({ color: 0xf5f5f0 }));
+  scene.add(place(wb, -4.79, 1.5, 7, Math.PI / 2));
+  scene.add(place(box(3.2, 1.9, 0.1, C.panelEdge), -1.5, 1.6, 13.85));
+  const ps = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.7), new THREE.MeshBasicMaterial({ color: 0xf5f5f0 }));
+  scene.add(place(ps, -1.5, 1.6, 13.74, Math.PI));
+  for (const [gx, gz] of [[-2.5, 6.5], [-0.5, 6.5], [-2.5, 7.5], [-0.5, 7.5]]) {
+    scene.add(place(cyl(0.06, 0.05, 0.12, 0x9fc8e8), gx, 0.42, gz));
+  }
+  scene.add(place(cyl(0.3, 0.24, 0.35, PROP_POT), 1.5, 0.175, 13));
+  scene.add(place(sph(0.4, PROP_LEAF), 1.5, 0.7, 13));
+  scene.add(place(sph(0.25, PROP_LEAF), 1.7, 1.0, 12.9));
 }
 
 function buildLounge() {
@@ -2179,6 +2299,18 @@ function buildLounge() {
   scene.add(place(cyl(0.45, 0.35, 0.5, C.pot), 9.8, 0.25, -13));
   scene.add(place(sph(0.55, C.plant), 9.8, 1.0, -13));
   scene.add(place(sph(0.35, C.plantDark), 10.0, 1.45, -13.1));
+  /* Tugas 2: TV di dinding utara di atas sofa (slot lounge menghadap
+     utara) + mug di meja kopi + rak buku kecil di dinding timur. */
+  scene.add(place(box(2.2, 1.3, 0.08, 0x111111), 5.25, 1.6, -13.85));
+  const tv = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 1.1), new THREE.MeshBasicMaterial({ color: 0x1a2a3a }));
+  scene.add(place(tv, 5.25, 1.6, -13.75));
+  scene.add(place(cyl(0.06, 0.05, 0.12, 0xfc7a24), 4.7, 0.56, -10.6));
+  scene.add(place(cyl(0.06, 0.05, 0.12, 0x0f766e), 5.8, 0.56, -10.6));
+  scene.add(place(box(0.6, 1.8, 2.0, C.desk), 10.4, 0.9, -6));
+  const loungeBooks = [0xfc7a24, 0xc4b5fd, 0xca4f40];
+  loungeBooks.forEach((col, i) => {
+    scene.add(place(box(0.14, 0.42, 0.32, col), 10.4, 2.01, -6.6 + i * 0.5));
+  });
 }
 
 function buildPantry() {
@@ -2207,6 +2339,12 @@ function buildPantry() {
   snackColors.forEach((col, i) => {
     scene.add(place(box(0.5, 0.3, 0.4, col), -1.9, 0.4 + Math.floor(i / 3) * 0.8, -5.8 + (i % 3) * 0.8));
   });
+  /* Tugas 2: kulkas kecil di ujung utara counter + microwave di atas
+     counter (ujung selatan, jauh dari mesin kopi z=-10.5). */
+  scene.add(place(box(0.9, 1.7, 0.8, 0xf5f5f0), -8.3, 0.85, -13.2));
+  scene.add(place(box(0.06, 0.5, 0.06, 0x555555), -7.82, 1.0, -13.0));
+  scene.add(place(box(0.6, 0.35, 0.4, 0x2a2a2e), -8.1, 1.175, -7.5));
+  scene.add(place(box(0.02, 0.25, 0.3, 0x111111), -7.78, 1.18, -7.5));
 }
 
 function buildGarden() {
@@ -2229,6 +2367,21 @@ function buildGarden() {
   const bulb = sph(0.22, C.lamp, { emissive: 0xffd97a, emissiveIntensity: 0.6 });
   bulb.position.set(5.5, 2.3, 1.5);
   scene.add(bulb);
+  /* Tugas 2: klaster bunga di tengah barat/timur (jauh dari slot +
+     lane x=4.5) + air mancur kecil di tengah (5.5,7). */
+  const flowerColors = [0xf4a7b9, 0xfc7a24, 0xc4b5fd];
+  for (const [fx, fz] of [[3, 7], [8, 7]]) {
+    flowerColors.forEach((col, i) => {
+      const ox = [0, 0.22, -0.2][i];
+      const oz = [0, 0.18, 0.2][i];
+      scene.add(place(cyl(0.02, 0.02, 0.35, PROP_LEAF), fx + ox, 0.175, fz + oz));
+      scene.add(place(sph(0.09, col), fx + ox, 0.4, fz + oz));
+    });
+  }
+  scene.add(place(cyl(0.7, 0.75, 0.25, C.panelEdge), 5.5, 0.125, 7));
+  scene.add(place(cyl(0.55, 0.55, 0.06, 0x5b9bd5), 5.5, 0.24, 7));
+  scene.add(place(cyl(0.1, 0.12, 0.5, C.panel), 5.5, 0.45, 7));
+  scene.add(place(sph(0.14, 0x5b9bd5), 5.5, 0.75, 7));
 }
 
 function buildRanggaOffice() {
@@ -2244,6 +2397,24 @@ function buildRanggaOffice() {
   starPlumbob.scale.set(1, 1.5, 1);
   starPlumbob.position.set(s0.x, 2.6, s0.z);
   scene.add(starPlumbob);
+  /* Tugas 2: rak buku di dinding barat (buku di atas rak) + lampu
+     meja di ujung barat meja Rangga (desk-lokal x=-1.35, jauh dari
+     keyboard/monitor) + tanaman sudut timur-laut + piagam di
+     dinding utara. */
+  scene.add(place(box(0.6, 1.8, 2.5, C.desk), -20.6, 0.9, -6));
+  const shelfBooks = [0xca4f40, 0x0f766e, 0x1e3a8a];
+  shelfBooks.forEach((col, i) => {
+    scene.add(place(box(0.14, 0.42, 0.32, col), -20.6, 2.01, -6.9 + i * 0.5));
+  });
+  scene.add(place(cyl(0.09, 0.11, 0.05, 0x555555), -19.35, 0.385, -10.0));
+  scene.add(place(cyl(0.025, 0.025, 0.35, 0x555555), -19.35, 0.55, -10.0));
+  scene.add(place(cyl(0.07, 0.15, 0.14, C.lamp, { emissive: 0xffd97a, emissiveIntensity: 0.5 }), -19.35, 0.75, -10.0));
+  scene.add(place(cyl(0.3, 0.24, 0.35, PROP_POT), -13.8, 0.175, -13.2));
+  scene.add(place(sph(0.4, PROP_LEAF), -13.8, 0.7, -13.2));
+  scene.add(place(sph(0.25, PROP_LEAF), -13.6, 1.0, -13.3));
+  scene.add(place(box(1.0, 0.8, 0.06, C.panelEdge), -16, 1.6, -13.9));
+  const frame = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 0.65), new THREE.MeshBasicMaterial({ color: 0xf5f5f0 }));
+  scene.add(place(frame, -16, 1.6, -13.81));
 }
 
 /* --- ruangan baru 0.4.9 (Worker F) ------------------------------ */
@@ -2265,6 +2436,34 @@ function buildStudioKonten() {
   scene.add(place(cyl(0.45, 0.35, 0.5, C.pot), 11.5, 0.25, -13.5));
   scene.add(place(sph(0.55, C.plant), 11.5, 1.0, -13.5));
   scene.add(place(sph(0.35, C.plantDark), 11.7, 1.45, -13.6));
+  /* Tugas 2: 2 kamera tripod menghadap slot panggung (15.75,-6.5)
+     + mikrofon boom di meja editing + backdrop hijau di utara
+     panggung. Tripod di z=-5.5, jauh dari lane x=20 + jalur
+     barat ke slot (z=-6.5). */
+  const tripod = (tx, tz) => {
+    scene.add(place(cyl(0.04, 0.05, 1.5, 0x555555), tx, 0.75, tz));
+    for (const a of [0, 2.1, 4.2]) {
+      scene.add(place(box(0.5, 0.05, 0.08, 0x555555), tx, 0.03, tz, a));
+    }
+    scene.add(place(box(0.35, 0.25, 0.3, 0x111111), tx, 1.55, tz));
+    const lens = cyl(0.09, 0.09, 0.18, 0x222222);
+    lens.rotation.x = Math.PI / 2;
+    scene.add(place(lens, tx, 1.55, tz - 0.22));
+  };
+  tripod(14.5, -5.5);
+  tripod(17, -5.5);
+  /* Mikrofon boom di ujung timur meja editing (13.5,-9.9) — tiang
+     di meja, lengan ke barat, mic menggantung di atas meja
+     (jauh dari monitor z=-9.78 + keyboard x 13.19..13.81). */
+  scene.add(place(cyl(0.03, 0.03, 0.9, 0x555555), 14.45, 0.81, -10.2));
+  scene.add(place(box(0.5, 0.04, 0.04, 0x555555), 14.2, 1.24, -10.2));
+  scene.add(place(cyl(0.06, 0.08, 0.18, 0x222222), 13.95, 1.12, -10.2));
+  scene.add(place(sph(0.07, 0x555555), 13.95, 1.0, -10.2));
+  /* Backdrop hijau di utara panggung (menghadap selatan). */
+  scene.add(place(box(0.06, 2.2, 0.06, 0x555555), 14.3, 1.1, -8.4));
+  scene.add(place(box(0.06, 2.2, 0.06, 0x555555), 17.2, 1.1, -8.4));
+  const backdrop = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 2.2), new THREE.MeshBasicMaterial({ color: C.plant }));
+  scene.add(place(backdrop, 15.75, 1.15, -8.4));
 }
 
 function buildWarRoom() {
@@ -2314,6 +2513,14 @@ function buildPerpustakaan() {
   scene.add(place(cyl(0.45, 0.35, 0.5, C.pot), 20, 0.25, 13));
   scene.add(place(sph(0.55, C.plant), 20, 1.0, 13));
   scene.add(place(sph(0.35, C.plantDark), 20.2, 1.45, 12.9));
+  /* Tugas 2: meja baca di antara dua slot baca (19,9) + (16.8,10)
+     + pad lesehan di kedua slot itu (kursi baca). */
+  scene.add(place(box(1.2, 0.08, 0.8, C.deskTop), 17.9, 0.5, 9.6));
+  for (const [lx, lz] of [[17.4, 9.3], [18.4, 9.3], [17.4, 9.9], [18.4, 9.9]]) {
+    scene.add(place(box(0.08, 0.5, 0.08, C.desk), lx, 0.25, lz));
+  }
+  scene.add(place(box(0.65, 0.1, 0.65, C.chair), 19, PAD_TOP - 0.05, 9));
+  scene.add(place(box(0.65, 0.1, 0.65, C.chair), 16.8, PAD_TOP - 0.05, 10));
 }
 
 /* --- avatar GLB -------------------------------------------------- */
@@ -2599,93 +2806,56 @@ async function loadAvatars() {
     avatarGroups[name].add(turn);
     /* Props aktivitas ditempel ke bone tangan (bila ada skeleton). */
     attachActivityProps(name);
-    /* Wajah pixel (§5.7): GLB wajahnya sudah di-bake, jadi varian
-       wajah ditampilkan sebagai marker pixel kecil di atas kepala
-       (bukan ganti mesh) — fokus/senyum/netral, sesuai keadaan. */
-    const face = makeFaceSprite(name);
-    face.sprite.position.y = 2.05;
-    avatarGroups[name].add(face.sprite);
-    faceSprites[name] = face;
+    /* Tugas 6: wajah pixel 3D (drawFace) DIHAPUS — mood pindah ke
+       pill indikator HTML (satu indikator per agen, lihat
+       moodFaceSvg + updateBubbles). */
   });
 }
 
-/* Marker wajah 16x16 piksel (canvas -> sprite, selalu menghadap
-   kamera). Fokus = mata kotak + mulut datar; senyum = mata + busur;
-   netral = mata + garis. Bukan emoji, bukan emosi ditebak. */
-function makeFaceSprite(name) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 32; canvas.height = 32;
-  const ctx = canvas.getContext('2d');
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
-  sprite.scale.set(0.55, 0.55, 1);
-  const face = { sprite, canvas, ctx, tex, face: null };
-  drawFace(face, 'netral');
-  return face;
-}
-function drawFace(face, variant) {
-  if (face.face === variant) return;
-  face.face = variant;
-  const g = face.ctx;
-  g.clearRect(0, 0, 32, 32);
-  g.fillStyle = '#0f1115';
-  g.beginPath(); g.arc(16, 16, 15, 0, Math.PI * 2); g.fill();
-  g.fillStyle = '#e6e6e6';
-  g.fillRect(9, 11, 4, 4); g.fillRect(19, 11, 4, 4); /* mata */
-  g.strokeStyle = '#e6e6e6'; g.lineWidth = 2;
-  g.beginPath();
-  if (variant === 'senyum') { g.arc(16, 17, 6, 0.15 * Math.PI, 0.85 * Math.PI); }
-  else if (variant === 'fokus') { g.moveTo(11, 22); g.lineTo(21, 22); g.moveTo(11, 25); g.lineTo(21, 25); }
-  else { g.moveTo(12, 23); g.lineTo(20, 23); }
-  g.stroke();
-  face.tex.needsUpdate = true;
-}
-
-/* --- bubble (overlay HTML) --------------------------------------- */
-/* Bubble diproyeksikan dari posisi 3D ke layar (§5.3): status
-   persisten + ucapan 15 detik, maks 1+1 per agen, lebar maks
-   180px. Di bawah 700px hanya glyph (teks lengkap pindah ke kartu
-   agen). Bubble TIDAK BOLEH menutupi avatar lain/papan tugas —
-   pass layout sederhana: bila dua bubble bertumpuk, yang kedua
-   digeser ke atas. */
-const bubbleEls = {}; /* name -> {status, speech} */
+/* --- indikator gabungan (overlay HTML, Tugas 6 revisi) ----------- */
+/* SATU pill per agen di atas kepala: wajah mood (replika drawFace)
+   + glyph aktivitas + teks status/ucapan. Prioritas: speech (15 dtk)
+   > status (kerja) > mood-only. Pill SELALU terpasang (mood-only
+   tidak pernah hilang — seperti disc 3D lama yang selalu ada);
+   perubahan konten di-cache (signature) + fade opacity 0.25 dtk,
+   jadi tidak lompat/kedip/muncul-hilang kasar. Anchor tunggal
+   y = 2.05 + posisi grup (ikut saat duduk); proyeksi memakai
+   matriks kamera yang baru (render() memanggil
+   camera.updateMatrixWorld() dulu — perbaikan drift). Maks 3 pill
+   ber-TEKS (speech/status, §5.12); pill mood-only tampil untuk
+   semua 11 agen. Di bawah 700px hanya glyph (teks lengkap pindah
+   ke kartu agen). Pass anti-tumpuk: bila dua pill bertumpuk, yang
+   kedua digeser ke atas. */
+const bubbleEls = {}; /* name -> {el, sig} */
 function glyphSvg(glyph) {
   return '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">'
     + (GLYPH_DEFS[glyph] || '') + '</svg>';
 }
+/* Wajah pixel 14px (replika drawFace 32x32: disc #0f1115 + mata +
+   mulut; fokus = mata kotak + dua garis, senyum = busur, netral =
+   garis). Bukan emoji, bukan emosi ditebak. */
+function moodFaceSvg(variant) {
+  let mouth;
+  if (variant === 'senyum') mouth = '<path d="M 21.3 19.7 A 6 6 0 0 1 10.7 19.7" stroke="#e6e6e6" stroke-width="2" fill="none"/>';
+  else if (variant === 'fokus') mouth = '<path d="M 11 22 H 21 M 11 25 H 21" stroke="#e6e6e6" stroke-width="2"/>';
+  else mouth = '<path d="M 12 23 H 20" stroke="#e6e6e6" stroke-width="2"/>';
+  return '<svg viewBox="0 0 32 32" width="14" height="14" aria-hidden="true">'
+    + '<circle cx="16" cy="16" r="15" fill="#0f1115"/>'
+    + '<rect x="9" y="11" width="4" height="4" fill="#e6e6e6"/>'
+    + '<rect x="19" y="11" width="4" height="4" fill="#e6e6e6"/>'
+    + mouth + '</svg>';
+}
 function ensureBubbles() {
   for (const name of ROOM_ORDER) {
     if (bubbleEls[name]) continue;
-    const status = document.createElement('div');
-    status.className = 'bubble status';
-    status.dataset.agent = name;
-    status.style.display = 'none';
-    const speech = document.createElement('div');
-    speech.className = 'bubble speech';
-    speech.dataset.agent = name;
-    speech.style.display = 'none';
-    bubbleLayer.append(status, speech);
-    bubbleEls[name] = { status, speech };
-  }
-}
-function setBubbleContent(el, glyph, text, timeLabel) {
-  el.textContent = '';
-  if (glyph) {
-    const g = document.createElement('span');
-    g.className = 'glyph';
-    g.innerHTML = glyphSvg(glyph);
-    el.appendChild(g);
-  }
-  const t = document.createElement('span');
-  t.className = 'txt';
-  t.textContent = text;
-  el.appendChild(t);
-  if (timeLabel) {
-    const tm = document.createElement('span');
-    tm.className = 'time';
-    tm.textContent = timeLabel;
-    el.appendChild(tm);
+    const el = document.createElement('div');
+    el.className = 'bubble indicator mood';
+    el.dataset.agent = name;
+    el.style.display = 'none';
+    el.style.transition = 'opacity .25s ease';
+    el.innerHTML = '<span class="face"></span><span class="glyph" style="display:none"></span><span class="txt"></span><span class="time" style="display:none"></span>';
+    bubbleLayer.appendChild(el);
+    bubbleEls[name] = { el, sig: '' };
   }
 }
 
@@ -2698,16 +2868,16 @@ function projectToScreen(x, y, z) {
 
 function updateBubbles() {
   if (!state || !camera || !bubbleLayer) return;
-  /* Batas tampil (§5.12 / 11/10): maks 3 bubble di canvas —
-     speech dulu (terbaru), lalu status (terbaru). Sisanya display
-     none (teks lengkap tetap ada di kartu agen). */
+  /* Batas tampil (§5.12 / 11/10): maks 3 pill ber-TEKS di canvas —
+     speech dulu (terbaru), lalu status (terbaru). Pill mood-only
+     tidak dihitung (tampil untuk semua agen). */
   const candidates = [];
   for (const st of state.agents) {
     if (st.statusText) {
       candidates.push({ kind: 'status', name: st.name, ts: st.lastActiveMs || 0 });
     }
     const els0 = bubbleEls[st.name];
-    if (els0 && els0.speech.dataset.show === '1' && st.speech) {
+    if (els0 && els0.el.dataset.show === '1' && st.speech) {
       candidates.push({ kind: 'speech', name: st.name, ts: (st.lastMessage && st.lastMessage.createdAtMs) || 0 });
     }
   }
@@ -2715,45 +2885,68 @@ function updateBubbles() {
   lastBubblesShown = shown.size;
   const placed = [];
   for (const st of state.agents) {
-    const els = bubbleEls[st.name];
-    if (!els) continue;
+    const entry = bubbleEls[st.name];
+    if (!entry) continue;
+    const el = entry.el;
     const pos = avatarPos[st.name];
     const g = avatarGroups[st.name];
-    if (!pos || !g.visible) {
-      els.status.style.display = 'none';
-      els.speech.style.display = 'none';
+    /* Pill agen yang di-follow disembunyikan (dulu sprite wajah
+       disembunyikan di updateFollowCamera). */
+    if (!pos || !g.visible || (cameraMode === 'follow' && followName === st.name)) {
+      el.style.display = 'none';
       continue;
     }
-    /* Status persisten (hanya bila ada tugas aktif + terpilih). */
-    if (st.statusText && shown.has('status:' + st.name)) {
-      setBubbleContent(els.status, st.glyph, st.statusText, null);
-      els.status.classList.toggle('stale', !!st.stale);
-      els.status.classList.toggle('boss', st.name === 'rangga' && state.bossActive);
-      els.status.style.display = 'flex';
-      const p = projectToScreen(pos.x, 2.35, pos.z);
-      els.status.dataset.px = p.x.toFixed(1);
-      els.status.dataset.py = p.y.toFixed(1);
-      els.status.style.left = p.x + 'px';
-      els.status.style.top = p.y + 'px';
-      els.status.style.visibility = p.behind ? 'hidden' : 'visible';
-      placed.push(els.status);
-    } else {
-      els.status.style.display = 'none';
+    /* Mode: speech > status > mood-only. */
+    let mode = 'mood';
+    if (el.dataset.show === '1' && st.speech && shown.has('speech:' + st.name)) mode = 'speech';
+    else if (st.statusText && shown.has('status:' + st.name)) mode = 'status';
+    const face = st.face || 'netral';
+    const glyph = mode === 'status' ? st.glyph : null;
+    const text = mode === 'speech' ? st.speech.text : mode === 'status' ? st.statusText : '';
+    const time = mode === 'speech' ? st.speech.hhmm : null;
+    const stale = mode === 'status' && !!st.stale;
+    const boss = mode === 'status' && st.name === 'rangga' && state.bossActive;
+    const sig = mode + '|' + face + '|' + (glyph || '') + '|' + text + '|' + (time || '') + '|' + (stale ? 1 : 0) + '|' + (boss ? 1 : 0);
+    /* Opacity akhir = 0.55 bila stale (cermin .bubble.status.stale
+       di host CSS — opacity inline menimpa class, jadi nilainya
+       ditulis eksplisit di sini). */
+    const targetOpacity = stale ? 0.55 : 1;
+    if (sig !== entry.sig) {
+      /* Transisi halus: fade out -> ganti konten -> fade in ke
+         opacity akhir. Fade hanya saat konten berubah, bukan tiap
+         frame (render-on-demand: updateBubbles jalan tiap render). */
+      const first = entry.sig === '';
+      const apply = () => {
+        el.querySelector('.face').innerHTML = moodFaceSvg(face);
+        const gEl = el.querySelector('.glyph');
+        if (glyph) { gEl.innerHTML = glyphSvg(glyph); gEl.style.display = ''; } else { gEl.style.display = 'none'; }
+        const tEl = el.querySelector('.txt');
+        tEl.textContent = text;
+        tEl.style.display = text ? '' : 'none';
+        const tmEl = el.querySelector('.time');
+        if (time) { tmEl.textContent = time; tmEl.style.display = ''; } else { tmEl.style.display = 'none'; }
+        el.classList.toggle('status', mode === 'status');
+        el.classList.toggle('speech', mode === 'speech');
+        el.classList.toggle('mood', mode === 'mood');
+        el.classList.toggle('stale', stale);
+        el.classList.toggle('boss', boss);
+        el.style.opacity = targetOpacity;
+      };
+      entry.sig = sig;
+      if (first) apply();
+      else { el.style.opacity = 0; requestAnimationFrame(apply); }
     }
-    /* Ucapan event (ditampilkan 15 detik oleh applyState + terpilih). */
-    if (els.speech.dataset.show === '1' && st.speech && shown.has('speech:' + st.name)) {
-      setBubbleContent(els.speech, null, st.speech.text, st.speech.hhmm);
-      els.speech.style.display = 'flex';
-      const p = projectToScreen(pos.x, 3.05, pos.z);
-      els.speech.dataset.px = p.x.toFixed(1);
-      els.speech.dataset.py = p.y.toFixed(1);
-      els.speech.style.left = p.x + 'px';
-      els.speech.style.top = p.y + 'px';
-      els.speech.style.visibility = p.behind ? 'hidden' : 'visible';
-      placed.push(els.speech);
-    } else {
-      els.speech.style.display = 'none';
-    }
+    el.style.display = 'flex';
+    /* Anchor tunggal 2.05 + posisi grup (ikut saat duduk) — sama
+       seperti posisi sprite lama; 0.45 di atas puncak kepala (1.6),
+       jadi tidak menutupi wajah. */
+    const p = projectToScreen(pos.x, 2.05 + (g.position.y || 0), pos.z);
+    el.dataset.px = p.x.toFixed(1);
+    el.dataset.py = p.y.toFixed(1);
+    el.style.left = p.x + 'px';
+    el.style.top = p.y + 'px';
+    el.style.visibility = p.behind ? 'hidden' : 'visible';
+    placed.push(el);
   }
   /* Anti-tumpuk + clamp (satu pass): tiap bubble ditempatkan berurutan.
      Bila bertumpuk dengan yang sudah ditempatkan, geser ke ATAS 42px;
@@ -3174,6 +3367,9 @@ function walkAgent(name, toSlot, toRoom, opts = {}) {
           deltas.push({ bone: roles.shoulderR, axis: worldAxisLocal(name, roles.shoulderR, [1, 0, 0]), deg: -TYPE_SHOULDER_DEG * typeW });
           deltas.push({ bone: roles.forearmL, axis: [1, 0, 0], deg: TYPE_FOREARM_DEG * typeW });
           deltas.push({ bone: roles.forearmR, axis: [1, 0, 0], deg: TYPE_FOREARM_DEG * typeW });
+          /* Tugas 1 (transien, single-phase — pose akhir persis
+             disetel applyPoseWeighted saat jalan selesai). */
+          for (const d of typingHandDeltas(name, roles, typeW, worldAxisLocal)) deltas.push(d);
         }
         resetBones(name);
         addBoneDeltas(name, deltas);
@@ -3419,10 +3615,8 @@ function applyState(ns, opts = {}) {
   dynamicPanels.tv.redraw(ns.tv, ns.isExample);
   dynamicPanels.clock.redraw();
   refreshDesks();
-  /* Wajah + avatar. */
+  /* Avatar (wajah mood kini di pill indikator — lihat updateBubbles). */
   for (const st of ns.agents) {
-    const face = faceSprites[st.name];
-    if (face) drawFace(face, st.face);
     const g = avatarGroups[st.name];
     g.visible = true;
     /* Pose per agen (duduk + aktivitas) — dicatat dulu, dipakai
@@ -3446,8 +3640,8 @@ function applyState(ns, opts = {}) {
       seenSpeech.add(st.speech.id);
       if (seenSpeech.size > 200) seenSpeech.clear();
       if (els) {
-        els.speech.dataset.show = '1';
-        setTimeout(() => { els.speech.dataset.show = '0'; requestRender(); }, 15000);
+        els.el.dataset.show = '1';
+        setTimeout(() => { els.el.dataset.show = '0'; requestRender(); }, 15000);
       }
     }
     /* Selebrasi saat tugas baru selesai. */
@@ -3493,7 +3687,11 @@ function applyEmpty() {
   for (const name of ROOM_ORDER) {
     avatarGroups[name].visible = false;
     const els = bubbleEls[name];
-    if (els) { els.status.style.display = 'none'; els.speech.style.display = 'none'; }
+    if (els) {
+      els.el.style.display = 'none';
+      els.el.style.opacity = '';
+      els.sig = ''; /* konten di-render ulang segar saat state kembali */
+    }
   }
   dynamicPanels.taskBoard.redraw([], false);
   dynamicPanels.whiteboard.redraw('blackboard-umum', 0, false);
@@ -3722,7 +3920,11 @@ function syncPresence(ns) {
     const g = avatarGroups[name];
     if (g) g.visible = false;
     const els = bubbleEls[name];
-    if (els) { els.status.style.display = 'none'; els.speech.style.display = 'none'; }
+    if (els) {
+      els.el.style.display = 'none';
+      els.el.style.opacity = '';
+      els.sig = '';
+    }
   }
 }
 function startPolling() {
@@ -3739,6 +3941,9 @@ function startHeroRotate() {
   if (heroTimer || REDUCED || !heroRotateEnabled) return;
   heroTimer = setInterval(() => {
     if (displayMode !== 'hero' || document.hidden) return;
+    /* Tugas 5: jeda 5 dtk sesudah interaksi user — auto-rotate
+       tidak boleh melawan drag di hero. */
+    if (Date.now() - heroLastInteract < 5000) return;
     azimuth += 0.015;
     updateCamera();
     requestRender();
@@ -3819,6 +4024,7 @@ function bindInput() {
   let dragMoved = 0;
   let lastPinch = 0;
   let panLast = null;
+  let panMode = false; /* Shift+drag satu jari = pan overview (Tugas 5) */
   const pinchDist = () => {
     const [a, b] = [...pointers.values()];
     return Math.hypot(a.x - b.x, a.y - b.y);
@@ -3832,11 +4038,14 @@ function bindInput() {
      aman (butuh { passive: false } supaya preventDefault jalan). */
   canvas.addEventListener('touchstart', (e) => { e.preventDefault(); }, { passive: false });
   canvas.addEventListener('pointerdown', (e) => {
+    /* Tugas 5: interaksi apa pun di hero menjeda auto-rotate 5 dtk. */
+    heroLastInteract = Date.now();
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     try { canvas.setPointerCapture(e.pointerId); } catch (_) { /* abaikan */ }
     if (pointers.size === 1) {
       dragLast = { x: e.clientX, y: e.clientY };
       dragMoved = 0;
+      panMode = !!e.shiftKey;
     } else if (pointers.size === 2) {
       lastPinch = pinchDist();
       const [a, b] = [...pointers.values()];
@@ -3853,9 +4062,26 @@ function bindInput() {
       if (cameraMode === 'follow') {
         followYaw -= dx * 0.005;
         followPitch = Math.min(1.25, Math.max(0.08, followPitch + dy * 0.003));
+      } else if (panMode) {
+        /* Tugas 5: Shift+drag = pan overview. Konten ikut jari
+           (ala Sims): kanan layar = (cos az, 0, -sin az), bawah
+           layar = (sin az, 0, cos az); skala = unit dunia per px
+           dari frustum ortho (1:1 dengan jari). */
+        const rect = canvas.getBoundingClientRect();
+        const k = (orthoCam.top - orthoCam.bottom) / Math.max(rect.height, 1);
+        const rx = Math.cos(azimuth);
+        const rz = -Math.sin(azimuth);
+        const fx = Math.sin(azimuth);
+        const fz = Math.cos(azimuth);
+        camPan.x = Math.min(12, Math.max(-12, camPan.x + dx * k * rx + dy * k * fx));
+        camPan.z = Math.min(12, Math.max(-12, camPan.z + dx * k * rz + dy * k * fz));
+        updateCamera();
       } else {
+        /* Tugas 5: orbit 360 deg bebas (clamp lama ±1.1 rad dihapus)
+           + tilt: drag vertikal mengubah elevasi, konvensi sama
+           seperti followPitch (drag bawah = kamera naik). */
         azimuth -= dx * 0.005;
-        azimuth = Math.max(Math.PI / 4 - 1.1, Math.min(Math.PI / 4 + 1.1, azimuth));
+        camElev = Math.min(1.25, Math.max(0.25, camElev + dy * 0.003));
         updateCamera();
       }
       dragLast = { x: e.clientX, y: e.clientY };
@@ -3889,10 +4115,28 @@ function bindInput() {
         }
         panLast = mid;
       } else {
+        /* Tugas 5: pinch = zoom (lama) + gerak 2 jari bersamaan =
+           pan overview (baru, matematika sama seperti Shift+drag). */
         if (lastPinch > 0 && d > 0) {
           camZoom = Math.max(0.6, Math.min(2.2, camZoom * (d / lastPinch)));
-          updateCamera();
         }
+        const [a, b] = [...pointers.values()];
+        const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+        if (panLast) {
+          const mdx = mid.x - panLast.x;
+          const mdy = mid.y - panLast.y;
+          dragMoved += Math.abs(mdx) + Math.abs(mdy);
+          const rect = canvas.getBoundingClientRect();
+          const k = (orthoCam.top - orthoCam.bottom) / Math.max(rect.height, 1);
+          const rx = Math.cos(azimuth);
+          const rz = -Math.sin(azimuth);
+          const fx = Math.sin(azimuth);
+          const fz = Math.cos(azimuth);
+          camPan.x = Math.min(12, Math.max(-12, camPan.x + mdx * k * rx + mdy * k * fx));
+          camPan.z = Math.min(12, Math.max(-12, camPan.z + mdx * k * rz + mdy * k * fz));
+        }
+        panLast = mid;
+        updateCamera();
       }
       lastPinch = d;
       requestRender();
@@ -3917,6 +4161,7 @@ function bindInput() {
   canvas.addEventListener('pointercancel', (e) => { pointers.delete(e.pointerId); dragLast = null; panLast = null; });
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
+    heroLastInteract = Date.now(); /* Tugas 5: jeda auto-rotate hero */
     if (cameraMode === 'follow') {
       followDist = Math.min(6, Math.max(2.2, followDist * Math.exp(e.deltaY * 0.001)));
     } else {
