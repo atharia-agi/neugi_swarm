@@ -200,12 +200,31 @@ const JOINT_ROLES = {
   geto: { shoulderL: 6, shoulderR: 10, thighL: 14, thighR: 19, shinL: 15, shinR: 20, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 12, handL: 9, handR: 13, fingerL: null, fingerR: null },
   seto: { shoulderL: 7, shoulderR: 11, thighL: 19, thighR: 24, shinL: 20, shinR: 25, spine: 2, neck: 4, head: 6, forearmL: 9, forearmR: 13, handL: 10, handR: 14, fingerL: null, fingerR: null },
   deto: { shoulderL: 6, shoulderR: 16, thighL: 26, thighR: 30, shinL: 27, shinR: 31, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 18, handL: 9, handR: 19, fingerL: [10, 11, 12, 13, 14, 15], fingerR: [20, 21, 22, 23, 24, 25] },
+  /* FEET FIX 2026-11-21 — Meto (joint-map-11-avatars.json, file_0216):
+     22 joint, pola sama seperti Rangga/Geto (thigh 14/18, shin 15/19).
+     Tanpa entri ini Meto tidak dapat pose duduk (captureBoneBase lewati),
+     jadi kakinya tidak pernah terukur saat duduk. */
+  meto: { shoulderL: 6, shoulderR: 10, thighL: 14, thighR: 18, shinL: 15, shinR: 19, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 12, handL: 9, handR: 13, fingerL: null, fingerR: null },
 };
-/* DUDUK: tinggi turun saat duduk (awal 0.5 — TUNING VISUAL).
-   Tanda rotasi X di SIT_* TERVERIFIKASI visual di harness 0.4.8.3:
-   thigh +90 = paha ke depan (kaki tidak mencuat ke belakang kursi),
-   sudut thigh berdiri→duduk 90.0° tepat. JANGAN dibalik. */
-const SIT_DROP = 0.5;
+/* DUDUK: tinggi turun saat duduk.
+   FEET FIX 2026-11-21 — SIT_DROP=0.5 (tebakan "TUNING VISUAL") SALAH:
+   kaki duduk semua avatar melayang 0.03–0.29 di ATAS lantai (grup turun
+   0.5 padahal kaki terlipat cuma naik segitu), jadi avatar duduk
+   tenggelam 0.2–0.47 ke dalam kursi. Nilai di bawah DIUKUR per avatar
+   di harness (pose duduk penuh thigh +90/shin −90, grup di y=0, kaki
+   = minY bbox skinned hasil render): drop = minY itu supaya kaki
+   tepat y=0. Cocok dengan ukur independen fix backroom (rangga 0.255,
+   oto 0.077, beto 0.104). Kursi (dudukan y=0.50) tetap pas: kepala
+   duduk ~1.5–1.6, di atas meja 0.81. */
+const SIT_DROPS = {
+  rangga: 0.255, oto: 0.077, beto: 0.104, zeto: 0.055, neto: 0.047,
+  geto: 0.289, leto: 0.187, ceto: 0.125, deto: 0.034, seto: 0.121, meto: 0.173,
+};
+const SIT_DROP_DEFAULT = 0.12; /* avatar baru tanpa ukur: tengah-tengah */
+function sitDropFor(name) {
+  const v = SIT_DROPS[name];
+  return typeof v === 'number' ? v : SIT_DROP_DEFAULT;
+}
 const SIT_THIGH_DEG = 90;   /* paha ke depan (terverifikasi) */
 const SIT_SHIN_DEG = -90;   /* betis ke belakang, relatif thd paha */
 const SIT_SPINE_DEG = 10;   /* badan condong ke depan */
@@ -225,7 +244,7 @@ function smoothstep(t) {
 const boneRefs = {};        /* name -> Map(boneIndex -> bone) */
 const boneBase = {};        /* name -> Map(boneIndex -> quaternion clone sesudah applyIdlePose) */
 const avatarSkeletons = {}; /* name -> THREE.Skeleton (atau undefined) */
-const avatarBaseY = {};     /* name -> 0 | -SIT_DROP */
+const avatarBaseY = {};     /* name -> 0 | -sitDropFor(name) */
 const avatarSlotRot = {};  /* name -> rot slot penempatan (arah hadap
   "duduk/berdiri di slot", BUKAN tatapan bos — dipakai kamera follow;
   tatapan bos (§5.4.5) memutar badan ke meja Rangga, tapi kursi/meja
@@ -541,7 +560,7 @@ function ensurePoseBlend() {
       if (changed) {
         /* Tinggi grup mengikuti bobot duduk (tidak pop vertikal). */
         const g = avatarGroups[name];
-        if (g) g.position.y = -SIT_DROP * anim.sittingW;
+        if (g) g.position.y = -sitDropFor(name) * anim.sittingW;
         applyPoseWeighted(name, t);
         anyChanged = true;
       }
@@ -1829,8 +1848,29 @@ dracoLoader.setDecoderPath(MODULE_BASE + 'vendor/draco/');
 dracoLoader.setWorkerLimit(2);
 gltfLoader.setDRACOLoader(dracoLoader);
 
+/* FEET FIX 2026-11-21 — kaki avatar nempel lantai (y=0).
+   ROOT CAUSE: Box3.setFromObject(obj) di sini mengukur bbox SKINNED
+   lewat object.matrixWorld — untuk GLB TRELLIS, matrixWorld mesh masih
+   membawa skala armature (Geto: 0.53x) sehingga bbox terkompresi
+   (0.45–0.70, bukan ~1.0) dan skala jadi 2.3–3.6x (kaki −0.6, avatar
+   raksasa). Terukur harness: PROD s=2.29–3.57 semua 10 avatar.
+   FIX: ukur bbox mesh-LOCAL langsung dari SkinnedMesh.computeBoundingBox
+   (tanpa mengalikan matrixWorld), sesudah updateWorldMatrix(true, true)
+   + invalidate cache boundingBox. Terukur: s=1.600 untuk 11/11 avatar
+   (Geto 3.018→1.600), kaki berdiri di y=0.000. */
 function normalizeAvatar(obj) {
-  const box3 = new THREE.Box3().setFromObject(obj);
+  obj.updateWorldMatrix(true, true);
+  const box3 = new THREE.Box3();
+  let found = false;
+  obj.traverse((o) => {
+    if (o.isSkinnedMesh) {
+      o.boundingBox = null; /* paksa hitung ulang dari bone matrixWorld saat ini */
+      o.computeBoundingBox();
+      box3.union(o.boundingBox);
+      found = true;
+    }
+  });
+  if (!found) box3.setFromObject(obj); /* fallback: tanpa skinned mesh */
   const size = new THREE.Vector3();
   box3.getSize(size);
   const center = new THREE.Vector3();
@@ -2307,7 +2347,7 @@ function renderCards() {
    pindah instan. */
 function setAvatarPos(name, slot, room, sitting = false, opts = {}) {
   const g = avatarGroups[name];
-  const baseY = sitting ? -SIT_DROP : 0;
+  const baseY = sitting ? -sitDropFor(name) : 0;
   avatarBaseY[name] = baseY;
   /* Simpan arah hadap slot (untuk kamera follow saat diam). */
   avatarSlotRot[name] = (slot && typeof slot.rot === 'number') ? slot.rot : 0;
@@ -2437,7 +2477,7 @@ function walkAgent(name, toSlot, toRoom, opts = {}) {
       const fadeOut = 1 - smoothstep((p - 0.85) / 0.15);
       const swingAmp = fadeIn * fadeOut;
       const sitW = sitWStart * (1 - fadeIn) + (targetSit ? 1 : 0) * smoothstep((p - 0.85) / 0.15);
-      g.position.set(x, walkBobY(name, pe) - SIT_DROP * sitW, z);
+      g.position.set(x, walkBobY(name, pe) - sitDropFor(name) * sitW, z);
       if (inner) {
         inner.rotation.y = moving
           ? Math.atan2(seg.b.x - seg.a.x, seg.b.z - seg.a.z)
@@ -2489,7 +2529,7 @@ function walkAgent(name, toSlot, toRoom, opts = {}) {
            tidak menganimasikan ulang; lalu setAvatarPos (blend
            hanya bila aktivitas ikut berubah). */
         if (poseAnim[name]) poseAnim[name].sittingW = targetSit ? 1 : 0;
-        avatarBaseY[name] = targetSit ? -SIT_DROP : 0;
+        avatarBaseY[name] = targetSit ? -sitDropFor(name) : 0;
         setAvatarPos(name, toSlot, toRoom, targetSit);
         requestRender();
         resolve(true);
