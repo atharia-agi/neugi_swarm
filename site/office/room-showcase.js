@@ -432,6 +432,93 @@ function sitDeltas(name, roles) {
   ];
 }
 
+/* --- Perbaikan tangan buntung + pose mengetik (2026-11-21, FK terukur)
+   AKAR MASALAH (fk-out.json; validasi skinning err 0 — angka tepercaya):
+   sendi tangan idle/duduk BERADA DI DALAM kotak torso pada 8/11 avatar
+   (clearance -0.03..-0.46; mis. Rangga -0.087, Oto -0.094, Deto -0.457):
+   bahu menempel sumbu tubuh (shoulderHalfW 0.02..0.13) sementara torso
+   chibi lebar (halfW 0.13..0.58) + lengan pendek (0.25..0.56) — tangan
+   menggantung DI DALAM badan, bukan di sisinya. Itu "buntung"-nya.
+   SWEEP SUDUT (fk-sweep-out.json): bahu maju 25° (world-X) membuat
+   permukaan luar tangan keluar dari kotak torso pada 11/11 avatar
+   (margin terburuk +0.035, Zeto). f25_a0 dipilih — sudut terkecil yang
+   lolos semua; f35 memberi margin lebih tapi lengan terlalu maju.
+   POSE MENGETIK (fk-sweep2-out.json, two-phase): bahu maju total 75°
+   + siku tekuk -30° + condong spine total 25° + geser duduk 0.15 ke
+   meja — hanya Seto yang tangannya mendarat DI ATAS keyboard (lengan
+   0.496 terpanjang); 9 avatar lain tangannya maju jelas di atas meja,
+   jari mencapai tepi dekat keyboard (jarak sendi ke pusat keyboard
+   0.27..0.47); Geto (lengan 0.251 — setengah normal) tidak bisa
+   mencapai keyboard dengan kode room (butuh re-rig, lihat laporan).
+   Lutut TIDAK menembus meja pada slide 0.15 (terukur 0 di semua avatar).
+   ANTI-TEMBUS: pendekatan yang dipilih = CONSTRAINT POSE (a) — sudut
+   lengan dihitung supaya tangan selalu di luar volume torso (terukur
+   di FK, bukan ditebak). Guard runtime (b) tidak dipakai: clamp
+   per-frame pada skinned mesh butuh skinning ulang tiap frame dan
+   melawan render-on-demand; collider (c) juga tidak — pose constraint
+   yang terverifikasi angka sudah mencapai hasil yang sama dengan biaya
+   nol saat diam. Tangan vs meja/keyboard dijaga oleh pose yang sama
+   (tangan di atas permukaan keyboard, y > 0.39). */
+const ARM_FIX_FWD_DEG = 25;   /* bahu maju (world-X), semua pose */
+/* Tambahan sudut untuk avatar bertorso lebar / tangan kecil (supaya
+   tangan belakang saat jalan tetap keluar torso — fk-out3: Neto
+   -0.047 dan Zeto -0.012 pada ayun mundur 5° dengan fix 25°;
+   dengan fix 30° keduanya lolos, margin ≥ +0.035). */
+const ARM_FIX_FWD_EXTRA = { neto: 5, zeto: 5 };
+const TYPE_SPINE_DEG = 15;    /* tambahan condong (sit +10 -> total 25) */
+const TYPE_HEAD_DEG = -10.5;  /* kompensasi kepala (sit +10 -> total ~0) */
+const TYPE_SHOULDER_DEG = 50; /* tambahan maju bahu (fix 25 + 50 = 75 total) */
+const TYPE_FOREARM_DEG = -30; /* siku tekuk (forearm lokal X) */
+const DESK_SLIDE = 0.15;      /* geser duduk ke arah meja saat di meja */
+/* Sumbu dunia sembarang dalam frame lokal sebuah bone (konjugasi
+   dengan base quaternion — seperti sitWorldAxis tapi umum). */
+function worldAxisLocal(name, boneIdx, worldAxis) {
+  const bases = boneBase[name];
+  if (!bases) return [1, 0, 0];
+  const base = bases.get(boneIdx);
+  if (!base) return [1, 0, 0];
+  const v = new THREE.Vector3(worldAxis[0], worldAxis[1], worldAxis[2])
+    .applyQuaternion(base.clone().invert());
+  return [v.x, v.y, v.z];
+}
+/* Sumbu dunia dalam frame lokal bone dari quaternion SAAT INI
+   (dipakai fase 2 pose mengetik: sumbu bahu dihitung SESUDAH condong
+   spine, supaya "maju 75°" benar-benar maju di dunia — sesuai
+   fk-sweep2 two-phase). */
+function worldAxisFromCurrent(name, boneIdx, worldAxis) {
+  const refs = boneRefs[name];
+  if (!refs) return [1, 0, 0];
+  const bone = refs.get(boneIdx);
+  if (!bone) return [1, 0, 0];
+  const v = new THREE.Vector3(worldAxis[0], worldAxis[1], worldAxis[2])
+    .applyQuaternion(bone.quaternion.clone().invert());
+  return [v.x, v.y, v.z];
+}
+/* Apakah agen duduk di meja (bukan pad)? — dari ruangan + slot logis. */
+function agentAtDesk(name) {
+  const room = avatarRoom[name];
+  const pos = avatarPos[name];
+  if (!room || !pos) return false;
+  return isDeskSlotFn(room, pos);
+}
+/* Delta perbaikan lengan (selalu aktif, semua pose): bahu maju 25°
+   tentang sumbu-X dunia (30° untuk Neto/Zeto — lihat atas). */
+function armFixDeltas(name, roles) {
+  const fwd = ARM_FIX_FWD_DEG + (ARM_FIX_FWD_EXTRA[name] || 0);
+  return [
+    { bone: roles.shoulderL, axis: worldAxisLocal(name, roles.shoulderL, [1, 0, 0]), deg: -fwd },
+    { bone: roles.shoulderR, axis: worldAxisLocal(name, roles.shoulderR, [1, 0, 0]), deg: -fwd },
+  ];
+}
+/* Bobot pose mengetik: duduk di meja dan TIDAK sedang beraktivitas
+   (kopi/HP) — aktivitas mengambil alih lengan. */
+function typingWeight(name) {
+  const anim = poseAnim[name];
+  if (!anim || anim.sittingW <= 0.001) return 0;
+  if (!agentAtDesk(name)) return 0;
+  return anim.sittingW * (1 - (anim.activityW || 0));
+}
+
 /* Delta aktivitas pada saat nowMs (performance.now()). Kopi =
    siklus ~8 dtk: angkat 1.5 dtk, tahan 1 dtk (+ head tilt
    belakang sedikit), turun 1 dtk, istirahat ~4.5 dtk — angkat/turun
@@ -491,9 +578,17 @@ function applyPoseWeighted(name, nowMs = performance.now()) {
   if (!roles) return;
   resetBones(name);
   const anim = poseAnim[name] || { sittingW: 0, activityW: 0, activity: null };
+  const typeW = typingWeight(name);
   const deltas = [];
+  /* Fase 1 (sumbu dikonjugasi terhadap base): perbaikan lengan +
+     duduk + condong/kompensasi kepala mengetik + aktivitas. */
+  for (const d of armFixDeltas(name, roles)) deltas.push(d);
   if (anim.sittingW > 0.001) {
     for (const d of sitDeltas(name, roles)) deltas.push({ ...d, deg: d.deg * anim.sittingW });
+  }
+  if (typeW > 0.001) {
+    deltas.push({ bone: roles.spine, axis: [1, 0, 0], deg: TYPE_SPINE_DEG * typeW });
+    deltas.push({ bone: roles.head, axis: [1, 0, 0], deg: TYPE_HEAD_DEG * typeW });
   }
   if (anim.activityW > 0.001 && anim.activity) {
     for (const d of activityDeltas(name, anim.activity, nowMs)) {
@@ -501,6 +596,16 @@ function applyPoseWeighted(name, nowMs = performance.now()) {
     }
   }
   if (deltas.length) addBoneDeltas(name, deltas);
+  /* Fase 2 (sumbu bahu dari quat saat ini, sesudah condong):
+     bahu maju tambahan + siku tekuk mengetik. */
+  if (typeW > 0.001) {
+    addBoneDeltas(name, [
+      { bone: roles.shoulderL, axis: worldAxisFromCurrent(name, roles.shoulderL, [1, 0, 0]), deg: -TYPE_SHOULDER_DEG * typeW },
+      { bone: roles.shoulderR, axis: worldAxisFromCurrent(name, roles.shoulderR, [1, 0, 0]), deg: -TYPE_SHOULDER_DEG * typeW },
+      { bone: roles.forearmL, axis: [1, 0, 0], deg: TYPE_FOREARM_DEG * typeW },
+      { bone: roles.forearmR, axis: [1, 0, 0], deg: TYPE_FOREARM_DEG * typeW },
+    ]);
+  }
 }
 /* Jalur cepat: samakan bobot render dengan target SEKETIKA (dipakai
    penempatan awal/initial + akhir jalan yang sudah di-blend). */
@@ -610,9 +715,21 @@ function ensurePoseBlend() {
         changed = true;
       }
       if (changed) {
-        /* Tinggi grup mengikuti bobot duduk (tidak pop vertikal). */
+        /* Tinggi grup mengikuti bobot duduk (tidak pop vertikal);
+           geser duduk ke meja mengikuti bobot yang sama (halus). */
         const g = avatarGroups[name];
-        if (g) g.position.y = -sitDropFor(name) * anim.sittingW;
+        if (g) {
+          g.position.y = -sitDropFor(name) * anim.sittingW;
+          const pos = avatarPos[name];
+          if (pos && agentAtDesk(name)) {
+            const rot = avatarSlotRot[name] || 0;
+            g.position.x = pos.x + Math.sin(rot) * DESK_SLIDE * anim.sittingW;
+            g.position.z = pos.z + Math.cos(rot) * DESK_SLIDE * anim.sittingW;
+          } else if (pos) {
+            g.position.x = pos.x;
+            g.position.z = pos.z;
+          }
+        }
         applyPoseWeighted(name, t);
         anyChanged = true;
       }
@@ -840,6 +957,11 @@ function updateFollowCamera() {
   const cz = Math.min(FLOOR.z1 - 0.6, Math.max(FLOOR.z0 + 0.6,
     anchor.z + Math.cos(yaw) * horiz));
   const cy = Math.max(0.5, anchor.y + dist * Math.sin(pitch));
+  /* FOV portrait lebih lebar (Fase 2, port dari Beto msg_0394): di layar
+     portrait (aspect < 1) kamera follow memakai FOV 80 — avatar tidak lagi
+     memenuhi frame. Desktop tetap 55. */
+  const fovPortrait = (perspCam.aspect || 1.6) < 1 ? 80 : 55;
+  if (perspCam.fov !== fovPortrait) perspCam.fov = fovPortrait;
   perspCam.position.set(cx, cy, cz);
   perspCam.lookAt(anchor);
   perspCam.updateProjectionMatrix();
@@ -859,6 +981,12 @@ function enterFollow(name) {
   followYaw = 0;
   followPitch = 0.32;
   followDist = 4.0;
+  /* Follow portrait (Fase 2, port dari Beto msg_0394): kamera lebih jauh +
+     lebih mendatar bila aspect < 1. Desktop tetap 0.32 / 4.0. */
+  if ((perspCam.aspect || 1.6) < 1) {
+    followPitch = 0.25;
+    followDist = 6.0;
+  }
   followPan = { x: 0, z: 0 };
   cameraMode = 'follow';
   camera = perspCam;
@@ -1339,11 +1467,11 @@ function buildScene() {
   scene.add(place(box(0.3, 2.2, 28.6, C.wallDark), -21.15, 1.1, 0));   /* barat */
   scene.add(place(box(0.3, 2.2, 28.6, C.wall), 21.15, 1.1, 0));       /* timur */
   scene.add(place(box(42.6, 0.9, 0.3, C.wall), 0, 0.45, 14.15));      /* selatan (rendah) */
-  scene.add(place(box(0.25, 1.0, 10, C.divider), -10.5, 0.5, -9));     /* kantor | rapat */
-  scene.add(place(box(0.25, 1.0, 10, C.divider), 0, 0.5, -9));         /* rapat | lounge */
+  scene.add(place(box(0.25, 1.0, 10, C.divider), -10.5, 0.5, -9));     /* kantor | pantry */
+  scene.add(place(box(0.25, 1.0, 10, C.divider), 0, 0.5, -9));         /* pantry | lounge */
   scene.add(place(box(0.25, 1.0, 10, C.divider), 10.5, 0.5, -9));      /* lounge | studio */
-  scene.add(place(box(0.25, 1.0, 14, C.divider), -5, 0.5, 7));         /* kerja | pantry */
-  scene.add(place(box(0.25, 1.0, 14, C.divider), 2, 0.5, 7));          /* pantry | taman */
+  scene.add(place(box(0.25, 1.0, 14, C.divider), -5, 0.5, 7));         /* kerja | rapat */
+  scene.add(place(box(0.25, 1.0, 14, C.divider), 2, 0.5, 7));          /* rapat | taman */
   scene.add(place(box(0.25, 1.0, 14, C.divider), 9, 0.5, 7));          /* taman | war-room */
   scene.add(place(box(0.25, 1.0, 14, C.divider), 15, 0.5, 7));         /* war-room | perpustakaan */
 
@@ -1635,24 +1763,58 @@ function buildDesk(x, z, w) {
   const pad = box(0.7, 0.1, 0.7, C.chair);
   pad.position.set(0, PAD_TOP - 0.05, -1.1);
   g.add(pad);
-  /* Monitor: layar menghadap kamera (selatan) supaya judul tugas
-     kebaca dari tampilan isometrik; dudukan kecil di belakang. */
+  /* Monitor: layar menghadap AVATAR yang duduk (utara), bukan kamera.
+     ROTASI 2026-11-21 (Rangga: "Rotate semua monitornya bro"):
+     bodi + layar + dudukan dibungkus SATU subgrup monitor dan diputar
+     180° (rotation.y = Math.PI) supaya kode (tekstur, nesting di
+     layar) ikut berputar bersama sebagai satu unit. Subgrup diposisikan
+     di x=0.25 (sumbu putar = sumbu vertikal monitor sendiri) supaya
+     monitor tetap di sisi yang sama (tidak pindah ke x=-0.25 dan
+     menabrak tumpukan buku di x=-0.72); hanya z yang berbalik
+     (-0.12 -> +0.12) dan layar menghadap utara. Miring layar
+     (rotation.x=-0.22, condong ke belakang) tetap benar sesudah
+     diputar: atas layar condong ke selatan = menjauhi avatar yang
+     melihat dari utara. Konsekuensi yang Rangga terima: kode tidak
+     lagi kebaca dari kamera default selatan — kebaca dari utara
+     (orbit / follow di belakang avatar). */
+  const monGroup = new THREE.Group();
+  monGroup.position.set(0.25, 0, 0);
+  monGroup.rotation.y = Math.PI;
   const monTex = textTexture(256, 128, () => {});
   const mon = box(1.0, 0.62, 0.06, 0x111111);
-  mon.position.set(0.25, DESK_TOP_Y + 0.31, -0.12);
+  mon.position.set(0, DESK_TOP_Y + 0.31, -0.12);
   mon.rotation.x = -0.22;
-  g.add(mon);
+  monGroup.add(mon);
   const monScreen = panelPlane(0.92, 0.54, monTex);
   /* Layar NEMPEL di bodi (celah ~0.004, dulu 0.011): dari depan
      layar duduk rapi di bodi, dari samping/belakang tidak tampak
      seperti kartu mengambang; tetap di depan muka bodi supaya
      tidak z-fighting. Posisi y disamakan dengan pusat bodi. */
-  monScreen.position.set(0.25, DESK_TOP_Y + 0.31, -0.086);
+  monScreen.position.set(0, DESK_TOP_Y + 0.31, -0.086);
   monScreen.rotation.x = -0.22;
-  g.add(monScreen);
+  monGroup.add(monScreen);
   const monStand = box(0.08, 0.32, 0.08, 0x111111);
-  monStand.position.set(0.25, DESK_TOP_Y + 0.05, -0.12);
-  g.add(monStand);
+  monStand.position.set(0, DESK_TOP_Y + 0.05, -0.12);
+  monGroup.add(monStand);
+  g.add(monGroup);
+  /* KEYBOARD 2026-11-21 (Rangga: "Tambahin keyboard di mejanya"):
+     di atas meja, di depan monitor (yang sudah menghadap utara),
+     di antara slot duduk avatar (z=-1.1) dan monitor (z=+0.12):
+     pusat z=-0.28, slab 0.62x0.03x0.28 + 3 baris x 8 tombol kecil.
+     Warna gelap netral, primitif kode, tanpa tekstur (gaya ruangan).
+     Posisi tangan mengetik (pose) mendarat di atas keyboard ini. */
+  const kbGroup = new THREE.Group();
+  const kbSlab = box(0.62, 0.03, 0.28, 0x2a2a2e);
+  kbSlab.position.set(0, DESK_TOP_Y + 0.015, -0.28);
+  kbGroup.add(kbSlab);
+  for (let r = 0; r < 3; r++) {
+    for (let k = 0; k < 8; k++) {
+      const key = box(0.055, 0.012, 0.06, 0x3d3d42);
+      key.position.set(-0.245 + k * 0.07, DESK_TOP_Y + 0.036, -0.355 + r * 0.075);
+      kbGroup.add(key);
+    }
+  }
+  g.add(kbGroup);
   /* Pelat nama di sisi depan meja (menghadap kamera). RATA (tanpa
      miring) dan MUAT di depan meja: pelat 1.7x0.34, kanvas 320x64
      (aspek 5:1) — dulu 1.7x0.42 miring -0.35, ujung atasnya masuk
@@ -1967,31 +2129,34 @@ function buildWorkRoom() {
 }
 
 function buildMeetingRoom() {
-  /* Meja rapat tengah + karpet (pusat (-5,-9); meja 3.6x1.8 —
+  /* Meja rapat tengah + karpet (pusat (-1.5,7); meja 3.6x1.8 —
      lebih kecil dari lama supaya koridor barat/timur lega
      untuk lane jalan x=-9.5 / x=-0.7). */
-  const carpetEdge = new THREE.Mesh(new THREE.PlaneGeometry(7.6, 5.2), mat('carpetEdge', C.carpetEdge));
+  /* Karpet rapat (2026-11-21, Oto): lebar disesuaikan ke ruangan (7.0) —
+     sebelumnya 7.6 melewati divider 0.30/sisi (ruang rapat x -5..2 = 7 lebar).
+     Tetap di tengah (-1.5,7). */
+  const carpetEdge = new THREE.Mesh(new THREE.PlaneGeometry(7.0, 5.2), mat('carpetEdge', C.carpetEdge));
   carpetEdge.rotation.x = -Math.PI / 2;
-  carpetEdge.position.set(-5, 0.008, -9);
+  carpetEdge.position.set(-1.5, 0.008, 7);
   scene.add(carpetEdge);
-  const carpet = new THREE.Mesh(new THREE.PlaneGeometry(7.2, 4.8), mat('carpet', C.carpet));
+  const carpet = new THREE.Mesh(new THREE.PlaneGeometry(6.6, 4.8), mat('carpet', C.carpet));
   carpet.rotation.x = -Math.PI / 2;
-  carpet.position.set(-5, 0.012, -9);
+  carpet.position.set(-1.5, 0.012, 7);
   scene.add(carpet);
   const table = box(3.6, 0.14, 1.8, C.deskTop);
-  table.position.set(-5, DESK_TOP_Y - 0.07, -9);
+  table.position.set(-1.5, DESK_TOP_Y - 0.07, 7);
   scene.add(table);
-  for (const [lx, lz] of [[-6.5, -9.7], [-3.5, -9.7], [-6.5, -8.3], [-3.5, -8.3]]) {
+  for (const [lx, lz] of [[-3, 6.3], [0, 6.3], [-3, 7.7], [0, 7.7]]) {
     scene.add(place(box(0.14, DESK_TOP_Y - 0.12, 0.14, C.desk), lx, (DESK_TOP_Y - 0.12) / 2, lz));
   }
   /* Pad lesehan di KEEMPAT slot rapat (Item 3) — dipusatkan di slot,
      bukan meleset 0.75 (utara/selatan) / 1.2 (barat/timur, ke utara
      slot, bukan ke arah meja) seperti kursi lama. Pad rata lantai
      (0.10) tidak menutup koridor lane mana pun (LAYOUT.md §5). */
-  scene.add(place(box(0.7, 0.1, 0.7, C.chair), -5, PAD_TOP - 0.05, -11.6));  /* utara */
-  scene.add(place(box(0.7, 0.1, 0.7, C.chair), -5, PAD_TOP - 0.05, -6.4));   /* selatan */
-  scene.add(place(box(0.7, 0.1, 0.7, C.chair), -7.6, PAD_TOP - 0.05, -9));   /* barat */
-  scene.add(place(box(0.7, 0.1, 0.7, C.chair), -2.4, PAD_TOP - 0.05, -9));   /* timur */
+  scene.add(place(box(0.7, 0.1, 0.7, C.chair), -1.5, PAD_TOP - 0.05, 4.4));  /* utara */
+  scene.add(place(box(0.7, 0.1, 0.7, C.chair), -1.5, PAD_TOP - 0.05, 9.6));   /* selatan */
+  scene.add(place(box(0.7, 0.1, 0.7, C.chair), -4.1, PAD_TOP - 0.05, 7));   /* barat */
+  scene.add(place(box(0.7, 0.1, 0.7, C.chair), 1.1, PAD_TOP - 0.05, 7));   /* timur */
 }
 
 function buildLounge() {
@@ -2017,30 +2182,30 @@ function buildLounge() {
 }
 
 function buildPantry() {
-  /* Meja pantry + pad (pusat (-1.5,7) dari ROOMS). */
+  /* Meja pantry + pad (pusat (-5,-9) dari ROOMS). */
   const table = box(2.4, 0.12, 1.4, C.deskTop);
-  table.position.set(-1.5, DESK_TOP_Y - 0.06, 7);
+  table.position.set(-5, DESK_TOP_Y - 0.06, -9);
   scene.add(table);
-  for (const [lx, lz] of [[-2.5, 6.5], [-0.5, 6.5], [-2.5, 7.5], [-0.5, 7.5]]) {
+  for (const [lx, lz] of [[-6, -9.5], [-4, -9.5], [-6, -8.5], [-4, -8.5]]) {
     scene.add(place(box(0.1, DESK_TOP_Y - 0.12, 0.1, C.desk), lx, (DESK_TOP_Y - 0.12) / 2, lz));
   }
   /* Pad lesehan di KEEMPAT slot pantry (Item 3) — dipusatkan di slot
      (dulu kursi 0.75 meleset dari slot). */
-  scene.add(place(box(0.65, 0.1, 0.65, C.chair), -3, PAD_TOP - 0.05, 7));
-  scene.add(place(box(0.65, 0.1, 0.65, C.chair), 0, PAD_TOP - 0.05, 7));
-  scene.add(place(box(0.65, 0.1, 0.65, C.chair), -1.5, PAD_TOP - 0.05, 5.5));
-  scene.add(place(box(0.65, 0.1, 0.65, C.chair), -1.5, PAD_TOP - 0.05, 8.5));
+  scene.add(place(box(0.65, 0.1, 0.65, C.chair), -6.5, PAD_TOP - 0.05, -9));
+  scene.add(place(box(0.65, 0.1, 0.65, C.chair), -3.5, PAD_TOP - 0.05, -9));
+  scene.add(place(box(0.65, 0.1, 0.65, C.chair), -5, PAD_TOP - 0.05, -10.5));
+  scene.add(place(box(0.65, 0.1, 0.65, C.chair), -5, PAD_TOP - 0.05, -7.5));
   /* Meja kopi (counter) + mesin kopi + rak camilan. Rak pindah
-     ke z=11 (dulu z=1.5): rak lama menghalangi lane x=1.3. */
-  scene.add(place(box(0.8, 1.0, 6, C.desk), -4.6, 0.5, 7));
-  scene.add(place(box(0.5, 0.5, 0.4, 0x111111), -4.6, 1.25, 5.5));
-  scene.add(place(cyl(0.12, 0.12, 0.18, 0xf5f5f0), -4.6, 1.15, 6.1));
+     ke z=-5 (dulu z=1.5): rak lama menghalangi lane x=1.3. */
+  scene.add(place(box(0.8, 1.0, 6, C.desk), -8.1, 0.5, -9));
+  scene.add(place(box(0.5, 0.5, 0.4, 0x111111), -8.1, 1.25, -10.5));
+  scene.add(place(cyl(0.12, 0.12, 0.18, 0xf5f5f0), -8.1, 1.15, -9.9));
   const shelf = box(0.7, 2.0, 2.5, C.desk);
-  shelf.position.set(1.6, 1.0, 11);
+  shelf.position.set(-1.9, 1.0, -5);
   scene.add(shelf);
   const snackColors = [0xca4f40, 0x0f766e, 0xfc7a24, 0xc4b5fd, 0xf4a7b9, 0x1e3a8a];
   snackColors.forEach((col, i) => {
-    scene.add(place(box(0.5, 0.3, 0.4, col), 1.6, 0.4 + Math.floor(i / 3) * 0.8, 10.2 + (i % 3) * 0.8));
+    scene.add(place(box(0.5, 0.3, 0.4, col), -1.9, 0.4 + Math.floor(i / 3) * 0.8, -5.8 + (i % 3) * 0.8));
   });
 }
 
@@ -2824,6 +2989,15 @@ function setAvatarPos(name, slot, room, sitting = false, opts = {}) {
   ps.sitting = !!sitting;
   g.position.x = slot.x;
   g.position.z = slot.z;
+  /* Geser duduk ke meja (DESK_SLIDE) bila duduk di meja: avatar
+     "nyurung" mendekati meja supaya tangan mencapai keyboard
+     (fk-sweep2: lutut tidak menembus meja pada 0.15). Posisi logis
+     (avatarPos) tetap di slot; hanya posisi render yang digeser. */
+  if (sitting && isDeskSlotFn(room, slot)) {
+    const rot = (slot && typeof slot.rot === 'number') ? slot.rot : 0;
+    g.position.x += Math.sin(rot) * DESK_SLIDE;
+    g.position.z += Math.cos(rot) * DESK_SLIDE;
+  }
   g.scale.set(1, 1, 1);
   const turn = avatarMeshes[name];
   if (turn) {
@@ -2866,7 +3040,11 @@ function updateHookWalking() {
 function walkAgent(name, toSlot, toRoom, opts = {}) {
   return new Promise((resolve) => {
     const g = avatarGroups[name];
-    const from = avatarPos[name] ? { ...avatarPos[name] } : { ...toSlot };
+    /* Berangkat dari posisi render saat ini (bisa 0.15 tergeser ke
+       meja saat duduk) — bukan dari slot logis — supaya tidak ada
+       lompatan 0.15 di frame pertama jalan. */
+    const from = g ? { x: g.position.x, z: g.position.z }
+      : (avatarPos[name] ? { ...avatarPos[name] } : { ...toSlot });
     const fromRoom = avatarRoom[name];
     if (REDUCED || !avatarPos[name]) {
       setAvatarPos(name, toSlot, toRoom, !!opts.sitting, { snap: true });
@@ -2955,10 +3133,16 @@ function walkAgent(name, toSlot, toRoom, opts = {}) {
       }
       /* Jalan rigged: ayunan bone dari base (ganti tilt mesh utuh).
          Fase = jarak tempuh * 2π / stride. Paha ±25° sin berlawanan,
-         betis setengah amplitudo (±12°) sefase tertinggal, bahu ±15°
+         betis setengah amplitudo (±12°) sefase tertinggal, bahu
          berlawanan dengan kaki seberang (bahu L lawan kaki R).
-         Duduk disusun di atasnya dengan bobot sitW (bone yang sama
-         dikalikan berurutan dari base — tidak akumulasi antar frame). */
+         LENGAN HANYA MENGAYUN MAJU (2026-11-21): ayun maju 15°,
+         ayun mundur 0° — ayun mundur sempat membawa tangan belakang
+         MASUK ke dalam kotak torso pada Neto (fk-out4: -0.006 pada
+         mundur 5°, padahal sudah fix 30°); dengan mundur 0°, tangan
+         belakang tetap pada posisi idle-fix (margin ≥ +0.035 di semua
+         avatar, terukur). Duduk disusun di atasnya dengan bobot sitW
+         (bone yang sama dikalikan berurutan dari base — tidak
+         akumulasi antar frame). */
       if (roles) {
         const phase = (d * Math.PI * 2) / stride;
         const s = Math.sin(phase);
@@ -2968,11 +3152,28 @@ function walkAgent(name, toSlot, toRoom, opts = {}) {
           { bone: roles.thighR, axis: [1, 0, 0], deg: -25 * s * swingAmp },
           { bone: roles.shinL, axis: [1, 0, 0], deg: -12 * sLag * swingAmp },
           { bone: roles.shinR, axis: [1, 0, 0], deg: 12 * sLag * swingAmp },
-          { bone: roles.shoulderL, axis: [1, 0, 0], deg: 15 * s * swingAmp },
-          { bone: roles.shoulderR, axis: [1, 0, 0], deg: -15 * s * swingAmp },
+          { bone: roles.shoulderL, axis: [1, 0, 0], deg: Math.max(0, 15 * s) * swingAmp },
+          { bone: roles.shoulderR, axis: [1, 0, 0], deg: Math.max(0, -15 * s) * swingAmp },
         ];
         if (sitW > 0.001) {
           for (const sd of sitDeltas(name, roles)) deltas.push({ ...sd, deg: sd.deg * sitW });
+        }
+        /* Perbaikan lengan (anti-buntung) + pose mengetik (bila tiba
+           di meja): disusun di atas base seperti pose lain. Mengetik
+           memudar bersama sitW di 15% akhir jalan. Sumbu bahu di sini
+           dikonjugasi terhadap base (satu fase) — cukup untuk transisi;
+           pose akhir yang persis (two-phase) diterapkan di akhir jalan
+           lewat applyPoseWeighted. */
+        for (const d of armFixDeltas(name, roles)) deltas.push(d);
+        const typeW = (targetSit && isDeskSlotFn(toRoom, toSlot))
+          ? sitW * (1 - ((poseAnim[name] && poseAnim[name].activityW) || 0)) : 0;
+        if (typeW > 0.001) {
+          deltas.push({ bone: roles.spine, axis: [1, 0, 0], deg: TYPE_SPINE_DEG * typeW });
+          deltas.push({ bone: roles.head, axis: [1, 0, 0], deg: TYPE_HEAD_DEG * typeW });
+          deltas.push({ bone: roles.shoulderL, axis: worldAxisLocal(name, roles.shoulderL, [1, 0, 0]), deg: -TYPE_SHOULDER_DEG * typeW });
+          deltas.push({ bone: roles.shoulderR, axis: worldAxisLocal(name, roles.shoulderR, [1, 0, 0]), deg: -TYPE_SHOULDER_DEG * typeW });
+          deltas.push({ bone: roles.forearmL, axis: [1, 0, 0], deg: TYPE_FOREARM_DEG * typeW });
+          deltas.push({ bone: roles.forearmR, axis: [1, 0, 0], deg: TYPE_FOREARM_DEG * typeW });
         }
         resetBones(name);
         addBoneDeltas(name, deltas);
@@ -3000,6 +3201,10 @@ function walkAgent(name, toSlot, toRoom, opts = {}) {
         if (poseAnim[name]) poseAnim[name].sittingW = targetSit ? 1 : 0;
         avatarBaseY[name] = targetSit ? -sitDropFor(name) : 0;
         setAvatarPos(name, toSlot, toRoom, targetSit);
+        /* Tetapkan pose akhir yang persis (perbaikan lengan +
+           mengetik two-phase): driver blend tidak selalu memanggil
+           applyPoseWeighted bila tidak ada perubahan bobot. */
+        applyPoseWeighted(name);
         requestRender();
         resolve(true);
       }

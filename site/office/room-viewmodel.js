@@ -11,8 +11,8 @@
    GANG_Z, lebar 2.4): semua jalan antar ruangan lewat gang ini,
    tidak menembus furnitur (lihat planWalk + LAYOUT.md di work-f/).
    DENAH 0.4.9 (Worker F): floor plan 42x28 (dulu 26x18), 9 ruang
-   (dulu 6): 4 utara (kantor-rangga, ruang-rapat, lounge,
-   studio-konten) + 5 selatan (ruang-kerja, pantry, taman,
+   (dulu 6): 4 utara (kantor-rangga, pantry, lounge,
+   studio-konten) + 5 selatan (ruang-kerja, ruang-rapat, taman,
    war-room, perpustakaan). */
 
 /* 11 agen yang dikenal (label/peran/warna = AVATAR_PARTS di
@@ -69,14 +69,14 @@ export const ROOMS = {
   },
   'ruang-rapat': {
     label: 'Ruang Rapat',
-    door: { x: -5, z: GANG_Z },
-    lane: -9.5,
+    door: { x: -1.5, z: GANG_Z },
+    lane: -4.1,
     legDy: 0,
     slots: [
-      { x: -7.6, z: -9, rot: Math.PI / 2, lane: -9.5 },
-      { x: -2.4, z: -9, rot: -Math.PI / 2, lane: -0.7 },
-      { x: -5, z: -11.6, rot: 0, lane: -9.5 },
-      { x: -5, z: -6.4, rot: Math.PI, lane: -0.7 },
+      { x: -4.1, z: 7, rot: Math.PI / 2, lane: -4.1 },
+      { x: 1.1, z: 7, rot: -Math.PI / 2, lane: 1.1 },
+      { x: -1.5, z: 4.4, rot: 0, lane: -4.1 },
+      { x: -1.5, z: 9.6, rot: Math.PI, lane: 1.1 },
     ],
   },
   lounge: {
@@ -120,14 +120,14 @@ export const ROOMS = {
   },
   pantry: {
     label: 'Pantry',
-    door: { x: -1.5, z: GANG_Z },
-    lane: 1.3,
+    door: { x: -5, z: GANG_Z },
+    lane: -0.8,
     legDy: 0,
     slots: [
-      { x: -3, z: 7, rot: Math.PI / 2 },
-      { x: 0, z: 7, rot: -Math.PI / 2 },
-      { x: -1.5, z: 5.5, rot: 0 },
-      { x: -1.5, z: 8.5, rot: Math.PI },
+      { x: -6.5, z: -9, rot: Math.PI / 2 },
+      { x: -3.5, z: -9, rot: -Math.PI / 2 },
+      { x: -5, z: -10.5, rot: 0 },
+      { x: -5, z: -7.5, rot: Math.PI },
     ],
   },
   taman: {
@@ -271,10 +271,45 @@ export function roomForTask(title) {
    9. >2 jam / tanpa sinyal -> Taman
    Aturan 3-5 TIDAK memakai batas umur: status tugas 'aktif' di
    board adalah sinyalnya (tugas basi tetap bertema — lihat
-   staleApi 'Audit lead' di tes: tetap Perpustakaan, glyph Z). */
+   staleApi 'Audit lead' di tes: tetap Perpustakaan, glyph Z).
+   HOME BASE OTO (21 Nov 2026, perintah Rangga 17:09 WIB:
+   "tugas lo monitoring masa jauh dari workspace"). Blok
+   `if (name === 'oto')` di bawah mengesampingkan aturan 2-7
+   KHUSUS buat Oto: rapat HANYA bila @all nyata (<15 mnt,
+   s.allMeeting — dihitung buildRoomState khusus buat cabang ini;
+   view-model lama tidak punya cabang @all sama sekali, dan agen
+   lain tetap tidak membacanya); tugas aktif apa pun temanya ->
+   Ruang Kerja (judul tugas monitoring Oto mengandung 'baca' yang
+   tanpa ini melemparnya ke Perpustakaan via roomForTask); idle
+   segar <15 mnt tanpa tugas -> Ruang Kerja (bukan Lounge).
+   Idle 15 mnt-2 jam -> Pantry, >2 jam -> Taman tetap berlaku
+   buat Oto. Agen lain tidak masuk blok itu — perilaku mereka
+   tidak berubah. */
 export function resolveRoom(name, s, nowMs) {
   const age = s.lastActiveMs > 0 ? nowMs - s.lastActiveMs : Infinity;
   if (name === 'rangga') return 'kantor-rangga';
+  /* HOME BASE OTO (CEO) — perintah Rangga 21 Nov 2026 17:09 WIB:
+     "tugas lo monitoring masa jauh dari workspace". Oto default di
+     Ruang Kerja; ke Ruang Rapat HANYA saat rapat nyata (@all).
+     - @all <15 mnt -> rapat (rapat nyata; satu-satunya jalan Oto
+       ke rapat — membalas @mention biasa BUKAN rapat buat Oto,
+       itu rutinitas jawabannya sebagai orchestrator).
+     - tugas aktif (apa pun temanya) -> Ruang Kerja: judul tugas
+       monitoring Oto mengandung 'baca' yang tanpa pengecualian
+       ini melemparnya ke Perpustakaan via roomForTask.
+     - idle segar <15 mnt tanpa tugas -> Ruang Kerja (bukan
+       Lounge): masih monitoring.
+     - idle 15 mnt-2 jam -> Pantry, >2 jam -> Taman: tetap,
+       karena itu bukan lagi monitoring (jujur: dia memang pergi).
+     Blok ini KHUSUS Oto (name === 'oto'); agen lain tidak masuk
+     ke sini dan perilakunya tidak berubah. */
+  if (name === 'oto') {
+    if (s.allMeeting) return 'ruang-rapat';
+    if (s.activeTask) return 'ruang-kerja';
+    if (age < MIN_15) return 'ruang-kerja';
+    if (age < HOUR_2) return 'pantry';
+    return 'taman';
+  }
   if (s.replying) return 'ruang-rapat';
   if (s.activeTask) {
     const themed = roomForTask(s.activeTask.title);
@@ -473,6 +508,15 @@ export function buildRoomState(api, nowMs) {
   const byId = {};
   for (const m of messages) byId[m.id] = m;
 
+  /* Meeting @all (khusus home-base Oto — lihat resolveRoom):
+     pesan apa pun yang me-mention 'all' <15 mnt. Dihitung di sini
+     supaya Oto bisa ikut rapat nyata; HANYA cabang Oto yang
+     membaca s.allMeeting — agen lain tidak terpengaruh (di
+     view-model lama tidak ada cabang @all sama sekali). */
+  const allMeeting = messages.some(
+    (m) => now - ts(m.created_at) <= MIN_15
+      && (m.mentions || []).map((x) => lower(x)).includes('all'));
+
   const agents = [];
   for (const name of ROOM_ORDER) {
     const myMsgs = messages.filter((m) => lower(m.author) === name);
@@ -507,7 +551,7 @@ export function buildRoomState(api, nowMs) {
       }
     }
 
-    const partial = { activeTask, lastActiveMs, lastMsgMs, replying };
+    const partial = { activeTask, lastActiveMs, lastMsgMs, replying, allMeeting };
     const room = resolveRoom(name, partial, now);
     const st = {
       name,
