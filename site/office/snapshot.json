@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-21T09:42:11.876113Z",
+  "generated_at": "2026-11-21T09:57:16.564480Z",
   "agents": [
     {
       "id": "rangga",
@@ -15,8 +15,8 @@
       "name": "Oto",
       "role": "CEO",
       "color": "#a3ff00",
-      "room": "perpustakaan",
-      "state": "working",
+      "room": "ruang-rapat",
+      "state": "meeting",
       "task": "\u2014 INSTRUKSI LENGKAP (baca sampai habis; "
     },
     {
@@ -90,6 +90,15 @@
       "room": "ruang-kerja",
       "state": "working",
       "task": "\u2014 PENGUMUMAN: Deto jadi Wakil CEO (deput"
+    },
+    {
+      "id": "meto",
+      "name": "Meto",
+      "role": "Support",
+      "color": "#22c55e",
+      "room": "taman",
+      "state": "away",
+      "task": null
     }
   ]
 }
