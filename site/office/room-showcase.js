@@ -47,15 +47,19 @@ const VOLT = 0xa3ff00;
 const VOLT_CSS = '#a3ff00';
 const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-/* Palet dark terminal + volt (§5.1). Tanpa gradien ungu/biru. */
+/* Palet kantor TERANG + volt (§5.1). Tanpa gradien ungu/biru.
+   BRIGHTEN 21 Nov 2026 (perintah Rangga: "officenya gelap, ganti
+   warna bangunan jadi lebih cerah"): lantai kayu terang hangat,
+   dinding pucat hangat, furnitur kayu terang + kain sage redup.
+   Satu aksen kuat tetap volt #A3FF00. */
 const C = {
-  floor: 0x151a20, gang: 0x1a2129, grid: 0x232a33,
-  wall: 0x161b22, wallDark: 0x12161c, divider: 0x1c2530,
-  desk: 0x2b323c, deskTop: 0x333d49, chair: 0x232c38,
-  carpet: 0x232c38, carpetEdge: 0x1a2129,
-  panel: 0x161b22, panelEdge: 0x2d333b,
-  sofa: 0x2b323c, plant: 0x22c55e, plantDark: 0x16a34a,
-  pot: 0x6b4a2f, bench: 0x3a2f24, lamp: 0xffd97a,
+  floor: 0xcfa878, gang: 0xe6dcc8, grid: 0xa08b6d,
+  wall: 0xf3eee2, wallDark: 0xddd3bf, divider: 0xd9cfb9,
+  desk: 0x9c7c55, deskTop: 0xc99f66, chair: 0x7a8b7d,
+  carpet: 0xcbb693, carpetEdge: 0xa68f6c,
+  panel: 0xefe8d6, panelEdge: 0x9a8a6f,
+  sofa: 0x7a8b7d, plant: 0x22c55e, plantDark: 0x16a34a,
+  pot: 0x6b4a2f, bench: 0xa07d52, lamp: 0xffd97a,
   shadow: 0x000000,
 };
 
@@ -818,8 +822,8 @@ function getCameraMode() {
    hook dipanggil di akhir buildScene (lihat SPLICE.md).
    Bergantung pada scope modul room3d.js: THREE, renderer, scene, C,
    place, desks, ROOMS, FLOOR, VOLT. Tanpa import/CDN baru, tanpa
-   sentuh pose/lighting/kamera/shadow/loop render. Palet GELAP
-   dipertahankan: semua warna dibaca dari material lama / palet C.
+   sentuh pose/lighting/kamera/shadow/loop render. Palet TERANG
+   (brighten 21 Nov 2026): semua warna dibaca dari material lama / palet C.
    ANTI-HARDCODE DENAH (layout Worker F berubah): tidak ada satu pun
    koordinat/ukuran denah lama di blok ini — grid + skirting diturunkan
    dari mesh lantai di scene, props meja dari array `desks` (dibangun
@@ -864,18 +868,19 @@ function aaaCyl(rt, rb, h, color, roughness, metalness = 0, seg = 12) {
 }
 
 /* Roughness/metalness PER PERMUKAAN (dibedakan, bukan satu angka).
-   Kunci = warna palet C dari material lama. */
+   Kunci = warna palet C (diperbarui saat brighten 21 Nov 2026 —
+   nilai lama 0x333d49/0x2b323c/dll. sudah tidak ada di palet). */
 function aaaRoughness(hex) {
   switch (hex) {
-    case 0x333d49: return 0.55; /* meja kayu dipernis */
-    case 0x3a2f24: return 0.55; /* bangku kayu */
-    case 0x2b323c: return 0.75; /* desk/sofa/rak — cat satin (satu warna, kompromi) */
-    case 0x2d333b: return 0.7;  /* trim/panelEdge */
+    case 0xc99f66: return 0.55; /* meja kayu dipernis */
+    case 0xa07d52: return 0.55; /* bangku kayu */
+    case 0x9c7c55: return 0.75; /* desk/sofa/rak — cat satin (satu warna, kompromi) */
+    case 0x9a8a6f: return 0.7;  /* trim/panelEdge */
     case 0x555555: return 0.35; /* tiang lampu — metal */
     case 0x6b4a2f: return 0.85; /* pot terakota */
     case 0x22c55e: case 0x16a34a: return 0.9; /* tanaman */
-    case 0x232c38: return 0.95; /* kursi/karpet — kain */
-    case 0x1a2129: return 0.95; /* gang/carpetEdge — karpet */
+    case 0x7a8b7d: return 0.95; /* kursi/sofa — kain */
+    case 0xe6dcc8: case 0xa68f6c: case 0xcbb693: return 0.95; /* gang/karpet/tepi karpet — matte */
     case 0xca4f40: case 0x0f766e: case 0xfc7a24:
     case 0xc4b5fd: case 0xf4a7b9: case 0x1e3a8a: return 0.6; /* kemasan camilan — plastik */
     default: return 0.88;       /* lantai/dinding/panel — matte */
@@ -883,7 +888,7 @@ function aaaRoughness(hex) {
 }
 function aaaMetalness(hex) {
   if (hex === 0x555555) return 0.7;
-  if (hex === 0x2d333b) return 0.2;
+  if (hex === 0x9a8a6f) return 0.2;
   return 0;
 }
 
@@ -951,7 +956,7 @@ function aaaDesksByRoom() {
      nilai tambah di-upgrade, dan "monitor emissive" jangan disentuh).
    Material dishare (cache MAT) dikonversi SEKALI via Map dedupe,
    jadi sharing tetap terjaga. envMapIntensity dijaga rendah (0,35)
-   supaya palet tetap gelap bila env map aktif. */
+   supaya palet tetap terang bersih bila env map aktif. */
 function upgradeAAAMaterials(scene) {
   const converted = new Map(); /* oldMaterial -> newMaterial */
   const avatarRoots = new Set(Object.values(avatarGroups));
@@ -1043,14 +1048,14 @@ function aaaApplyEnvironment(scene) {
    baris slot paling utara. */
 function addAAAFloorDetail(scene) {
   const fb = aaaFloorBounds(scene);
-  /* Grid halus 0,5 m, warna di antara lantai (0x151a20) dan grid
-     1 m (0x232a33): terbaca sebagai ubin kecil, tetap sopan. */
+  /* Grid halus 0,5 m, warna di antara lantai (0xcfa878) dan grid
+     1 m (0xa08b6d): terbaca sebagai ubin kecil, tetap sopan. */
   const pts = [];
   for (let x = fb.x0; x <= fb.x1 + 0.001; x += 0.5) pts.push(x, fb.y + 0.005, fb.z0, x, fb.y + 0.005, fb.z1);
   for (let z = fb.z0; z <= fb.z1 + 0.001; z += 0.5) pts.push(fb.x0, fb.y + 0.005, z, fb.x1, fb.y + 0.005, z);
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-  scene.add(new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0x1c2129 })));
+  scene.add(new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0xa08b6d })));
 
   /* Ambang pintu: strip melintang gang di tiap pintu ruangan. */
   for (const room of Object.values(ROOMS)) {
@@ -1074,12 +1079,12 @@ function addAAAFloorDetail(scene) {
     const z0 = minSlotZ + 0.25, z1 = maxZ + d / 2 + 0.4;
     const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
     const edge = new THREE.Mesh(
-      new THREE.PlaneGeometry(x1 - x0 + 0.3, z1 - z0 + 0.3), aaaStd(0x161c22, 0.95));
+      new THREE.PlaneGeometry(x1 - x0 + 0.3, z1 - z0 + 0.3), aaaStd(0xa68f6c, 0.95));
     edge.rotation.x = -Math.PI / 2;
     edge.position.set(cx, fb.y + 0.018, cz);
     scene.add(edge);
     const rug = new THREE.Mesh(
-      new THREE.PlaneGeometry(x1 - x0, z1 - z0), aaaStd(0x1d242e, 0.95));
+      new THREE.PlaneGeometry(x1 - x0, z1 - z0), aaaStd(0xcbb693, 0.95));
     rug.rotation.x = -Math.PI / 2;
     rug.position.set(cx, fb.y + 0.022, cz);
     scene.add(rug);
@@ -1169,17 +1174,17 @@ function addAAADeskProps(scene) {
     const cz = minSlotZ + 1.6;
     const rw = (Math.max(...xs) - Math.min(...xs)) + 1.6;
     const fb = aaaFloorBounds(scene);
-    const edge = new THREE.Mesh(new THREE.PlaneGeometry(rw + 0.3, 3.1), aaaStd(0x171d24, 0.95));
+    const edge = new THREE.Mesh(new THREE.PlaneGeometry(rw + 0.3, 3.1), aaaStd(0xa68f6c, 0.95));
     edge.rotation.x = -Math.PI / 2;
     edge.position.set(cx, fb.y + 0.018, cz);
     scene.add(edge);
-    const rug = new THREE.Mesh(new THREE.PlaneGeometry(rw, 2.8), aaaStd(0x1e242c, 0.95));
+    const rug = new THREE.Mesh(new THREE.PlaneGeometry(rw, 2.8), aaaStd(0xcbb693, 0.95));
     rug.rotation.x = -Math.PI / 2;
     rug.position.set(cx, fb.y + 0.022, cz);
     scene.add(rug);
-    scene.add(place(aaaBox(1.6, 0.08, 0.8, 0x333d49, 0.6), cx, 0.42, cz));
-    scene.add(place(aaaBox(0.08, 0.42, 0.7, 0x2b323c, 0.75), cx - 0.7, 0.21, cz));
-    scene.add(place(aaaBox(0.08, 0.42, 0.7, 0x2b323c, 0.75), cx + 0.7, 0.21, cz));
+    scene.add(place(aaaBox(1.6, 0.08, 0.8, 0xc99f66, 0.6), cx, 0.42, cz));
+    scene.add(place(aaaBox(0.08, 0.42, 0.7, 0x9c7c55, 0.75), cx - 0.7, 0.21, cz));
+    scene.add(place(aaaBox(0.08, 0.42, 0.7, 0x9c7c55, 0.75), cx + 0.7, 0.21, cz));
     scene.add(place(aaaBox(0.34, 0.035, 0.24, 0x33404d, 0.75), cx - 0.2, 0.478, cz));
     scene.add(place(aaaBox(0.30, 0.035, 0.22, 0x4a3b32, 0.75), cx - 0.19, 0.513, cz + 0.01, 0.1));
     scene.add(place(aaaBox(0.26, 0.03, 0.20, 0x3d4a3a, 0.75), cx - 0.2, 0.545, cz - 0.01, -0.06));
@@ -1193,23 +1198,26 @@ function addAAADeskProps(scene) {
 /* --- bangun ruangan -------------------------------------------- */
 function buildScene() {
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0f1115);
+  scene.background = new THREE.Color(0xe8e2d4);
   orthoCam = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 200);
   perspCam = new THREE.PerspectiveCamera(55, 1.6, 0.1, 200);
   camera = orthoCam;
-  /* AAA L1 — lighting rig proper, palet TETAP GELAP: key directional
-     HANGAT dari depan-atas, fill hemisphere/ambient DINGIN REDUP,
-     rim directional halus dari belakang (pemisah siluet dari dinding
-     gelap). Volt Rangga (#a3ff00) harus tetap menyala — jangan kejar
-     terang sampai volt mati.
+  /* AAA L1 — lighting rig proper, palet TERANG (brighten 21 Nov
+     2026): key directional HANGAT dari depan-atas, fill
+     hemisphere/ambient HANGAT TERANG, rim directional halus dari
+     belakang (pemisah siluet dari dinding — intensitas diturunkan
+     supaya dinding pucat tidak kena bias biru). Volt Rangga
+     (#a3ff00) harus tetap menyala — jangan kejar terang sampai
+     volt mati.
      SHOWCASE OVERRIDE (0.4.9.1-showcase): ruangan publik harus jelas
      di layar HP (umpan balik Rangga: 0.4.9 "gelap kayak blackout",
-     mean luminance ~20/255). Ambient/hemisphere/key/rim dinaikkan
+     mean luminance ~20/255; lalu 21 Nov: "officenya gelap").
+     Ambient/hemisphere/key dinaikkan + palet bangunan diterangkan
      di varian ini saja; produksi tetap gelap sampai Maximum Level
      merge — saat re-sync, pakai nilai Maximum Level. */
-  scene.add(new THREE.AmbientLight(0x9db4d8, 1.0));
-  scene.add(new THREE.HemisphereLight(0x8fa3c7, 0x2a2f38, 1.5));
-  const dir = new THREE.DirectionalLight(0xffe3c0, 2.8);
+  scene.add(new THREE.AmbientLight(0xfff3e0, 1.6));
+  scene.add(new THREE.HemisphereLight(0xfff6e6, 0x9a8a70, 2.0));
+  const dir = new THREE.DirectionalLight(0xffe3c0, 3.4);
   dir.position.set(10, 20, 8);
   scene.add(dir);
   keyLight = dir;
@@ -1227,7 +1235,7 @@ function buildScene() {
   dir.shadow.camera.far = 60;
   dir.shadow.bias = -0.0004;
   dir.shadow.normalBias = 0.02;
-  const rim = new THREE.DirectionalLight(0x7fb2ff, 1.0);
+  const rim = new THREE.DirectionalLight(0x7fb2ff, 0.7);
   rim.position.set(-8, 12, -14);
   scene.add(rim);
 
