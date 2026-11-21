@@ -1,7 +1,7 @@
 <p align="center">
   <img src="assets/icon_mascot.png" width="80" alt="NEUGI Mascot">
 </p>
-<h1 align="center">NEUGI Swarm v2.1.3</h1>
+<h1 align="center">NEUGI Swarm v2.1.4</h1>
 
 <p align="center">
   <b>The Ultimate Agentic Framework</b>
@@ -13,19 +13,19 @@
 
 ## Verified Runtime Snapshot
 
-- Verified date: 2026-05-24
-- Version: `2.1.3`
+- Verified date: 2026-11-21
+- Version: `2.1.4`
 - Top-level CLI commands: `25`
-- Dashboard REST endpoints: `32`
+- Dashboard REST endpoints: `35`
 - Provider catalog entries: `17`
-- Test collection (`--collect-only`): `388`
+- Test collection (`--collect-only`): `410`
 
 Validation command:
 ```bash
 python scripts/validate_doc_claims.py --mode strict
 ```
 
-> **29 Subsystems | 120+ Modules | 71,000+ Lines | 61 Built-in Tools | 386 Tests Passing (2 skipped)**
+> **22 Subsystems | 204 Modules | 81,000+ Lines | 61 Built-in Tools | 407 Tests Passing (3 skipped)**
 
 NEUGI Swarm v2 is the most advanced open-source agentic AI framework ever built. **Sovereign autonomous infrastructure** that observes, decides, executes, and reports — even during idle periods.
 
@@ -97,7 +97,7 @@ neugi soul init # Initialize agent identity (SOUL.md)
 | **Channels** | Telegram, Discord, Slack, WhatsApp unified |
 | **Security** | 7-layer sandbox, neuro-symbolic, AES-256 secrets |
 | **CLI+Wizard** | 25 top-level commands, one canonical provider/model setup wizard, interactive chat, rescue mode |
-| **Dashboard** | Glass-morphism HTML, 32 REST endpoints, setup/test provider flow, approval queue, WebSocket, vector memory |
+| **Dashboard** | Glass-morphism HTML, 35 REST endpoints, setup/test provider flow, approval queue, WebSocket, vector memory |
 | **Evals** | Benchmark harness, regression detection, skill scoring |
 | **Multimodal** | Vision input, screenshot analysis, computer use |
 | **A2A Protocol** | Agent-to-agent mesh, capability discovery, heartbeat |
@@ -134,14 +134,14 @@ Both features are opt-in and maintain full backward compatibility with zero core
 
 | Metric | Value |
 |--------|-------|
-| Subsystems | 29 |
-| Python Modules | 120+ |
-| Lines of Code | 71,000+ |
+| Subsystems | 22 |
+| Python Modules | 204 |
+| Lines of Code | 81,000+ |
 | Built-in Tools | 61 |
-| Integration Tests | 388 collected (386 passed, 2 optional browser tests skipped without Playwright) |
-| AI Providers Supported | 20+ (OpenAI, Anthropic, Gemini, Groq, DeepSeek, etc.) |
-| Cold Start | < 500ms |
-| Memory Query | < 50ms |
+| Integration Tests | 410 collected (407 passed, 3 skipped: 2 optional browser tests without Playwright, 1 optional E2E) |
+| AI Providers Supported | 17 (OpenAI, Anthropic, Gemini, Groq, DeepSeek, etc.) |
+| Cold Start | ~0.5 s package import (459-641 ms across 4 runs, Python 3.12, measured 2026-11-21; up to ~1.6 s under cold cache) |
+| Memory Query | < 50ms (measured 0.3 ms median / 0.6 ms p95, 20 entries, FTS, Python 3.12, 2026-11-21) |
 
 ---
 
@@ -169,7 +169,7 @@ neugi_swarm/
     ├── security/           # Sandbox & security
     ├── session/            # Session management
     ├── skills/             # Skill system
-    ├── tests/              # Integration tests (386 passing, 2 optional skips)
+    ├── tests/              # Integration tests (407 passing, 3 skipped)
     ├── tools/              # Tool registry (web search, browser, etc.)
     ├── observability/      # Event bus for monitoring and extensibility
     ├── workflows/          # Workflow engine
@@ -247,7 +247,7 @@ cd neugi_swarm_v2
 python -m pytest tests/ -q --tb=short -p no:anchorpy
 ```
 
-**Current status:** 386 passed, 2 skipped, 0 warnings on Python 3.12.10
+**Current status:** 407 passed, 3 skipped, 0 warnings on Python 3.12.3 (verified 2026-11-21)
 
 ---
 

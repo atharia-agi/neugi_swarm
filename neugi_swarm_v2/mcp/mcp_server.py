@@ -65,7 +65,7 @@ class MCPServer:
     def __init__(
         self,
         name: str = "neugi-swarm",
-        version: str = "2.1.3",
+        version: str = "2.1.4",
         transport: BaseTransport | None = None,
         bridge: Any | None = None,
     ):
