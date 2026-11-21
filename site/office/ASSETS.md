@@ -10,10 +10,10 @@ Semua ukuran + sha256 di bawah diukur langsung dari BASE 0.4.9.1.
 | File | Ukuran | Keterangan |
 |---|---|---|
 | `index.html` | ~7 KB | Halaman showcase: hero mini display + overlay fullscreen |
-| `room-showcase.js` | ~151 KB | Varian viewer (0.4.9.1-showcase); JANGAN edit `room3d.js` produksi |
-| `avatar-voxel.js` | ~21 KB | Avatar voxel SVG 10 agen (dulu blok inline di index.html; diimpor `room-showcase.js`, jadi viewer ter-mount tetap beravatar) |
+| `room-showcase.js` | ~152 KB | Varian viewer (0.4.9.1-showcase); JANGAN edit `room3d.js` produksi |
+| `avatar-voxel.js` | ~22 KB | Avatar voxel SVG 11 agen (dulu blok inline di index.html; diimpor `room-showcase.js`, jadi viewer ter-mount tetap beravatar) |
 | `room-viewmodel.js` | ~30 KB | View-model murni (salinan verbatim 0.4.9, 2 baris komentar disesuaikan) |
-| `snapshot.json` | ~1,3 KB | FIXTURE untuk pengujian — diganti `snapshot.json` asli oleh Oto |
+| `snapshot.json` | ~1,4 KB | FIXTURE untuk pengujian — diganti `snapshot.json` asli oleh Oto |
 | `ASSETS.md` | — | File ini |
 | `README.md` | — | Panduan deploy + kontrak snapshot |
 
@@ -30,18 +30,6 @@ Sumber: repo `ragetalamus-agent/agent-hq`, branch `main`, folder `public/`
 | `GLTFLoader.js` | 108.533 B | `d121e14073ae2470396644531763400d9c4d0137252c63835411ef9feeefb018` |
 | `DRACOLoader.js` | 13.640 B | `e4348b2c255e7d851df790cafb93bcdd7ac0d2a1a6916038b43580b1e6d6c3fb` |
 
-### Util three.js — `office/vendor/three/utils/` (WAJIB — GLTFLoader.js mengimpornya)
-
-| File | Ukuran | sha256 |
-|---|---|---|
-| `BufferGeometryUtils.js` | 31.919 B | `6f7a59439dd3f4399b25e9214aef65e5969422ed467083f406272b9b1fcef48c` |
-
-> Catatan Oto 2026-11-21: file ini TERTINGGAL di ASSETS.md v1 — tanpa
-> file ini `GLTFLoader.js` gagal impor (`./utils/BufferGeometryUtils.js`)
-> dan seluruh modul `room-showcase.js` tidak jalan sama sekali (hero
-> hitam, status mentok "Memuat snapshot kantor…"). Selalu sertakan saat
-> re-sync dari BASE.
-
 ### Decoder Draco — `office/vendor/draco/`
 
 | File | Ukuran | sha256 |
@@ -50,7 +38,7 @@ Sumber: repo `ragetalamus-agent/agent-hq`, branch `main`, folder `public/`
 | `draco_decoder.wasm` | 192.420 B | `a680d927bed9cb864ddbd63521868891af2bfbe755092761b4837487618df8ac` |
 | `draco_wasm_wrapper.js` | 58.456 B | `8bb2952d2ba7d67e1414f8df819410cb0434a666be53f671fff75f68843d76f6` |
 
-### Model GLB — `office/models/` (total 1.445.116 B, budget 4 MB)
+### Model GLB — `office/models/` (total 1.596.336 B, budget 4 MB)
 
 | File | Ukuran | sha256 |
 |---|---|---|
@@ -64,6 +52,7 @@ Sumber: repo `ragetalamus-agent/agent-hq`, branch `main`, folder `public/`
 | `ceto.glb` | 125.812 B | `d0f4d89f07c50e9f93c73044e9024115fbab8959c1cafe14f8d24c11aa0aeb79` |
 | `seto.glb` | 172.772 B | `b0e9c3ef97e8d4a64751425c49be42e631486dc29ed7535ded38413b4f0f14ef` |
 | `deto.glb` | 167.204 B | `d26af4c2acfceafbf2e8d301df7394e1f5ee6a9bf4c5782f7a8f6a32290bfe5f` |
+| `meto.glb` | 151.220 B | `41b66682460863ab201d46f7ef60250532e16adb74dbe5e337143327a041e0ec` |
 
 ## Struktur akhir di repo neugi.com
 
@@ -79,9 +68,8 @@ office/
   vendor/three/three.module.js
   vendor/three/GLTFLoader.js
   vendor/three/DRACOLoader.js
-  vendor/three/utils/BufferGeometryUtils.js   <- WAJIB (diimpor GLTFLoader.js)
   vendor/draco/          <- draco_decoder.js + .wasm + draco_wasm_wrapper.js
-  models/                <- 10 GLB di atas
+  models/                <- 11 GLB di atas
 ```
 
 Path impor di `room-showcase.js` (relatif, jangan diubah):

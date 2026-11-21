@@ -15,7 +15,7 @@
    studio-konten) + 5 selatan (ruang-kerja, pantry, taman,
    war-room, perpustakaan). */
 
-/* 8 agen yang dikenal (label/peran/warna = AVATAR_PARTS di
+/* 11 agen yang dikenal (label/peran/warna = AVATAR_PARTS di
    index.html + warna identitas M1/M2). Agen di luar daftar ini
    tidak punya meja — diabaikan view-model (bukan ditebak). */
 export const KNOWN_AGENTS = {
@@ -29,8 +29,9 @@ export const KNOWN_AGENTS = {
   ceto: { label: 'Ceto', role: 'Sales', color: '#1e3a8a' },
   seto: { label: 'Seto', role: 'Dukungan Umum', color: '#ff7f50' },
   deto: { label: 'Deto', role: 'Dukungan Umum', color: '#64748b' },
+  meto: { label: 'Meto', role: 'Support', color: '#22c55e' },
 };
-export const ROOM_ORDER = ['rangga', 'oto', 'beto', 'zeto', 'neto', 'geto', 'leto', 'ceto', 'seto', 'deto'];
+export const ROOM_ORDER = ['rangga', 'oto', 'beto', 'zeto', 'neto', 'geto', 'leto', 'ceto', 'seto', 'deto', 'meto'];
 export const FLOOR = { x0: -21, x1: 21, z0: -14, z1: 14 };
 export const GANG_Z = -2;
 /* Lebar gang (dipakai renderer buat lantai gang + garis tepi). */

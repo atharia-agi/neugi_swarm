@@ -26,7 +26,7 @@ produksi) TIDAK disentuh.
 - `room-showcase.js` — viewer (0.4.9.1-showcase). Satu-satunya request
   jaringan: `fetch('snapshot.json')`.
 - `room-viewmodel.js` — view-model murni (salinan 0.4.9).
-- `snapshot.json` — FIXTURE (10 agen) untuk pengujian. File asli
+- `snapshot.json` — FIXTURE (11 agen) untuk pengujian. File asli
   digenerate Oto — lihat kontrak di bawah.
 - `ASSETS.md` — manifest aset biner (GLB + three.js + Draco) + sha256.
 - `vendor/`, `models/` — disalin dari agent-hq (lihat ASSETS.md).
@@ -49,8 +49,11 @@ produksi) TIDAK disentuh.
 ```
 
 - `generated_at`: ISO 8601 + offset (dipakai status bar + penanda basi).
-- `agents[].id`: salah satu dari 10 id yang dikenal
-  (`rangga, oto, beto, zeto, neto, geto, leto, ceto, seto, deto`).
+- `agents[].id`: salah satu dari 11 id yang dikenal
+  (`rangga, oto, beto, zeto, neto, geto, leto, ceto, seto, deto, meto`).
+  PENTING: generator snapshot Oto HARUS memasukkan Meto (id `meto`)
+  agar Meto tampil live — bila tidak ada di snapshot, Meto tidak
+  ditampilkan (jujur, bukan ditebak).
   Agen yang TIDAK ada di snapshot TIDAK ditampilkan (jujur, bukan
   ditebak). Id yang tidak dikenal dilewati.
 - `room`: id ruangan. Ruangan yang dikenal: `kantor-rangga`,
@@ -142,6 +145,11 @@ ke sebuah elemen, tanpa memakai `office/index.html`:
 
 1. Salin 7 file kiriman board ke `office/` di repo neugi.com.
 2. Salin aset biner dari agent-hq sesuai `ASSETS.md` (cek sha256).
+   `meto.glb` (file_20261121_0218, sha `41b66682…`, 151.220 B) JUGA
+   harus ikut di deploy backroom berikutnya sebagai
+   `public/models/meto.glb` (deploy source agent-blackboard sudah
+   ada versi baru) — tanpa file ini, viewer backroom tidak bisa
+   memuat avatar Meto.
 3. Ganti `snapshot.json` fixture dengan hasil generator Oto.
 4. Buka `office/index.html` via server statis apa pun (atau langsung
    dari repo) — tidak butuh server khusus, tidak butuh build.
@@ -194,3 +202,16 @@ fullscreenchange basi tidak membatalkan follow/entry baru (edit 22);
     snapshot via `attachCanvas()` + urutan init diubah (edit 29, Oto
     msg_0357 item 3): halaman tidak pernah hitam total bila fetch
     snapshot stall; agen diisi `applyState` saat snapshot datang.
+(13) integrasi avatar Meto (Oto msg_0367 + msg_0373): `meto.glb`
+    file_20261121_0218 (151.220 B, sha `41b66682…`, dicet: grill emas
+    + belakang helm hijau) + joint map 11 avatar file_20261121_0216.
+    Wiring seperti 10 avatar lain: `KNOWN_AGENTS` + `ROOM_ORDER`
+    (view-model copy) + `AVATAR_PARTS` (avatar-voxel.js, warna
+    identitas `#22c55e`) + `IDLE_SHOULDER_R` `meto: 10` (edit 30;
+    shoulder_L bone_6 = default; joint map tervalidasi 10/10 cocok
+    dengan tabel BASE) + `models/meto.glb` + fixture snapshot 11
+    agen. Total 11 GLB 1.596.336 B (di bawah budget 4 MB).
+    CATATAN re-sync: patch view-model (`KNOWN_AGENTS`/`ROOM_ORDER`
+    Meto) hidup di salinan showcase ini — saat re-sync dari BASE
+    baru, terapkan ulang patch itu ke salinan view-model yang baru
+    (atau pastikan BASE produksi sudah mengenal Meto).

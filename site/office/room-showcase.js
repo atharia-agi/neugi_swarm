@@ -1848,7 +1848,12 @@ function normalizeAvatar(obj) {
    non-identity). shoulder_L = bone_6 di semua avatar KECUALI Seto
    (bone_7); shoulder_R beda per avatar (lihat tabel). */
 const IDLE_SHOULDER_L = { seto: 7 };
-const IDLE_SHOULDER_R = { rangga: 10, geto: 10, zeto: 13, neto: 13, leto: 13, ceto: 13, beto: 16, oto: 16, seto: 11, deto: 16 };
+/* SHOWCASE (Meto, Oto msg_0367 + msg_0373): joint map 11 avatar
+   (file_20261121_0216) — shoulder_L bone_6 (default, tanpa entri di
+   IDLE_SHOULDER_L), shoulder_R bone_10. Cross-check: peta joint
+   cocok dengan tabel BASE untuk 10 agen lama (10/10), jadi baca
+   Meto dari peta yang sama tervalidasi. */
+const IDLE_SHOULDER_R = { rangga: 10, geto: 10, zeto: 13, neto: 13, leto: 13, ceto: 13, beto: 16, oto: 16, seto: 11, deto: 16, meto: 10 };
 function applyIdlePose(obj, name) {
   const shoulderR = IDLE_SHOULDER_R[name];
   if (shoulderR === undefined) return;

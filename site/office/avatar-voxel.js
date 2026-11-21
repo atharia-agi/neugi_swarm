@@ -1,4 +1,4 @@
-/* avatar-voxel.js — avatar voxel SVG (10 agen) untuk showcase neugi.com.
+/* avatar-voxel.js — avatar voxel SVG (11 agen) untuk showcase neugi.com.
    Diekstrak dari blok <script> inline di index.html (AVATAR-VOXEL,
    Virtual Office Milestone 1): data + fungsi murni, tanpa DOM, tanpa
    fetch, tanpa token. Dipindah ke modul sendiri supaya viewer yang
@@ -264,6 +264,32 @@ const AVATAR_PARTS = {
       { "id": "mouth", "box": [1.9, 1.9, 9.7, 2.68, 2.43, 10.2], "color": "#111111" },
       { "id": "earL", "box": [-2.3, -0.6, 12.5, -1.2, 0.6, 13.6], "color": "#475569" },
       { "id": "earR", "box": [1.2, -0.6, 12.5, 2.3, 0.6, 13.6], "color": "#475569" }
+    ]
+  },
+  /* Meto (Oto msg_0367 + msg_0373): chibi Kamen Rider hijau-hitam-emas.
+     Helm hijau, mata merah, grill emas, setelan hitam, sabuk emas.
+     Warna identitas #22c55e (hijau, beda dari lime #a3ff00 Rangga/Oto). */
+  "meto": {
+    "label": "Meto", "role": "Support", "color": "#22c55e",
+    "parts": [
+      { "id": "head", "box": [-2.5, -2.25, 8, 2.5, 2.25, 12.5], "color": "#16a34a", "pivot": "neck" },
+      { "id": "torso", "box": [-2, -1.25, 4, 2, 1.25, 8], "color": "#111111", "pivot": "waist" },
+      { "id": "armL", "box": [-3.4, -0.7, 4.5, -2, 0.7, 7.5], "color": "#111111", "pivot": "shoulderL" },
+      { "id": "armR", "box": [2, -0.7, 4.5, 3.4, 0.7, 7.5], "color": "#111111", "pivot": "shoulderR" },
+      { "id": "legL", "box": [-1.8, -0.8, 1, -0.2, 0.8, 4], "color": "#111111", "pivot": "hipL" },
+      { "id": "legR", "box": [0.2, -0.8, 1, 1.8, 0.8, 4], "color": "#111111", "pivot": "hipR" },
+      { "id": "shoeL", "box": [-2, -1.5, 0, 0, 1.5, 1], "color": "#111111", "pivot": "ankleL" },
+      { "id": "shoeR", "box": [0, -1.5, 0, 2, 1.5, 1], "color": "#111111", "pivot": "ankleR" }
+    ],
+    "details": [
+      { "id": "handL", "box": [-3.4, -0.7, 3.5, -2, 0.7, 4.5], "color": "#111111" },
+      { "id": "handR", "box": [2, -0.7, 3.5, 3.4, 0.7, 4.5], "color": "#111111" },
+      { "id": "eyeR", "box": [2.5, 0.9, 10.9, 2.68, 1.7, 11.7], "color": "#ef4444" },
+      { "id": "eyeL", "box": [0.9, 2.25, 10.9, 1.7, 2.43, 11.7], "color": "#ef4444" },
+      { "id": "grill", "box": [1.9, 1.9, 9.7, 2.68, 2.43, 10.2], "color": "#d4af37" },
+      { "id": "crest", "box": [-0.6, -2.25, 12.5, 0.6, 2.25, 13.6], "color": "#d4af37" },
+      { "id": "belt", "box": [-2, -1.25, 4.0, 2, 1.25, 4.6], "color": "#d4af37" },
+      { "id": "chestStripe", "box": [1.7, 1.25, 5.6, 2.18, 1.43, 7.6], "color": "#22c55e" }
     ]
   }
 };
