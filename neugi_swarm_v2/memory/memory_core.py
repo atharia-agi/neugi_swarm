@@ -1209,8 +1209,8 @@ class MemorySystem:
             try:
                 placeholders = ",".join("?" * len(expired))
                 self._conn.execute(
-                    f"DELETE FROM memories WHERE id IN ({placeholders})",
-                    expired,  # nosec B608
+                    f"DELETE FROM memories WHERE id IN ({placeholders})",  # nosec B608
+                    expired,
                 )
                 self._conn.commit()
             except Exception as e:
