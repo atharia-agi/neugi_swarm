@@ -25,6 +25,14 @@ import {
   KNOWN_AGENTS, ROOM_ORDER, ROOMS, FLOOR, GANG_Z, GLYPH_DEFS,
   planWalk, assignSlots, trunc, hhmm,
 } from './room-viewmodel.js';
+/* SHOWCASE: avatar voxel (dulu blok <script> inline di index.html)
+   dipindah ke avatar-voxel.js dan diimpor di sini — supaya viewer yang
+   di-mount dari halaman lain (kantor.html, tanpa index.html) tetap
+   punya avatar di strip portrait, kartu agen, dan chip follow. Tanpa
+   impor ini window.avatarVoxel undefined di host page dan semua
+   portrait tampil kosong (temuan saat verifikasi mount API). Impor
+   relatif terhadap modul, jadi jalan dari host page mana pun. */
+import './avatar-voxel.js';
 /* Namespace import: fungsi baru Worker A (selectVisibleBubbles,
    activeAgentName) dipakai BILA sudah diekspor view-model; bila
    belum (BASE 0.4.8.4), fallback lokal di bawah yang mengimplementasi
@@ -95,10 +103,19 @@ function panelPlane(w, h, texObj) {
 }
 
 /* --- state ----------------------------------------------------- */
-const wrap = document.getElementById('roomCanvas');
-const bubbleLayer = document.getElementById('roomBubbles');
-const statusEl = document.getElementById('roomStatus');
-const cardsEl = document.getElementById('roomCards');
+/* Showcase: elemen di-bind ULANG oleh mount() — di office/index.html
+   struktur sudah ada saat modul dimuat; di host page (kantor.html)
+   struktur baru dibuat oleh mount() sebelum init(). */
+let wrap = document.getElementById('roomCanvas');
+let bubbleLayer = document.getElementById('roomBubbles');
+let statusEl = document.getElementById('roomStatus');
+let cardsEl = document.getElementById('roomCards');
+function bindShowcaseEls() {
+  wrap = document.getElementById('roomCanvas') || wrap;
+  bubbleLayer = document.getElementById('roomBubbles') || bubbleLayer;
+  statusEl = document.getElementById('roomStatus') || statusEl;
+  cardsEl = document.getElementById('roomCards') || cardsEl;
+}
 
 let renderer = null;
 let scene = null;
@@ -129,6 +146,11 @@ let fsFallback = false;    /* fullscreen API tak tersedia -> overlay CSS */
 let fsSeq = 0;             /* naik tiap enter/exit/follow fullscreen (penjaga race Esc) */
 let fsExitSeq = -1;        /* fsSeq saat exit dimulai (-1 = tak ada exit) */
 let fsExiting = false;     /* exit fullscreen sedang berjalan (async) */
+const MODULE_BASE = new URL('.', import.meta.url).href;
+/* Basis aset relatif terhadap MODUL (bukan dokumen): model GLB,
+   decoder Draco, dan snapshot default dimuat dari folder tempat
+   room-showcase.js berada — jadi mount() dari halaman lain
+   (kantor.html di root) tetap menemukan asetnya. */
 let pollTimer = null;
 let lastFetchMs = 0;
 let seenSpeech = new Set();
@@ -729,10 +751,18 @@ function updateFollowCamera() {
   const anchorY = 1.1 + (avatarBaseY[followName] || 0);
   const anchor = new THREE.Vector3(pos.x + followPan.x, anchorY, pos.z + followPan.z);
   const horiz = dist * Math.cos(pitch);
-  const b = computePlanBounds();
-  const cx = Math.min(b.maxX + 4, Math.max(b.minX - 4,
+  /* SHOWCASE FIX (follow Rangga = layar hitam, Oto msg_0349): kamera
+     follow TIDAK boleh keluar denah. Posisi di belakang agen yang
+     duduk di tepi utara (slot rot 0, mis. Rangga (-18,-11)) jatuh di
+     luar dinding utara (z=-14.15) sehingga dinding menutupi agen —
+     layar hitam total (mean luminance 4.8, 100% piksel <16), hanya
+     label DOM yang melayang. Jepit ke dalam FLOOR dengan margin 0.6
+     dari muka dalam dinding; jarak efektif mengecil tapi agen tetap
+     terlihat. (Bug yang sama ada di produksi room3d.js — ranah
+     Maximum Level tahap (b), bukan showcase.) */
+  const cx = Math.min(FLOOR.x1 - 0.6, Math.max(FLOOR.x0 + 0.6,
     anchor.x + Math.sin(yaw) * horiz));
-  const cz = Math.min(b.maxZ + 4, Math.max(b.minZ - 4,
+  const cz = Math.min(FLOOR.z1 - 0.6, Math.max(FLOOR.z0 + 0.6,
     anchor.z + Math.cos(yaw) * horiz));
   const cy = Math.max(0.5, anchor.y + dist * Math.sin(pitch));
   perspCam.position.set(cx, cy, cz);
@@ -1787,7 +1817,7 @@ function buildPerpustakaan() {
    mengizinkan worker-src 'self' blob: (lihat README §10.7). */
 const gltfLoader = new GLTFLoader();
 const dracoLoader = new DRACOLoader();
-dracoLoader.setDecoderPath('./vendor/draco/');
+dracoLoader.setDecoderPath(MODULE_BASE + 'vendor/draco/');
 dracoLoader.setWorkerLimit(2);
 gltfLoader.setDRACOLoader(dracoLoader);
 
@@ -1856,7 +1886,7 @@ function loadOneAvatar(name) {
       finish(fallbackAvatar(name));
     }, 8000);
     gltfLoader.load(
-      './models/' + name + '.glb',
+      MODULE_BASE + 'models/' + name + '.glb',
       (gltf) => { clearTimeout(timer); const obj = normalizeAvatar(gltf.scene); applyIdlePose(obj, name); captureBoneBase(obj, name); finish(obj); },
       undefined,
       () => { clearTimeout(timer); console.warn('GLB gagal dimuat, pakai stand-in:', name); finish(fallbackAvatar(name)); });
@@ -2619,15 +2649,25 @@ function refreshDesks() {
 function setStatusText(extra) {
   if (!statusEl) return;
   if (!snapLoaded) {
+    /* Pemuatan pertama gagal (timeout/jaringan/status): tampilkan error +
+       tombol coba lagi, bukan "Memuat…" selamanya. */
+    if (snapErrorMsg) { showSnapError(); return; }
     statusEl.textContent = 'Memuat snapshot kantor…';
     return;
   }
   const gen = new Date(snapGeneratedMs);
   const hhmmss = [gen.getHours(), gen.getMinutes(), gen.getSeconds()]
     .map((n) => String(n).padStart(2, '0')).join(':');
-  const open = state ? state.agents.reduce((n, a) => n + a.openCount, 0) : 0;
+  /* SHOWCASE FIX (label jujur, Oto msg_0354): snapshot hanya membawa
+     1 tugas aktif per agen — jumlah "tugas terbuka" ruangan TIDAK bisa
+     dihitung dari snapshot (angka tugas terbuka ruangan ada di footer
+     room, dari endpoint tugas). Label di
+     sini hitung AGEN yang sedang bekerja, bukan tugas. snapshotToState
+     tidak menyimpan string state mentah — yang tersisa face 'fokus'
+     (state working/meeting) vs 'netral' (idle/away); hitung dari situ. */
+  const working = state ? state.agents.filter((a) => a.face === 'fokus').length : 0;
   const ageMin = Math.round((Date.now() - snapGeneratedMs) / 60000);
-  let text = 'Snapshot per ' + hhmmss + ' · ' + open + ' tugas terbuka · polling 60 detik';
+  let text = 'Snapshot per ' + hhmmss + ' · ' + working + ' agen bekerja · polling 60 detik';
   if (ageMin >= 15) text += ' · snapshot basi (' + ageMin + ' mnt)';
   if (extra) text += ' · ' + extra;
   statusEl.textContent = text;
@@ -2754,7 +2794,7 @@ function applyEmpty() {
    id ruangan lain yang valid juga diterima). task: judul maks 40
    karakter atau null. SATU-SATUNYA request jaringan viewer ini
    adalah snapshot.json (same origin, relatif). */
-const SNAPSHOT_URL = 'snapshot.json';
+let SNAPSHOT_URL = new URL('snapshot.json', MODULE_BASE).href; /* default: snapshot di samping modul; mount({snapshotUrl}) override */
 const SNAPSHOT_POLL_MS = 60000;
 const SNAPSHOT_STALE_MS = 15 * 60 * 1000;
 const SNAPSHOT_OLD_MS = 2 * 60 * 60 * 1000;
@@ -2839,26 +2879,63 @@ function snapshotToState(snap, nowMs) {
     generatedMs: genMs,
   };
 }
+/* Timeout + retry pemuatan snapshot (Zeto msg_0356, Oto msg_0357):
+   fetch TANPA timeout menggantung selamanya bila koneksi stall — viewer
+   mentok di "Memuat snapshot kantor…" tanpa error (tanpa canvas, daftar
+   agen kosong). loadAvatars sudah punya timeout 8 detik per GLB, jadi
+   fetch snapshot inilah satu-satunya await tanpa batas sebelum render
+   pertama. Batas ~10 detik per percobaan (endpoint sehat 0,5–0,75 dtk;
+   first paint halaman bisa lambat ~60 dtk, tapi itu beban modul+GLB,
+   bukan fetch snapshot) + retry 2x (total 3 percobaan, jeda 800 ms)
+   sebelum menyerah dan tampilkan error + tombol coba lagi. */
+const SNAPSHOT_TIMEOUT_MS = 10000;
+const SNAPSHOT_MAX_ATTEMPTS = 3; /* percobaan awal + 2 retry */
+let snapErrorMsg = ''; /* alasan gagal memuat snapshot terakhir ('' = tak ada error) */
 async function fetchSnapshot() {
-  try {
-    const r = await fetch(SNAPSHOT_URL, { cache: 'no-store' });
-    if (!r.ok) return null;
-    const snap = await r.json();
-    if (!snap || typeof snap !== 'object' || !Array.isArray(snap.agents)) return null;
-    return snap;
-  } catch (e) {
-    console.warn('showcase: gagal memuat snapshot:', e);
-    return null;
+  for (let attempt = 1; attempt <= SNAPSHOT_MAX_ATTEMPTS; attempt++) {
+    const ctrl = new AbortController();
+    const to = setTimeout(() => ctrl.abort(), SNAPSHOT_TIMEOUT_MS);
+    try {
+      const r = await fetch(SNAPSHOT_URL, { cache: 'no-store', signal: ctrl.signal });
+      if (!r.ok) {
+        snapErrorMsg = 'status ' + r.status;
+      } else {
+        const snap = await r.json();
+        if (!snap || typeof snap !== 'object' || !Array.isArray(snap.agents)) {
+          snapErrorMsg = 'snapshot rusak (bukan JSON agen yang valid)';
+        } else {
+          snapErrorMsg = '';
+          return snap;
+        }
+      }
+    } catch (e) {
+      snapErrorMsg = (e && e.name === 'AbortError')
+        ? 'timeout ' + (SNAPSHOT_TIMEOUT_MS / 1000) + ' detik — server tidak merespons'
+        : 'jaringan bermasalah (' + (e && e.message ? e.message : 'fetch gagal') + ')';
+      console.warn('showcase: gagal memuat snapshot:', e);
+    } finally {
+      clearTimeout(to);
+    }
+    if (attempt < SNAPSHOT_MAX_ATTEMPTS) {
+      console.warn('showcase: snapshot gagal (percobaan ' + attempt + '/' + SNAPSHOT_MAX_ATTEMPTS + '), coba lagi:', snapErrorMsg);
+      await new Promise((r) => setTimeout(r, 800));
+    }
   }
+  return null;
 }
 async function refreshSnapshot() {
   if (document.hidden) return false;
   const snap = await fetchSnapshot();
   if (!snap) {
-    /* Galat jaringan/snapshot rusak: pertahankan state lama. */
-    setStatusText('snapshot gagal dimuat — menampilkan data terakhir');
+    /* Galat jaringan/snapshot rusak/timeout: pertahankan state lama
+       bila ada. Bila ini pemuatan PERTAMA (belum ada state), tampilkan
+       error + tombol coba lagi — viewer tidak boleh diam-diam mentok
+       di "Memuat snapshot kantor…". */
+    if (!state) { showSnapError(); }
+    else setStatusText('snapshot gagal dimuat — menampilkan data terakhir');
     return false;
   }
+  hideSnapError();
   const first = !state;
   lastFetchMs = Date.now();
   snapLoaded = true;
@@ -2868,6 +2945,48 @@ async function refreshSnapshot() {
   syncPresence(ns);
   setStatusText();
   return true;
+}
+/* Error state pemuatan snapshot (Zeto msg_0356): pesan jelas + tombol
+   coba lagi. Tombol dibuat sekali, dipakai ulang; gaya inline supaya
+   jalan juga di viewer ter-mount (tanpa CSS template). Polling 60 detik
+   tetap jalan di belakang — viewer bisa pulih sendiri tanpa klik. */
+function showSnapError() {
+  if (!statusEl) return;
+  statusEl.textContent = 'Snapshot gagal dimuat — coba lagi (' + (snapErrorMsg || 'tidak diketahui') + '). ';
+  let btn = document.getElementById('btnRetrySnap');
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.id = 'btnRetrySnap';
+    btn.type = 'button';
+    btn.textContent = 'Coba lagi';
+    btn.style.font = 'inherit';
+    btn.style.fontSize = '.9rem';
+    btn.style.padding = '.3rem .6rem';
+    btn.style.marginLeft = '.4rem';
+    btn.style.border = '1px solid #2d333b';
+    btn.style.borderRadius = '6px';
+    btn.style.background = '#21262d';
+    btn.style.color = '#e6e6e6';
+    btn.style.cursor = 'pointer';
+    btn.addEventListener('click', () => retrySnapshot());
+  }
+  statusEl.appendChild(btn);
+}
+function hideSnapError() {
+  const btn = document.getElementById('btnRetrySnap');
+  if (btn) btn.remove();
+  snapErrorMsg = '';
+}
+async function retrySnapshot() {
+  hideSnapError();
+  if (statusEl) statusEl.textContent = 'Memuat snapshot kantor…';
+  try {
+    await refreshSnapshot(); /* gagal -> showSnapError lagi; sukses -> status normal */
+  } catch (e) {
+    console.warn('showcase: coba lagi gagal:', e);
+    snapErrorMsg = 'gagal memuat ulang (' + (e && e.message ? e.message : 'error') + ')';
+  }
+  if (!snapLoaded) showSnapError();
 }
 function syncPresence(ns) {
   const present = new Set(ns.agents.map((a) => a.name));
@@ -2888,8 +3007,9 @@ function startPolling() {
 /* Hero: kamera orbit berputar pelan (satu putaran ~50 detik).
    Berhenti saat fullscreen / tab hidden / prefers-reduced-motion. */
 let heroTimer = null;
+let heroRotateEnabled = true; /* mount({autoRotate:false}) mematikan */
 function startHeroRotate() {
-  if (heroTimer || REDUCED) return;
+  if (heroTimer || REDUCED || !heroRotateEnabled) return;
   heroTimer = setInterval(() => {
     if (displayMode !== 'hero' || document.hidden) return;
     azimuth += 0.015;
@@ -3274,6 +3394,122 @@ const showcaseHook = {
 window.__showcasePreview = showcaseHook;
 window.__showcase = showcaseHook;
 
+/* --- mount API (embed di halaman lain, mis. hero kantor.html) ------- */
+/* window.__neugiShowcase.mount(targetEl, opts):
+   - targetEl: elemen DOM (slot hero) tempat viewer dipasang.
+   - opts.snapshotUrl: path snapshot (default: snapshot.json di
+     samping modul). Relatif terhadap HALAMAN pemanggil.
+   - opts.autoRotate: hero auto-rotate (default true; diabaikan bila
+     prefers-reduced-motion).
+   Bila struktur viewer (#roomCanvas dkk.) belum ada di dokumen,
+   mount() membuatnya di dalam targetEl (+ CSS penting) lalu init().
+   Bila struktur sudah ada (office/index.html), mount() hanya init
+   bila belum jalan. Mount kedua = no-op (return false). */
+let showcaseMounted = false;
+const SHOWCASE_CSS = `
+#stageHero{position:relative;height:480px;border:1px solid #2d333b;border-radius:8px;overflow:hidden;cursor:pointer;background:#0f1115}
+#roomWrap{position:relative;width:100%;height:100%;background:#0f1115}
+#roomCanvas{position:absolute;inset:0}
+#roomCanvas canvas{display:block;width:100%;height:100%;touch-action:none}
+#roomBubbles{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.bubble{position:absolute;transform:translate(-50%,-100%);max-width:180px;display:flex;gap:.3rem;align-items:center;background:rgba(22,27,34,.94);border:1px solid #2d333b;border-radius:6px;padding:.15rem .4rem;font-size:.8rem;line-height:1.3;color:#e6e6e6;white-space:nowrap;overflow:hidden}
+.bubble .txt{overflow:hidden;text-overflow:ellipsis}
+.bubble .glyph{color:#a3ff00;flex:none;display:flex}
+.bubble .time{color:#9aa0a6;font-size:.75rem;flex:none}
+#roomStatus{font-size:.9rem;color:#9aa0a6;padding:.4rem .8rem;border:1px solid #2d333b;border-top:none;background:#161b22;border-radius:0 0 8px 8px;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
+#roomStatus span{flex:1;min-width:0}
+.hero-actions{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin-top:.6rem}
+.hint{font-size:.9rem;color:#9aa0a6;margin:0}
+#btnEnterFs,#btnExitFs{font:inherit;font-size:1rem;padding:.5rem .6rem;border:1px solid #2d333b;border-radius:6px;background:#21262d;color:#e6e6e6;min-height:44px;cursor:pointer}
+#fsOverlay{position:fixed;inset:0;z-index:50;background:#0f1115}
+#fsOverlay[hidden]{display:none}
+#stageFs{position:absolute;inset:0}
+#btnExitFs{position:absolute;top:.6rem;right:.6rem;z-index:60}
+#roomPortraits{display:flex;gap:.5rem;overflow-x:auto;padding:.45rem .8rem;background:#161b22;border:1px solid #2d333b;border-radius:8px;margin-top:.8rem}
+#roomPortraits .portrait{flex:none;display:flex;flex-direction:column;align-items:center;gap:.15rem;min-width:64px;padding:.3rem .2rem .25rem;background:transparent;color:#e6e6e6;border:1px solid #2d333b;border-radius:8px;cursor:pointer}
+#roomPortraits .portrait .mini-avatar svg{width:56px;height:60px;display:block}
+#roomPortraits .portrait .portrait-name{font-size:10px;line-height:1.2;color:#e6e6e6}
+#roomPortraits .portrait .portrait-role{font-size:10px;line-height:1.2;color:#9aa0a6}
+#roomCards{display:block;padding:.2rem .2rem}
+.agent-card{display:flex;gap:.6rem;align-items:center;width:100%;min-height:64px;text-align:left;margin:.3rem 0;padding:.4rem .5rem;border:1px solid #2d333b;border-radius:8px;background:#21262d;color:#e6e6e6;cursor:pointer}
+.agent-card .mini-avatar svg{width:44px;height:48px;flex:none}
+.agent-card .card-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.agent-card .card-status{font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.agent-card .card-meta{font-size:.85rem;color:#9aa0a6}
+.cards-note{font-size:.9rem;color:#9aa0a6}
+@media (max-width:700px){#stageHero{height:340px}.bubble .txt,.bubble .time{display:none}}
+`;
+function ensureShowcaseCss() {
+  if (document.getElementById('neugi-showcase-css')) return;
+  const st = document.createElement('style');
+  st.id = 'neugi-showcase-css';
+  st.textContent = SHOWCASE_CSS;
+  document.head.appendChild(st);
+}
+function ensureShowcaseDom(targetEl) {
+  if (document.getElementById('roomCanvas') && document.getElementById('roomWrap')
+      && document.getElementById('stageHero')) return false; /* struktur sudah ada */
+  const root = (targetEl && targetEl instanceof Element) ? targetEl : document.body;
+  const mk = (tag, id, cls, text) => {
+    const el = document.createElement(tag);
+    if (id) el.id = id;
+    if (cls) el.className = cls;
+    if (text !== undefined && text !== null) el.textContent = text;
+    return el;
+  };
+  const stage = mk('div', 'stageHero', 'stage');
+  const wrapEl = mk('div', 'roomWrap');
+  wrapEl.appendChild(mk('div', 'roomCanvas'));
+  const bub = mk('div', 'roomBubbles');
+  bub.setAttribute('aria-hidden', 'true');
+  wrapEl.appendChild(bub);
+  stage.appendChild(wrapEl);
+  root.appendChild(stage);
+  const status = mk('div', 'roomStatus');
+  status.appendChild(mk('span', null, null, 'Memuat snapshot kantor…'));
+  root.appendChild(status);
+  const actions = mk('div', null, 'hero-actions');
+  const btnFs = mk('button', 'btnEnterFs', null, 'Layar penuh');
+  btnFs.type = 'button';
+  actions.appendChild(btnFs);
+  actions.appendChild(mk('p', null, 'hint', 'Klik ruangan untuk layar penuh · klik agen untuk mengikuti · seret untuk orbit, scroll untuk zoom'));
+  root.appendChild(actions);
+  const portraits = mk('div', 'roomPortraits');
+  portraits.setAttribute('aria-label', 'Portrait agen');
+  root.appendChild(portraits);
+  const cards = mk('div', 'roomCards');
+  cards.setAttribute('aria-label', 'Daftar agen per ruangan');
+  root.appendChild(cards);
+  /* Overlay fullscreen menempel di <body> (bukan di slot) supaya tidak
+     terpotong overflow slot + position:fixed selalu relatif viewport. */
+  if (!document.getElementById('fsOverlay')) {
+    const ov = mk('div', 'fsOverlay');
+    ov.hidden = true;
+    ov.appendChild(mk('div', 'stageFs', 'stage'));
+    const btnX = mk('button', 'btnExitFs', null, '× Keluar ');
+    btnX.type = 'button';
+    btnX.setAttribute('aria-label', 'Keluar layar penuh');
+    btnX.appendChild(mk('span', null, 'key', 'Esc'));
+    ov.appendChild(btnX);
+    document.body.appendChild(ov);
+  }
+  return true;
+}
+async function mountShowcase(targetEl, opts = {}) {
+  if (showcaseMounted) return false;
+  showcaseMounted = true;
+  const created = ensureShowcaseDom(targetEl);
+  if (created) ensureShowcaseCss();
+  if (opts.snapshotUrl) {
+    SNAPSHOT_URL = new URL(opts.snapshotUrl, document.baseURI).href;
+  }
+  if (opts.autoRotate === false) heroRotateEnabled = false;
+  bindShowcaseEls();
+  await init();
+  return true;
+}
+window.__neugiShowcase = { mount: mountShowcase, version: VERSION };
+
 /* --- init ---------------------------------------------------------- */
 function showFallback(msg) {
   const div = document.createElement('div');
@@ -3282,10 +3518,18 @@ function showFallback(msg) {
   wrap.appendChild(div);
 }
 
-function markReady() {
+/* Mount canvas terpisah dari snapshot (Oto msg_0357, item 3): canvas
+   ditempel + ruangan kosong di-render SEBELUM menunggu snapshot, supaya
+   halaman tidak pernah hitam total bila fetch snapshot stall. Sebelumnya
+   canvas baru ditempel di markReady() — di ujung init(), setelah
+   refreshSnapshot — jadi stall snapshot = tanpa canvas = hitam total. */
+function attachCanvas() {
   const c = renderer && renderer.domElement;
   if (c && !c.parentElement) wrap.appendChild(c);
   render();
+}
+function markReady() {
+  attachCanvas();
   showcaseHook.ready = true;
 }
 
@@ -3322,8 +3566,16 @@ async function init() {
     requestRender();
   }).observe(wrap);
   await loadAvatars();
+  /* Ruangan kosong dulu: canvas nempel + render pertama SEBELUM snapshot
+     (lihat attachCanvas) — bila fetch snapshot stall/timeout, pengunjung
+     tetap melihat ruangan, bukan hitam total; agen diisi applyState
+     saat snapshot datang (atau error + tombol coba lagi bila gagal).
+     applyEmpty aman dipanggil di sini: semua yang dilakukannya
+     (sembunyikan avatar, kartu kosong, status "Memuat…") dibatalkan
+     applyState saat snapshot berhasil. */
+  applyEmpty();
+  attachCanvas();
   await refreshSnapshot();
-  if (!snapLoaded) applyEmpty();
   startPolling();
   startHeroRotate();
   startAmbient();
@@ -3362,4 +3614,7 @@ document.addEventListener('fullscreenchange', () => {
   }
 });
 
-init();
+/* Auto-init HANYA bila struktur viewer sudah ada di dokumen
+   (office/index.html). Di host page (kantor.html) struktur belum
+   ada — modul hanya mengekspos window.__neugiShowcase.mount. */
+if (document.getElementById('roomCanvas')) { mountShowcase(document.body, {}); }

@@ -61,9 +61,10 @@ produksi) TIDAK disentuh.
   `idle`.
 - `task`: judul tugas aktif (maks 40 karakter) atau `null`.
 - `color`: hex `#rrggbb` (dipakai untuk plumbob/border; bila tidak
-  valid, dipakai warna identitas bawaan). `name`/`role` di snapshot
-  diabaikan viewer — yang dipakai label/role dari view-model
-  (identitas kanonis), supaya snapshot tidak bisa mengubah identitas.
+  valid, dipakai warna identitas bawaan). `name`/`role`: bila ada dan
+  tidak kosong, dipakai dari snapshot (generator Oto memakai nilai
+  kanonis yang sama dengan view-model, jadi hasilnya identik); bila
+  kosong/tidak ada, dipakai label/role dari view-model.
 
 ## Perilaku viewer
 
@@ -81,14 +82,65 @@ produksi) TIDAK disentuh.
   vertikal di bawah hero (mode utama HP) — klik kartu = fullscreen +
   follow. Portrait strip di atas kartu — klik portrait = fullscreen +
   follow.
-- **Status bar**: "Snapshot per HH:MM:SS · N tugas terbuka · polling
-  60 detik" + penanda "snapshot basi" bila umur ≥15 menit.
+- **Status bar**: "Snapshot per HH:MM:SS · N agen bekerja · polling
+  60 detik" + penanda "snapshot basi" bila umur ≥15 menit. N = jumlah
+  agen yang sedang bekerja (state `working`/`meeting` di snapshot;
+  dihitung dari `face === 'fokus'`, karena snapshotToState tidak
+  menyimpan string state mentah) — BUKAN jumlah tugas terbuka ruangan
+  (snapshot hanya membawa 1 tugas aktif per agen; angka tugas terbuka
+  ruangan ada di footer room, dari `/api/tasks`).
+- **Snapshot gagal dimuat**: fetch snapshot dibatasi timeout 10 detik
+  per percobaan, retry 2x (total 3 percobaan) sebelum menyerah. Bila
+  pemuatan pertama gagal (timeout / HTTP error / jaringan), status bar
+  menampilkan "Snapshot gagal dimuat — coba lagi (alasan)" + tombol
+  **Coba lagi** (bukan diam-diam mentok di "Memuat snapshot kantor…");
+  polling 60 detik tetap mencoba pulih sendiri di belakang.
+- **Ruangan kosong dulu**: canvas ditempel + ruangan kosong di-render
+  SEBELUM menunggu snapshot — bila fetch snapshot stall/timeout,
+  pengunjung tetap melihat ruangan (tanpa agen), bukan hitam total;
+  agen diisi saat snapshot datang.
 - **Tanpa WebGL**: halaman tetap menampilkan kartu agen + status
   (fallback jujur, tanpa canvas).
 
+## Mount API (embed di halaman lain)
+
+`room-showcase.js` mengekspos `window.__neugiShowcase.mount(targetEl, opts)`
+supaya halaman lain (mis. slot hero `kantor.html`) bisa me-mount viewer
+ke sebuah elemen, tanpa memakai `office/index.html`:
+
+```html
+<div id="heroSlot"></div>
+<script type="module">
+  import '/office/room-showcase.js';
+  await window.__neugiShowcase.mount(document.getElementById('heroSlot'), {
+    snapshotUrl: 'office/snapshot.json',
+  });
+</script>
+```
+
+- `targetEl`: elemen DOM (slot hero) tempat viewer dipasang.
+- `opts.snapshotUrl`: path snapshot (default: `snapshot.json` di samping
+  modul, mis. `/office/snapshot.json` bila modul di `/office/`). Relatif
+  terhadap halaman pemanggil — dari `kantor.html` di root, isi
+  `'office/snapshot.json'`.
+- `opts.autoRotate`: hero auto-rotate (default `true`; diabaikan bila
+  `prefers-reduced-motion`).
+- Mount mengembalikan `Promise<boolean>`: `true` bila viewer terpasang,
+  `false` bila sudah terpasang sebelumnya (mount kedua = no-op).
+- Bila struktur viewer belum ada di dokumen, mount() membuatnya di
+  dalam `targetEl` (+ CSS penting ikut di-inject); overlay fullscreen
+  menempel di `<body>`. Aset (model GLB, decoder Draco, snapshot
+  default) selalu dimuat relatif terhadap modul, jadi host page di path
+  mana pun tetap jalan. Avatar portrait/kartu/chip follow ikut jalan
+  tanpa langkah tambahan — `room-showcase.js` mengimpor
+  `avatar-voxel.js` sendiri (dulu blok inline di `index.html`). Di
+  `office/index.html` sendiri, viewer
+  auto-mount saat modul dimuat (struktur sudah ada) — `mount()` tidak
+  perlu dipanggil.
+
 ## Deploy (Oto)
 
-1. Salin 6 file kiriman board ke `office/` di repo neugi.com.
+1. Salin 7 file kiriman board ke `office/` di repo neugi.com.
 2. Salin aset biner dari agent-hq sesuai `ASSETS.md` (cek sha256).
 3. Ganti `snapshot.json` fixture dengan hasil generator Oto.
 4. Buka `office/index.html` via server statis apa pun (atau langsung
@@ -115,17 +167,30 @@ Maximum Level merge — saat re-sync, pakai nilai Maximum Level);
 (3) penjaga race Esc — `fsSeq`/`fsExitSeq`/`fsExiting` supaya
 fullscreenchange basi tidak membatalkan follow/entry baru (edit 22);
 (4) `mentionInComposer` dihapus (edit 12b, read-only);
-(5) `avatarScreenPos` di hook harness (edit 15, dari 0.4.9.1).
-
-## Integrasi home/kantor (catatan Oto, 2026-11-21)
-
-- Varian ini adalah halaman standalone (`office/index.html`) — itu yang
-  di-deploy sekarang. `site/kantor.html` menautkan ke halaman ini.
-- `site/assets/viewer.js` (slot hero di home + kantor) mengharapkan
-  `window.__neugiShowcase.mount(slot, snapshot)`; varian ini BELUM
-  menyediakan mount API itu (modul ES auto-boot + `init()`), jadi slot
-  hero tetap menampilkan fallback statis sampai mount API ditambahkan
-  (tindak lanjut ke Beto via board, di `transform.py`).
-- `snapshot.json` di sini BUKAN fixture — digenerate Oto dari data live
-  board (`~/workspace/neugi-audit/snapshot-gen/`); snapshot basi >15
-  menit ditandai viewer. Regenerasi berkala (cron) masih disiapkan.
+(5) `avatarScreenPos` di hook harness (edit 15, dari 0.4.9.1);
+(6) kamera follow dijepit ke dalam denah (edit 23; follow Rangga =
+    layar hitam karena kamera jatuh di luar dinding utara);
+(7) mount API `window.__neugiShowcase.mount` + aset relatif terhadap
+    modul + binding elemen lazy + auto-init kondisional (edit 24–25);
+(8) dok `name`/`role` snapshot disamakan dengan kode (dipakai bila
+    ada, fallback ke view-model);
+(9) label status jujur — "N agen bekerja" (jumlah agen state working,
+    bukan "N tugas terbuka": snapshot cuma bawa 1 tugas aktif per
+    agen; angka tugas terbuka ruangan ada di footer room dari
+    `/api/tasks`) (edit 26, Oto msg_0354);
+(10) avatar voxel dipindah dari blok inline `index.html` ke
+    `avatar-voxel.js` + diimpor `room-showcase.js` (edit 27) — viewer
+    ter-mount dari halaman lain tetap beravatar; `index.html` tanpa
+    blok inline lagi;
+(11) timeout pemuatan snapshot 10 detik per percobaan + retry 2x
+    (total 3 percobaan) + error state "Snapshot gagal dimuat — coba
+    lagi" + tombol "Coba lagi" (edit 28, Zeto msg_0356 + Oto msg_0357 —
+    `/office` hitam intermittent: `fetch` tanpa timeout menggantung
+    selamanya bila koneksi stall; `loadAvatars` sudah punya timeout
+    8 detik per GLB, jadi fetch snapshot satu-satunya await tanpa
+    batas sebelum render pertama; endpoint snapshot sehat, 0,5–0,75
+    dtk);
+(12) ruangan kosong dulu — canvas ditempel + di-render SEBELUM
+    snapshot via `attachCanvas()` + urutan init diubah (edit 29, Oto
+    msg_0357 item 3): halaman tidak pernah hitam total bila fetch
+    snapshot stall; agen diisi `applyState` saat snapshot datang.

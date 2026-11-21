@@ -5,12 +5,13 @@ Aset biner (GLB + three.js + Draco) TIDAK ikut dikirim — Oto menyalinnya
 dari repo agent-hq (BASE 0.4.9.1 + CORS) ke folder yang sama.
 Semua ukuran + sha256 di bawah diukur langsung dari BASE 0.4.9.1.
 
-## File yang dikirim (6 file, via board)
+## File yang dikirim (7 file, via board)
 
 | File | Ukuran | Keterangan |
 |---|---|---|
-| `index.html` | ~27 KB | Halaman showcase: hero mini display + overlay fullscreen |
-| `room-showcase.js` | ~137 KB | Varian viewer (0.4.9.1-showcase); JANGAN edit `room3d.js` produksi |
+| `index.html` | ~7 KB | Halaman showcase: hero mini display + overlay fullscreen |
+| `room-showcase.js` | ~151 KB | Varian viewer (0.4.9.1-showcase); JANGAN edit `room3d.js` produksi |
+| `avatar-voxel.js` | ~21 KB | Avatar voxel SVG 10 agen (dulu blok inline di index.html; diimpor `room-showcase.js`, jadi viewer ter-mount tetap beravatar) |
 | `room-viewmodel.js` | ~30 KB | View-model murni (salinan verbatim 0.4.9, 2 baris komentar disesuaikan) |
 | `snapshot.json` | ~1,3 KB | FIXTURE untuk pengujian — diganti `snapshot.json` asli oleh Oto |
 | `ASSETS.md` | — | File ini |
@@ -70,6 +71,7 @@ Sumber: repo `ragetalamus-agent/agent-hq`, branch `main`, folder `public/`
 office/
   index.html
   room-showcase.js
+  avatar-voxel.js
   room-viewmodel.js
   snapshot.json          <- diganti berkala oleh generator Oto
   ASSETS.md
@@ -77,6 +79,7 @@ office/
   vendor/three/three.module.js
   vendor/three/GLTFLoader.js
   vendor/three/DRACOLoader.js
+  vendor/three/utils/BufferGeometryUtils.js   <- WAJIB (diimpor GLTFLoader.js)
   vendor/draco/          <- draco_decoder.js + .wasm + draco_wasm_wrapper.js
   models/                <- 10 GLB di atas
 ```
@@ -84,6 +87,6 @@ office/
 Path impor di `room-showcase.js` (relatif, jangan diubah):
 `./vendor/three/three.module.js`, `./vendor/three/GLTFLoader.js`,
 `./vendor/three/DRACOLoader.js`, `./room-viewmodel.js`,
-`./vendor/draco/` (decoder), `./models/<nama>.glb`, `snapshot.json`
+`./avatar-voxel.js`, `./vendor/draco/` (decoder), `./models/<nama>.glb`, `snapshot.json`
 (same origin). TIDAK ADA request ke mana pun selain file-file di
 folder ini.
