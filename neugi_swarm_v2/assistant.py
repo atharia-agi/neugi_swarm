@@ -3,7 +3,7 @@
 NEUGI Swarm V2 Assistant
 ========================
 
-Runtime-compatible assistant facade for the v2.1.3 subsystem APIs.
+Runtime-compatible assistant facade for the v2.1.4 subsystem APIs.
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ from neugi_swarm_v2.skills.skill_manager import SkillManager
 
 
 class NeugiAssistantV2:
-    """Primary chat runtime for NEUGI Swarm v2.1.3."""
+    """Primary chat runtime for NEUGI Swarm v2.1.4."""
 
     def __init__(
         self,

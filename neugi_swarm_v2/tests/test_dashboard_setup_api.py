@@ -7,6 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+import pytest
 from config import NeugiConfig
 from dashboard.api import DashboardAPI
 from dashboard.server import DashboardConfig
@@ -36,16 +37,18 @@ class TestDashboardSetupAPI:
             server = SimpleNamespace(swarm=SimpleNamespace(config=config))
             api = DashboardAPI(server)
 
-            body = json.dumps({
-                "llm": {
-                    "provider": "openai",
-                    "model": "gpt-5.2",
-                    "base_url": "https://api.openai.com",
-                    "api_key": "",
-                    "temperature": 0.2,
-                },
-                "neugi_dir": "C:/should-not-change",
-            }).encode("utf-8")
+            body = json.dumps(
+                {
+                    "llm": {
+                        "provider": "openai",
+                        "model": "gpt-5.2",
+                        "base_url": "https://api.openai.com",
+                        "api_key": "",
+                        "temperature": 0.2,
+                    },
+                    "neugi_dir": "C:/should-not-change",
+                }
+            ).encode("utf-8")
 
             response = api.update_config(None, body, {})
 
@@ -116,13 +119,15 @@ class TestDashboardSetupAPI:
 
             api._make_test_provider = make_provider
 
-            body = json.dumps({
-                "llm": {
-                    "provider": "openai",
-                    "model": "gpt-5.2",
-                    "base_url": "https://api.openai.com",
+            body = json.dumps(
+                {
+                    "llm": {
+                        "provider": "openai",
+                        "model": "gpt-5.2",
+                        "base_url": "https://api.openai.com",
+                    }
                 }
-            }).encode("utf-8")
+            ).encode("utf-8")
 
             response = api.test_llm_config(None, body, {})
 
@@ -136,13 +141,15 @@ class TestDashboardSetupAPI:
     def test_test_llm_config_requires_cloud_api_key(self):
         server = SimpleNamespace(swarm=SimpleNamespace(config=NeugiConfig()))
         api = DashboardAPI(server)
-        body = json.dumps({
-            "llm": {
-                "provider": "openai",
-                "model": "gpt-5.2",
-                "base_url": "https://api.openai.com",
+        body = json.dumps(
+            {
+                "llm": {
+                    "provider": "openai",
+                    "model": "gpt-5.2",
+                    "base_url": "https://api.openai.com",
+                }
             }
-        }).encode("utf-8")
+        ).encode("utf-8")
 
         with patch.dict("os.environ", {"OPENAI_API_KEY": "", "NEUGI_LLM_API_KEY": ""}, clear=False):
             response = api.test_llm_config(None, body, {})
@@ -158,14 +165,16 @@ class TestDashboardSetupAPI:
                 raise RuntimeError("Authorization: Bearer secret-token rejected")
 
         api._make_test_provider = lambda llm_data, api_key: FakeProvider()
-        body = json.dumps({
-            "llm": {
-                "provider": "openai",
-                "model": "gpt-5.2",
-                "base_url": "https://api.openai.com",
-                "api_key": "secret-token",
+        body = json.dumps(
+            {
+                "llm": {
+                    "provider": "openai",
+                    "model": "gpt-5.2",
+                    "base_url": "https://api.openai.com",
+                    "api_key": "secret-token",
+                }
             }
-        }).encode("utf-8")
+        ).encode("utf-8")
 
         response = api.test_llm_config(None, body, {})
 
@@ -185,14 +194,16 @@ class TestDashboardSetupAPI:
                 raise RuntimeError("api_key=sk-1234567890ABCDEF token=ghp_1234567890ABCDE")
 
         api._make_test_provider = lambda llm_data, api_key: FakeProvider()
-        body = json.dumps({
-            "llm": {
-                "provider": "openai",
-                "model": "gpt-5.2",
-                "base_url": "https://api.openai.com",
-                "api_key": "secret-token",
+        body = json.dumps(
+            {
+                "llm": {
+                    "provider": "openai",
+                    "model": "gpt-5.2",
+                    "base_url": "https://api.openai.com",
+                    "api_key": "secret-token",
+                }
             }
-        }).encode("utf-8")
+        ).encode("utf-8")
 
         response = api.test_llm_config(None, body, {})
 
@@ -209,13 +220,15 @@ class TestDashboardSetupAPI:
             server = SimpleNamespace(swarm=SimpleNamespace(config=config))
             api = DashboardAPI(server)
 
-            body = json.dumps({
-                "llm": {
-                    "provider": "nvidia_nim",
-                    "model": "meta/llama-3.1-70b-instruct",
-                    "fallback_model": "",
+            body = json.dumps(
+                {
+                    "llm": {
+                        "provider": "nvidia_nim",
+                        "model": "meta/llama-3.1-70b-instruct",
+                        "fallback_model": "",
+                    }
                 }
-            }).encode("utf-8")
+            ).encode("utf-8")
 
             response = api.update_config(None, body, {})
 
@@ -327,14 +340,127 @@ class TestDashboardSetupAPI:
             broadcast_event=lambda event_type, data: events.append((event_type, data)),
         )
         api = DashboardAPI(server)
-        body = json.dumps({
-            "request_id": request.request_id,
-            "decision": "approve",
-            "approver": "owner",
-        }).encode("utf-8")
+        body = json.dumps(
+            {
+                "request_id": request.request_id,
+                "decision": "approve",
+                "approver": "owner",
+            }
+        ).encode("utf-8")
 
         response = api.decide_approval(None, body, {})
 
         assert response["status"] == "ok"
         assert response["data"]["request"]["status"] == "approved"
         assert events[0][0] == "approval_approved"
+
+
+class TestDashboardTLS:
+    """Dashboard serves HTTPS + WSS when ssl_certfile/ssl_keyfile are set."""
+
+    def _make_cert(self, tmpdir):
+        import datetime
+        import ipaddress
+
+        from cryptography import x509
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        from cryptography.x509.oid import NameOID
+
+        key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "127.0.0.1")])
+        now = datetime.datetime.now(datetime.timezone.utc)
+        cert = (
+            x509.CertificateBuilder()
+            .subject_name(name)
+            .issuer_name(name)
+            .public_key(key.public_key())
+            .serial_number(x509.random_serial_number())
+            .not_valid_before(now - datetime.timedelta(days=1))
+            .not_valid_after(now + datetime.timedelta(days=1))
+            .add_extension(
+                x509.SubjectAlternativeName([x509.IPAddress(ipaddress.IPv4Address("127.0.0.1"))]),
+                critical=False,
+            )
+            .sign(key, hashes.SHA256())
+        )
+        cert_path = Path(tmpdir) / "cert.pem"
+        key_path = Path(tmpdir) / "key.pem"
+        cert_path.write_bytes(cert.public_bytes(serialization.Encoding.PEM))
+        key_path.write_bytes(
+            key.private_bytes(
+                serialization.Encoding.PEM,
+                serialization.PrivateFormat.TraditionalOpenSSL,
+                serialization.NoEncryption(),
+            )
+        )
+        return str(cert_path), str(key_path)
+
+    def test_https_and_wss_with_cert(self):
+        import base64
+        import os
+        import socket
+        import ssl
+        import urllib.request
+
+        from dashboard.server import DashboardConfig, DashboardServer
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            certfile, keyfile = self._make_cert(tmpdir)
+            config = DashboardConfig(host="127.0.0.1", port=0, ssl_certfile=certfile, ssl_keyfile=keyfile)
+            server = DashboardServer(config=config)
+            server.start()
+            try:
+                port = server._server.server_address[1]
+                assert port != 0
+
+                ctx = ssl.create_default_context()
+                ctx.check_hostname = False
+                ctx.verify_mode = ssl.CERT_NONE
+
+                # HTTPS works.
+                with urllib.request.urlopen(f"https://127.0.0.1:{port}/api/health", context=ctx, timeout=10) as resp:
+                    assert resp.status == 200
+                    assert b'"status": "ok"' in resp.read()
+
+                # Plain HTTP must fail: the socket speaks TLS now.
+                # The reset surfaces as ConnectionResetError (or URLError
+                # wrapping it, depending on where the handshake dies).
+                with pytest.raises((urllib.error.URLError, ConnectionResetError)):
+                    urllib.request.urlopen(f"http://127.0.0.1:{port}/api/health", timeout=5)
+
+                # WSS handshake: 101 Switching Protocols over TLS.
+                raw = socket.create_connection(("127.0.0.1", port), timeout=5)
+                ssock = ctx.wrap_socket(raw, server_hostname="127.0.0.1")
+                try:
+                    ws_key = base64.b64encode(os.urandom(16)).decode()
+                    ssock.sendall(
+                        (
+                            f"GET /ws HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\n"
+                            "Upgrade: websocket\r\nConnection: Upgrade\r\n"
+                            f"Sec-WebSocket-Key: {ws_key}\r\n"
+                            "Sec-WebSocket-Version: 13\r\n\r\n"
+                        ).encode()
+                    )
+                    resp = ssock.recv(4096).decode(errors="replace")
+                    # BaseHTTP answers HTTP/1.0; what matters is 101 Switching Protocols.
+                    assert resp.splitlines()[0].endswith("101 Switching Protocols"), resp[:200]
+                finally:
+                    ssock.close()
+            finally:
+                server.stop()
+
+    def test_plain_http_still_works_without_cert(self):
+        import urllib.request
+
+        from dashboard.server import DashboardConfig, DashboardServer
+
+        config = DashboardConfig(host="127.0.0.1", port=0)
+        server = DashboardServer(config=config)
+        server.start()
+        try:
+            port = server._server.server_address[1]
+            with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/health", timeout=10) as resp:
+                assert resp.status == 200
+        finally:
+            server.stop()

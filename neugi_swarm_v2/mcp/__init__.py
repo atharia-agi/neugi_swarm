@@ -1,7 +1,7 @@
 """
 NEUGI Swarm MCP Server
 ======================
-Model Context Protocol (MCP) implementation for NEUGI Swarm v2.1.3
+Model Context Protocol (MCP) implementation for NEUGI Swarm v2.1.4
 
 MCP is the standard protocol (created by Anthropic) for connecting AI agents
 to external tools, data sources, and services. This implementation provides

@@ -54,6 +54,20 @@ Services:
 
 ## Cloud Deployment
 
+### Website (neugi.com) — canonical host: Vercel
+
+The public site (static HTML + assets + installers) is served from
+**Vercel**, auto-deployed from this repo. The GitHub Pages workflow
+(`.github/workflows/deploy.yml`) ships the **same file set** as a mirror
+(including `sitemap.xml` and `robots.txt`); it is not a second canonical
+host. Do not add a second deployment target for neugi.com without
+deciding which one owns the domain first.
+
+Only site files are deployed: `.vercelignore` excludes the Python
+framework (`neugi_swarm_v2/`), `scripts/`, `audit/`, specs, and runtime
+data (`sessions/`). Session transcripts must never be committed — they
+were publicly reachable on neugi.com before the 2026-11-21 fix.
+
 ### Vercel (Dashboard Only)
 
 ```bash

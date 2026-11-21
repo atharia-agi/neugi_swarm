@@ -580,7 +580,7 @@ class DashboardAPI:
                     if plugin_id in overrides:
                         runtime_enabled = bool(overrides[plugin_id])
                         try:
-                            setattr(plugin, "enabled", runtime_enabled)
+                            plugin.enabled = runtime_enabled
                         except Exception:
                             pass
                     plugins.append({
@@ -629,7 +629,7 @@ class DashboardAPI:
                     plugin.set_enabled(True)
                     changed = True
                 else:
-                    setattr(plugin, "enabled", True)
+                    plugin.enabled = True
                     changed = True
             else:
                 if hasattr(plugin, "disable") and callable(plugin.disable):
@@ -639,7 +639,7 @@ class DashboardAPI:
                     plugin.set_enabled(False)
                     changed = True
                 else:
-                    setattr(plugin, "enabled", False)
+                    plugin.enabled = False
                     changed = True
         except Exception as e:
             return _error(f"plugin toggle failed: {e}")
@@ -1250,7 +1250,7 @@ class DashboardAPI:
 
         # Avoid retaining plaintext key in runtime config and persisted JSON.
         if hasattr(config, "llm"):
-            setattr(config.llm, "api_key", "")
+            config.llm.api_key = ""
         llm_data["api_key"] = "********"
 
     def _make_test_provider(self, llm_data: dict[str, Any], api_key: str):

@@ -6,6 +6,7 @@ import hashlib
 import hmac
 import json
 import subprocess
+import sys
 import tempfile
 import time
 from pathlib import Path
@@ -39,7 +40,7 @@ def test_manifest_verify_and_tamper_detection():
         key = "test-signing-key"
 
         manifest = {
-            "version": "2.1.3-test",
+            "version": "2.1.4-test",
             "generated_at": time.time(),
             "all_passed": True,
             "artifacts": {str(artifact): _sha256(artifact)},
@@ -52,7 +53,7 @@ def test_manifest_verify_and_tamper_detection():
         manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
         ok = subprocess.run(
-            ["python", str(script), "--manifest", str(manifest_path), "--signing-key", key],
+            [sys.executable, str(script), "--manifest", str(manifest_path), "--signing-key", key],
             cwd=str(repo_root),
             capture_output=True,
             text=True,
@@ -63,7 +64,7 @@ def test_manifest_verify_and_tamper_detection():
         # Tamper artifact -> verify must fail
         artifact.write_text("tampered-content", encoding="utf-8")
         bad = subprocess.run(
-            ["python", str(script), "--manifest", str(manifest_path), "--signing-key", key],
+            [sys.executable, str(script), "--manifest", str(manifest_path), "--signing-key", key],
             cwd=str(repo_root),
             capture_output=True,
             text=True,

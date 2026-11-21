@@ -4,7 +4,7 @@
 
 ## Overview
 
-NEUGI Swarm v2.1.3 includes a full **Model Context Protocol (MCP) Server** that exposes 8+ default tools, all plugin tools, memory resources, and prompt templates through the standard MCP protocol.
+NEUGI Swarm v2.1.4 includes a full **Model Context Protocol (MCP) Server** that exposes 8+ default tools, all plugin tools, memory resources, and prompt templates through the standard MCP protocol.
 
 ### Transport Options
 

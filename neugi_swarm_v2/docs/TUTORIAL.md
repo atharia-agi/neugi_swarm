@@ -1,4 +1,4 @@
-# NEUGI Swarm v2.1.3 — Complete A-Z Tutorial
+# NEUGI Swarm v2.1.4 — Complete A-Z Tutorial
 
 > The ultimate guide to installing, configuring, and mastering NEUGI — the most advanced open-source autonomous multi-agent framework ever built.
 
@@ -34,8 +34,8 @@
 **NEUGI (Neural General Intelligence)** is a deterministic multi-agent state machine designed for production-grade reliability at scale. Unlike monolithic chatbots, NEUGI decomposes every task into specialized agent workflows orchestrated by a central director.
 
 ### Key Capabilities
-- **29 subsystems**, 120+ modules, ~71K lines of code
-- **386 collected tests** (384 passing, 2 optional browser tests skipped when Playwright is absent)
+- **22 subsystems**, 204 modules, ~81K lines of code
+- **410 collected tests** (407 passing, 3 skipped: 2 optional browser tests without Playwright, 1 optional E2E)
 - **9 specialized agents** with XP/level progression
 - **Karpathy-style dreaming memory** with 3-tier storage
 - **6-tier skill system** with YAML frontmatter
@@ -88,7 +88,7 @@ NEUGI stores all configuration in `~/.neugi/config.json` — a single JSON file 
 ```json
 {
   "_readme": "NEUGI Config — Edit this file to change your AI setup",
-  "version": "2.1.3",
+  "version": "2.1.4",
   "llm": {
     "provider": "ollama",
     "model": "qwen2.5-coder:7b",
@@ -235,7 +235,7 @@ API keys are auto-migrated from plaintext `config.json` to encrypted `SecretMana
 
 ## 5. Architecture Overview
 
-NEUGI consists of 29 subsystems organized into layers:
+NEUGI consists of 22 subsystems organized into layers:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -985,7 +985,7 @@ neugi rescue           # Rescue mode
 
 ---
 
-> **NEUGI v2.1.3** — 29 subsystems, 120+ modules, ~71K LOC, 386 collected tests
+> **NEUGI v2.1.4** — 22 subsystems, 204 modules, ~81K LOC, 410 collected tests
 >
 > GitHub: https://github.com/atharia-agi/neugi_swarm
 > Web: https://neugi.com

@@ -2,7 +2,7 @@
 
 ## Overview
 
-NEUGI Swarm v2 is a deterministic multi-agent state machine with **29 subsystems**, **120+ modules**, and **65,000+ lines** of production-ready code. It is designed as sovereign autonomous infrastructure: memory, skills, agents, workflows, MCP, A2A, governance, observability, and proactive execution all wired through one framework.
+NEUGI Swarm v2 is a deterministic multi-agent state machine with **22 subsystems**, **204 modules**, and **81,000+ lines** of production-ready code. It is designed as sovereign autonomous infrastructure: memory, skills, agents, workflows, MCP, A2A, governance, observability, and proactive execution all wired through one framework.
 
 ## Design Principles
 
@@ -97,7 +97,7 @@ User Input → Context Builder → Token Budget → LLM Provider
 
 ## Performance Characteristics
 
-- **Cold start**: < 500ms (stdlib-only core)
+- **Cold start**: ~0.5 s package import (459-641 ms across 4 runs, Python 3.12, measured 2026-11-21; up to ~1.6 s under cold cache)
 - **Memory query**: < 50ms (SQLite FTS5)
 - **Skill match**: < 20ms (in-memory index)
 - **Context assembly**: < 100ms (10 sections, token-budgeted)

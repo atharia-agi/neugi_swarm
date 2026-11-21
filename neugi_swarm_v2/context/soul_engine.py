@@ -503,7 +503,7 @@ class SoulEngine:
             .replace("{{os_name}}", os.name)
             .replace("{{shell}}", os.environ.get("SHELL", "unknown"))
             .replace("{{python_version}}", f"{sys.version_info.major}.{sys.version_info.minor}")
-            .replace("{{neugi_version}}", "2.1.3")
+            .replace("{{neugi_version}}", "2.1.4")
         )
 
 

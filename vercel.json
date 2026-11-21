@@ -1,16 +1,1 @@
-{
-  "version": 2,
-  "builds": [
-    {
-      "src": "**/*",
-      "use": "@vercel/static"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/$1"
-    }
-  ],
-  "outputDirectory": "."
-}
+{"$schema":"https://openapi.vercel.sh/vercel.json"}

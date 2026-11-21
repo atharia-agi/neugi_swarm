@@ -8,7 +8,7 @@ cat <<'EOF'
 | |\  | |___| |_| | |_| || |
 |_| \_|_____|\___/ \____|___|
 EOF
-echo "NEUGI Swarm v2.1.3 Installer"
+echo "NEUGI Swarm v2.1.4 Installer"
 echo
 echo "Safety Notice (Beta / Experimental)"
 echo "- NEUGI can run autonomous and tool-executing agent workflows."
@@ -24,7 +24,7 @@ fi
 echo
 
 echo "========================================="
-echo "  NEUGI Swarm V2.1.3 - Installer"
+echo "  NEUGI Swarm V2.1.4 - Installer"
 echo "========================================="
 
 # Colors

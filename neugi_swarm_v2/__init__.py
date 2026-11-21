@@ -2,7 +2,7 @@
 NEUGI Swarm v2 - Autonomous Multi-Agent Framework
 ==================================================
 
-Version: 2.1.3
+Version: 2.1.4
 
 Production-ready hierarchical multi-agent system combining:
 - Karpathy-style dreaming consolidation memory
@@ -23,8 +23,8 @@ from __future__ import annotations
 import logging
 import os
 import sys
-from urllib import request
 from typing import Any
+from urllib import request
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ _PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
 if _PACKAGE_DIR not in sys.path:
     sys.path.insert(0, _PACKAGE_DIR)
 
-__version__ = "2.1.3"
+__version__ = "2.1.4"
 __author__ = "NEUGI Team"
 
 # -- Core Systems ------------------------------------------------------------

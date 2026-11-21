@@ -225,6 +225,7 @@ class AutonomousLoop:
             goal_system=getattr(self.swarm, "goals", None),
             agent_manager=getattr(self.swarm, "agents", None),
             skill_generator=getattr(self.swarm, "skill_generator", None),
+            tool_executor=getattr(self.swarm, "tool_executor", None),
             web_search=getattr(self.swarm, "web_search", None),
             llm_callback=getattr(self.swarm, "_llm_call", None),
             capability_profile=getattr(self.swarm, "capability_profile", None),

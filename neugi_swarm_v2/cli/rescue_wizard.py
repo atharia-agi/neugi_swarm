@@ -303,7 +303,7 @@ class RescueWizard:
             base_url = "https://api.anthropic.com"
             ollama_url = ""
         config = {
-            "version": "2.1.3",
+            "version": "2.1.4",
             "llm": {
                 "provider": provider,
                 "model": model,
@@ -689,7 +689,7 @@ class RescueWizard:
             ollama_url = ""
 
         config = {
-            "version": "2.1.3",
+            "version": "2.1.4",
             "llm": {
                 "provider": provider,
                 "model": model,

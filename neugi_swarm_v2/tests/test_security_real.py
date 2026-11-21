@@ -1,4 +1,5 @@
 """Real security tests — validate actual security behavior, not just imports."""
+
 import os
 import sys
 import tempfile
@@ -45,12 +46,13 @@ class TestExecutionSandboxBehavior(unittest.TestCase):
 
     def test_allows_safe_python_command(self):
         sandbox = ExecutionSandbox()
-        result = sandbox.execute(["python", "-c", "print('hello')"])
+        result = sandbox.execute([sys.executable, "-c", "print('hello')"])
         self.assertEqual(result.returncode, 0)
         self.assertIn("hello", result.stdout)
 
     def test_allows_ls_in_allowed_dir(self):
         import tempfile
+
         tmpdir = tempfile.mkdtemp()
         sandbox = ExecutionSandbox(SandboxConfig(allowed_dirs=[tmpdir]))
         # Use python as a cross-platform "ls" equivalent
@@ -62,7 +64,7 @@ class TestExecutionSandboxBehavior(unittest.TestCase):
 
     def test_enforces_timeout(self):
         sandbox = ExecutionSandbox(SandboxConfig(max_wall_seconds=2))
-        result = sandbox.execute(["python", "-c", "import time; time.sleep(10)"])
+        result = sandbox.execute([sys.executable, "-c", "import time; time.sleep(10)"])
         self.assertTrue(result.killed)
 
     def test_sanitizes_environment(self):
@@ -193,9 +195,7 @@ class TestEvalReplacement(unittest.TestCase):
 
     def test_no_raw_eval_in_builtins(self):
         """Ensure builtins.py does not contain unrestricted eval()."""
-        builtins_path = os.path.join(
-            os.path.dirname(__file__), "..", "tools", "builtins.py"
-        )
+        builtins_path = os.path.join(os.path.dirname(__file__), "..", "tools", "builtins.py")
         with open(builtins_path, encoding="utf-8") as f:
             content = f.read()
         lines = content.split("\n")
@@ -213,13 +213,11 @@ class TestEvalReplacement(unittest.TestCase):
                     continue
                 if "__builtins__" in stripped and "{}" in stripped:
                     continue  # Safe eval with empty builtins
-                self.fail(f"Potential dangerous eval at line {i+1}: {stripped}")
+                self.fail(f"Potential dangerous eval at line {i + 1}: {stripped}")
 
     def test_no_raw_exec_in_builtins(self):
         """Ensure builtins.py does not contain unrestricted exec()."""
-        builtins_path = os.path.join(
-            os.path.dirname(__file__), "..", "tools", "builtins.py"
-        )
+        builtins_path = os.path.join(os.path.dirname(__file__), "..", "tools", "builtins.py")
         with open(builtins_path, encoding="utf-8") as f:
             content = f.read()
         lines = content.split("\n")
@@ -237,7 +235,7 @@ class TestEvalReplacement(unittest.TestCase):
                     continue  # Function definition like docker_exec
                 if "subprocess" in stripped:
                     continue
-                self.fail(f"Potential dangerous exec at line {i+1}: {stripped}")
+                self.fail(f"Potential dangerous exec at line {i + 1}: {stripped}")
 
 
 class TestSecretManagerConvenienceAccessor(unittest.TestCase):
@@ -294,6 +292,7 @@ class TestSecretManagerConvenienceAccessor(unittest.TestCase):
         # Insert a secret with corrupted encrypted value directly
         import sqlite3
         import time
+
         with sqlite3.connect(self.db_file.name) as conn:
             conn.execute(
                 """INSERT INTO secrets
@@ -301,9 +300,16 @@ class TestSecretManagerConvenienceAccessor(unittest.TestCase):
                     created_at, expires_at, last_rotated, metadata, description)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
-                    "corrupt_secret", "not-valid-base64-encrypted-data!!!",
-                    "fakehash", "generic", "active",
-                    time.time(), None, time.time(), "{}", "",
+                    "corrupt_secret",
+                    "not-valid-base64-encrypted-data!!!",
+                    "fakehash",
+                    "generic",
+                    "active",
+                    time.time(),
+                    None,
+                    time.time(),
+                    "{}",
+                    "",
                 ),
             )
         with self.assertRaises(SecretDecryptionError):
@@ -327,6 +333,128 @@ class TestSecretManagerConvenienceAccessor(unittest.TestCase):
         finally:
             if old_env is not None:
                 os.environ["NEUGI_MASTER_KEY"] = old_env
+
+
+class TestSecretManagerSaltMigration(unittest.TestCase):
+    """Per-install KDF salt + legacy migration (fixed static salt / XOR)."""
+
+    def _make_db(self):
+        f = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+        f.close()
+        return f.name
+
+    def _xor_encrypt_legacy(self, plaintext, master_key):
+        """Reproduce the pre-2.1.4 XOR fallback encryption (test-only)."""
+        import base64
+        import hashlib
+        import hmac
+
+        key_bytes = hashlib.pbkdf2_hmac("sha256", master_key.encode("utf-8"), b"neugi_secret_v2", 100_000, dklen=32)
+        data = plaintext.encode("utf-8")
+        iv = os.urandom(16)
+        keystream = b""
+        counter = 0
+        while len(keystream) < len(data):
+            keystream += hashlib.sha256(key_bytes + iv + counter.to_bytes(4, "big")).digest()
+            counter += 1
+        encrypted = bytes(a ^ b for a, b in zip(data, keystream[: len(data)], strict=False))
+        mac = hmac.new(key_bytes, iv + encrypted, hashlib.sha256).digest()
+        return base64.b64encode(iv + encrypted + mac).decode("ascii")
+
+    def test_same_master_key_gives_different_ciphertext_per_db(self):
+        """Two installs with the same master key must not share a KDF salt."""
+        import sqlite3
+
+        key = "test-master-key-for-unit-tests-32ch"
+        db1, db2 = self._make_db(), self._make_db()
+        try:
+            SecretManager(db_path=db1, master_key=key).add_secret("s", "same-value")
+            SecretManager(db_path=db2, master_key=key).add_secret("s", "same-value")
+            with sqlite3.connect(db1) as conn:
+                ct1 = conn.execute("SELECT value_encrypted FROM secrets WHERE name='s'").fetchone()[0]
+            with sqlite3.connect(db2) as conn:
+                ct2 = conn.execute("SELECT value_encrypted FROM secrets WHERE name='s'").fetchone()[0]
+            self.assertNotEqual(ct1, ct2)
+        finally:
+            os.unlink(db1)
+            os.unlink(db2)
+
+    def test_salt_persisted_across_reopen(self):
+        """Reopening the same DB still decrypts (salt is stored in meta)."""
+        key = "test-master-key-for-unit-tests-32ch"
+        db = self._make_db()
+        try:
+            SecretManager(db_path=db, master_key=key).add_secret("s", "persist-me")
+            reopened = SecretManager(db_path=db, master_key=key)
+            self.assertEqual(reopened.get("s"), "persist-me")
+        finally:
+            os.unlink(db)
+
+    def test_legacy_static_salt_db_migrates_on_open(self):
+        """A DB written with the old fixed salt stays readable and is re-encrypted."""
+        import sqlite3
+        import time
+
+        from security.secret_manager import SecretEncryption
+
+        key = "test-master-key-for-unit-tests-32ch"
+        db = self._make_db()
+        try:
+            # Create schema without a master key (no salt row written).
+            SecretManager(db_path=db, master_key="")
+            legacy = SecretEncryption(key, salt=SecretEncryption.LEGACY_SALT)
+            ct = legacy.encrypt("legacy-value")
+            with sqlite3.connect(db) as conn:
+                conn.execute(
+                    """INSERT INTO secrets
+                       (name, value_encrypted, value_hash, secret_class, status,
+                        created_at, expires_at, last_rotated, metadata, description)
+                       VALUES (?, ?, ?, 'generic', 'active', ?, NULL, ?, '{}', '')""",
+                    ("legacy_secret", ct, "fakehash", time.time(), time.time()),
+                )
+            manager = SecretManager(db_path=db, master_key=key)
+            self.assertEqual(manager.get("legacy_secret"), "legacy-value")
+            with sqlite3.connect(db) as conn:
+                row = conn.execute("SELECT value FROM meta WHERE key='kdf_salt'").fetchone()
+                new_ct = conn.execute("SELECT value_encrypted FROM secrets WHERE name='legacy_secret'").fetchone()[0]
+            self.assertIsNotNone(row)
+            import base64
+
+            self.assertNotEqual(base64.b64decode(row[0]), SecretEncryption.LEGACY_SALT)
+            self.assertNotEqual(new_ct, ct)  # re-encrypted under the new salt
+            # Second open: still readable, no double migration.
+            self.assertEqual(SecretManager(db_path=db, master_key=key).get("legacy_secret"), "legacy-value")
+        finally:
+            os.unlink(db)
+
+    def test_legacy_xor_value_readable_and_migratable(self):
+        """Old XOR-fallback values can still be read, then re-encrypted to AES-GCM."""
+        import sqlite3
+        import time
+
+        key = "test-master-key-for-unit-tests-32ch"
+        db = self._make_db()
+        try:
+            manager = SecretManager(db_path=db, master_key=key)
+            ct = self._xor_encrypt_legacy("xor-value", key)
+            with sqlite3.connect(db) as conn:
+                conn.execute(
+                    """INSERT INTO secrets
+                       (name, value_encrypted, value_hash, secret_class, status,
+                        created_at, expires_at, last_rotated, metadata, description)
+                       VALUES (?, ?, ?, 'generic', 'active', ?, NULL, ?, '{}', '')""",
+                    ("xor_secret", ct, "fakehash", time.time(), time.time()),
+                )
+            self.assertEqual(manager.get("xor_secret"), "xor-value")
+            self.assertEqual(manager.migrate_legacy_secrets(), {"migrated": 1})
+            with sqlite3.connect(db) as conn:
+                new_ct = conn.execute("SELECT value_encrypted FROM secrets WHERE name='xor_secret'").fetchone()[0]
+            self.assertNotEqual(new_ct, ct)
+            # Now AES-GCM readable directly.
+            manager._encryption._aesgcm_decrypt(new_ct)
+            self.assertEqual(manager.migrate_legacy_secrets(), {"migrated": 0})
+        finally:
+            os.unlink(db)
 
 
 if __name__ == "__main__":

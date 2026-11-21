@@ -1,4 +1,4 @@
-# AGENTS.md — NEUGI Swarm v2.1.3
+# AGENTS.md — NEUGI Swarm v2.1.4
 
 > Agent-facing context for AI coding assistants. Human contributors: see README.md.
 
@@ -8,9 +8,9 @@
 
 **NEUGI Swarm v2** is a production-grade autonomous multi-agent framework.
 - **Language:** Python 3.10+
-- **Architecture:** 29 subsystems, 120+ modules, ~65K LOC
-- **Test count:** 379 collected (377 passed, 2 optional browser tests skipped when Playwright is absent), all non-optional tests must pass
-- **Version:** 2.1.3
+- **Architecture:** 22 subsystems, 204 modules, ~81K LOC
+- **Test count:** 410 collected (407 passed, 3 skipped: 2 optional browser tests without Playwright, 1 optional E2E), all non-optional tests must pass
+- **Version:** 2.1.4
 
 This is NOT a chatbot wrapper. It is **sovereign autonomous infrastructure**:
 - **Autonomous Loop** — pro-active behavior during idle periods (observe → decide → execute → report)
@@ -104,7 +104,7 @@ repo/
 │       ├── genius_wizard.py  # Canonical zero-dependency setup wizard
 │       └── rescue_wizard.py  # Auto-fix rescue mode
 │
-├── tests/                    # 379 collected tests across all subsystems
+├── tests/                    # 410 collected tests across all subsystems
 ├── assets/                   # Brand images, favicon, hero video
 ├── index.html                # Landing page
 ├── docs.html                 # Documentation site
@@ -121,7 +121,7 @@ repo/
 ```bash
 cd neugi_swarm_v2
 python -m pytest tests/ -q --tb=short -p no:anchorpy
-# Expected: 377 passed, 2 skipped when Playwright is absent
+# Expected: 407 passed, 3 skipped (2 optional browser tests without Playwright, 1 optional E2E)
 ```
 
 ### Smoke Test CLI
@@ -232,7 +232,7 @@ NEUGI now acts pro-actively during idle periods via the **AutonomousLoop**:
 - Self-healing (`SELF_HEAL`) → Real health checks + circuit breaker reset
 - Pro-active research (`PROACTIVE_RESEARCH`) → `ResearchEngine.research()` + `AutonomousAgentSpawner.spawn_research_agent()`
 - Skill learning (`LEARN_SKILL`) → `SkillGenerator.generate_skills_from_patterns()`
-- System optimization (`OPTIMIZE`) → Performance suggestions logged to memory
+- System optimization (`OPTIMIZE`) → Measured optimization: prune expired memories + tool-cache entries, consolidate memory, VACUUM memory DB — before/after numbers reported (never a static suggestion)
 
 **ActivityReporter** routes reports to:
 - Memory system (audit trail)
@@ -441,7 +441,7 @@ NEUGI keeps it simple — **one JSON file** that anyone can edit:
 ```json
 {
   "_readme": "NEUGI Config — Edit this file to change your AI setup",
-  "version": "2.1.3",
+  "version": "2.1.4",
   "llm": {
     "_comment": "Your AI provider and model",
     "provider": "ollama",
@@ -553,7 +553,7 @@ Added `observability` section to `~/.neugi/config.json`:
 ---
 
 ## Version
-Current: **2.1.3** (previously 2.1.2)
+Current: **2.1.4** (previously 2.1.3)
 
 ---
 
