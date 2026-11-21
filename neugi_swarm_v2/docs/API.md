@@ -1,10 +1,10 @@
-# NEUGI v2 API Reference (v2.1.3)
+# NEUGI v2 API Reference (v2.1.4)
 
 ## REST API (Dashboard Server)
 
 Base URL: `http://localhost:17901/api`
 
-Runtime-validated endpoint count: `32`
+Runtime-validated endpoint count: `35`
 
 ### Core Runtime
 

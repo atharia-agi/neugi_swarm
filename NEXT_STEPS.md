@@ -106,7 +106,7 @@ python -c "import importlib, pkgutil; [importlib.import_module(m.name) for m in 
 - **eval() must use** `{"__builtins__": {}}` scope
 - **subprocess must use** `shell=False` with list args
 - **Tests run from** `neugi_swarm_v2/` directory
-- **Test count invariant** — must remain ≥ 379 at all times
+- **Test count invariant** — must remain ≥ 410 at all times (410 collected, 407 passed, 3 skipped as of 2026-11-21)
 
 ## User's Additional Request (Not Yet Done)
 

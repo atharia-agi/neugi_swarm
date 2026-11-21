@@ -8,7 +8,7 @@ echo ^|  \^| ^|  _^| ^| ^| ^| ^| ^|  _ ^| ^|
 echo ^| ^|\  ^| ^|___^| ^|_^| ^| ^|_^| ^|^| ^|
 echo ^|_^| \_^|_____^\___/ \____^|___^|
 echo.
-echo NEUGI Swarm v2.1.3 Installer
+echo NEUGI Swarm v2.1.4 Installer
 echo.
 echo Safety Notice ^(Beta / Experimental^)
 echo - NEUGI can run autonomous and tool-executing agent workflows.
@@ -24,7 +24,7 @@ if /i not "%NEUGI_INSTALL_CONSENT%"=="y" (
 echo.
 
 echo =========================================
-echo   NEUGI Swarm V2.1.3 - Windows Installer
+echo   NEUGI Swarm V2.1.4 - Windows Installer
 echo =========================================
 
 REM Check Python installation
@@ -130,7 +130,7 @@ set "NEUGI_CMD=%USERPROFILE%\AppData\Local\Microsoft\WindowsApps\neugi.cmd"
 
 echo.
 echo =========================================
-echo   NEUGI v2.1.3 installed successfully!
+echo   NEUGI v2.1.4 installed successfully!
 echo =========================================
 echo.
 echo Quick start:

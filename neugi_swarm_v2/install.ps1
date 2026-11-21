@@ -9,7 +9,7 @@ function Show-InstallBanner {
 |_| \_|_____|\___/ \____|___|
 '@
     Write-Host $ascii -ForegroundColor Cyan
-    Write-Host "NEUGI Swarm v2.1.3 Installer" -ForegroundColor White
+    Write-Host "NEUGI Swarm v2.1.4 Installer" -ForegroundColor White
     Write-Host ""
 }
 
@@ -31,7 +31,7 @@ if (-not (Confirm-InstallerRisk)) {
 }
 
 Write-Host "========================================="
-Write-Host "  NEUGI Swarm V2.1.3 - Windows Installer"
+Write-Host "  NEUGI Swarm V2.1.4 - Windows Installer"
 Write-Host "========================================="
 
 $repoUrl = "https://github.com/atharia-agi/neugi_swarm.git"
@@ -123,7 +123,7 @@ python -m neugi_swarm_v2.cli.cli %*
 
 Write-Host ""
 Write-Host "========================================="
-Write-Host "  NEUGI v2.1.3 installed successfully!"
+Write-Host "  NEUGI v2.1.4 installed successfully!"
 Write-Host "========================================="
 Write-Host ""
 Write-Host "Quick start:"
