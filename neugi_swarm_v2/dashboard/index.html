@@ -2168,12 +2168,21 @@ body.sidebar-collapsed .main-content {
               <button class="btn" onclick="loadSetupConfig()">Reload Config</button>
               <button class="btn" onclick="applySafeConfigPreset()">Apply Safe Config</button>
               <button class="btn" onclick="testSetupProvider()">Test Provider</button>
+              <select class="setup-select" id="setupGovernanceProfile" title="Governance risk profile">
+                <option value="startup">Startup</option>
+                <option value="team">Team</option>
+                <option value="enterprise">Enterprise</option>
+              </select>
+              <button class="btn" onclick="previewGovernanceProfile()">Preview Governance</button>
+              <button class="btn" onclick="applyGovernanceProfile()">Apply Governance</button>
               <button class="btn" onclick="toggleAutostart(true)">Autostart On</button>
               <button class="btn" onclick="toggleAutostart(false)">Autostart Off</button>
               <button class="btn full-row" onclick="validateAllProviders()">Validate All Providers</button>
               <button class="btn btn-primary" onclick="saveSetupConfig()">Save AI Setup</button>
             </div>
             <div class="setup-hint" id="autostartStatus">Autostart status: checking...</div>
+            <div class="setup-hint" id="governanceStatus">Governance profile: loading...</div>
+            <div class="setup-hint" id="governancePreviewStatus">Governance preview: ready</div>
             <div class="setup-status" id="setupStatus"></div>
           </div>
         </div>
@@ -3447,6 +3456,7 @@ async function loadSetupConfig() {
     renderSetupModels();
     setSetupStatus('Config loaded.');
     await refreshAutostartStatus();
+    await refreshGovernanceProfileStatus();
   } catch (e) {
     setSetupStatus(`Config load failed: ${e.message}`, true);
   }
@@ -3475,6 +3485,71 @@ async function toggleAutostart(enable) {
     await refreshAutostartStatus();
   } catch (e) {
     setSetupStatus(`Autostart update failed: ${e.message}`, true);
+  }
+}
+
+async function refreshGovernanceProfileStatus() {
+  const statusEl = document.getElementById('governanceStatus');
+  const selectEl = document.getElementById('setupGovernanceProfile');
+  if (!statusEl || !selectEl) return;
+  try {
+    const data = await api('/api/governance/profile');
+    const payload = data.data || {};
+    const profile = String(payload.profile || 'team');
+    state.governanceProfile = profile;
+    selectEl.value = profile;
+    const rules = Array.isArray(payload.rules) ? payload.rules : [];
+    const enabledRules = rules.filter((r) => r && r.enabled).length;
+    statusEl.textContent = `Governance profile: ${profile} (${enabledRules} active rules)`;
+    setSetupHintSeverity(statusEl, profile === 'enterprise' ? 'warn' : 'info');
+  } catch (e) {
+    statusEl.textContent = `Governance profile unavailable: ${e.message}`;
+    setSetupHintSeverity(statusEl, 'warn');
+  }
+}
+
+async function applyGovernanceProfile() {
+  const selectEl = document.getElementById('setupGovernanceProfile');
+  if (!selectEl) return;
+  const profile = String(selectEl.value || 'team').toLowerCase();
+  try {
+    setSetupStatus(`Applying governance profile: ${profile}...`);
+    const data = await api('/api/governance/profile', {
+      method: 'POST',
+      body: JSON.stringify({ profile, force: true }),
+    });
+    state.governanceProfile = profile;
+    setSetupStatus(data.message || `Governance profile applied: ${profile}`);
+    await refreshGovernanceProfileStatus();
+  } catch (e) {
+    setSetupStatus(`Governance profile apply failed: ${e.message}`, true);
+  }
+}
+
+async function previewGovernanceProfile() {
+  const selectEl = document.getElementById('setupGovernanceProfile');
+  const previewEl = document.getElementById('governancePreviewStatus');
+  if (!selectEl || !previewEl) return;
+  const profile = String(selectEl.value || 'team').toLowerCase();
+  try {
+    previewEl.textContent = `Governance preview: loading ${profile}...`;
+    setSetupHintSeverity(previewEl, 'info');
+    const data = await api('/api/governance/profile/preview', {
+      method: 'POST',
+      body: JSON.stringify({ profile }),
+    });
+    const payload = data.data || {};
+    const currentCount = Number(payload.current?.rule_count || 0);
+    const previewCount = Number(payload.preview?.rule_count || 0);
+    const delta = Number(payload.delta_rule_count || 0);
+    const deltaLabel = delta > 0 ? `+${delta}` : `${delta}`;
+    previewEl.textContent = `Governance preview (${profile}): ${currentCount} -> ${previewCount} rules (delta ${deltaLabel})`;
+    setSetupHintSeverity(previewEl, profile === 'enterprise' ? 'warn' : 'info');
+    setSetupStatus(`Governance preview ready for ${profile}.`);
+  } catch (e) {
+    previewEl.textContent = `Governance preview failed: ${e.message}`;
+    setSetupHintSeverity(previewEl, 'critical');
+    setSetupStatus(`Governance preview failed: ${e.message}`, true);
   }
 }
 
@@ -3866,6 +3941,9 @@ function handleWsEvent(data) {
       break;
     case 'workflow_run':
       fetchWorkflows();
+      break;
+    case 'governance_profile':
+      refreshGovernanceProfileStatus();
       break;
     case 'steering':
       showNotification('Steering message sent');
