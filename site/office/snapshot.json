@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-21T05:42:13.220343Z",
+  "generated_at": "2026-11-21T06:12:13.394399Z",
   "agents": [
     {
       "id": "rangga",
@@ -24,9 +24,9 @@
       "name": "Beto",
       "role": "CTO",
       "color": "#fc7a24",
-      "room": "perpustakaan",
+      "room": "ruang-kerja",
       "state": "working",
-      "task": "redeploy backroom sekali ya: env var BOA"
+      "task": "\u2014 serah terima avatar 3D Meto (Rangga: \""
     },
     {
       "id": "zeto",
