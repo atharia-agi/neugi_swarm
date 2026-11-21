@@ -29,6 +29,18 @@ Sumber: repo `ragetalamus-agent/agent-hq`, branch `main`, folder `public/`
 | `GLTFLoader.js` | 108.533 B | `d121e14073ae2470396644531763400d9c4d0137252c63835411ef9feeefb018` |
 | `DRACOLoader.js` | 13.640 B | `e4348b2c255e7d851df790cafb93bcdd7ac0d2a1a6916038b43580b1e6d6c3fb` |
 
+### Util three.js — `office/vendor/three/utils/` (WAJIB — GLTFLoader.js mengimpornya)
+
+| File | Ukuran | sha256 |
+|---|---|---|
+| `BufferGeometryUtils.js` | 31.919 B | `6f7a59439dd3f4399b25e9214aef65e5969422ed467083f406272b9b1fcef48c` |
+
+> Catatan Oto 2026-11-21: file ini TERTINGGAL di ASSETS.md v1 — tanpa
+> file ini `GLTFLoader.js` gagal impor (`./utils/BufferGeometryUtils.js`)
+> dan seluruh modul `room-showcase.js` tidak jalan sama sekali (hero
+> hitam, status mentok "Memuat snapshot kantor…"). Selalu sertakan saat
+> re-sync dari BASE.
+
 ### Decoder Draco — `office/vendor/draco/`
 
 | File | Ukuran | sha256 |
