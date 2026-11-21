@@ -52,6 +52,7 @@ from autonomous.research_engine import (
 
 # -- Fixtures -----------------------------------------------------------------
 
+
 @pytest.fixture
 def temp_memory_db():
     """Create a temporary memory database."""
@@ -79,6 +80,7 @@ def temp_memory_db():
 
     # On Windows, force garbage collection before unlink
     import gc
+
     gc.collect()
     try:
         Path(db_path).unlink(missing_ok=True)
@@ -108,6 +110,7 @@ def temp_goals_db():
     yield db_path
 
     import gc
+
     gc.collect()
     try:
         Path(db_path).unlink(missing_ok=True)
@@ -116,6 +119,7 @@ def temp_goals_db():
 
 
 # -- IdleObserver Tests -------------------------------------------------------
+
 
 class TestIdleObserver:
     def test_init(self, temp_memory_db):
@@ -153,7 +157,7 @@ class TestIdleObserver:
         now = time.time()
         conn.execute(
             "INSERT INTO goals (id, title, status, updated_at, metadata) VALUES (?, ?, ?, ?, ?)",
-            ("g1", "Test Goal", "active", now - 90000, '{}'),
+            ("g1", "Test Goal", "active", now - 90000, "{}"),
         )
         conn.commit()
         conn.close()
@@ -189,6 +193,7 @@ class TestIdleObserver:
 
 
 # -- ProactiveDecisionEngine Tests --------------------------------------------
+
 
 class TestProactiveDecisionEngine:
     def test_decide_no_observations(self):
@@ -274,12 +279,14 @@ class TestProactiveDecisionEngine:
 
 # -- SelfDirectedExecutor Tests -----------------------------------------------
 
+
 class TestSelfDirectedExecutor:
     def test_execute_not_approved(self):
         context = ExecutionContext()
         executor = SelfDirectedExecutor(context)
 
         from autonomous.decision import Decision
+
         decision = Decision(
             decision_type=DecisionType.IDLE,
             source_observation=Observation(
@@ -370,8 +377,109 @@ class TestSelfDirectedExecutor:
         assert stats["total_executions"] == 1
         assert stats["success_rate"] == 1.0
 
+    def _make_decision(self, dec_type, description="test issue", **plan):
+        action_plan = {"description": description, **plan}
+        return Decision(
+            decision_type=dec_type,
+            source_observation=Observation(
+                obs_type=ObservationType.SYSTEM_HEALTH,
+                source="health",
+                description=description,
+            ),
+            outcome=DecisionOutcome.APPROVED,
+            action_plan=action_plan,
+        )
+
+    def test_self_heal_prunes_expired_memories(self):
+        """SELF_HEAL really deletes expired memories and reports the count."""
+        from datetime import datetime, timedelta, timezone
+
+        from memory.memory_core import MemorySystem
+
+        with tempfile.TemporaryDirectory() as td:
+            memory = MemorySystem(base_dir=td, daily_ttl_days=30)
+            try:
+                memory.save(content="stale entry", tags=["test"], importance=0.1)
+                # Force-expire it by backdating its expiry.
+                for entry in memory._store.values():
+                    entry.expires_at = datetime.now(timezone.utc) - timedelta(days=1)
+                assert len(memory._store) == 1
+
+                executor = SelfDirectedExecutor(ExecutionContext(memory_system=memory))
+                result = executor.execute(self._make_decision(DecisionType.SELF_HEAL))
+
+                assert result.success
+                assert result.output["expired_memories_removed"] == 1
+                assert len(memory._store) == 0
+            finally:
+                memory.close()
+
+    def test_self_heal_resets_tripped_circuit_breaker(self):
+        """SELF_HEAL really resets a tripped breaker; the tool works after."""
+        from tools.tool_executor import ToolExecutor
+        from tools.tool_registry import ToolRegistry
+
+        registry = ToolRegistry()
+        tool_executor = ToolExecutor(registry, circuit_failure_threshold=2)
+        breaker = tool_executor.circuit_breaker
+        breaker.record_failure("flaky_tool")
+        breaker.record_failure("flaky_tool")
+        assert breaker.is_open("flaky_tool") is True
+
+        executor = SelfDirectedExecutor(ExecutionContext(tool_executor=tool_executor))
+        result = executor.execute(self._make_decision(DecisionType.SELF_HEAL, "circuit breaker tripped for flaky_tool"))
+
+        assert result.success
+        assert "flaky_tool" in result.output["circuit_breakers_reset"]
+        assert breaker.is_open("flaky_tool") is False
+        assert breaker.get_state("flaky_tool") == "closed"
+
+    def test_self_heal_fails_honestly_without_subsystems(self):
+        """SELF_HEAL with nothing attached must fail, never fake success."""
+        executor = SelfDirectedExecutor(ExecutionContext())
+        result = executor.execute(self._make_decision(DecisionType.SELF_HEAL))
+        assert not result.success
+        assert "No subsystem attached" in (result.error or "")
+
+    def test_optimize_reports_measured_improvement(self):
+        """OPTIMIZE prunes expired cache + memory entries and reports numbers."""
+        from datetime import datetime, timedelta, timezone
+
+        from memory.memory_core import MemorySystem
+        from tools.tool_executor import ToolExecutor
+        from tools.tool_registry import ToolRegistry
+
+        with tempfile.TemporaryDirectory() as td:
+            memory = MemorySystem(base_dir=td, daily_ttl_days=30)
+            try:
+                memory.save(content="stale entry", tags=["test"], importance=0.1)
+                for entry in memory._store.values():
+                    entry.expires_at = datetime.now(timezone.utc) - timedelta(days=1)
+
+                tool_executor = ToolExecutor(ToolRegistry())
+                tool_executor.cache.set("t", (), {}, "v", ttl=0.01)
+                time.sleep(0.05)  # let the cache entry expire
+
+                executor = SelfDirectedExecutor(ExecutionContext(memory_system=memory, tool_executor=tool_executor))
+                result = executor.execute(self._make_decision(DecisionType.OPTIMIZE, "system"))
+
+                assert result.success
+                assert result.output["memory"]["expired_removed"] == 1
+                assert result.output["tool_cache"]["pruned"] == 1
+                assert "memory_db_vacuum" in result.output
+            finally:
+                memory.close()
+
+    def test_optimize_fails_honestly_without_subsystems(self):
+        """OPTIMIZE with nothing attached must fail, never fake success."""
+        executor = SelfDirectedExecutor(ExecutionContext())
+        result = executor.execute(self._make_decision(DecisionType.OPTIMIZE, "system"))
+        assert not result.success
+        assert "No subsystem attached" in (result.error or "")
+
 
 # -- ActivityReporter Tests ---------------------------------------------------
+
 
 class TestActivityReporter:
     def test_report_success(self):
@@ -431,6 +539,7 @@ class TestActivityReporter:
 
 
 # -- AutonomousLoop Tests -----------------------------------------------------
+
 
 class TestAutonomousLoop:
     def test_init(self, temp_memory_db):
@@ -624,7 +733,9 @@ class TestAutonomousLoop:
             priority=0.9,
         )
 
-        loop.observer = type("Obs", (), {"observe": lambda self=None: [observation], "get_signals": lambda self=None: {}})()
+        loop.observer = type(
+            "Obs", (), {"observe": lambda self=None: [observation], "get_signals": lambda self=None: {}}
+        )()
         loop.decision_engine = type(
             "Decider",
             (),
@@ -654,6 +765,7 @@ class TestAutonomousLoop:
 
 # -- ResearchEngine Tests -----------------------------------------------------
 
+
 class TestResearchEngine:
     def test_init(self):
         engine = ResearchEngine()
@@ -671,6 +783,7 @@ class TestResearchEngine:
 
     def test_research_with_mock_search(self):
         """Research with mock web search works."""
+
         class MockSearchResult:
             def __init__(self, title, url, content, score=0.8, source="mock"):
                 self.title = title
@@ -698,6 +811,7 @@ class TestResearchEngine:
 
     def test_research_with_llm(self):
         """Research with LLM callback generates findings."""
+
         class MockSearchResult:
             def __init__(self, title, url, content):
                 self.title = title
@@ -782,6 +896,7 @@ AI is making rapid progress in 2026.
 
     def test_quick_research(self):
         """Quick research returns markdown string."""
+
         class MockSearchResult:
             def __init__(self, title, url, content):
                 self.title = title
@@ -808,6 +923,7 @@ AI is making rapid progress in 2026.
 
     def test_research_convergence(self):
         """Research stops early when no new hypotheses."""
+
         class MockSearchResult:
             def __init__(self, title, url, content):
                 self.title = title

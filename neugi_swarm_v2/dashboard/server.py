@@ -3,7 +3,9 @@ NEUGI v2 Dashboard HTTP Server
 ===============================
 
 Production-ready HTTP server serving the dashboard UI and REST API.
-Uses Python standard library (http.server, asyncio, websockets).
+Uses Python standard library only (http.server, socket, ssl); the
+WebSocket handshake is implemented by hand (RFC 6455), no `websockets`
+package is needed.
 
 Features:
 - Static file serving with gzip compression
@@ -24,6 +26,7 @@ import logging
 import os
 import re
 import secrets
+import ssl
 import threading
 import time
 import uuid
@@ -37,6 +40,7 @@ from urllib.parse import parse_qs, urlparse
 logger = logging.getLogger(__name__)
 
 # -- Configuration -----------------------------------------------------------
+
 
 @dataclass
 class DashboardConfig:
@@ -55,6 +59,9 @@ class DashboardConfig:
         static_dir: Directory for static files.
         enable_auth: Enable authentication.
         max_body_size: Maximum request body size in bytes.
+        ssl_certfile: Path to a PEM certificate for TLS (HTTPS/WSS).
+            Both ssl_certfile and ssl_keyfile must be set to enable TLS.
+        ssl_keyfile: Path to the PEM private key matching ssl_certfile.
     """
 
     host: str = "127.0.0.1"
@@ -63,15 +70,19 @@ class DashboardConfig:
     session_token_ttl: int = 3600
     rate_limit_requests: int = 600
     rate_limit_window: int = 60
-    cors_origins: list[str] = field(default_factory=lambda: [
-        "http://localhost:17901",
-        "http://127.0.0.1:17901",
-    ])
+    cors_origins: list[str] = field(
+        default_factory=lambda: [
+            "http://localhost:17901",
+            "http://127.0.0.1:17901",
+        ]
+    )
     enable_gzip: bool = True
     gzip_min_size: int = 1024
     static_dir: str = ""
     enable_auth: bool = False
     max_body_size: int = 10 * 1024 * 1024  # 10MB
+    ssl_certfile: str = ""
+    ssl_keyfile: str = ""
 
     def __post_init__(self) -> None:
         """Apply secure defaults for network-exposed dashboards."""
@@ -95,6 +106,7 @@ class DashboardConfig:
 
 # -- Rate Limiter ------------------------------------------------------------
 
+
 class RateLimiter:
     """Token bucket rate limiter."""
 
@@ -110,9 +122,7 @@ class RateLimiter:
         if client_ip not in self._requests:
             self._requests[client_ip] = []
 
-        self._requests[client_ip] = [
-            t for t in self._requests[client_ip] if t > window_start
-        ]
+        self._requests[client_ip] = [t for t in self._requests[client_ip] if t > window_start]
 
         if len(self._requests[client_ip]) >= self.max_requests:
             return False
@@ -122,6 +132,7 @@ class RateLimiter:
 
 
 # -- Session Manager ---------------------------------------------------------
+
 
 class SessionTokenManager:
     """Manage session tokens for authenticated access."""
@@ -155,10 +166,7 @@ class SessionTokenManager:
 
     def cleanup_expired(self) -> int:
         now = time.time()
-        expired = [
-            t for t, s in self._tokens.items()
-            if now - s["created_at"] > self.ttl_seconds
-        ]
+        expired = [t for t, s in self._tokens.items() if now - s["created_at"] > self.ttl_seconds]
         for t in expired:
             del self._tokens[t]
         return len(expired)
@@ -169,6 +177,7 @@ class SessionTokenManager:
 from dashboard.websocket import WebSocketHandler, WebSocketServer
 
 # -- Dashboard Server --------------------------------------------------------
+
 
 class DashboardServer:
     """NEUGI v2 Dashboard HTTP Server.
@@ -214,6 +223,7 @@ class DashboardServer:
         """Initialize event bus to WebSocket bridge."""
         try:
             from neugi_swarm_v2.observability.ws_bridge import EventWebSocketBridge
+
             self._ws_bridge = EventWebSocketBridge(self.broadcaster)
             self._ws_bridge.start()
             logger.info("Event-WebSocket bridge initialized")
@@ -281,9 +291,27 @@ class DashboardServer:
         )
         self._running = True
 
+        # TLS: when a certificate + key are configured, the whole server
+        # (HTTP API and the WebSocket upgrade on /ws) runs over TLS, so
+        # browsers automatically use https:// and wss://. Without TLS on a
+        # non-local bind, warn loudly: auth alone does not encrypt traffic.
+        scheme = "http"
+        if self.config.ssl_certfile and self.config.ssl_keyfile:
+            context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            context.load_cert_chain(self.config.ssl_certfile, self.config.ssl_keyfile)
+            self._server.socket = context.wrap_socket(self._server.socket, server_side=True)
+            scheme = "https"
+        elif (self.config.host or "").strip().lower() not in {"127.0.0.1", "localhost", "::1"}:
+            logger.warning(
+                "Dashboard bound to %s without TLS; set ssl_certfile/ssl_keyfile "
+                "for network exposure (WebSocket needs wss, which needs TLS).",
+                self.config.host,
+            )
+
         if blocking:
             logger.info(
-                "NEUGI Dashboard running at http://%s:%d",
+                "NEUGI Dashboard running at %s://%s:%d",
+                scheme,
                 self.config.host,
                 self.config.port,
             )
@@ -295,7 +323,8 @@ class DashboardServer:
             )
             self._thread.start()
             logger.info(
-                "NEUGI Dashboard started at http://%s:%d",
+                "NEUGI Dashboard started at %s://%s:%d",
+                scheme,
                 self.config.host,
                 self.config.port,
             )
@@ -314,11 +343,13 @@ class DashboardServer:
             event_type: Event type identifier.
             data: Event payload.
         """
-        self.broadcaster.broadcast({
-            "type": event_type,
-            "data": data,
-            "timestamp": time.time(),
-        })
+        self.broadcaster.broadcast(
+            {
+                "type": event_type,
+                "data": data,
+                "timestamp": time.time(),
+            }
+        )
 
     @property
     def is_running(self) -> bool:
@@ -331,6 +362,7 @@ class DashboardServer:
 
 # -- Request Handler ---------------------------------------------------------
 
+
 class DashboardRequestHandler(BaseHTTPRequestHandler):
     """HTTP request handler for the dashboard server."""
 
@@ -340,11 +372,7 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         logger.debug(format, *args)
 
     def _get_client_ip(self) -> str:
-        return (
-            self.headers.get("X-Forwarded-For", self.client_address[0])
-            .split(",")[0]
-            .strip()
-        )
+        return self.headers.get("X-Forwarded-For", self.client_address[0]).split(",")[0].strip()
 
     def _check_rate_limit(self) -> bool:
         client_ip = self._get_client_ip()
@@ -389,7 +417,10 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("Referrer-Policy", "no-referrer")
         self.send_header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
-        self.send_header("Content-Security-Policy", "default-src 'self' 'unsafe-inline' data: blob:; connect-src 'self' ws: wss:; img-src 'self' data: blob:;")
+        self.send_header(
+            "Content-Security-Policy",
+            "default-src 'self' 'unsafe-inline' data: blob:; connect-src 'self' ws: wss:; img-src 'self' data: blob:;",
+        )
 
     def _send_json_response(
         self,
@@ -486,11 +517,15 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         request_id = str(uuid.uuid4())
 
         if not self._check_rate_limit():
-            self._send_json_response(429, {
-                "error": "Rate limit exceeded",
-                "retry_after": self.server_instance.config.rate_limit_window,
-                "request_id": request_id,
-            }, headers={"X-Request-Id": request_id})
+            self._send_json_response(
+                429,
+                {
+                    "error": "Rate limit exceeded",
+                    "retry_after": self.server_instance.config.rate_limit_window,
+                    "request_id": request_id,
+                },
+                headers={"X-Request-Id": request_id},
+            )
             return
 
         if method == "OPTIONS":
@@ -524,13 +559,19 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
                 if not match:
                     continue
                 handler = candidate
-                for name, value in zip(names, match.groups()):
+                # names and match.groups() always have equal length here:
+                # the regex is built from the same template as `names`.
+                for name, value in zip(names, match.groups(), strict=False):
                     query_params[name] = [value]
                 break
 
         if handler:
             if path != "/api/auth/login" and not self._check_auth():
-                self._send_json_response(401, {"error": "Authentication required", "request_id": request_id}, headers={"X-Request-Id": request_id})
+                self._send_json_response(
+                    401,
+                    {"error": "Authentication required", "request_id": request_id},
+                    headers={"X-Request-Id": request_id},
+                )
                 return
             try:
                 body = None
@@ -542,48 +583,60 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
                     if isinstance(result, dict):
                         result.setdefault("request_id", request_id)
                         result.setdefault("latency_ms", elapsed_ms)
-                    self._send_json_response(200, result, headers={
-                        "X-Request-Id": request_id,
-                        "X-Response-Time-Ms": str(elapsed_ms),
-                    })
+                    self._send_json_response(
+                        200,
+                        result,
+                        headers={
+                            "X-Request-Id": request_id,
+                            "X-Response-Time-Ms": str(elapsed_ms),
+                        },
+                    )
             except ValueError as e:
                 elapsed_ms = round((time.perf_counter() - request_started) * 1000.0, 2)
-                self._send_json_response(400, {"error": str(e), "request_id": request_id, "latency_ms": elapsed_ms}, headers={
-                    "X-Request-Id": request_id,
-                    "X-Response-Time-Ms": str(elapsed_ms),
-                })
+                self._send_json_response(
+                    400,
+                    {"error": str(e), "request_id": request_id, "latency_ms": elapsed_ms},
+                    headers={
+                        "X-Request-Id": request_id,
+                        "X-Response-Time-Ms": str(elapsed_ms),
+                    },
+                )
             except (OSError, ConnectionError, TimeoutError) as e:
                 logger.warning("I/O error handling API request %s: %s", path, e)
                 elapsed_ms = round((time.perf_counter() - request_started) * 1000.0, 2)
-                self._send_json_response(502, {"error": "Service unavailable", "request_id": request_id, "latency_ms": elapsed_ms}, headers={
-                    "X-Request-Id": request_id,
-                    "X-Response-Time-Ms": str(elapsed_ms),
-                })
+                self._send_json_response(
+                    502,
+                    {"error": "Service unavailable", "request_id": request_id, "latency_ms": elapsed_ms},
+                    headers={
+                        "X-Request-Id": request_id,
+                        "X-Response-Time-Ms": str(elapsed_ms),
+                    },
+                )
             except Exception as e:
                 logger.exception("Unhandled API error on %s: %s", path, e)
                 elapsed_ms = round((time.perf_counter() - request_started) * 1000.0, 2)
-                self._send_json_response(500, {
-                    "error": "Internal server error",
-                    "detail": str(e) if self.server_instance.config.enable_auth else None,
-                    "request_id": request_id,
-                    "latency_ms": elapsed_ms,
-                }, headers={
-                    "X-Request-Id": request_id,
-                    "X-Response-Time-Ms": str(elapsed_ms),
-                })
+                self._send_json_response(
+                    500,
+                    {
+                        "error": "Internal server error",
+                        "detail": str(e) if self.server_instance.config.enable_auth else None,
+                        "request_id": request_id,
+                        "latency_ms": elapsed_ms,
+                    },
+                    headers={
+                        "X-Request-Id": request_id,
+                        "X-Response-Time-Ms": str(elapsed_ms),
+                    },
+                )
             return
 
         if path == "/" or path == "/index.html":
-            self._send_static_file(
-                os.path.join(self.server_instance.config.static_dir, "index.html")
-            )
+            self._send_static_file(os.path.join(self.server_instance.config.static_dir, "index.html"))
             return
 
         if path.startswith("/static/"):
-            relative = path[len("/static/"):]
-            self._send_static_file(
-                os.path.join(self.server_instance.config.static_dir, relative)
-            )
+            relative = path[len("/static/") :]
+            self._send_static_file(os.path.join(self.server_instance.config.static_dir, relative))
             return
 
         static_file = os.path.join(self.server_instance.config.static_dir, path.lstrip("/"))
@@ -604,11 +657,15 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
 
         try:
             # Send initial connection acknowledgment
-            ws.send_text(json.dumps({
-                "type": "connected",
-                "message": "WebSocket connected to NEUGI v2",
-                "timestamp": time.time(),
-            }))
+            ws.send_text(
+                json.dumps(
+                    {
+                        "type": "connected",
+                        "message": "WebSocket connected to NEUGI v2",
+                        "timestamp": time.time(),
+                    }
+                )
+            )
 
             # Listen for messages
             for message in ws.receive_messages(timeout=1.0):
@@ -618,10 +675,14 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
 
                     if msg_type == "subscribe":
                         channel = data.get("channel", "all")
-                        ws.send_text(json.dumps({
-                            "type": "subscribed",
-                            "channel": channel,
-                        }))
+                        ws.send_text(
+                            json.dumps(
+                                {
+                                    "type": "subscribed",
+                                    "channel": channel,
+                                }
+                            )
+                        )
 
                     elif msg_type == "ping":
                         ws.send_text(json.dumps({"type": "pong"}))
@@ -631,16 +692,24 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
                         pass
 
                     else:
-                        ws.send_text(json.dumps({
-                            "type": "error",
-                            "message": f"Unknown message type: {msg_type}",
-                        }))
+                        ws.send_text(
+                            json.dumps(
+                                {
+                                    "type": "error",
+                                    "message": f"Unknown message type: {msg_type}",
+                                }
+                            )
+                        )
 
                 except json.JSONDecodeError:
-                    ws.send_text(json.dumps({
-                        "type": "error",
-                        "message": "Invalid JSON",
-                    }))
+                    ws.send_text(
+                        json.dumps(
+                            {
+                                "type": "error",
+                                "message": "Invalid JSON",
+                            }
+                        )
+                    )
 
         except Exception as e:
             logger.debug("WebSocket handler error: %s", e)

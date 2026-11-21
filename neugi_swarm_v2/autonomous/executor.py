@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 class ExecutionType(str, Enum):
     """Types of execution that can be performed."""
 
-    DREAMING = "dreaming"               # Memory consolidation
+    DREAMING = "dreaming"  # Memory consolidation
     GOAL_DECOMPOSITION = "goal_decomposition"
     GOAL_COMPLETION = "goal_completion"
     BLOCKER_RESOLUTION = "blocker_resolution"
@@ -65,6 +65,7 @@ class ExecutionContext:
     goal_system: Any = None
     agent_manager: Any = None
     skill_generator: Any = None
+    tool_executor: Any = None
     web_search: Any = None
     llm_callback: Callable[..., Any] | None = None
     capability_profile: Any = None
@@ -209,7 +210,8 @@ class SelfDirectedExecutor:
             "failures": self._failure_count,
             "success_rate": (
                 (self._execution_count - self._failure_count) / self._execution_count
-                if self._execution_count > 0 else 1.0
+                if self._execution_count > 0
+                else 1.0
             ),
         }
 
@@ -265,22 +267,26 @@ class SelfDirectedExecutor:
 
         try:
             wiring_result = self._wiring.run_dream_cycle()
-            result.actions.append(ActionResult(
-                action="dream_cycle",
-                success=wiring_result.get("success", False),
-                output=wiring_result,
-            ))
+            result.actions.append(
+                ActionResult(
+                    action="dream_cycle",
+                    success=wiring_result.get("success", False),
+                    output=wiring_result,
+                )
+            )
             result.success = wiring_result.get("success", False)
             result.output = wiring_result
 
         except Exception as e:
             result.success = False
             result.error = str(e)
-            result.actions.append(ActionResult(
-                action="dream_cycle",
-                success=False,
-                error=str(e),
-            ))
+            result.actions.append(
+                ActionResult(
+                    action="dream_cycle",
+                    success=False,
+                    error=str(e),
+                )
+            )
 
         return result
 
@@ -301,11 +307,13 @@ class SelfDirectedExecutor:
 
         try:
             wiring_result = self._wiring.decompose_goal(goal_id)
-            result.actions.append(ActionResult(
-                action="goal_decompose",
-                success=wiring_result.get("success", False),
-                output=wiring_result,
-            ))
+            result.actions.append(
+                ActionResult(
+                    action="goal_decompose",
+                    success=wiring_result.get("success", False),
+                    output=wiring_result,
+                )
+            )
             result.success = wiring_result.get("success", False)
             result.output = {
                 "goal_id": goal_id,
@@ -345,11 +353,13 @@ class SelfDirectedExecutor:
                     ),
                     context={"goal_id": goal_id, "blocker": blocker, "goal_title": goal_title},
                 )
-                result.actions.append(ActionResult(
-                    action="blocker_strategist_agent",
-                    success=agent_result.success,
-                    output=agent_result.output,
-                ))
+                result.actions.append(
+                    ActionResult(
+                        action="blocker_strategist_agent",
+                        success=agent_result.success,
+                        output=agent_result.output,
+                    )
+                )
                 result.output = {
                     "blocker": blocker,
                     "agent_used": True,
@@ -369,11 +379,13 @@ class SelfDirectedExecutor:
                     role="researcher",
                     context={"goal_id": goal_id, "blocker": blocker},
                 )
-                result.actions.append(ActionResult(
-                    action="blocker_agent_delegate",
-                    success=agent_result.get("success", False),
-                    output=agent_result,
-                ))
+                result.actions.append(
+                    ActionResult(
+                        action="blocker_agent_delegate",
+                        success=agent_result.get("success", False),
+                        output=agent_result,
+                    )
+                )
                 result.output = {
                     "blocker": blocker,
                     "agent_used": True,
@@ -382,11 +394,13 @@ class SelfDirectedExecutor:
                 result.success = agent_result.get("success", False)
 
             else:
-                result.actions.append(ActionResult(
-                    action="blocker_log",
-                    success=True,
-                    output={"note": f"Blocker '{blocker}' logged for later resolution"},
-                ))
+                result.actions.append(
+                    ActionResult(
+                        action="blocker_log",
+                        success=True,
+                        output={"note": f"Blocker '{blocker}' logged for later resolution"},
+                    )
+                )
                 result.success = True
 
         except Exception as e:
@@ -411,11 +425,13 @@ class SelfDirectedExecutor:
 
         try:
             wiring_result = self._wiring.complete_goal(goal_id)
-            result.actions.append(ActionResult(
-                action="goal_complete",
-                success=wiring_result.get("success", False),
-                output=wiring_result,
-            ))
+            result.actions.append(
+                ActionResult(
+                    action="goal_complete",
+                    success=wiring_result.get("success", False),
+                    output=wiring_result,
+                )
+            )
             result.success = wiring_result.get("success", False)
             result.output = {"goal_id": goal_id, **wiring_result}
 
@@ -446,11 +462,13 @@ class SelfDirectedExecutor:
                 min_success_rate=0.7,
                 auto_approve_threshold=0.9,
             )
-            result.actions.append(ActionResult(
-                action="skill_generate",
-                success=wiring_result.get("success", False),
-                output=wiring_result,
-            ))
+            result.actions.append(
+                ActionResult(
+                    action="skill_generate",
+                    success=wiring_result.get("success", False),
+                    output=wiring_result,
+                )
+            )
             result.success = wiring_result.get("success", False)
             result.output = {
                 "pattern_detected": pattern,
@@ -464,7 +482,17 @@ class SelfDirectedExecutor:
         return result
 
     def _execute_self_heal(self, decision: Decision) -> ExecutionResult:
-        """Attempt self-healing for system health issues."""
+        """Heal real system health issues.
+
+        Actions actually performed (each reported with its measured result):
+        1. Prune expired memories from the memory system (counted).
+        2. Reset tripped tool circuit breakers via the attached
+           ToolExecutor (only when one is wired in the context).
+        3. VACUUM the memory SQLite file when the issue is disk space.
+
+        If no subsystem is attached to act on, the result is an honest
+        failure — never a fake success.
+        """
         result = ExecutionResult(
             decision=decision,
             execution_type=ExecutionType.SYSTEM_REPAIR,
@@ -478,24 +506,86 @@ class SelfDirectedExecutor:
             return result
 
         try:
-            # Simple self-heal actions
-            actions_taken = []
+            actions_taken: list[str] = []
+            details: dict[str, Any] = {"issue": issue}
+            attempted = 0
 
-            # Clear old logs if disk issue
-            if "disk" in issue.lower() or "space" in issue.lower():
-                actions_taken.append("log_cleanup_suggested")
+            # 1. Prune expired memories (real deletion, counted).
+            memory = self.context.memory_system
+            if memory is not None and hasattr(memory, "cleanup_expired"):
+                attempted += 1
+                removed = memory.cleanup_expired()
+                actions_taken.append("memory_cleanup_expired")
+                details["expired_memories_removed"] = removed
+                result.actions.append(
+                    ActionResult(
+                        action="memory_cleanup_expired",
+                        success=True,
+                        output={"removed": removed},
+                    )
+                )
 
-            # Restart circuit breaker if tripped
-            if "circuit breaker" in issue.lower():
-                actions_taken.append("circuit_breaker_reset_suggested")
+            # 2. Reset tripped circuit breakers (real reset, only if wired).
+            tool_executor = getattr(self.context, "tool_executor", None)
+            breaker = getattr(tool_executor, "circuit_breaker", None) if tool_executor is not None else None
+            if breaker is not None and hasattr(breaker, "open_circuits"):
+                attempted += 1
+                tripped = list(breaker.open_circuits())
+                named = decision.action_plan.get("circuit_breaker")
+                if named and named not in tripped:
+                    tripped.append(named)
+                reset = []
+                for name in tripped:
+                    breaker.reset(name)
+                    reset.append(name)
+                actions_taken.append("circuit_breaker_reset")
+                details["circuit_breakers_reset"] = reset
+                result.actions.append(
+                    ActionResult(
+                        action="circuit_breaker_reset",
+                        success=True,
+                        output={"reset": reset},
+                    )
+                )
+            elif "circuit breaker" in issue.lower():
+                # The issue names a breaker but none is wired: say so.
+                result.actions.append(
+                    ActionResult(
+                        action="circuit_breaker_reset",
+                        success=False,
+                        error="no tool executor attached; circuit breaker not reset",
+                    )
+                )
 
-            result.actions.append(ActionResult(
-                action="self_heal",
-                success=True,
-                output={"issue": issue, "actions_taken": actions_taken},
-            ))
-            result.success = True
-            result.output = {"issue": issue, "actions": actions_taken}
+            # 3. Reclaim disk space when that is the reported issue.
+            if (
+                ("disk" in issue.lower() or "space" in issue.lower())
+                and memory is not None
+                and hasattr(memory, "vacuum")
+            ):
+                attempted += 1
+                vac = memory.vacuum()
+                actions_taken.append("memory_db_vacuum")
+                details["memory_db_vacuum"] = vac
+                result.actions.append(
+                    ActionResult(
+                        action="memory_db_vacuum",
+                        success=True,
+                        output=vac,
+                    )
+                )
+
+            if attempted == 0:
+                result.success = False
+                result.error = "No subsystem attached for self-heal (memory_system and tool_executor are both None)"
+                result.output = details
+                return result
+
+            failed = [a for a in result.actions if not a.success]
+            result.success = not failed
+            if failed:
+                result.error = "; ".join(a.error or a.action for a in failed)
+            result.output = {"issue": issue, "actions": actions_taken, **details}
 
         except Exception as e:
             result.success = False
@@ -550,15 +640,17 @@ class SelfDirectedExecutor:
                     ),
                 )
                 report = engine.research(gap)
-                result.actions.append(ActionResult(
-                    action="karpathy_research",
-                    success=True,
-                    output={
-                        "rounds": len(report.rounds),
-                        "sources": len(report.all_sources),
-                        "confidence": report.confidence_overall,
-                    },
-                ))
+                result.actions.append(
+                    ActionResult(
+                        action="karpathy_research",
+                        success=True,
+                        output={
+                            "rounds": len(report.rounds),
+                            "sources": len(report.all_sources),
+                            "confidence": report.confidence_overall,
+                        },
+                    )
+                )
                 result.output = {
                     "topic": gap,
                     "report": report.to_markdown(),
@@ -575,11 +667,13 @@ class SelfDirectedExecutor:
                     task=f"Research and summarize: {gap}",
                     context={"autonomous": True, "gap": gap},
                 )
-                result.actions.append(ActionResult(
-                    action="research_agent_spawn",
-                    success=agent_result.success,
-                    output=agent_result.output,
-                ))
+                result.actions.append(
+                    ActionResult(
+                        action="research_agent_spawn",
+                        success=agent_result.success,
+                        output=agent_result.output,
+                    )
+                )
                 result.output = {
                     "topic": gap,
                     "agent_used": True,
@@ -589,27 +683,42 @@ class SelfDirectedExecutor:
                 result.tokens_used = agent_result.tokens_used
 
             else:
-                result.actions.append(ActionResult(
-                    action="research_log",
-                    success=True,
-                    output={"note": f"Research topic '{gap}' queued for later"},
-                ))
+                result.actions.append(
+                    ActionResult(
+                        action="research_log",
+                        success=True,
+                        output={"note": f"Research topic '{gap}' queued for later"},
+                    )
+                )
 
             result.success = True
 
         except Exception as e:
             result.success = False
             result.error = str(e)
-            result.actions.append(ActionResult(
-                action="karpathy_research",
-                success=False,
-                error=str(e),
-            ))
+            result.actions.append(
+                ActionResult(
+                    action="karpathy_research",
+                    success=False,
+                    error=str(e),
+                )
+            )
 
         return result
 
     def _execute_optimize(self, decision: Decision) -> ExecutionResult:
-        """Execute self-optimization."""
+        """Apply measurable optimizations and report before/after numbers.
+
+        - Memory: prune expired entries + consolidate (dedupe/promote),
+          reporting counts before/after.
+        - Tool cache (when a ToolExecutor is attached): prune expired
+          cache entries, reporting hit rate and size before/after.
+        - Memory DB: VACUUM, reporting bytes reclaimed.
+
+        Success means the measurements and optimizations ran without
+        error. The output always carries the real numbers, including
+        when nothing needed improving.
+        """
         result = ExecutionResult(
             decision=decision,
             execution_type=ExecutionType.OPTIMIZATION,
@@ -623,13 +732,76 @@ class SelfDirectedExecutor:
             return result
 
         try:
-            result.actions.append(ActionResult(
-                action="optimize",
-                success=True,
-                output={"target": target, "suggestion": "Consider caching or batching"},
-            ))
-            result.success = True
-            result.output = {"optimized": target}
+            actions_taken: list[str] = []
+            details: dict[str, Any] = {"target": target}
+            attempted = 0
+
+            # 1. Memory: prune expired + consolidate, with before/after stats.
+            memory = self.context.memory_system
+            if memory is not None and hasattr(memory, "cleanup_expired"):
+                attempted += 1
+                stats_before = dict(memory.stats) if hasattr(memory, "stats") else {}
+                removed = memory.cleanup_expired()
+                consolidated = memory.consolidate() if hasattr(memory, "consolidate") else {}
+                stats_after = dict(memory.stats) if hasattr(memory, "stats") else {}
+                actions_taken.append("memory_optimize")
+                details["memory"] = {
+                    "expired_removed": removed,
+                    "consolidated": consolidated,
+                    "stats_before": stats_before,
+                    "stats_after": stats_after,
+                }
+                result.actions.append(
+                    ActionResult(
+                        action="memory_optimize",
+                        success=True,
+                        output=details["memory"],
+                    )
+                )
+
+            # 2. Tool cache: prune expired entries, report hit rate/size.
+            tool_executor = getattr(self.context, "tool_executor", None)
+            cache = getattr(tool_executor, "cache", None) if tool_executor is not None else None
+            if cache is not None and hasattr(cache, "prune_expired"):
+                attempted += 1
+                before = {"size": cache.size, "hit_rate": round(cache.hit_rate, 4)}
+                pruned = cache.prune_expired()
+                after = {"size": cache.size, "hit_rate": round(cache.hit_rate, 4)}
+                actions_taken.append("tool_cache_prune")
+                details["tool_cache"] = {"pruned": pruned, "before": before, "after": after}
+                result.actions.append(
+                    ActionResult(
+                        action="tool_cache_prune",
+                        success=True,
+                        output=details["tool_cache"],
+                    )
+                )
+
+            # 3. Reclaim memory DB space.
+            if memory is not None and hasattr(memory, "vacuum"):
+                attempted += 1
+                vac = memory.vacuum()
+                actions_taken.append("memory_db_vacuum")
+                details["memory_db_vacuum"] = vac
+                result.actions.append(
+                    ActionResult(
+                        action="memory_db_vacuum",
+                        success=True,
+                        output=vac,
+                    )
+                )
+
+            if attempted == 0:
+                result.success = False
+                result.error = "No subsystem attached for optimize (memory_system and tool_executor are both None)"
+                result.output = details
+                return result
+
+            failed = [a for a in result.actions if not a.success]
+            result.success = not failed
+            if failed:
+                result.error = "; ".join(a.error or a.action for a in failed)
+            result.output = {"optimized": target, "actions": actions_taken, **details}
 
         except Exception as e:
             result.success = False
@@ -652,11 +824,13 @@ class SelfDirectedExecutor:
             return result
 
         try:
-            result.actions.append(ActionResult(
-                action="notify",
-                success=True,
-                output={"message": message, "channel": "default"},
-            ))
+            result.actions.append(
+                ActionResult(
+                    action="notify",
+                    success=True,
+                    output={"message": message, "channel": "default"},
+                )
+            )
             result.success = True
             result.output = {"notified": True, "message": message}
 

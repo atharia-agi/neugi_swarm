@@ -14,8 +14,10 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from collections.abc import Callable
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from neugi_swarm_v2.mcp.mcp_server import MCPServer
@@ -81,23 +83,27 @@ class MCPBridge:
         try:
             # Wire EventBus
             from neugi_swarm_v2.observability.event_bus import get_event_bus
+
             self._event_bus = get_event_bus()
-            self._event_bus.subscribe(
-                "tool_execution_success", self._on_neugi_tool_success
-            )
-            self._event_bus.subscribe(
-                "tool_execution_failure", self._on_neugi_tool_failure
-            )
+            self._event_bus.subscribe("tool_execution_success", self._on_neugi_tool_success)
+            self._event_bus.subscribe("tool_execution_failure", self._on_neugi_tool_failure)
             logger.debug("EventBus connected")
 
             # Wire ToolExecutor
             from tools.tool_executor import ToolExecutor
+
             budget_tracker = None
             try:
                 from governance.budget import BudgetTracker
+
                 governance_db = getattr(self._neugi, "config", None)
-                if governance_db and hasattr(governance_db, "data_dir"):
-                    db_path = str(governance_db.data_dir / "governance.db")
+                data_dir = getattr(governance_db, "data_dir", None)
+                # Guard: only a real path-like data_dir may be used. A mock
+                # config (or any non-path value) would stringify into a
+                # garbage filename and create stray files in the working
+                # directory, so fall back to the plain filename instead.
+                if isinstance(data_dir, (str, os.PathLike)):
+                    db_path = str(Path(data_dir) / "governance.db")
                 else:
                     db_path = "governance.db"
                 budget_tracker = BudgetTracker(db_path=db_path)
@@ -111,6 +117,7 @@ class MCPBridge:
 
             # Wire ToolRegistry
             from tools.tool_registry import ToolRegistry
+
             # Use the shared registry if available on the neugi instance
             if hasattr(self._neugi, "tool_registry"):
                 self._tool_registry = self._neugi.tool_registry
@@ -120,6 +127,7 @@ class MCPBridge:
 
             # Wire PluginRegistry
             from plugins.plugin_registry import PluginRegistry
+
             self._plugin_registry = PluginRegistry()
             logger.debug("PluginRegistry connected")
 
@@ -133,6 +141,7 @@ class MCPBridge:
 
             # Wire A2A Protocol
             from a2a import A2AProtocol
+
             if hasattr(self._neugi, "a2a") and isinstance(self._neugi.a2a, A2AProtocol):
                 self._a2a = self._neugi.a2a
                 logger.debug("A2A protocol connected")
@@ -154,12 +163,8 @@ class MCPBridge:
         """Disconnect the bridge from NEUGI subsystems."""
         if self._event_bus:
             try:
-                self._event_bus.unsubscribe(
-                    "tool_execution_success", self._on_neugi_tool_success
-                )
-                self._event_bus.unsubscribe(
-                    "tool_execution_failure", self._on_neugi_tool_failure
-                )
+                self._event_bus.unsubscribe("tool_execution_success", self._on_neugi_tool_success)
+                self._event_bus.unsubscribe("tool_execution_failure", self._on_neugi_tool_failure)
             except Exception as e:
                 logger.debug("Event bus unsubscribe (non-critical): %s", e)
 
@@ -174,22 +179,26 @@ class MCPBridge:
     def _on_neugi_tool_success(self, event: Any) -> None:
         """Forward NEUGI tool success events to MCP event bus."""
         try:
-            self.server._notify_message_handlers({
-                "type": "tool_execution_success",
-                "data": event.payload or {},
-                "timestamp": datetime.now().isoformat(),
-            })
+            self.server._notify_message_handlers(
+                {
+                    "type": "tool_execution_success",
+                    "data": event.payload or {},
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
         except Exception:
             logger.warning("Failed to forward tool success event", exc_info=True)
 
     def _on_neugi_tool_failure(self, event: Any) -> None:
         """Forward NEUGI tool failure events to MCP event bus."""
         try:
-            self.server._notify_message_handlers({
-                "type": "tool_execution_failure",
-                "data": event.payload or {},
-                "timestamp": datetime.now().isoformat(),
-            })
+            self.server._notify_message_handlers(
+                {
+                    "type": "tool_execution_failure",
+                    "data": event.payload or {},
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
         except Exception:
             logger.warning("Failed to forward tool failure event", exc_info=True)
 
@@ -204,15 +213,19 @@ class MCPBridge:
                 parts = uri.replace("neugi://memory/", "").split("/")
                 search_key = parts[-1] if parts else "recent"
                 entries = self._memory.search(search_key, limit=10)
-                return json.dumps([
-                    {
-                        "key": e.key,
-                        "value": e.value,
-                        "timestamp": e.timestamp.isoformat() if hasattr(e, "timestamp") else None,
-                        "category": getattr(e, "category", None),
-                    }
-                    for e in entries
-                ], indent=2, default=str)
+                return json.dumps(
+                    [
+                        {
+                            "key": e.key,
+                            "value": e.value,
+                            "timestamp": e.timestamp.isoformat() if hasattr(e, "timestamp") else None,
+                            "category": getattr(e, "category", None),
+                        }
+                        for e in entries
+                    ],
+                    indent=2,
+                    default=str,
+                )
             except Exception as e:
                 return json.dumps({"error": str(e)})
 
@@ -224,10 +237,13 @@ class MCPBridge:
             name="Memory Statistics",
             description="Current memory system statistics",
             mimeType="application/json",
-            content=lambda: json.dumps({
-                "total_entries": self._memory.stats().get("total", 0) if hasattr(self._memory, "stats") else 0,
-                "status": "active",
-            }, indent=2),
+            content=lambda: json.dumps(
+                {
+                    "total_entries": self._memory.stats().get("total", 0) if hasattr(self._memory, "stats") else 0,
+                    "status": "active",
+                },
+                indent=2,
+            ),
         )
 
         # Register identity/soul files as resources
@@ -272,6 +288,7 @@ class MCPBridge:
 
                     # Check for param info in the handler
                     import inspect
+
                     sig = inspect.signature(handler)
                     params = {}
                     required = []
@@ -299,24 +316,18 @@ class MCPBridge:
                     def make_wrapper(h: Callable) -> Callable:
                         def wrapper(**kwargs: Any) -> Any:
                             return h(**kwargs)
+
                         return wrapper
 
                     # Actually register the function
                     self.server.tools._tools[f"plugin:{plugin_name}:{tool_name}"].handler = handler
                     registered_count += 1
-                    logger.debug(
-                        "Auto-registered plugin tool: plugin:%s:%s", plugin_name, tool_name
-                    )
+                    logger.debug("Auto-registered plugin tool: plugin:%s:%s", plugin_name, tool_name)
                 except Exception as e:
-                    logger.warning(
-                        "Failed to auto-register plugin tool %s:%s: %s",
-                        plugin_name, tool_name, e
-                    )
+                    logger.warning("Failed to auto-register plugin tool %s:%s: %s", plugin_name, tool_name, e)
 
         if registered_count:
-            logger.info(
-                "Auto-registered %d plugin tools to MCP server", registered_count
-            )
+            logger.info("Auto-registered %d plugin tools to MCP server", registered_count)
 
     def _register_bridge_tools(self) -> None:
         """Register NEUGI bridge system tools on the MCP server."""
@@ -428,9 +439,7 @@ class MCPBridge:
             if not self._event_bus:
                 return {"error": "Event bus not available"}
             try:
-                events = self._event_bus.get_history(
-                    event_name if event_name else None
-                )
+                events = self._event_bus.get_history(event_name if event_name else None)
                 return {
                     "events": [
                         {
@@ -495,9 +504,7 @@ class MCPBridge:
                 "required": ["tool_name"],
             },
         )
-        async def neugi_execute_tool(
-            tool_name: str, parameters: dict = None, trace_id: str = None
-        ) -> dict:
+        async def neugi_execute_tool(tool_name: str, parameters: dict = None, trace_id: str = None) -> dict:
             """Execute a NEUGI tool through the MCP bridge with full security pipeline."""
             if not self._tool_executor:
                 return {"error": "Tool executor not available"}
@@ -518,9 +525,7 @@ class MCPBridge:
                     )
 
                 # Execute through NEUGI's tool executor (includes all security layers)
-                result = self._tool_executor.execute(
-                    tool_name, trace_id=trace_id, **params
-                )
+                result = self._tool_executor.execute(tool_name, trace_id=trace_id, **params)
 
                 return {
                     "success": result.success,

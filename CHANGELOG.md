@@ -1,8 +1,73 @@
 # NEUGI SWARM - CHANGELOG
 
 > Complete development history and architecture documentation
-> Last Updated: May 17, 2026
-> Version: 2.1.3
+> Last Updated: November 21, 2026
+> Version: 2.1.4
+
+## v2.1.4 (November 21, 2026) - AUDIT FIXES, MEASURED NUMBERS & HARDENING
+
+First release driven by a full execution audit (static audit 2026-11-21 + live
+verification on the maintainer VM). Every number below was measured, not
+claimed: full test suite, claim validator in strict mode, and a live dashboard
+smoke test.
+
+### Audit fixes
+- **Docs numbers rewritten to measured values** (399 collected tests / 396 passed /
+  3 skipped, 35 dashboard REST endpoints, 22 subsystems, 204 modules, ~81K LOC,
+  61 tools, 17 providers). The claim validator (`scripts/validate_doc_claims.py`)
+  is now the single source of numbers and runs strict on every push.
+- **Removed `sessions/` from the repo** — the transcript + runtime data were being
+  served publicly by Vercel. `.vercelignore` rewritten to exclude `neugi_swarm_v2/`,
+  `sessions/`, `scripts/`, `audit/`, `.github/`, `.kiro/` and caches.
+- **Canonical host is Vercel** (neugi.com); the GitHub Pages workflow is kept as a
+  mirror shipping the same file set (sitemap.xml + robots.txt now included).
+- **vercel.json modernized** — legacy `builds`/`routes`/`@vercel/static` removed.
+- **Dead anchor fixed** (`docs.html#security`) and SMAR Research link added to the
+  homepage hero.
+- **Two failing tests fixed** — subprocess calls used the bare `python` binary;
+  they now use `sys.executable`.
+- **Test pollution fixed** — `mcp/bridge.py` no longer builds a DB path from a
+  `MagicMock` config in tests.
+
+### Real autonomous handlers
+- **SELF_HEAL now does real work**: prunes expired memories, resets tripped circuit
+  breakers, VACUUMs the memory DB on disk/space issues — and fails honestly when
+  no subsystem is attached instead of reporting fake success.
+- **OPTIMIZE now does real work**: memory prune + consolidation, tool-cache prune,
+  and VACUUM, all reported with before/after numbers (memory size, cache hit rate,
+  bytes reclaimed).
+
+### Security hardening
+- **SecretManager**: construction now fails loudly when the `cryptography` package
+  is missing (no more silent XOR fallback for new encryption). Key derivation uses
+  a **random per-install PBKDF2 salt** stored in the database `meta` table;
+  databases written with the old fixed salt are migrated automatically on first
+  open, and values written by the old XOR fallback remain readable and can be
+  re-encrypted with `migrate_legacy_secrets()`.
+- **Dashboard TLS**: `DashboardConfig` accepts `ssl_certfile`/`ssl_keyfile`; the
+  server socket is wrapped with TLS when both are set (WebSocket becomes `wss://`
+  automatically) and a warning is logged for non-local binds without TLS.
+
+### CI
+- `test-full` is now a real gate (`continue-on-error` removed). The `| tail`
+  pipes that masked pytest's exit code are gone from `test-core` and `test-full`.
+- `test-core` no longer ignores `test_security_real.py`,
+  `test_autonomous_security_harness.py`, `test_cybersecurity_vector_search.py`,
+  or `test_computer_use.py` — all four pass locally as of this release.
+- `ruff format --check` and `mypy` are advisory (continue-on-error) until the
+  pre-existing drift is paid down: ~180 files unformatted, 878 mypy errors
+  (NEXT_STEPS 5.1). `ruff check` and `bandit` remain blocking.
+
+### Measured (2026-11-21, Python 3.12, maintainer VM)
+- Full suite: 399 collected before this release's new tests (396 passed, 3 skipped);
+  410 collected after (407 passed, 3 skipped — 11 new tests: 5 autonomous, 2 TLS,
+  4 SecretManager migration).
+- Claim validator strict: exit 0. Ruff check: clean. Bandit: 0 High.
+- Dashboard smoke: all endpoints 200, 35 live routes, server ready in ~2 s.
+- Cold package import ~0.5 s (459-641 ms across 4 runs; 1.6 s observed once under
+  cold cache — the old "< 500 ms" claim is not reinstated as a hard guarantee).
+  Memory query: 0.16 ms median / 0.66 ms p95 (re-measured after fixes; baseline
+  was 0.3 / 0.6 — claim "< 50 ms" holds).
 
 ## v2.1.3 (May 16, 2026) - SETUP CONSOLIDATION, PROVIDER CATALOG & TEST PARITY
 
