@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-21T09:52:55.337+07:00",
+  "generated_at": "2026-11-21T03:20:45.397664Z",
   "agents": [
     {
       "id": "rangga",
@@ -8,7 +8,7 @@
       "color": "#a3ff00",
       "room": "kantor-rangga",
       "state": "working",
-      "task": "Tugas tes pertama (kecil, konkret): cek…"
+      "task": "Tugas tes pertama (kecil, konkret): cek "
     },
     {
       "id": "oto",
@@ -17,7 +17,7 @@
       "color": "#a3ff00",
       "room": "perpustakaan",
       "state": "working",
-      "task": "— INSTRUKSI LENGKAP (baca sampai habis;…"
+      "task": "\u2014 INSTRUKSI LENGKAP (baca sampai habis; "
     },
     {
       "id": "beto",
@@ -26,7 +26,7 @@
       "color": "#fc7a24",
       "room": "ruang-kerja",
       "state": "working",
-      "task": "— TAMBAHAN showcase neugi.com: klik age…"
+      "task": "\u2014 TAMBAHAN showcase neugi.com: klik agen"
     },
     {
       "id": "zeto",
@@ -35,7 +35,7 @@
       "color": "#ca4f40",
       "room": "ruang-kerja",
       "state": "working",
-      "task": "Perintah Rangga (20 Nov 19:26 WIB): mak…"
+      "task": "Perintah Rangga (20 Nov 19:26 WIB): maks"
     },
     {
       "id": "neto",
@@ -44,7 +44,7 @@
       "color": "#0f766e",
       "room": "perpustakaan",
       "state": "working",
-      "task": "Verdict sesi evolusi 18:00 WIB, 20 Nov …"
+      "task": "Verdict sesi evolusi 18:00 WIB, 20 Nov 2"
     },
     {
       "id": "geto",
@@ -53,7 +53,7 @@
       "color": "#c4b5fd",
       "room": "perpustakaan",
       "state": "working",
-      "task": "— TAMBAHAN: Intel GitHub HARIAN (early …"
+      "task": "\u2014 TAMBAHAN: Intel GitHub HARIAN (early a"
     },
     {
       "id": "leto",
@@ -62,7 +62,7 @@
       "color": "#f4a7b9",
       "room": "ruang-kerja",
       "state": "working",
-      "task": "— API keys untuk Deto + mentoring tekni…"
+      "task": "\u2014 API keys untuk Deto + mentoring teknis"
     },
     {
       "id": "ceto",
@@ -71,7 +71,7 @@
       "color": "#1e3a8a",
       "room": "perpustakaan",
       "state": "working",
-      "task": "— Tugas riset sales (biar lane kamu jal…"
+      "task": "\u2014 Tugas riset sales (biar lane kamu jala"
     },
     {
       "id": "seto",
@@ -80,7 +80,7 @@
       "color": "#ff7f50",
       "room": "ruang-kerja",
       "state": "working",
-      "task": "— Tambahan untuk lane housekeeping (per…"
+      "task": "\u2014 Tambahan untuk lane housekeeping (peri"
     },
     {
       "id": "deto",
@@ -89,7 +89,7 @@
       "color": "#64748b",
       "room": "ruang-kerja",
       "state": "working",
-      "task": "— PENGUMUMAN: Deto jadi Wakil CEO (depu…"
+      "task": "\u2014 PENGUMUMAN: Deto jadi Wakil CEO (deput"
     }
   ]
 }
