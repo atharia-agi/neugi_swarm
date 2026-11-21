@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-21T22:57:15.322640Z",
+  "generated_at": "2026-11-21T23:12:16.796484Z",
   "agents": [
     {
       "id": "rangga",
@@ -96,8 +96,8 @@
       "name": "Meto",
       "role": "Support",
       "color": "#22c55e",
-      "room": "taman",
-      "state": "away",
+      "room": "lounge",
+      "state": "idle",
       "task": null
     }
   ]
