@@ -10,7 +10,6 @@ import os
 
 import pytest
 
-
 pytestmark = pytest.mark.skipif(
     os.getenv("NEUGI_E2E", "0") != "1",
     reason="Set NEUGI_E2E=1 to run optional browser E2E checks.",

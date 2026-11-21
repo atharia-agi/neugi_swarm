@@ -20,6 +20,9 @@ data/
 *.db
 *.sqlite
 
+# Runtime session transcripts (dev data; must never ship to the public site)
+sessions/
+
 # Models
 models/
 *.gguf
