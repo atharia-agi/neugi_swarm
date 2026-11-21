@@ -1643,17 +1643,26 @@ function buildDesk(x, z, w) {
   mon.rotation.x = -0.22;
   g.add(mon);
   const monScreen = panelPlane(0.92, 0.54, monTex);
-  monScreen.position.set(0.25, DESK_TOP_Y + 0.32, -0.08);
+  /* Layar NEMPEL di bodi (celah ~0.004, dulu 0.011): dari depan
+     layar duduk rapi di bodi, dari samping/belakang tidak tampak
+     seperti kartu mengambang; tetap di depan muka bodi supaya
+     tidak z-fighting. Posisi y disamakan dengan pusat bodi. */
+  monScreen.position.set(0.25, DESK_TOP_Y + 0.31, -0.086);
   monScreen.rotation.x = -0.22;
   g.add(monScreen);
   const monStand = box(0.08, 0.32, 0.08, 0x111111);
   monStand.position.set(0.25, DESK_TOP_Y + 0.05, -0.12);
   g.add(monStand);
-  /* Pelat nama di sisi depan meja (menghadap kamera). */
-  const plateTex = textTexture(256, 64, () => {});
-  const plate = panelPlane(1.7, 0.42, plateTex);
-  plate.position.set(0, DESK_TOP_Y - 0.19, 0.47);
-  plate.rotation.x = -0.35;
+  /* Pelat nama di sisi depan meja (menghadap kamera). RATA (tanpa
+     miring) dan MUAT di depan meja: pelat 1.7x0.34, kanvas 320x64
+     (aspek 5:1) — dulu 1.7x0.42 miring -0.35, ujung atasnya masuk
+     ke dalam slab meja (terpotong) dan ujung bawahnya menembus
+     lantai; teks baris 2 juga meluber dari kanvas 256 (angka
+     terakhir terpotong). Posisi y 0.18 = tengah depan meja 0.36. */
+  const plateTex = textTexture(320, 64, () => {});
+  const plate = panelPlane(1.7, 0.34, plateTex);
+  plate.position.set(0, 0.18, 0.47);
+  plate.rotation.x = 0;
   g.add(plate);
   g.position.set(x, 0, z);
   scene.add(g);
@@ -1766,6 +1775,34 @@ function newMonitorAnim(st, key) {
 
 /* Gambar satu baris kode (prefix yang sudah "diketik") dengan warna
    sintaks; mengembalikan x akhir teks (dipakai posisi kursor). */
+/* Bungkus teks ke maks `maxLines` baris di batas kata (ukur lebar
+   kanvas; font harus sudah di-set sebelum memanggil). Bila teks
+   tidak muat, baris terakhir dipotong di batas kata + '…'. JANGAN
+   potong tengah kata (judul tugas monitor, 2026-11-21). */
+function wrapLines(g, text, maxW, maxLines) {
+  const words = String(text).split(' ');
+  const lines = [];
+  let line = '';
+  for (const w of words) {
+    const test = line ? line + ' ' + w : w;
+    if (g.measureText(test).width > maxW && line) {
+      lines.push(line);
+      line = w;
+    } else line = test;
+  }
+  if (line) lines.push(line);
+  if (lines.length <= maxLines) return lines;
+  const out = lines.slice(0, maxLines);
+  let last = out[maxLines - 1];
+  while (last && g.measureText(last + ' …').width > maxW) {
+    const idx = last.lastIndexOf(' ');
+    if (idx < 0) { last = ''; break; }
+    last = last.slice(0, idx);
+  }
+  out[maxLines - 1] = last ? last + ' …' : '…';
+  return out;
+}
+
 function drawMonitorCodeLine(g, text, x, y) {
   g.font = MONITOR_FONT;
   let cx = x;
@@ -1804,12 +1841,17 @@ function drawMonitorFrame(d) {
   const lines = MONITOR_SNIPPETS[a.snippetIdx];
   g.fillStyle = '#0d1a05';
   g.fillRect(0, 0, 256, 128);
-  /* Baris komentar = judul tugas nyata (maks 34 karakter). */
+  /* Baris komentar = judul tugas nyata, dibungkus ke maks 2 baris
+     di batas kata (jangan potong tengah kata). Bila 2 baris, pemisah
+     + kode digeser ke bawah supaya tidak tabrakan. */
   g.font = MONITOR_HEAD_FONT;
   g.fillStyle = '#6a9955';
-  g.fillText('// ' + trunc(a.title, 34), 8, 15);
+  const titleLines = wrapLines(g, '// ' + a.title, 240, 2);
+  let ty = 15;
+  for (const tl of titleLines) { g.fillText(tl, 8, ty); ty += 13; }
+  const codeY0 = titleLines.length > 1 ? MONITOR_CODE_Y0 + 13 : MONITOR_CODE_Y0;
   g.fillStyle = '#2d333b';
-  g.fillRect(8, 20, 240, 1);
+  g.fillRect(8, ty - 8, 240, 1);
   /* Baris yang sedang diketik = baris pertama yang belum penuh;
      bila semua penuh, baris terakhir (kursor di ujung kode). */
   let cur = lines.length - 1;
@@ -1820,12 +1862,12 @@ function drawMonitorFrame(d) {
      jendela bergeser pelan ke atas saat baris baru mulai diketik. */
   const winStart = Math.max(0, cur - (MONITOR_VISIBLE_LINES - 1));
   let cursorX = 8;
-  let cursorY = MONITOR_CODE_Y0;
+  let cursorY = codeY0;
   for (let r = 0; r < MONITOR_VISIBLE_LINES; r++) {
     const li = winStart + r;
     if (li > cur) break;
     const revealed = Math.max(0, Math.min(lines[li].length, a.typed - a.lineOffsets[li]));
-    const y = MONITOR_CODE_Y0 + r * MONITOR_CODE_LH;
+    const y = codeY0 + r * MONITOR_CODE_LH;
     const endX = drawMonitorCodeLine(g, lines[li].slice(0, revealed), 8, y);
     if (li === cur) { cursorX = endX; cursorY = y; }
   }
@@ -1901,7 +1943,7 @@ function startMonitorTimer() {
 
 function drawPlate(texObj, name, st) {
   const g = texObj.ctx;
-  g.fillStyle = '#161b22'; g.fillRect(0, 0, 256, 64);
+  g.fillStyle = '#161b22'; g.fillRect(0, 0, 320, 64);
   if (!name) {
     g.fillStyle = '#555'; g.font = '20px ui-monospace, monospace';
     g.fillText('— kosong —', 10, 38);
