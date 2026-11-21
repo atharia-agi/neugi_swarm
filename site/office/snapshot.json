@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-21T04:57:13.122821Z",
+  "generated_at": "2026-11-21T05:27:15.892321Z",
   "agents": [
     {
       "id": "rangga",
@@ -24,8 +24,8 @@
       "name": "Beto",
       "role": "CTO",
       "color": "#fc7a24",
-      "room": "perpustakaan",
-      "state": "working",
+      "room": "ruang-rapat",
+      "state": "meeting",
       "task": "redeploy backroom sekali ya: env var BOA"
     },
     {
