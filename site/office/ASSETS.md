@@ -9,8 +9,8 @@ Semua ukuran + sha256 di bawah diukur langsung dari BASE 0.4.9.1.
 
 | File | Ukuran | Keterangan |
 |---|---|---|
-| `index.html` | ~7 KB | Halaman showcase: hero mini display + overlay fullscreen |
-| `room-showcase.js` | ~151 KB | Varian viewer (0.4.9.1-showcase); JANGAN edit `room3d.js` produksi |
+| `index.html` | ~27 KB | Halaman showcase: hero mini display + overlay fullscreen |
+| `room-showcase.js` | ~137 KB | Varian viewer (0.4.9.1-showcase); JANGAN edit `room3d.js` produksi |
 | `avatar-voxel.js` | ~21 KB | Avatar voxel SVG 10 agen (dulu blok inline di index.html; diimpor `room-showcase.js`, jadi viewer ter-mount tetap beravatar) |
 | `room-viewmodel.js` | ~30 KB | View-model murni (salinan verbatim 0.4.9, 2 baris komentar disesuaikan) |
 | `snapshot.json` | ~1,3 KB | FIXTURE untuk pengujian — diganti `snapshot.json` asli oleh Oto |
@@ -29,18 +29,6 @@ Sumber: repo `ragetalamus-agent/agent-hq`, branch `main`, folder `public/`
 | `three.module.js` | 1.272.972 B | `76dea8151bc9352aef3528b4262e249b2604f62543828328db978d060d61a495` |
 | `GLTFLoader.js` | 108.533 B | `d121e14073ae2470396644531763400d9c4d0137252c63835411ef9feeefb018` |
 | `DRACOLoader.js` | 13.640 B | `e4348b2c255e7d851df790cafb93bcdd7ac0d2a1a6916038b43580b1e6d6c3fb` |
-
-### Util three.js — `office/vendor/three/utils/` (WAJIB — GLTFLoader.js mengimpornya)
-
-| File | Ukuran | sha256 |
-|---|---|---|
-| `BufferGeometryUtils.js` | 31.919 B | `6f7a59439dd3f4399b25e9214aef65e5969422ed467083f406272b9b1fcef48c` |
-
-> Catatan Oto 2026-11-21: file ini TERTINGGAL di ASSETS.md v1 — tanpa
-> file ini `GLTFLoader.js` gagal impor (`./utils/BufferGeometryUtils.js`)
-> dan seluruh modul `room-showcase.js` tidak jalan sama sekali (hero
-> hitam, status mentok "Memuat snapshot kantor…"). Selalu sertakan saat
-> re-sync dari BASE.
 
 ### Decoder Draco — `office/vendor/draco/`
 
@@ -79,7 +67,6 @@ office/
   vendor/three/three.module.js
   vendor/three/GLTFLoader.js
   vendor/three/DRACOLoader.js
-  vendor/three/utils/BufferGeometryUtils.js   <- WAJIB (diimpor GLTFLoader.js)
   vendor/draco/          <- draco_decoder.js + .wasm + draco_wasm_wrapper.js
   models/                <- 10 GLB di atas
 ```
