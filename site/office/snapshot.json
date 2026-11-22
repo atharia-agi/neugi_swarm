@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-22T02:42:16.848593Z",
+  "generated_at": "2026-11-22T02:58:01.974397Z",
   "agents": [
     {
       "id": "rangga",
@@ -15,7 +15,7 @@
       "name": "Oto",
       "role": "CEO",
       "color": "#a3ff00",
-      "room": "pantry",
+      "room": "ruang-kerja",
       "state": "idle",
       "task": null
     },
