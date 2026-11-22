@@ -171,6 +171,30 @@ a:hover { background: var(--volt); text-decoration: none; }
 .footer-grid a { color: var(--cream); }
 .footer-grid a:hover { background: var(--volt); color: var(--black); }
 
+/* ---------- hamburger (mobile, ≤820px) ---------- */
+.nav-toggle { display: none; }
+@media (max-width: 820px) {
+  .nav-toggle {
+    display: inline-flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px;
+    width: 44px; height: 44px; flex: none; margin-left: auto;
+    background: transparent; border: 2px solid var(--cream); border-radius: 0; cursor: pointer; padding: 0;
+  }
+  .nav-toggle span { display: block; width: 22px; height: 2px; background: var(--cream); transition: transform .18s ease, opacity .18s ease, background .18s ease; }
+  .nav-toggle:hover { border-color: var(--volt); }
+  .nav-toggle:hover span { background: var(--volt); }
+  /* buka: garis jadi X volt */
+  .masthead.nav-open .nav-toggle { border-color: var(--volt); }
+  .masthead.nav-open .nav-toggle span { background: var(--volt); }
+  .masthead.nav-open .nav-toggle span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .masthead.nav-open .nav-toggle span:nth-child(2) { opacity: 0; }
+  .masthead.nav-open .nav-toggle span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+  /* panel menu: turun penuh di bawah bar header */
+  .nav { display: none; flex-basis: 100%; flex-direction: column; align-items: stretch; gap: 0; margin-left: 0; border-top: 2px solid #3A3A36; padding-top: 4px; }
+  .masthead.nav-open .nav { display: flex; }
+  .nav a { white-space: nowrap; padding: 12px 4px; border-bottom: 1px solid #3A3A36; font-size: 17px; }
+  .nav a:last-child { border-bottom: none; }
+}
+
 /* ---------- responsive ---------- */
 @media (max-width: 820px) {
   .hero { padding: 40px 0 28px; }
@@ -178,8 +202,6 @@ a:hover { background: var(--volt); text-decoration: none; }
   .section { padding: 32px 0; }
   .article { padding: 32px 0 48px; }
   .masthead-in { gap: 6px 16px; padding: 8px 0; }
-  .nav { margin-left: 0; flex-wrap: wrap; gap: 4px 20px; }
-  .nav a { white-space: nowrap; padding: 10px 0; }
   .viewer-frame { aspect-ratio: auto; padding: 20px; }
   .viewer-fallback { grid-template-columns: 1fr; }
   .post-list { grid-template-columns: 1fr; gap: 16px; }
@@ -193,6 +215,7 @@ a:hover { background: var(--volt); text-decoration: none; }
 @media (max-width: 520px) {
   .wrap, .wrap-wide { padding: 0 18px; }
   .logo-img { width: 112px; height: 52px; }
+  .tagline { display: none; } /* logo + hamburger saja di bar header HP kecil */
   .hero-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; }
   .agent-grid { grid-template-columns: 1fr; }
   .agent.wide, .agent.narrow { grid-column: span 1; }
