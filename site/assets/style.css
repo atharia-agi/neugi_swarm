@@ -164,12 +164,11 @@ a:hover { background: var(--volt); text-decoration: none; }
 /* ---------- footer ---------- */
 .footer { background: var(--black); color: var(--cream); margin-top: 64px; }
 .footer-in { padding: 40px 0 28px; }
-.footer-big { font-family: "Archivo Black", sans-serif; font-size: clamp(28px, 5vw, 48px); letter-spacing: -1px; line-height: 1; text-transform: uppercase; }
-.footer-big a { color: var(--volt); text-decoration: none; }
-.footer-big a:hover { background: var(--volt); color: var(--black); }
-.footer-grid { display: flex; flex-wrap: wrap; gap: 8px 32px; justify-content: space-between; border-top: 1px solid #3A3A36; margin-top: 28px; padding-top: 16px; font-size: 14px; }
-.footer-grid a { color: var(--cream); }
-.footer-grid a:hover { background: var(--volt); color: var(--black); }
+.footer-logos { display: flex; flex-wrap: wrap; align-items: center; gap: 20px 40px; margin: 0; }
+.footer-logos a { display: inline-flex; }
+.footer-logos img { display: block; height: auto; }
+.footer-logos .logo-webiz { height: 44px; width: auto; }
+.footer-logos .logo-neugi { height: 60px; width: auto; }
 
 /* ---------- hamburger (mobile, ≤820px) ---------- */
 .nav-toggle { display: none; }
