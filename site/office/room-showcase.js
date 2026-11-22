@@ -3718,8 +3718,12 @@ function applyEmpty() {
    state: working | meeting | idle | away. room: id ruangan (6 asli;
    id ruangan lain yang valid juga diterima). task: judul maks 40
    karakter atau null. SATU-SATUNYA request jaringan viewer ini
-   adalah snapshot.json (same origin, relatif). */
-let SNAPSHOT_URL = new URL('snapshot.json', MODULE_BASE).href; /* default: snapshot di samping modul; mount({snapshotUrl}) override */
+   adalah snapshot.json — UTAMA dari R2 (Cloudflare, update tiap
+   15 menit TANPA deploy Vercel), FALLBACK snapshot.json same-origin
+   di repo bila R2 gagal (boleh basi). */
+const SNAPSHOT_R2_URL = 'https://pub-20982401ea5a4ebdb76f3b502b7074d7.r2.dev/snapshot.json';
+const SNAPSHOT_LOCAL_URL = new URL('snapshot.json', MODULE_BASE).href;
+let SNAPSHOT_URL = SNAPSHOT_R2_URL; /* default: R2; mount({snapshotUrl}) override */
 const SNAPSHOT_POLL_MS = 60000;
 const SNAPSHOT_STALE_MS = 15 * 60 * 1000;
 const SNAPSHOT_OLD_MS = 2 * 60 * 60 * 1000;
@@ -3816,12 +3820,12 @@ function snapshotToState(snap, nowMs) {
 const SNAPSHOT_TIMEOUT_MS = 10000;
 const SNAPSHOT_MAX_ATTEMPTS = 3; /* percobaan awal + 2 retry */
 let snapErrorMsg = ''; /* alasan gagal memuat snapshot terakhir ('' = tak ada error) */
-async function fetchSnapshot() {
+async function fetchSnapshotFrom(url) {
   for (let attempt = 1; attempt <= SNAPSHOT_MAX_ATTEMPTS; attempt++) {
     const ctrl = new AbortController();
     const to = setTimeout(() => ctrl.abort(), SNAPSHOT_TIMEOUT_MS);
     try {
-      const r = await fetch(SNAPSHOT_URL, { cache: 'no-store', signal: ctrl.signal });
+      const r = await fetch(url, { cache: 'no-store', signal: ctrl.signal });
       if (!r.ok) {
         snapErrorMsg = 'status ' + r.status;
       } else {
@@ -3845,6 +3849,20 @@ async function fetchSnapshot() {
       console.warn('showcase: snapshot gagal (percobaan ' + attempt + '/' + SNAPSHOT_MAX_ATTEMPTS + '), coba lagi:', snapErrorMsg);
       await new Promise((r) => setTimeout(r, 800));
     }
+  }
+  return null;
+}
+async function fetchSnapshot() {
+  /* Utama: R2 (SNAPSHOT_URL, bisa di-override mount({snapshotUrl})).
+     Gagal (404/timeout/rusak) -> fallback snapshot.json same-origin
+     di repo. R2 404 langsung gagal cepat (tanpa nunggu timeout),
+     jadi fallback tidak bikin first paint lambat. */
+  const primary = await fetchSnapshotFrom(SNAPSHOT_URL);
+  if (primary) return primary;
+  if (SNAPSHOT_URL !== SNAPSHOT_LOCAL_URL) {
+    console.warn('showcase: snapshot R2 gagal (' + (snapErrorMsg || '?') + '), fallback ke snapshot.json lokal');
+    const local = await fetchSnapshotFrom(SNAPSHOT_LOCAL_URL);
+    if (local) return local;
   }
   return null;
 }
