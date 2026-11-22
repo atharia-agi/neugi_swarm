@@ -1,7 +1,5 @@
 # Provider Matrix (Runtime-Generated)
 
-Generated: 2026-11-21
-
 Source: `neugi_swarm_v2/provider_catalog.py`
 
 | Provider | Runtime Key | Compatibility | Auth | Models (Curated) |
