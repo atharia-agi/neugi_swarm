@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-21T23:42:17.552178Z",
+  "generated_at": "2026-11-21T23:57:24.827379Z",
   "agents": [
     {
       "id": "rangga",
@@ -24,8 +24,8 @@
       "name": "Beto",
       "role": "CTO",
       "color": "#fc7a24",
-      "room": "ruang-rapat",
-      "state": "meeting",
+      "room": "ruang-kerja",
+      "state": "working",
       "task": "\u2014 URGENT dari Rangga (13:11 WIB): backroom masih GELAP + DOBEL PANEL. Screenshot Rangga <- file_20261121_0217."
     },
     {
