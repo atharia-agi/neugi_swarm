@@ -2832,18 +2832,21 @@ function glyphSvg(glyph) {
   return '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">'
     + (GLYPH_DEFS[glyph] || '') + '</svg>';
 }
-/* Wajah pixel 14px (replika drawFace 32x32: disc #0f1115 + mata +
-   mulut; fokus = mata kotak + dua garis, senyum = busur, netral =
-   garis). Bukan emoji, bukan emosi ditebak. */
+/* Wajah pixel 14px (disc volt #a3ff00 + mata + mulut hitam; fokus =
+   mata kotak + dua garis, senyum = busur, netral = garis). Disc
+   HARUS terang karena stage hitam — disc hitam #0f1115 lama
+   tenggelam di background, cuma mata/mulut yang kelihatan
+   (Rangga 23 Nov 05:44 WIB: 'smiley hitam aneh, kan boxnya hitam').
+   Bukan emoji, bukan emosi ditebak. */
 function moodFaceSvg(variant) {
   let mouth;
-  if (variant === 'senyum') mouth = '<path d="M 21.3 19.7 A 6 6 0 0 1 10.7 19.7" stroke="#e6e6e6" stroke-width="2" fill="none"/>';
-  else if (variant === 'fokus') mouth = '<path d="M 11 22 H 21 M 11 25 H 21" stroke="#e6e6e6" stroke-width="2"/>';
-  else mouth = '<path d="M 12 23 H 20" stroke="#e6e6e6" stroke-width="2"/>';
+  if (variant === 'senyum') mouth = '<path d="M 21.3 19.7 A 6 6 0 0 1 10.7 19.7" stroke="#0f1115" stroke-width="2" fill="none"/>';
+  else if (variant === 'fokus') mouth = '<path d="M 11 22 H 21 M 11 25 H 21" stroke="#0f1115" stroke-width="2"/>';
+  else mouth = '<path d="M 12 23 H 20" stroke="#0f1115" stroke-width="2"/>';
   return '<svg viewBox="0 0 32 32" width="14" height="14" aria-hidden="true">'
-    + '<circle cx="16" cy="16" r="15" fill="#0f1115"/>'
-    + '<rect x="9" y="11" width="4" height="4" fill="#e6e6e6"/>'
-    + '<rect x="19" y="11" width="4" height="4" fill="#e6e6e6"/>'
+    + '<circle cx="16" cy="16" r="15" fill="#a3ff00"/>'
+    + '<rect x="9" y="11" width="4" height="4" fill="#0f1115"/>'
+    + '<rect x="19" y="11" width="4" height="4" fill="#0f1115"/>'
     + mouth + '</svg>';
 }
 function ensureBubbles() {
