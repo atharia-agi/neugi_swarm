@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-from datetime import date
 from pathlib import Path
 import sys
 
@@ -18,8 +17,6 @@ def main() -> int:
     providers = get_all_providers()
     lines: list[str] = []
     lines.append("# Provider Matrix (Runtime-Generated)")
-    lines.append("")
-    lines.append(f"Generated: {date.today().isoformat()}")
     lines.append("")
     lines.append("Source: `neugi_swarm_v2/provider_catalog.py`")
     lines.append("")
