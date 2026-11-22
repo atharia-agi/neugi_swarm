@@ -95,7 +95,7 @@ a:hover { background: var(--volt); text-decoration: none; }
 .post-list h3 a { text-decoration: none; }
 .post-list h3 a:hover { background: var(--volt); }
 .post-list p { margin: 0; font-size: 15px; color: var(--ink-soft); max-width: 64ch; }
-.post-list .arrow { font-family: "Archivo Black", sans-serif; font-size: 20px; line-height: 1; padding: 2px 6px; }
+.post-list .arrow { font-family: "Archivo Black", sans-serif; font-size: 20px; line-height: 1; padding: 2px 6px; grid-row: 1; grid-column: 3; }
 @media (hover: hover) {
   .post-list li { transition: box-shadow .15s ease, transform .15s ease; }
   .post-list li:hover { box-shadow: 6px 6px 0 var(--black); transform: translate(-2px, -2px); }
@@ -178,9 +178,8 @@ a:hover { background: var(--volt); text-decoration: none; }
   .section { padding: 32px 0; }
   .article { padding: 32px 0 48px; }
   .masthead-in { gap: 6px 16px; padding: 8px 0; }
-  .nav { margin-left: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 4px 20px; padding-bottom: 4px; }
-  .nav::-webkit-scrollbar { display: none; }
-  .nav a { white-space: nowrap; }
+  .nav { margin-left: 0; flex-wrap: wrap; gap: 4px 20px; }
+  .nav a { white-space: nowrap; padding: 10px 0; }
   .viewer-frame { aspect-ratio: auto; padding: 20px; }
   .viewer-fallback { grid-template-columns: 1fr; }
   .post-list { grid-template-columns: 1fr; gap: 16px; }

@@ -149,6 +149,7 @@ let prevState = null;
 let displayMode = 'hero';  /* 'hero' | 'fullscreen' — tampilan showcase */
 let snapLoaded = false;    /* snapshot.json sudah berhasil dimuat */
 let snapGeneratedMs = 0;   /* generated_at snapshot terakhir (ms) */
+let snapSource = 'R2';     /* sumber snapshot terakhir: 'R2' | 'lokal' */
 let fsFallback = false;    /* fullscreen API tak tersedia -> overlay CSS */
 let fsSeq = 0;             /* naik tiap enter/exit/follow fullscreen (penjaga race Esc) */
 let fsExitSeq = -1;        /* fsSeq saat exit dimulai (-1 = tak ada exit) */
@@ -2853,7 +2854,7 @@ function ensureBubbles() {
     el.dataset.agent = name;
     el.style.display = 'none';
     el.style.transition = 'opacity .25s ease';
-    el.innerHTML = '<span class="face"></span><span class="glyph" style="display:none"></span><span class="txt"></span><span class="time" style="display:none"></span>';
+    el.innerHTML = '<span class="face"></span><span class="glyph" style="display:none"></span><span class="nm"></span><span class="txt"></span><span class="time" style="display:none"></span>';
     bubbleLayer.appendChild(el);
     bubbleEls[name] = { el, sig: '' };
   }
@@ -2920,6 +2921,8 @@ function updateBubbles() {
         el.querySelector('.face').innerHTML = moodFaceSvg(face);
         const gEl = el.querySelector('.glyph');
         if (glyph) { gEl.innerHTML = glyphSvg(glyph); gEl.style.display = ''; } else { gEl.style.display = 'none'; }
+        const nmEl = el.querySelector('.nm');
+        if (nmEl) nmEl.textContent = st.label || st.name;
         const tEl = el.querySelector('.txt');
         tEl.textContent = text;
         tEl.style.display = text ? '' : 'none';
@@ -3141,6 +3144,7 @@ function renderCards() {
       const status = document.createElement('span');
       status.className = 'card-status';
       status.textContent = st.statusText || '— tidak ada tugas aktif —';
+      status.title = st.statusText || '';
       if (st.stale) status.classList.add('stale');
       main.appendChild(status);
       const meta = document.createElement('span');
@@ -3590,7 +3594,7 @@ function setStatusText(extra) {
      (state working/meeting) vs 'netral' (idle/away); hitung dari situ. */
   const working = state ? state.agents.filter((a) => a.face === 'fokus').length : 0;
   const ageMin = Math.round((Date.now() - snapGeneratedMs) / 60000);
-  let text = 'Snapshot per ' + hhmmss + ' · ' + working + ' agen bekerja · polling 60 detik';
+  let text = 'Snapshot per ' + hhmmss + ' · ' + working + ' agen bekerja · polling 60 detik · via ' + snapSource;
   if (ageMin >= 15) text += ' · snapshot basi (' + ageMin + ' mnt)';
   if (extra) text += ' · ' + extra;
   statusEl.textContent = text;
@@ -3858,11 +3862,11 @@ async function fetchSnapshot() {
      di repo. R2 404 langsung gagal cepat (tanpa nunggu timeout),
      jadi fallback tidak bikin first paint lambat. */
   const primary = await fetchSnapshotFrom(SNAPSHOT_URL);
-  if (primary) return primary;
+  if (primary) { snapSource = 'R2'; return primary; }
   if (SNAPSHOT_URL !== SNAPSHOT_LOCAL_URL) {
     console.warn('showcase: snapshot R2 gagal (' + (snapErrorMsg || '?') + '), fallback ke snapshot.json lokal');
     const local = await fetchSnapshotFrom(SNAPSHOT_LOCAL_URL);
-    if (local) return local;
+    if (local) { snapSource = 'lokal'; return local; }
   }
   return null;
 }
@@ -4404,6 +4408,7 @@ const SHOWCASE_CSS = `
 #roomBubbles{position:absolute;inset:0;overflow:hidden;pointer-events:none}
 .bubble{position:absolute;transform:translate(-50%,-100%);max-width:180px;display:flex;gap:.3rem;align-items:center;background:rgba(22,27,34,.94);border:1px solid #2d333b;border-radius:6px;padding:.15rem .4rem;font-size:.8rem;line-height:1.3;color:#e6e6e6;white-space:nowrap;overflow:hidden}
 .bubble .txt{overflow:hidden;text-overflow:ellipsis}
+.bubble .nm{display:none;font-weight:700;flex:none}
 .bubble .glyph{color:#a3ff00;flex:none;display:flex}
 .bubble .time{color:#9aa0a6;font-size:.75rem;flex:none}
 #roomStatus{font-size:.9rem;color:#9aa0a6;padding:.4rem .8rem;border:1px solid #2d333b;border-top:none;background:#161b22;border-radius:0 0 8px 8px;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
@@ -4424,10 +4429,10 @@ const SHOWCASE_CSS = `
 .agent-card{display:flex;gap:.6rem;align-items:center;width:100%;min-height:64px;text-align:left;margin:.3rem 0;padding:.4rem .5rem;border:1px solid #2d333b;border-radius:8px;background:#21262d;color:#e6e6e6;cursor:pointer}
 .agent-card .mini-avatar svg{width:44px;height:48px;flex:none}
 .agent-card .card-main{flex:1;min-width:0;display:flex;flex-direction:column}
-.agent-card .card-status{font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.agent-card .card-status{font-size:.9rem;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-clamp:2;white-space:normal}
 .agent-card .card-meta{font-size:.85rem;color:#9aa0a6}
 .cards-note{font-size:.9rem;color:#9aa0a6}
-@media (max-width:700px){#stageHero{height:340px}.bubble .txt,.bubble .time{display:none}}
+@media (max-width:700px){#stageHero{height:340px}.bubble .txt,.bubble .time{display:none}.bubble .nm{display:inline}.hero-actions{flex-direction:column;align-items:flex-start}#roomFollowCard{max-width:170px !important}#roomFollowCard .follow-status,#roomFollowCard .follow-meta{display:none}}
 `;
 function ensureShowcaseCss() {
   if (document.getElementById('neugi-showcase-css')) return;
@@ -4462,7 +4467,8 @@ function ensureShowcaseDom(targetEl) {
   const btnFs = mk('button', 'btnEnterFs', null, 'Layar penuh');
   btnFs.type = 'button';
   actions.appendChild(btnFs);
-  actions.appendChild(mk('p', null, 'hint', 'Klik ruangan untuk layar penuh · klik agen untuk mengikuti · seret untuk orbit, scroll untuk zoom'));
+  const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  actions.appendChild(mk('p', null, 'hint', isTouch ? 'Klik ruangan untuk layar penuh · klik agen untuk mengikuti · seret untuk orbit, cubit untuk zoom' : 'Klik ruangan untuk layar penuh · klik agen untuk mengikuti · seret untuk orbit, scroll untuk zoom'));
   root.appendChild(actions);
   const portraits = mk('div', 'roomPortraits');
   portraits.setAttribute('aria-label', 'Portrait agen');
