@@ -169,6 +169,9 @@ a:hover { background: var(--volt); text-decoration: none; }
 .footer-logos img { display: block; height: auto; }
 .footer-logos .logo-webiz { height: 44px; width: auto; }
 .footer-logos .logo-neugi { height: 60px; width: auto; }
+.footer-grid { display: flex; flex-wrap: wrap; gap: 8px 32px; justify-content: space-between; border-top: 1px solid #3A3A36; margin-top: 28px; padding-top: 16px; font-size: 14px; }
+.footer-grid a { color: var(--cream); }
+.footer-grid a:hover { background: var(--volt); color: var(--black); }
 
 /* ---------- hamburger (mobile, ≤820px) ---------- */
 .nav-toggle { display: none; }
