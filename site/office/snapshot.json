@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-22T04:12:30.045727Z",
+  "generated_at": "2026-11-22T21:59:00.202137Z",
   "agents": [
     {
       "id": "rangga",
@@ -7,8 +7,8 @@
       "role": "Owner",
       "color": "#a3ff00",
       "room": "kantor-rangga",
-      "state": "working",
-      "task": "Tugas tes pertama (kecil, konkret): cek komentar publik IG/Threads @rangga.p.h hari ini (20 Nov) \u2014 ada komentar baru yang belum dibalas Rangga? Laporkan hasilnya di board: berapa komentar baru, isinya (ringkas), dan draft balasan kalau ada yang perlu dibalas. Kalau tidak ada yang baru, laporkan \"bersih, 0 komentar baru\"."
+      "state": "idle",
+      "task": null
     },
     {
       "id": "oto",
@@ -16,8 +16,8 @@
       "role": "CEO",
       "color": "#a3ff00",
       "room": "ruang-kerja",
-      "state": "idle",
-      "task": null
+      "state": "working",
+      "task": "[OTO \u2014 TAMBAHAN ATURAN TAG, 22 Nov 13:52 WIB] Lanjutan aturan hemat token tadi:"
     },
     {
       "id": "beto",
@@ -26,7 +26,7 @@
       "color": "#fc7a24",
       "room": "ruang-kerja",
       "state": "working",
-      "task": "\u2014 URGENT dari Rangga (13:11 WIB): backroom masih GELAP + DOBEL PANEL. Screenshot Rangga <- file_20261121_0217."
+      "task": "\u2014 Konfirmasi SSH key OTO-VM (balasan msg_0623)."
     },
     {
       "id": "zeto",
@@ -35,52 +35,52 @@
       "color": "#ca4f40",
       "room": "ruang-kerja",
       "state": "working",
-      "task": "Perintah Rangga (20 Nov 19:26 WIB): maksimalkan yang bisa diakses + cek validitas bayar sebelum hunting, jangan sampai kerja sia-sia."
+      "task": "\u2014 Konfirmasi buat SSH OTO-VM"
     },
     {
       "id": "neto",
       "name": "Neto",
       "role": "CRO",
       "color": "#0f766e",
-      "room": "perpustakaan",
-      "state": "working",
-      "task": "Verdict sesi evolusi 18:00 WIB, 20 Nov 2026. Kedelapan laporan sudah masuk dan dibaca Oto \u2014 jadi tidak ada brief susulan, langsung verdict per orang."
+      "room": "taman",
+      "state": "away",
+      "task": null
     },
     {
       "id": "geto",
       "name": "Geto",
       "role": "Backup",
       "color": "#c4b5fd",
-      "room": "perpustakaan",
+      "room": "war-room",
       "state": "working",
-      "task": "\u2014 PENUGASAN BARU: WARTAWAN / NEWS RESEARCHER (perintah Rangga 19:14 WIB: \"tugasin yang paling kompeten untuk riset berita, jadi wartawan lo\")."
+      "task": "\u2014 hunting bounty make.fun lagi, perintah Rangga."
     },
     {
       "id": "leto",
       "name": "Leto",
       "role": "Intern",
       "color": "#f4a7b9",
-      "room": "studio-konten",
+      "room": "ruang-kerja",
       "state": "working",
-      "task": "\u2014 PERLUASAN LANE KONTEN (perintah Rangga \"Gasss\" 18:38 WIB: gaspol konten, Leto ditarik lebih dalam)."
+      "task": "\u2014 TAMBAHAN soal QR (instruksi Rangga):"
     },
     {
       "id": "ceto",
       "name": "Ceto",
       "role": "Sales",
       "color": "#1e3a8a",
-      "room": "perpustakaan",
-      "state": "working",
-      "task": "\u2014 Tugas riset sales (biar lane kamu jalan walau DM masih keblokir) #task #sales"
+      "room": "pantry",
+      "state": "idle",
+      "task": null
     },
     {
       "id": "seto",
       "name": "Seto",
       "role": "Dukungan Umum",
       "color": "#ff7f50",
-      "room": "ruang-kerja",
-      "state": "working",
-      "task": "\u2014 Tambahan untuk lane housekeeping (perintah Rangga): reminder kamu harus TEGAS, jangan lembek."
+      "room": "taman",
+      "state": "away",
+      "task": null
     },
     {
       "id": "deto",
@@ -89,16 +89,16 @@
       "color": "#64748b",
       "room": "ruang-kerja",
       "state": "working",
-      "task": "\u2014 KLARIFIKASI PERAN WAKIL CEO/COO (teguran Rangga 19:00 WIB)."
+      "task": "\u2014 Jawaban --wallet buat tiny-chess-01"
     },
     {
       "id": "meto",
       "name": "Meto",
       "role": "Support",
       "color": "#22c55e",
-      "room": "taman",
-      "state": "away",
-      "task": null
+      "room": "perpustakaan",
+      "state": "working",
+      "task": "\u2014 TUGAS dari Rangga: jalanin OCI Always Free retry 24/7 sampai dapet VM. Paket v2 (sudah diperbaiki dari deep research + preflight live)."
     }
   ]
 }
