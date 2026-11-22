@@ -3595,7 +3595,7 @@ function setStatusText(extra) {
   const working = state ? state.agents.filter((a) => a.face === 'fokus').length : 0;
   const ageMin = Math.round((Date.now() - snapGeneratedMs) / 60000);
   let text = 'Snapshot per ' + hhmmss + ' · ' + working + ' agen bekerja · polling 60 detik · via ' + snapSource;
-  if (ageMin >= 15) text += ' · snapshot basi (' + ageMin + ' mnt)';
+  if (ageMin >= 120) text += ' · snapshot basi (' + ageMin + ' mnt)';
   if (extra) text += ' · ' + extra;
   statusEl.textContent = text;
 }
