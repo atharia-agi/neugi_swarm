@@ -2812,8 +2812,15 @@ function loadOneAvatar(name) {
           fixAvatarMaterials(obj);
           applyIdlePose(obj, name);
           captureBoneBase(obj, name);
-          debugLog('OK ' + name);
-          finish(obj);
+          if (done) {
+            /* Telat tapi berhasil: ganti stand-in dengan GLB asli
+               (dulu finish() mengabaikannya — akar silinder permanen). */
+            debugLog('SWAP ' + name);
+            replaceAvatarInner(name, obj);
+          } else {
+            debugLog('OK ' + name);
+            finish(obj);
+          }
         } catch (err) {
           /* Dulu: throw di post-processing bikin promise gantung sampai
              timeout 8 dtk baru fallback. Sekarang fallback langsung. */
@@ -2824,6 +2831,30 @@ function loadOneAvatar(name) {
       undefined,
       (err) => { clearTimeout(timer); console.warn('GLB gagal dimuat, pakai stand-in:', name); debugLog('GLB-ERROR ' + name + ' ' + (err && (err.message || err.type || String(err)))); finish(fallbackAvatar(name)); });
   });
+}
+
+/* GLB yang selesai SETELAH timeout 8 dtk: ganti stand-in dengan model
+   asli di tempat. Dulu hasil telat ini dibuang diam-diam oleh finish()
+   — akar silinder permanen di browser lambat: 13 decode antre 2 worker,
+   total ~14 dtk, semua kena timeout dulu baru OK. */
+function replaceAvatarInner(name, obj) {
+  const turn = avatarMeshes[name];
+  if (!turn) return;
+  const old = turn.children[0];
+  if (old) {
+    old.traverse((o) => {
+      const i = clickables.indexOf(o);
+      if (i >= 0) clickables.splice(i, 1);
+    });
+    turn.remove(old);
+  }
+  obj.traverse((o) => {
+    o.userData.agent = name; clickables.push(o);
+    if (o.isMesh) o.castShadow = true;
+  });
+  turn.add(obj);
+  attachActivityProps(name);
+  requestRender();
 }
 
 async function loadAvatars() {
