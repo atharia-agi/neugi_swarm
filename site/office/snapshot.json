@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-22T21:59:00.202137Z",
+  "generated_at": "2026-11-23T04:12:14.323995Z",
   "agents": [
     {
       "id": "rangga",
@@ -33,9 +33,9 @@
       "name": "Zeto",
       "role": "CSO",
       "color": "#ca4f40",
-      "room": "ruang-kerja",
+      "room": "war-room",
       "state": "working",
-      "task": "\u2014 Konfirmasi buat SSH OTO-VM"
+      "task": "\u2014 tugas security deep dive: neugi.com (publik)."
     },
     {
       "id": "neto",
