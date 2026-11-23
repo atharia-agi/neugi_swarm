@@ -2906,7 +2906,7 @@ function updateBubbles() {
     else if (st.statusText && shown.has('status:' + st.name)) mode = 'status';
     const face = st.face || 'netral';
     const glyph = mode === 'status' ? st.glyph : null;
-    const text = mode === 'speech' ? st.speech.text : mode === 'status' ? st.statusText : '';
+    const text = mode === 'speech' ? st.speech.text : mode === 'status' ? (st.statusText || '').replace(/^Mengerjakan: /, '').replace(/^— /, '') : ''; /* pill: judul tugas saja, prefix sudah diwakili glyph kerja */
     const time = mode === 'speech' ? st.speech.hhmm : null;
     const stale = mode === 'status' && !!st.stale;
     const boss = mode === 'status' && st.name === 'rangga' && state.bossActive;
