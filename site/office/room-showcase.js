@@ -208,6 +208,13 @@ const JOINT_ROLES = {
      Tanpa entri ini Meto tidak dapat pose duduk (captureBoneBase lewati),
      jadi kakinya tidak pernah terukur saat duduk. */
   meto: { shoulderL: 6, shoulderR: 10, thighL: 14, thighR: 18, shinL: 15, shinR: 19, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 12, handL: 9, handR: 13, fingerL: null, fingerR: null },
+  /* ATHARIA + RETO 2026-11-24 (joint-map.json, 28 joint, pola Zeto/
+     Neto: bahu kiri 6, bahu kanan 13, paha 20/24). Tanpa entri ini
+     applyIdlePose + captureBoneBase lewati mereka, lengan tetap
+     T-pose bind. Delta lengan terukur belum ada — pakai fallback
+     Z +-75 bahu sampai diukur di harness. */
+  atharia: { shoulderL: 6, shoulderR: 13, thighL: 20, thighR: 24, shinL: 21, shinR: 25, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 15, handL: 9, handR: 16, fingerL: null, fingerR: null },
+  reto: { shoulderL: 6, shoulderR: 13, thighL: 20, thighR: 24, shinL: 21, shinR: 25, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 15, handL: 9, handR: 16, fingerL: null, fingerR: null },
 };
 /* DUDUK LESEHAN 2026-11-21 (Item 2+3) — grup turun sebesar drop saat
    duduk supaya PANAT menyentuh permukaan pad (PAD_TOP 0.10).
