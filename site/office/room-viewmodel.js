@@ -15,23 +15,25 @@
    studio-konten) + 5 selatan (ruang-kerja, ruang-rapat, taman,
    war-room, perpustakaan). */
 
-/* 11 agen yang dikenal (label/peran/warna = AVATAR_PARTS di
+/* 13 agen yang dikenal (label/peran/warna = AVATAR_PARTS di
    index.html + warna identitas M1/M2). Agen di luar daftar ini
    tidak punya meja — diabaikan view-model (bukan ditebak). */
 export const KNOWN_AGENTS = {
   rangga: { label: 'Rangga', role: 'Owner', color: '#a3ff00' },
   oto: { label: 'Oto', role: 'CEO', color: '#a3ff00' },
   beto: { label: 'Beto', role: 'CTO', color: '#fc7a24' },
-  zeto: { label: 'Zeto', role: 'CSO', color: '#ca4f40' },
+  zeto: { label: 'Zeto', role: 'Audit', color: '#ca4f40' },
   neto: { label: 'Neto', role: 'CRO', color: '#0f766e' },
   geto: { label: 'Geto', role: 'Backup', color: '#c4b5fd' },
   leto: { label: 'Leto', role: 'Intern', color: '#f4a7b9' },
   ceto: { label: 'Ceto', role: 'Sales', color: '#1e3a8a' },
   seto: { label: 'Seto', role: 'Dukungan Umum', color: '#ff7f50' },
-  deto: { label: 'Deto', role: 'Dukungan Umum', color: '#64748b' },
+  deto: { label: 'Deto', role: 'Asisten CEO', color: '#64748b' },
   meto: { label: 'Meto', role: 'Support', color: '#22c55e' },
+  atharia: { label: 'Atharia', role: 'Support', color: '#a855f7' },
+  reto: { label: 'Reto', role: 'Support', color: '#ef4444' },
 };
-export const ROOM_ORDER = ['rangga', 'oto', 'beto', 'zeto', 'neto', 'geto', 'leto', 'ceto', 'seto', 'deto', 'meto'];
+export const ROOM_ORDER = ['rangga', 'oto', 'beto', 'zeto', 'neto', 'geto', 'leto', 'ceto', 'seto', 'deto', 'meto', 'atharia', 'reto'];
 export const FLOOR = { x0: -21, x1: 21, z0: -14, z1: 14 };
 export const GANG_Z = -2;
 /* Lebar gang (dipakai renderer buat lantai gang + garis tepi). */

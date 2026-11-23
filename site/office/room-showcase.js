@@ -2525,8 +2525,8 @@ function buildPerpustakaan() {
 }
 
 /* --- avatar GLB -------------------------------------------------- */
-/* GLB 10/10 di public/models/ (10 rigged Draco + WebP,
-   total ~1,38 MB / 1.445.116 B).
+/* GLB 13/13 di public/models/ (13 rigged Draco + WebP,
+   total ~2,08 MB / 2.177.532 B).
    Skala tiap file belum tentu sama — dinormalisasi ke tinggi 1.6
    dari bounding box, kaki di y=0. Gagal/timeout -> stand-in
    primitif warna agen (ruangan tetap tampil, bukan halaman kosong).
@@ -2824,7 +2824,7 @@ async function loadAvatars() {
    matriks kamera yang baru (render() memanggil
    camera.updateMatrixWorld() dulu — perbaikan drift). Maks 3 pill
    ber-TEKS (speech/status, §5.12); pill mood-only tampil untuk
-   semua 11 agen. Di bawah 700px hanya glyph (teks lengkap pindah
+   semua 13 agen. Di bawah 700px hanya glyph (teks lengkap pindah
    ke kartu agen). Pass anti-tumpuk: bila dua pill bertumpuk, yang
    kedua digeser ke atas. */
 const bubbleEls = {}; /* name -> {el, sig} */

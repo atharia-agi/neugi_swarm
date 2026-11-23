@@ -291,6 +291,59 @@ const AVATAR_PARTS = {
       { "id": "belt", "box": [-2, -1.25, 4.0, 2, 1.25, 4.6], "color": "#d4af37" },
       { "id": "chestStripe", "box": [1.7, 1.25, 5.6, 2.18, 1.43, 7.6], "color": "#22c55e" }
     ]
+  },
+  "atharia": {
+    "label": "Atharia", "role": "Support", "color": "#a855f7",
+    "parts": [
+      { "id": "head", "box": [-2.5, -2.25, 8, 2.5, 2.25, 12.5], "color": "#f2c89b", "pivot": "neck" },
+      { "id": "torso", "box": [-2, -1.25, 4, 2, 1.25, 8], "color": "#c4b5fd", "pivot": "waist" },
+      { "id": "armL", "box": [-3.4, -0.7, 4.5, -2, 0.7, 7.5], "color": "#c4b5fd", "pivot": "shoulderL" },
+      { "id": "armR", "box": [2, -0.7, 4.5, 3.4, 0.7, 7.5], "color": "#c4b5fd", "pivot": "shoulderR" },
+      { "id": "legL", "box": [-1.8, -0.8, 1, -0.2, 0.8, 4], "color": "#7e22ce", "pivot": "hipL" },
+      { "id": "legR", "box": [0.2, -0.8, 1, 1.8, 0.8, 4], "color": "#7e22ce", "pivot": "hipR" },
+      { "id": "shoeL", "box": [-2, -1.5, 0, 0, 1.5, 1], "color": "#f5f5f5", "pivot": "ankleL" },
+      { "id": "shoeR", "box": [0, -1.5, 0, 2, 1.5, 1], "color": "#f5f5f5", "pivot": "ankleR" }
+    ],
+    "details": [
+      { "id": "handL", "box": [-3.4, -0.7, 3.5, -2, 0.7, 4.5], "color": "#f2c89b" },
+      { "id": "handR", "box": [2, -0.7, 3.5, 3.4, 0.7, 4.5], "color": "#f2c89b" },
+      { "id": "eyeR", "box": [2.5, 0.9, 10.9, 2.68, 1.7, 11.7], "color": "#111111" },
+      { "id": "eyeL", "box": [0.9, 2.25, 10.9, 1.7, 2.43, 11.7], "color": "#111111" },
+      { "id": "mouth", "box": [1.9, 1.9, 9.7, 2.68, 2.43, 10.2], "color": "#111111" },
+      { "id": "hair", "box": [-2.5, -2.25, 12.5, 2.5, 2.25, 13.2], "color": "#e5e7eb" },
+      { "id": "hairBack", "box": [-2.5, -2.25, 4, 2.5, -1.5, 12.5], "color": "#e5e7eb" },
+      { "id": "earL", "box": [-3.1, -0.6, 10.8, -2.5, 0.6, 11.8], "color": "#f2c89b" },
+      { "id": "earR", "box": [2.5, -0.6, 10.8, 3.1, 0.6, 11.8], "color": "#f2c89b" },
+      { "id": "bowClip", "box": [1.2, -2.25, 12.6, 2.5, 2.25, 13.4], "color": "#a855f7" },
+      { "id": "shoeStripeL", "box": [-2, -1.5, 0.6, 0, 1.5, 1.0], "color": "#a855f7" },
+      { "id": "shoeStripeR", "box": [0, -1.5, 0.6, 2, 1.5, 1.0], "color": "#a855f7" }
+    ]
+  },
+  "reto": {
+    "label": "Reto", "role": "Support", "color": "#ef4444",
+    "parts": [
+      { "id": "head", "box": [-2.5, -2.25, 8, 2.5, 2.25, 12.5], "color": "#ef4444", "pivot": "neck" },
+      { "id": "torso", "box": [-2, -1.25, 4, 2, 1.25, 8], "color": "#ef4444", "pivot": "waist" },
+      { "id": "armL", "box": [-3.4, -0.7, 4.5, -2, 0.7, 7.5], "color": "#ef4444", "pivot": "shoulderL" },
+      { "id": "armR", "box": [2, -0.7, 4.5, 3.4, 0.7, 7.5], "color": "#ef4444", "pivot": "shoulderR" },
+      { "id": "legL", "box": [-1.8, -0.8, 1, -0.2, 0.8, 4], "color": "#ef4444", "pivot": "hipL" },
+      { "id": "legR", "box": [0.2, -0.8, 1, 1.8, 0.8, 4], "color": "#ef4444", "pivot": "hipR" },
+      { "id": "shoeL", "box": [-2, -1.5, 0, 0, 1.5, 1], "color": "#111111", "pivot": "ankleL" },
+      { "id": "shoeR", "box": [0, -1.5, 0, 2, 1.5, 1], "color": "#111111", "pivot": "ankleR" }
+    ],
+    "details": [
+      { "id": "handL", "box": [-3.4, -0.7, 3.5, -2, 0.7, 4.5], "color": "#ef4444" },
+      { "id": "handR", "box": [2, -0.7, 3.5, 3.4, 0.7, 4.5], "color": "#ef4444" },
+      { "id": "eyeR", "box": [2.5, 0.9, 10.9, 2.68, 1.7, 11.7], "color": "#111111" },
+      { "id": "eyeL", "box": [0.9, 2.25, 10.9, 1.7, 2.43, 11.7], "color": "#111111" },
+      { "id": "mouth", "box": [1.9, 1.9, 9.7, 2.68, 2.43, 10.2], "color": "#111111" },
+      { "id": "crestV", "box": [-0.6, -2.25, 12.5, 0.6, 2.25, 13.6], "color": "#eab308" },
+      { "id": "crestL", "box": [-1.6, -2.25, 12.5, -0.6, 2.25, 13.2], "color": "#eab308" },
+      { "id": "crestR", "box": [0.6, -2.25, 12.5, 1.6, 2.25, 13.2], "color": "#eab308" },
+      { "id": "pauldronL", "box": [-3.9, -1.2, 7.0, -2.0, 1.2, 8.4], "color": "#111111" },
+      { "id": "pauldronR", "box": [2.0, -1.2, 7.0, 3.9, 1.2, 8.4], "color": "#111111" },
+      { "id": "chestGold", "box": [1.6, 1.25, 5.2, 2.18, 1.43, 7.4], "color": "#eab308" }
+    ]
   }
 };
 
