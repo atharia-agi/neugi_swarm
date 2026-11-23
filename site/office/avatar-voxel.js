@@ -95,7 +95,7 @@ const AVATAR_PARTS = {
     ]
   },
   "zeto": {
-    "label": "Zeto", "role": "CSO", "color": "#ca4f40",
+    "label": "Zeto", "role": "Audit", "color": "#ca4f40",
     "parts": [
       { "id": "head", "box": [-2.5, -2.25, 8, 2.5, 2.25, 12.5], "color": "#f8ead0", "pivot": "neck" },
       { "id": "torso", "box": [-2, -1.25, 4, 2, 1.25, 8], "color": "#23272e", "pivot": "waist" },
@@ -245,7 +245,7 @@ const AVATAR_PARTS = {
     ]
   },
   "deto": {
-    "label": "Deto", "role": "Dukungan Umum", "color": "#64748b",
+    "label": "Deto", "role": "Asisten CEO", "color": "#64748b",
     "parts": [
       { "id": "head", "box": [-2.5, -2.25, 8, 2.5, 2.25, 12.5], "color": "#f6c89f", "pivot": "neck" },
       { "id": "torso", "box": [-2, -1.25, 4, 2, 1.25, 8], "color": "#64748b", "pivot": "waist" },
