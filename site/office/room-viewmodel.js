@@ -363,7 +363,7 @@ export function assignSlots(agentStates) {
         out[st.name] = { x: room.slots[i].x, z: room.slots[i].z, rot: room.slots[i].rot };
       } else {
         const k = i - room.slots.length;
-        out[st.name] = { x: room.door.x + ((k % 3) - 1) * 0.9, z: GANG_Z - 0.6, rot: 0 };
+        out[st.name] = { x: room.door.x + ((k % 3) - 1) * 0.9, z: Math.round((GANG_Z - 0.6 + Math.floor(k / 3) * 0.9) * 100) / 100, rot: 0 };
       }
     });
   }

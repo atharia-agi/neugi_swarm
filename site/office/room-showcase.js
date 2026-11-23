@@ -4409,9 +4409,10 @@ const SHOWCASE_CSS = `
 #roomCanvas{position:absolute;inset:0}
 #roomCanvas canvas{display:block;width:100%;height:100%;touch-action:none}
 #roomBubbles{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-.bubble{position:absolute;transform:translate(-50%,-100%);max-width:180px;display:flex;gap:.3rem;align-items:center;background:rgba(22,27,34,.94);border:1px solid #2d333b;border-radius:6px;padding:.15rem .4rem;font-size:.8rem;line-height:1.3;color:#e6e6e6;white-space:nowrap;overflow:hidden}
+.bubble{position:absolute;transform:translate(-50%,-100%);max-width:240px;display:flex;gap:.3rem;align-items:center;background:rgba(22,27,34,.94);border:1px solid #2d333b;border-radius:6px;padding:.15rem .4rem;font-size:.8rem;line-height:1.3;color:#e6e6e6;white-space:nowrap;overflow:hidden}
 .bubble .txt{overflow:hidden;text-overflow:ellipsis}
 .bubble .nm{display:none;font-weight:700;flex:none}
+.bubble.status .nm,.bubble.speech .nm{display:inline} /* pill ber-TEKS selalu bawa nama pemilik tugas (desktop) */
 .bubble .glyph{color:#a3ff00;flex:none;display:flex}
 .bubble .time{color:#9aa0a6;font-size:.75rem;flex:none}
 #roomStatus{font-size:.9rem;color:#9aa0a6;padding:.4rem .8rem;border:1px solid #2d333b;border-top:none;background:#161b22;border-radius:0 0 8px 8px;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
