@@ -193,7 +193,13 @@ const pointerNDC = new THREE.Vector2();
    tidak punya tulang → tidak ada animasi ekor. Deto (34) seperti
    Oto/Beto. L/R = kiri/kanan karakter sendiri. */
 const JOINT_ROLES = {
-  rangga: { shoulderL: 6, shoulderR: 10, thighL: 14, thighR: 18, shinL: 15, shinR: 19, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 12, handL: 9, handR: 13, fingerL: null, fingerR: null },
+  /* RANGGA v6 (Hunyuan3D 2.1, 2026-11-22, QC lolos, deploy 24 Nov):
+     34 joints (jari terdeteksi SkinTokens). Bahu kanan + kaki bergeser
+     dari v5 (22 joint): shoulderR 10→16, thigh 14/18→26/30, shin
+     15/19→27/31, forearmR 12→18, handR 13→19; jari 10-15 / 20-25.
+     Delta lengan terukur (IDLE_ARM_DELTAS) keyed by ROLE, jadi tetap
+     berlaku — applyIdlePose resolve indeks lewat tabel ini. */
+  rangga: { shoulderL: 6, shoulderR: 16, thighL: 26, thighR: 30, shinL: 27, shinR: 31, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 18, handL: 9, handR: 19, fingerL: [10, 11, 12, 13, 14, 15], fingerR: [20, 21, 22, 23, 24, 25] },
   zeto: { shoulderL: 6, shoulderR: 13, thighL: 20, thighR: 24, shinL: 21, shinR: 25, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 15, handL: 9, handR: 16, fingerL: null, fingerR: null },
   neto: { shoulderL: 6, shoulderR: 13, thighL: 20, thighR: 24, shinL: 21, shinR: 25, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 15, handL: 9, handR: 16, fingerL: null, fingerR: null },
   leto: { shoulderL: 6, shoulderR: 13, thighL: 20, thighR: 24, shinL: 21, shinR: 25, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 15, handL: 9, handR: 16, fingerL: null, fingerR: null },
