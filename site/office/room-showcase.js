@@ -42,6 +42,28 @@ import './avatar-voxel.js';
    yang aman. */
 import * as VM from './room-viewmodel.js';
 
+/* DEBUG SEMENTARA (2026-11-24, avatar silinder): overlay diagnosis.
+   AKTIF hanya bila URL mengandung ?showcase-debug=1. Menangkap
+   securitypolicyviolation + error + hasil load tiap avatar, tampil
+   sebagai overlay teks. HAPUS setelah akar masalah ketemu. */
+const SHOWCASE_DEBUG = new URLSearchParams(location.search).has('showcase-debug');
+const debugLines = [];
+function debugLog(msg) {
+  debugLines.push(new Date().toISOString().slice(11, 19) + ' ' + msg);
+  if (!SHOWCASE_DEBUG) return;
+  let el = document.getElementById('showcase-debug-overlay');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'showcase-debug-overlay';
+    el.style.cssText = 'position:fixed;top:8px;left:8px;z-index:99999;max-width:560px;max-height:75vh;overflow:auto;background:rgba(0,0,0,.88);color:#a3ff00;font:11px/1.5 monospace;padding:10px;white-space:pre-wrap;';
+    document.body.appendChild(el);
+  }
+  el.textContent = debugLines.join('\n');
+}
+document.addEventListener('securitypolicyviolation', (e) => debugLog('CSP-VIOLATION directive=' + e.violatedDirective + ' blocked=' + e.blockedURI));
+window.addEventListener('error', (e) => debugLog('ERROR ' + (e.message || e.type) + ' @' + (e.filename || '?')));
+debugLog('boot UA=' + navigator.userAgent.slice(0, 90));
+
 const VERSION = '0.4.9.1-showcase';
 const VOLT = 0xa3ff00;
 const VOLT_CSS = '#a3ff00';
@@ -2778,13 +2800,29 @@ function loadOneAvatar(name) {
     };
     const timer = setTimeout(() => {
       console.warn('GLB timeout, pakai stand-in:', name);
+      debugLog('TIMEOUT ' + name);
       finish(fallbackAvatar(name));
     }, 8000);
     gltfLoader.load(
       MODULE_BASE + 'models/' + name + '.glb',
-      (gltf) => { clearTimeout(timer); const obj = normalizeAvatar(gltf.scene); fixAvatarMaterials(obj); applyIdlePose(obj, name); captureBoneBase(obj, name); finish(obj); },
+      (gltf) => {
+        clearTimeout(timer);
+        try {
+          const obj = normalizeAvatar(gltf.scene);
+          fixAvatarMaterials(obj);
+          applyIdlePose(obj, name);
+          captureBoneBase(obj, name);
+          debugLog('OK ' + name);
+          finish(obj);
+        } catch (err) {
+          /* Dulu: throw di post-processing bikin promise gantung sampai
+             timeout 8 dtk baru fallback. Sekarang fallback langsung. */
+          debugLog('POST-ERROR ' + name + ' ' + (err && err.message));
+          finish(fallbackAvatar(name));
+        }
+      },
       undefined,
-      () => { clearTimeout(timer); console.warn('GLB gagal dimuat, pakai stand-in:', name); finish(fallbackAvatar(name)); });
+      (err) => { clearTimeout(timer); console.warn('GLB gagal dimuat, pakai stand-in:', name); debugLog('GLB-ERROR ' + name + ' ' + (err && (err.message || err.type || String(err)))); finish(fallbackAvatar(name)); });
   });
 }
 
