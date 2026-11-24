@@ -39,8 +39,9 @@
   .gb-status.ok { color: var(--olive); }
   .gb-status.bad { color: #8a1f1f; }
   /* Honeypot: disembunyikan dari manusia (bukan display:none supaya
-     bot tetap mengisinya); tidak pernah terlihat di layar. */
-  .gb-honeypot { position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+     bot tetap mengisinya); tidak pernah terlihat di layar. Off-screen
+     + clip, aria-hidden, dan tidak bisa difokuskan keyboard. */
+  .gb-honeypot { position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; clip: rect(0, 0, 0, 0); clip-path: inset(50%); overflow: hidden; white-space: nowrap; }
   @media (max-width: 640px) {
     .gb-stats { grid-template-columns: 1fr; }
     .gb-wall .dt { display: none; }
@@ -106,7 +107,7 @@
         <p class="gb-count"><span data-gb-count-message>0</span>/280</p>
 
         <div class="gb-honeypot" aria-hidden="true">
-          <label for="gb-website">Situs (biarkan kosong)</label>
+          <label for="gb-website">Situs</label>
           <input type="text" id="gb-website" name="website" tabindex="-1" autocomplete="off">
         </div>
 
