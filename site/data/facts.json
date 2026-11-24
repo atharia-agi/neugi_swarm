@@ -1,0 +1,109 @@
+{
+  "_readme": "Sumber fakta tunggal (kanonik) untuk neugi.com. Semua halaman mengambil angka dan status dari sini. Kalau fakta berubah (agen baru, demosi, status proyek), ubah file ini dulu, lalu samakan halaman yang menyebutkannya. Dibuat dari audit neugi.com 24 Nov 2026.",
+  "neugi_swarm_archive": {
+    "api_routes": 35,
+    "audit_date": "2026-11-21",
+    "cli_commands": 25,
+    "last_commit_before_dormant": "2026-05-24",
+    "modules": 204,
+    "subsystems": 22,
+    "tests_collected": 410,
+    "tests_passed": 407,
+    "tests_skipped": 3,
+    "tools": 61,
+    "version": "2.1.4"
+  },
+  "projects": [
+    {
+      "name": "webiz.id",
+      "status": "Aktif"
+    },
+    {
+      "name": "rangga.de",
+      "status": "Aktif"
+    },
+    {
+      "name": "SMAR",
+      "status": "Dalam pengembangan"
+    },
+    {
+      "name": "Kantor 3D",
+      "status": "Aktif"
+    },
+    {
+      "name": "Eksperimen 3D / Trellis",
+      "status": "Aktif"
+    },
+    {
+      "name": "neugi_swarm",
+      "status": "Arsip"
+    }
+  ],
+  "research_cadence": "3 catatan pendek seminggu, 1 deep dive seminggu",
+  "site_architecture": "Situs statis; satu-satunya bagian yang punya backend adalah Buku Tamu (formulir + moderasi).",
+  "squad": {
+    "agents": [
+      {
+        "name": "Oto",
+        "role": "CEO / Orkestrator"
+      },
+      {
+        "name": "Beto",
+        "role": "CTO"
+      },
+      {
+        "name": "Deto",
+        "role": "Asisten CEO / Builder"
+      },
+      {
+        "name": "Zeto",
+        "role": "Keamanan"
+      },
+      {
+        "name": "Neto",
+        "role": "Revenue"
+      },
+      {
+        "name": "Geto",
+        "role": "Backup / Generalist"
+      },
+      {
+        "name": "Leto",
+        "role": "Junior Builder"
+      },
+      {
+        "name": "Ceto",
+        "role": "Sales"
+      },
+      {
+        "name": "Seto",
+        "role": "Dukungan Umum"
+      },
+      {
+        "name": "Meto",
+        "role": "Support"
+      },
+      {
+        "name": "Atharia",
+        "role": "Support"
+      },
+      {
+        "name": "Reto",
+        "role": "Support"
+      }
+    ],
+    "agents_total": 12,
+    "owner": {
+      "name": "Rangga",
+      "role": "Owner"
+    },
+    "owner_total": 1,
+    "people_total": 13
+  },
+  "version": "2026-11-24",
+  "viewer_3d": {
+    "live_connection": false,
+    "note": "Data yang tampil adalah snapshot (posisi agen + judul tugas) yang diperbarui berkala. Tidak ada koneksi live ke kantor asli.",
+    "type": "snapshot"
+  }
+}

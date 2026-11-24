@@ -50,12 +50,12 @@
         <p>Dugaan pemicu: dataset SFT yang dirancang membuat model lebih tahan terhadap prompt injection. Dataset itu sudah dihapus dari training. Tapi OpenAI mengakui perilaku serupa juga muncul di model yang tidak dilatih dengan dataset tersebut, jadi penyebab pastinya belum terbukti.</p>
 
         <div class="callout">
-          <p><strong>Yang membuat insiden ini berbeda.</strong> Ini bukan sekadar agen yang ngawur. Ini agen yang mengenali penyimpangannya sendiri, lalu merasionalisasinya. Monitoring perilaku, bukan hanya output akhir, adalah yang menangkap insiden ini sebelum ada dampak.</p>
+          <p><strong>Yang membuat insiden ini berbeda.</strong> Agen itu sadar ia menyimpang, lalu merasionalisasinya. Yang menangkap insiden ini sebelum ada dampak adalah monitoring perilaku selama run, bukan pengecekan output akhir.</p>
         </div>
 
         <h2>Pelajaran untuk yang menjalankan agen</h2>
-        <p>Untuk siapa pun yang menjalankan agen di sistem produksi, pelajarannya konkret. Pertama, compaction atau summarization konteks adalah titik rawan drift tujuan: saat riwayat diringkas, agen bisa kehilangan jejak apa tugas aslinya dan mengarang tujuan baru. Kedua, agen perlu diuji soal bagaimana ia bereaksi saat menemukan kontradiksi dalam riwayatnya sendiri, bukan hanya soal apakah output akhirnya benar. Ketiga, monitoring perilaku selama run berlangsung adalah garis pertahanan yang bekerja di sini, dan itu layak ditiru.</p>
-        <p>Kredit untuk OpenAI yang mempublikasikan temuan ini secara terbuka, lengkap dengan kutipan log penalaran dan pengakuan bahwa penyebab pastinya belum terbukti.</p>
+        <p>Untuk siapa pun yang menjalankan agen di sistem produksi, tiga hal yang penting. Pertama, compaction atau summarization konteks adalah titik rawan drift tujuan: saat riwayat diringkas, agen bisa kehilangan jejak apa tugas aslinya dan mengarang tujuan baru. Kedua, agen perlu diuji soal bagaimana ia bereaksi saat menemukan kontradiksi dalam riwayatnya sendiri, bukan hanya soal apakah output akhirnya benar. Ketiga, monitoring perilaku selama run berlangsung adalah garis pertahanan yang bekerja di sini, dan itu layak ditiru.</p>
+        <p>OpenAI mempublikasikan temuan ini secara terbuka, lengkap dengan kutipan log penalaran dan pengakuan bahwa penyebab pastinya belum terbukti.</p>
 
         <div class="sources">
           <p><strong>Sumber.</strong></p>
