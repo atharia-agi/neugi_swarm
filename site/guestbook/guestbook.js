@@ -16,6 +16,24 @@
      warna situs yang sudah ada, tanpa gradien. */
   var PALETTE = ["#A3FF00", "#EDE9E3", "#F4F1EA", "#B9B4A8", "#283B08"];
 
+  /* DEBUG SEMENTARA (hapus setelah diagnosis): tulis tahap ke halaman
+     karena browser cloud tidak bisa buka DevTools/console. */
+  var DBG = null;
+  var DBG_SETTLED = false;
+  function dbg(msg) {
+    try {
+      if (!DBG) {
+        DBG = document.createElement("p");
+        DBG.setAttribute("data-gb-debug", "");
+        var wall0 = document.querySelector("[data-guestbook-wall]");
+        if (wall0 && wall0.parentNode) wall0.parentNode.insertBefore(DBG, wall0);
+        else if (document.body) document.body.appendChild(DBG);
+      }
+      DBG.textContent = "DEBUG: " + msg;
+    } catch (e) { /* debug tidak boleh merusak halaman */ }
+  }
+  dbg("script jalan");
+
   function el(tag, cls, text) {
     var n = document.createElement(tag);
     if (cls) n.className = cls;
@@ -165,17 +183,29 @@
   document.addEventListener("DOMContentLoaded", function () {
     var wall = document.querySelector("[data-guestbook-wall]");
     if (wall) {
+      dbg("DOMContentLoaded, fetch dimulai");
+      setTimeout(function () { if (!DBG_SETTLED) dbg("fetch masih menggantung >10 dtk"); }, 10000);
       fetchGuestbook().then(function (items) {
+        DBG_SETTLED = true;
         if (!items) {
+          dbg("fetch GAGAL (null)");
           wall.textContent = "";
           var li = el("li");
           li.appendChild(el("p", "msg", "Dinding tidak bisa dimuat saat ini. Coba muat ulang halaman."));
           wall.appendChild(li);
           return;
         }
-        renderWall(wall, items);
-        renderStats(items);
+        dbg("fetch OK, " + items.length + " item");
+        try {
+          renderWall(wall, items);
+          renderStats(items);
+          dbg("render selesai, " + items.length + " item tampil");
+        } catch (e) {
+          dbg("render ERROR: " + e.message);
+        }
       });
+    } else {
+      dbg("wall TIDAK DITEMUKAN (data-guestbook-wall hilang)");
     }
     bindForm();
   });
