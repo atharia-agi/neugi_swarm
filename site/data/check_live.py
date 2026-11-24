@@ -1,1 +1,225 @@
-IyEvdXNyL2Jpbi9lbnYgcHl0aG9uMwoiIiJDZWsgcGFzY2EtZGVwbG95IG5ldWdpLmNvbTogYmFuZGluZ2thbiBzdHJpbmcga3VuY2kgZGkgaGFsYW1hbiBMSVZFLgoKQ2FyYSBwYWthaToKICBweXRob24zIHNpdGUvZGF0YS9jaGVja19saXZlLnB5CiAgcHl0aG9uMyBzaXRlL2RhdGEvY2hlY2tfbGl2ZS5weSAtLWJhc2UgaHR0cHM6Ly9uZXVnaS5jb20KCk1lbmdhbWJpbCBoYWxhbWFuIGxpdmUgKGRlbmdhbiBjYWNoZS1idXN0aW5nID92PTx0aW1lc3RhbXA+KSBkYW4KbWVtYXN0aWthbiBzdHJpbmcga3VuY2kgcm9uZGUgYXVkaXQgYWRhIC8gdGlkYWsgYWRhIGRpIHNhbmEuCkphbGFua2FuIFNFVEVMQUggZGVwbG95LCBidWthbiBzZWJlbHVtIOKAlCBzaXR1cyBsaXZlIGJhcnUgYmVydWJhaApzZXRlbGFoIFZlcmNlbCBzZWxlc2FpIGRlcGxveS4KCkp1Z2EgZGlqYWxhbmthbiBvdG9tYXRpcyBoYXJpYW4gb2xlaCBHaXRIdWIgQWN0aW9ucwooLmdpdGh1Yi93b3JrZmxvd3MvY2hlY2stbGl2ZS55bWwpLiBUSURBSyBkaWphbGFua2FuIHBhZGEgcHVzaC9QUjoKc2l0dXMgbGl2ZSBiZWx1bSBiZXJ1YmFoIHNhYXQgcHVzaCBtYXN1aywgamFkaSBjZWsgbGl2ZSBkaSBDSSBwdXNoCmFrYW4gZ2FnYWwgcGFsc3UuIEdlcmJhbmcgcHVzaC9QUiBhZGFsYWggbGludF9mYWN0cy5weSAoc3RhdGlzKS4KCktlbHVhciAwIGthbGF1IHNlbXVhIGNvY29rLCAxIGthbGF1IGFkYSB5YW5nIHRpZGFrIGNvY29rLgpIYW55YSBzdGRsaWIgUHl0aG9uLiBVc2VyLUFnZW50IGJyb3dzZXIgKFZlcmNlbCBtZW1ibG9raXIgVUEgZGVmYXVsdAp1cmxsaWIgZGkgc2ViYWdpYW4gZW5kcG9pbnQpLgoiIiIKCmltcG9ydCBhcmdwYXJzZQppbXBvcnQgcmUKaW1wb3J0IHN5cwppbXBvcnQgdGltZQppbXBvcnQgdXJsbGliLmVycm9yCmltcG9ydCB1cmxsaWIucmVxdWVzdAoKQkFTRV9ERUZBVUxUID0gImh0dHBzOi8vbmV1Z2kuY29tIgpVU0VSX0FHRU5UID0gKCJNb3ppbGxhLzUuMCAoWDExOyBMaW51eCB4ODZfNjQpIEFwcGxlV2ViS2l0LzUzNy4zNiAiCiAgICAgICAgICAgICAgIihLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEyMC4wIFNhZmFyaS81MzcuMzYiKQpUSU1FT1VUID0gMjAKCiMgU2V0aWFwIGVudHJpOiBoYWxhbWFuICsgc3RyaW5nIHlhbmcgSEFSVVMgYWRhICsgc3RyaW5nIHlhbmcgVElEQUsgQk9MRUgKIyBhZGEgKyBzdHJpbmcgeWFuZyBIQVJVUyBhZGEgZGkgZGFsYW0gYmxvayA8Zm9vdGVyPi4KQ0hFQ0tTID0gWwogICAgeyJ1cmwiOiAiIiwKICAgICAicHJlc2VudCI6IFsiQXNpc3RlbiBDRU8iXSwKICAgICAiYWJzZW50IjogWyJXYWtpbCBDRU8iLCAiMTAgYXZhdGFyIl0sCiAgICAgImZvb3RlciI6IFsiQnVrdSBUYW11Il19LAogICAgeyJ1cmwiOiAia2FudG9yLmh0bWwiLAogICAgICJwcmVzZW50IjogWyJWaWV3ZXIgM0Qgwrcgc25hcHNob3QiXSwKICAgICAiYWJzZW50IjogWyJWaWV3ZXIgM0QgwrcgbGl2ZSJdLAogICAgICJmb290ZXIiOiBbIkJ1a3UgVGFtdSJdfSwKICAgIHsidXJsIjogInByb3llay5odG1sIiwKICAgICAicHJlc2VudCI6IFsiMTIgYXZhdGFyIHJpZ2dlZCIsICIxMiBkYXJpIDEyIiwKICAgICAgICAgICAgICAgICAic3VkYWggYmlzYSBkaWJ1a2EgZGkgaGFsYW1hbiBLYW50b3IiXSwKICAgICAiYWJzZW50IjogWyJzdWRhaCBsaXZlIGRpIGhhbGFtYW4gS2FudG9yIiwgInNlZGFuZyBkaXNpYXBrYW4iXSwKICAgICAiZm9vdGVyIjogWyJCdWt1IFRhbXUiXX0sCiAgICB7InVybCI6ICJ0ZW50YW5nLmh0bWwiLAogICAgICJwcmVzZW50IjogWyJzYXR1LXNhdHVueWEgYmFnaWFuIHlhbmcgcHVueWEgYmFja2VuZCBhZGFsYWggQnVrdSBUYW11Il0sCiAgICAgImFic2VudCI6IFsidGFucGEgYmFja2VuZCJdLAogICAgICJmb290ZXIiOiBbIkJ1a3UgVGFtdSJdfSwKICAgIHsidXJsIjogImFyc2lwLmh0bWwiLAogICAgICJwcmVzZW50IjogWyJkZXBsb3kgc2VtcGF0IGdhZ2FsIHNldGVsYWggbWVyZ2UiXSwKICAgICAiYWJzZW50IjogWyJkZXBsb3kgc2VtcGF0IHRlcnR1bmRhIl0sCiAgICAgImZvb3RlciI6IFsiQnVrdSBUYW11Il19LAogICAgeyJ1cmwiOiAiZ3Vlc3Rib29rLyIsCiAgICAgInByZXNlbnQiOiBbIjEyIGFnZW4gKyBvd25lciJdLAogICAgICJhYnNlbnQiOiBbIjEzIGFnZW4iLCAiS0IgdjIwMjYiLCAiVGluZ2dhbGthbiBqZWpha211IGRpIGJhd2FoIiwKICAgICAgICAgICAgICAgICIoYmlhcmthbiBrb3NvbmcpIl0sCiAgICAgImZvb3RlciI6IFsiQnVrdSBUYW11Il19LAogICAgeyJ1cmwiOiAicmlzZXQvaW5kZXguaHRtbCIsCiAgICAgInByZXNlbnQiOiBbXSwKICAgICAiYWJzZW50IjogW10sCiAgICAgImZvb3RlciI6IFsiQnVrdSBUYW11Il19LAogICAgeyJ1cmwiOiAicmlzZXQvYWdlbi1vcGVuYWktZW1haWwuaHRtbCIsCiAgICAgInByZXNlbnQiOiBbImFsaWdubWVudC5vcGVuYWkuY29tL21pc2FsaWdubWVudC1yZXBvcnRzIl0sCiAgICAgImFic2VudCI6IFtdLAogICAgICJmb290ZXIiOiBbIkJ1a3UgVGFtdSJdfSwKICAgIHsidXJsIjogInJpc2V0L2RlY2lzaW9uLW1vZGVsLWxpcXVpZC5odG1sIiwKICAgICAicHJlc2VudCI6IFsiYW5na2EgdmVuZG9yLCBiZWx1bSBkaXZlcmlmaWthc2kgaW5kZXBlbmRlbiIsCiAgICAgICAgICAgICAgICAgImJsb2dzLndpbmRvd3MuY29tL21zZWRnZWRldiIsICJibG9nLmdvb2dsZSJdLAogICAgICJhYnNlbnQiOiBbXSwKICAgICAiZm9vdGVyIjogWyJCdWt1IFRhbXUiXX0sCiAgICB7InVybCI6ICJyaXNldC9oaWdnc2ZpZWxkLW1jcC5odG1sIiwKICAgICAicHJlc2VudCI6IFsiaGlnZ3NmaWVsZC5haS9tY3AiXSwKICAgICAiYWJzZW50IjogWyJCZW5hcmthaCBCaXNhIEJpa2luIEFnZW50IEVkaXRpbmcgVmlkZW8gU2VrZWxhcyBNYW51c2lhPyJdLAogICAgICJmb290ZXIiOiBbIkJ1a3UgVGFtdSJdfSwKICAgIHsidXJsIjogInJpc2V0L21vZGVsLWtlY2lsLXEzLTIwMjYuaHRtbCIsCiAgICAgInByZXNlbnQiOiBbIlRpZGFrIGFkYSBzYXR1IHB1biBtb2RlbCBRMyAyMDI2IHlhbmcgbWVuZ2FsYWhrYW4gUXdlbjMuNS0yQiJdLAogICAgICJhYnNlbnQiOiBbIkJlbmNobWFyayBNb2RlbCBLZWNpbCBSb25kZSAyOiBIYW55YSBRMyAyMDI2Il0sCiAgICAgImZvb3RlciI6IFsiQnVrdSBUYW11Il19LAogICAgeyJ1cmwiOiAicmlzZXQvbmVtb3Ryb24tc2lnbWEuaHRtbCIsCiAgICAgInByZXNlbnQiOiBbIk5lbW90cm9uLUxhYnMtU2lnbWEiLAogICAgICAgICAgICAgICAgICJodWdnaW5nZmFjZS5jby9udmlkaWEvTmVtb3Ryb24tTGFicy1TaWdtYS0zQiJdLAogICAgICJhYnNlbnQiOiBbIk5lbW90cm9uLVNpZ21hIExNIGRpZmZ1c2lvbiJdLAogICAgICJmb290ZXIiOiBbIkJ1a3UgVGFtdSJdfSwKICAgIHsidXJsIjogInJpc2V0L3ByaW1lLWludGVsbGVjdC5odG1sIiwKICAgICAicHJlc2VudCI6IFsiMSBkYXJpIDEwMCBwcm9tcHQgZGl0b2xhayIsICIyIGRhcmkgMzEzIiwgIjAgZGFyaSAyNDAiXSwKICAgICAiYWJzZW50IjogWyJJbnNpZGVuIFByaW1lIEludGVsbGVjdDogRGVlcFNlZWsgdjQuMS1mbGFzaCBkaWdhbnRpIl0sCiAgICAgImZvb3RlciI6IFsiQnVrdSBUYW11Il19LAogICAgeyJ1cmwiOiAicmlzZXQvdmlkZW8tb3Blbi1zb3VyY2UtdnMtZmxvdy5odG1sIiwKICAgICAicHJlc2VudCI6IFsiS2xpbmcgMy4wIDcyMHAgeWFuZyAxMDk5IiwKICAgICAgICAgICAgICAgICAiYXJ0aWZpY2lhbGFuYWx5c2lzLmFpL3ZpZGVvL2xlYWRlcmJvYXJkL3RleHQtdG8tdmlkZW8iLAogICAgICAgICAgICAgICAgICJhcmVuYS5haS9sZWFkZXJib2FyZC90ZXh0LXRvLXZpZGVvIiwKICAgICAgICAgICAgICAgICAiQmVsdW0gYWRhIG1vZGVsIHZpZGVvIG9wZW4gc291cmNlIHlhbmcgbWVueWFtYWkgU2VlZGFuY2UgMi41Il0sCiAgICAgImFic2VudCI6IFsicGF0b2thbiBLbGluZyAzLjAgeWFuZyAxMDAwIiwKICAgICAgICAgICAgICAgICJNb2RlbCBWaWRlbyBHZW5lcmF0aWYgT3BlbiBTb3VyY2UgdnMgR29vZ2xlIEZsb3csIFNlZWRhbmNlLCBLbGluZyJdLAogICAgICJmb290ZXIiOiBbIkJ1a3UgVGFtdSJdfSwKXQoKCmRlZiBmZXRjaCh1cmwpOgogICAgIiIiQW1iaWwgc2F0dSBVUkwgbGl2ZSAoY2FjaGUtYnVzdGluZyksIGtlbWJhbGlrYW4gdGVrcyBVVEYtOC4iIiIKICAgIHJlcSA9IHVybGxpYi5yZXF1ZXN0LlJlcXVlc3QodXJsLCBoZWFkZXJzPXsiVXNlci1BZ2VudCI6IFVTRVJfQUdFTlR9KQogICAgd2l0aCB1cmxsaWIucmVxdWVzdC51cmxvcGVuKHJlcSwgdGltZW91dD1USU1FT1VUKSBhcyByZXNwOgogICAgICAgIGlmIHJlc3Auc3RhdHVzICE9IDIwMDoKICAgICAgICAgICAgcmFpc2UgdXJsbGliLmVycm9yLkhUVFBFcnJvcih1cmwsIHJlc3Auc3RhdHVzLCAiSFRUUCAlcyIgJSByZXNwLnN0YXR1cywKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICByZXNwLmhlYWRlcnMsIE5vbmUpCiAgICAgICAgcmF3ID0gcmVzcC5yZWFkKCkKICAgIHJldHVybiByYXcuZGVjb2RlKCJ1dGYtOCIsIGVycm9ycz0icmVwbGFjZSIpCgoKZGVmIGZvb3Rlcl9ibG9jayhodG1sKToKICAgICIiIklzaSBibG9rIDxmb290ZXI+Li4uPC9mb290ZXI+LCBhdGF1ICcnIGthbGF1IHRpZGFrIGFkYS4iIiIKICAgIG0gPSByZS5zZWFyY2gociI8Zm9vdGVyW14+XSo+KC4qPyk8L2Zvb3Rlcj4iLCBodG1sLAogICAgICAgICAgICAgICAgICByZS5ET1RBTEwgfCByZS5JR05PUkVDQVNFKQogICAgcmV0dXJuIG0uZ3JvdXAoMSkgaWYgbSBlbHNlICIiCgoKZGVmIG1haW4oKToKICAgIGFwID0gYXJncGFyc2UuQXJndW1lbnRQYXJzZXIoZGVzY3JpcHRpb249IkNlayBzdHJpbmcga3VuY2kgZGkgbmV1Z2kuY29tIGxpdmUuIikKICAgIGFwLmFkZF9hcmd1bWVudCgiLS1iYXNlIiwgZGVmYXVsdD1CQVNFX0RFRkFVTFQsCiAgICAgICAgICAgICAgICAgICAgaGVscD0iYmFzaXMgVVJMIChkZWZhdWx0ICUoZGVmYXVsdClzKSIpCiAgICBhcmdzID0gYXAucGFyc2VfYXJncygpCiAgICBiYXNlID0gYXJncy5iYXNlLnJzdHJpcCgiLyIpCiAgICBzdGFtcCA9IGludCh0aW1lLnRpbWUoKSkKICAgIGZhaWx1cmVzID0gW10KCiAgICBmb3IgY2hlY2sgaW4gQ0hFQ0tTOgogICAgICAgIHVybCA9ICIlcy8lcz92PSVkIiAlIChiYXNlLCBjaGVja1sidXJsIl0sIHN0YW1wKQogICAgICAgIGxhYmVsID0gY2hlY2tbInVybCJdIG9yICIoYmVyYW5kYSkiCiAgICAgICAgdHJ5OgogICAgICAgICAgICBodG1sID0gZmV0Y2godXJsKQogICAgICAgIGV4Y2VwdCBFeGNlcHRpb24gYXMgZXhjOiAgIyBub3FhOiBCTEUwMDEgLSBsYXBvcmthbiBhcGEgcHVuIHlhbmcgZ2FnYWwKICAgICAgICAgICAgZmFpbHVyZXMuYXBwZW5kKGYie2xhYmVsfTogZ2FnYWwgZGlhbWJpbCAoe2V4Y30pIikKICAgICAgICAgICAgY29udGludWUKICAgICAgICBmb3IgcyBpbiBjaGVjay5nZXQoInByZXNlbnQiLCBbXSk6CiAgICAgICAgICAgIGlmIHMgbm90IGluIGh0bWw6CiAgICAgICAgICAgICAgICBmYWlsdXJlcy5hcHBlbmQoZiJ7bGFiZWx9OiBIQVJVUyBBREEgdGFwaSB0aWRhayBhZGE6ICd7c30nIikKICAgICAgICBmb3IgcyBpbiBjaGVjay5nZXQoImFic2VudCIsIFtdKToKICAgICAgICAgICAgaWYgcyBpbiBodG1sOgogICAgICAgICAgICAgICAgZmFpbHVyZXMuYXBwZW5kKGYie2xhYmVsfTogVElEQUsgQk9MRUggQURBIHRhcGkgbWFzaWggYWRhOiAne3N9JyIpCiAgICAgICAgZmIgPSBmb290ZXJfYmxvY2soaHRtbCkKICAgICAgICBmb3IgcyBpbiBjaGVjay5nZXQoImZvb3RlciIsIFtdKToKICAgICAgICAgICAgaWYgcyBub3QgaW4gZmI6CiAgICAgICAgICAgICAgICBmYWlsdXJlcy5hcHBlbmQoZiJ7bGFiZWx9OiBmb290ZXIgYmVsdW0gbWVtdWF0ICd7c30nIikKCiAgICBpZiBmYWlsdXJlczoKICAgICAgICBwcmludChmIkdBR0FMOiB7bGVuKGZhaWx1cmVzKX0ga2V0aWRha2NvY29rYW4gZGkgc2l0dXMgbGl2ZToiKQogICAgICAgIGZvciBmIGluIGZhaWx1cmVzOgogICAgICAgICAgICBwcmludChmIiAgLSB7Zn0iKQogICAgICAgIHJldHVybiAxCgogICAgcHJpbnQoZiJMT0xPUzoge2xlbihDSEVDS1MpfSBoYWxhbWFuIGxpdmUgY29jb2sgIgogICAgICAgICAgZiIoc3RyaW5nIGt1bmNpIHJvbmRlIDEgKyByb25kZSAyIGFkYSwgc3RyaW5nIGxhbWEgdGlkYWsgYWRhLCAiCiAgICAgICAgICBmImZvb3RlciBtZW11YXQgJ0J1a3UgVGFtdScpLiIpCiAgICByZXR1cm4gMAoKCmlmIF9fbmFtZV9fID09ICJfX21haW5fXyI6CiAgICBzeXMuZXhpdChtYWluKCkpCg==
+#!/usr/bin/env python3
+"""Cek pasca-deploy neugi.com: bandingkan string kunci di halaman LIVE.
+
+Cara pakai:
+  python3 site/data/check_live.py
+  python3 site/data/check_live.py --base https://neugi.com
+
+Mengambil halaman live (dengan cache-busting ?v=<timestamp>) dan
+memastikan string kunci ronde audit ada / tidak ada di sana.
+Jalankan SETELAH deploy, bukan sebelum — situs live baru berubah
+setelah Vercel selesai deploy.
+
+Juga dijalankan otomatis harian oleh GitHub Actions
+(.github/workflows/check-live.yml). TIDAK dijalankan pada push/PR:
+situs live belum berubah saat push masuk, jadi cek live di CI push
+akan gagal palsu. Gerbang push/PR adalah lint_facts.py (statis).
+
+Keluar 0 kalau semua cocok, 1 kalau ada yang tidak cocok.
+Hanya stdlib Python. User-Agent browser (Vercel memblokir UA default
+urllib di sebagian endpoint).
+"""
+
+import argparse
+import base64
+import re
+import sys
+import time
+import urllib.error
+import urllib.request
+
+BASE_DEFAULT = "https://neugi.com"
+USER_AGENT = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+              "(KHTML, like Gecko) Chrome/120.0 Safari/537.36")
+TIMEOUT = 20
+
+# Setiap entri: halaman + string yang HARUS ada + string yang TIDAK BOLEH
+# ada + string yang HARUS ada di dalam blok <footer>.
+CHECKS = [
+    {"url": "",
+     "present": ["Asisten CEO"],
+     "absent": ["Wakil CEO", "10 avatar"],
+     "footer": ["Buku Tamu"]},
+    {"url": "kantor.html",
+     "present": ["Viewer 3D · snapshot"],
+     "absent": ["Viewer 3D · live"],
+     "footer": ["Buku Tamu"]},
+    {"url": "proyek.html",
+     "present": ["12 avatar rigged", "12 dari 12",
+                 "sudah bisa dibuka di halaman Kantor"],
+     "absent": ["sudah live di halaman Kantor", "sedang disiapkan"],
+     "footer": ["Buku Tamu"]},
+    {"url": "tentang.html",
+     "present": ["satu-satunya bagian yang punya backend adalah Buku Tamu"],
+     "absent": ["tanpa backend"],
+     "footer": ["Buku Tamu"]},
+    {"url": "arsip.html",
+     "present": ["deploy sempat gagal setelah merge"],
+     "absent": ["deploy sempat tertunda"],
+     "footer": ["Buku Tamu"]},
+    {"url": "guestbook/",
+     "present": ["12 agen + owner"],
+     "absent": ["13 agen", "KB v2026", "Tinggalkan jejakmu di bawah",
+                "(biarkan kosong)"],
+     "footer": ["Buku Tamu"]},
+    {"url": "riset/index.html",
+     "present": [],
+     "absent": [],
+     "footer": ["Buku Tamu"]},
+    {"url": "riset/agen-openai-email.html",
+     "present": ["alignment.openai.com/misalignment-reports"],
+     "absent": [],
+     "footer": ["Buku Tamu"]},
+    {"url": "riset/decision-model-liquid.html",
+     "present": ["angka vendor, belum diverifikasi independen",
+                 "blogs.windows.com/msedgedev", "blog.google"],
+     "absent": [],
+     "footer": ["Buku Tamu"]},
+    {"url": "riset/higgsfield-mcp.html",
+     "present": ["higgsfield.ai/mcp"],
+     "absent": ["Benarkah Bisa Bikin Agent Editing Video Sekelas Manusia?"],
+     "footer": ["Buku Tamu"]},
+    {"url": "riset/model-kecil-q3-2026.html",
+     "present": ["Tidak ada satu pun model Q3 2026 yang mengalahkan Qwen3.5-2B"],
+     "absent": ["Benchmark Model Kecil Ronde 2: Hanya Q3 2026"],
+     "footer": ["Buku Tamu"]},
+    {"url": "riset/nemotron-sigma.html",
+     "present": ["Nemotron-Labs-Sigma",
+                 "huggingface.co/nvidia/Nemotron-Labs-Sigma-3B"],
+     "absent": ["Nemotron-Sigma LM diffusion"],
+     "footer": ["Buku Tamu"]},
+    {"url": "riset/prime-intellect.html",
+     "present": ["1 dari 100 prompt ditolak", "2 dari 313", "0 dari 240"],
+     "absent": ["Insiden Prime Intellect: DeepSeek v4.1-flash diganti"],
+     "footer": ["Buku Tamu"]},
+    {"url": "riset/video-open-source-vs-flow.html",
+     "present": ["Kling 3.0 720p yang 1099",
+                 "artificialanalysis.ai/video/leaderboard/text-to-video",
+                 "arena.ai/leaderboard/text-to-video",
+                 "Belum ada model video open source yang menyamai Seedance 2.5"],
+     "absent": ["patokan Kling 3.0 yang 1000",
+                "Model Video Generatif Open Source vs Google Flow, Seedance, Kling"],
+     "footer": ["Buku Tamu"]},
+]
+
+
+def _maybe_b64decode(raw):
+    """Egress dari VM ini mengembalikan body HTTP ter-encode base64
+    (teks maupun biner). Deteksi + decode; kalau bukan base64 yang
+    menghasilkan HTML, kembalikan apa adanya."""
+    text = raw.strip()
+    if len(text) < 100 or len(text) % 4 != 0:
+        return raw
+    try:
+        ascii_text = text.decode("ascii")
+    except UnicodeDecodeError:
+        return raw
+    if not re.fullmatch(r"[A-Za-z0-9+/=]+", ascii_text):
+        return raw
+    try:
+        dec = base64.b64decode(ascii_text, validate=True)
+    except Exception:
+        return raw
+    head = dec[:2000].lower()
+    if (b"<html" in head or dec[:15].lower().startswith(b"<!doctype")
+            or dec[:4] == b"\x00\x00\x01\x00"  # ICO
+            or dec[:8] == b"\x89PNG\r\n\x1a\n"  # PNG
+            or dec[:3] == b"\xff\xd8\xff"):  # JPEG
+        return dec
+    return raw
+
+
+def fetch(url):
+    """Ambil satu URL live (cache-busting), kembalikan teks UTF-8."""
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+        if resp.status != 200:
+            raise urllib.error.HTTPError(url, resp.status, "HTTP %s" % resp.status,
+                                         resp.headers, None)
+        raw = resp.read()
+    raw = _maybe_b64decode(raw)
+    return raw.decode("utf-8", errors="replace")
+
+
+def footer_block(html):
+    """Isi blok <footer>...</footer>, atau '' kalau tidak ada."""
+    m = re.search(r"<footer[^>]*>(.*?)</footer>", html,
+                  re.DOTALL | re.IGNORECASE)
+    return m.group(1) if m else ""
+
+
+def check_favicon(base, stamp, failures):
+    """Favicon: /favicon.ico harus 200 + ICO valid, dan halaman beranda
+    harus memuat ketiga link favicon."""
+    for path, magic in (("favicon.ico", b"\x00\x00\x01\x00"),
+                        ("favicon-32x32.png", b"\x89PNG"),
+                        ("apple-touch-icon.png", b"\x89PNG")):
+        url = "%s/%s?v=%d" % (base, path, stamp)
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+            with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+                if resp.status != 200:
+                    failures.append(f"{path}: HTTP {resp.status} (harap 200)")
+                    continue
+                raw = _maybe_b64decode(resp.read())
+        except Exception as exc:  # noqa: BLE001 - laporkan apa pun yang gagal
+            failures.append(f"{path}: gagal diambil ({exc})")
+            continue
+        if not raw.startswith(magic):
+            failures.append(f"{path}: bukan file yang valid "
+                            f"(magic bytes tidak cocok)")
+    try:
+        home = fetch("%s/?v=%d" % (base, stamp))
+    except Exception as exc:  # noqa: BLE001
+        failures.append(f"(beranda): gagal diambil untuk cek favicon ({exc})")
+        return
+    for link in ('href="/favicon.ico"', 'href="/favicon-32x32.png"',
+                 'href="/apple-touch-icon.png"'):
+        if link not in home:
+            failures.append(f"(beranda): link favicon tidak ada: {link}")
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Cek string kunci di neugi.com live.")
+    ap.add_argument("--base", default=BASE_DEFAULT,
+                    help="basis URL (default %(default)s)")
+    args = ap.parse_args()
+    base = args.base.rstrip("/")
+    stamp = int(time.time())
+    failures = []
+
+    check_favicon(base, stamp, failures)
+
+    for check in CHECKS:
+        url = "%s/%s?v=%d" % (base, check["url"], stamp)
+        label = check["url"] or "(beranda)"
+        try:
+            html = fetch(url)
+        except Exception as exc:  # noqa: BLE001 - laporkan apa pun yang gagal
+            failures.append(f"{label}: gagal diambil ({exc})")
+            continue
+        for s in check.get("present", []):
+            if s not in html:
+                failures.append(f"{label}: HARUS ADA tapi tidak ada: '{s}'")
+        for s in check.get("absent", []):
+            if s in html:
+                failures.append(f"{label}: TIDAK BOLEH ADA tapi masih ada: '{s}'")
+        fb = footer_block(html)
+        for s in check.get("footer", []):
+            if s not in fb:
+                failures.append(f"{label}: footer belum memuat '{s}'")
+
+    if failures:
+        print(f"GAGAL: {len(failures)} ketidakcocokan di situs live:")
+        for f in failures:
+            print(f"  - {f}")
+        return 1
+
+    print(f"LOLOS: {len(CHECKS)} halaman live cocok "
+          f"(string kunci ronde 1 + ronde 2 ada, string lama tidak ada, "
+          f"footer memuat 'Buku Tamu').")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

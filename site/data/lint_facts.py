@@ -1,1 +1,284 @@
-IyEvdXNyL2Jpbi9lbnYgcHl0aG9uMwoiIiJMaW50IGZha3RhIG5ldWdpLmNvbSB0ZXJoYWRhcCBmYWN0cy5qc29uIChrYW5vbmlrKS4KCkNhcmEgcGFrYWkgKGRhcmkgcm9vdCByZXBvKToKICBweXRob24zIHNpdGUvZGF0YS9saW50X2ZhY3RzLnB5CkF0YXUgZGFyaSBzaXRlL2RhdGEvOgogIHB5dGhvbjMgbGludF9mYWN0cy5weQpKdWdhIGRpamFsYW5rYW4gb3RvbWF0aXMgb2xlaCBHaXRIdWIgQWN0aW9ucyAoLmdpdGh1Yi93b3JrZmxvd3MvbGludC55bWwpCnBhZGEgc2V0aWFwIHB1c2gga2UgbWFzdGVyIGRhbiBzZXRpYXAgcHVsbCByZXF1ZXN0LgoKQ2VrOgogIChhKSBKdW1sYWggYWdlbi9hdmF0YXIgZGkgSFRNTCBzYW1hIGRlbmdhbiBmYWN0cy5qc29uICgxMiBhZ2VuICsgMSBvd25lcgogICAgICA9IDEzIG9yYW5nKS4gTWVub2xhayBhbmdrYSBsYWluICgiMTAgYXZhdGFyIiwgIjExIGFnZW4iLCAiMTMgYWdlbiIpCiAgICAgIGRhbiBwZXJhbiBsYW1hICgiV2FraWwgQ0VPIikuCiAgKGIpIEZyYXNhIGJsb2tpciB0aWRhayBtdW5jdWwgZGkgaGFsYW1hbiBwdWJsaWs6ICJLQiB2IiwgImFrdW48Tj4iCiAgICAgIChub21vciBha3VuIGludGVybmFsKSwgImZyZWUgdGllciIsICJSZW1vdGlvbiIsICJWb3hDUE0yIiwKICAgICAgIk1vZGFsIFQ0IiAvICJNb2RhbCBMNCIgLyAiZGkgTW9kYWwiLCAidGFucGEgYmFja2VuZCIuCiAgKGMpIEp1ZHVsIGJhZ2lhbiA8aDI+IHlhbmcgc2FtYSB0aWRhayBkaXBha2FpIGRpIDIrIGFydGlrZWwgcmlzZXQuCiAgKGQpIEthdGEgImxpdmUiIHRpZGFrIG11bmN1bCBkaSB0ZWtzIHRlcmxpaGF0IGhhbGFtYW4gcHVibGlrLCBLRUNVQUxJCiAgICAgIGZyYXNhIHlhbmcgbWVtYW5nIGJlbmFyLWJlbmFyIGJ1a2FuIGtsYWltIHZpZXdlciBsaXZlIChkYWZ0YXIKICAgICAgTElWRV9BTExPV0xJU1QgZGkgYmF3YWg6ICJidWthbiBsaXZlIiwgInRhbnBhIGtvbmVrc2kgbGl2ZSIsCiAgICAgICJ0aWRhayBhZGEga29uZWtzaSBsaXZlIiwgInRpZGFrIGFkYSBhbmltYXNpIG1lbmdldGlrIGxpdmUiLAogICAgICAibWV0cmlrIGxpdmUiIChmaXR1ciBwcm9kdWspLCAic2l0dXMgbGl2ZSIgKHNpdHVzIHByb2R1a3NpKSkuCiAgICAgIFZpZXdlciAzRCBtZW5hbXBpbGthbiBzbmFwc2hvdCwgYnVrYW4gbGl2ZSDigJQgamFkaSBrbGFpbSAibGl2ZSIKICAgICAgdW50dWsgdmlld2VyIHNlbGFsdSBzYWxhaC4gQ2VrIGp1Z2EgbWV0YSBkZXNjcmlwdGlvbiAobXVuY3VsIGRpCiAgICAgIGhhc2lsIHBlbmNhcmlhbikuCiAgKGUpIFBvbGEgImJ1a2FuIC4uLiBtZWxhaW5rYW4iIG1ha3NpbWFsIDF4IHBlciBhcnRpa2VsIHJpc2V0LgogIChmKSA8dGl0bGU+IGFydGlrZWwgcmlzZXQgaGFydXMgY29jb2sgZGVuZ2FuIEgxIChqdWR1bCA8dGl0bGU+IHRhbnBhCiAgICAgIHN1ZmlrcyAiIMK3IE5FVUdJIiBoYXJ1cyB0ZXJrYW5kdW5nIGRpIEgxLCBhdGF1IHNlYmFsaWtueWEpLgogIChnKSBGb290ZXIgc2VtdWEgaGFsYW1hbiBoYXJ1cyBtZW11YXQgdGF1dGFuICJCdWt1IFRhbXUiLgoKRGlrZWN1YWxpa2FuOiBzaXRlL3NtYXIuaHRtbCAoa2VlcCBhcyBpcyBwZXIga2VwdXR1c2FuIFJhbmdnYSAyNCBOb3YgMjAyNiksCnNpdGUvb2ZmaWNlLyAodmlld2VyIEpTLCB0ZWtzbnlhIGRpLXJlbmRlciBicm93c2VyKSwgc2l0ZS9hc3NldHMvLgpBdHVyYW4gKGcpIGp1Z2EgbWVuZ2VjdWFsaWthbiBzbWFyLmh0bWwuCgpLZWx1YXIgMCBrYWxhdSBsb2xvcywgMSBrYWxhdSBhZGEgdGVtdWFuLiBIYW55YSBzdGRsaWIgUHl0aG9uLgoiIiIKCmltcG9ydCBodG1sIGFzIGh0bWxfbGliCmltcG9ydCBqc29uCmltcG9ydCByZQppbXBvcnQgc3lzCmZyb20gcGF0aGxpYiBpbXBvcnQgUGF0aAoKSEVSRSA9IFBhdGgoX19maWxlX18pLnJlc29sdmUoKS5wYXJlbnQKU0lURSA9IEhFUkUucGFyZW50CkZBQ1RTID0gSEVSRSAvICJmYWN0cy5qc29uIgoKIyBGcmFzYSBibG9raXIgKGIpOiBwb2xhIHJlZ2V4LCBjYXNlLWluc2Vuc2l0aXZlLgpCTE9DS0VEID0gWwogICAgKHIiS0Jccyt2IiwgJyJLQiB2IiAocGVuYW5kYSBpbnRlcm5hbCBrbm93bGVkZ2UgYmFzZSknKSwKICAgIChyImFrdW5cZCIsICciYWt1bjxOPiIgKG5vbW9yIGFrdW4gaW50ZXJuYWwpJyksCiAgICAociJmcmVlIHRpZXIiLCAnImZyZWUgdGllciInKSwKICAgIChyIlJlbW90aW9uIiwgJyJSZW1vdGlvbiIgKHRvb2xpbmcgaW50ZXJuYWwpJyksCiAgICAociJWb3hDUE0yIiwgJyJWb3hDUE0yIiAodG9vbGluZyBpbnRlcm5hbCknKSwKICAgIChyIk1vZGFsXHMrKFQ0fEw0KSIsICciTW9kYWwgVDQvTDQiIChuYW1hIHByb3ZpZGVyKScpLAogICAgKHIiZGlccytNb2RhbCIsICciZGkgTW9kYWwiIChuYW1hIHByb3ZpZGVyKScpLAogICAgKHIiYXBwXHMrTW9kYWwiLCAnImFwcCBNb2RhbCIgKG5hbWEgYXBsaWthc2kgaW50ZXJuYWwpJyksCiAgICAociJ0YW5wYSBiYWNrZW5kIiwgJyJ0YW5wYSBiYWNrZW5kIiAoa2xhaW0gYmFzaTsgc2F0dS1zYXR1bnlhIGJhY2tlbmQgYWRhbGFoIEJ1a3UgVGFtdSknKSwKXQoKIyBGcmFzYSAibGl2ZSIgeWFuZyBkaWl6aW5rYW4gKGQpOiBrYXRhICJsaXZlIiBkaSBkYWxhbW55YSBtZXJ1anVrIGtlCiMgc2VzdWF0dSB5YW5nIG1lbWFuZyBsaXZlIC8gbmVnYXNpLCBCVUtBTiBrbGFpbSB2aWV3ZXIgbGl2ZS4KTElWRV9BTExPV0xJU1QgPSBbCiAgICAiYnVrYW4gbGl2ZSIsCiAgICAidGFucGEga29uZWtzaSBsaXZlIiwKICAgICJ0aWRhayBhZGEga29uZWtzaSBsaXZlIiwKICAgICJ0aWRhayBhZGEgYW5pbWFzaSBtZW5nZXRpayBsaXZlIiwKICAgICJtZXRyaWsgbGl2ZSIsCiAgICAic2l0dXMgbGl2ZSIsCl0KCiMgRmlsZSB5YW5nIHRpZGFrIGRpY2VrLgpFWENMVURFX0ZJTEVTID0geyJzbWFyLmh0bWwifQpFWENMVURFX0RJUlMgPSB7Im9mZmljZSIsICJhc3NldHMiLCAiZGF0YSJ9CgoKZGVmIGl0ZXJfaHRtbF9maWxlcygpOgogICAgIiIiU2VtdWEgLmh0bWwgZGkgc2l0ZS8sIGtlY3VhbGkgeWFuZyBkaWtlY3VhbGlrYW4uIiIiCiAgICBmb3IgcGF0aCBpbiBzb3J0ZWQoU0lURS5yZ2xvYigiKi5odG1sIikpOgogICAgICAgIHJlbCA9IHBhdGgucmVsYXRpdmVfdG8oU0lURSkKICAgICAgICBpZiByZWwubmFtZSBpbiBFWENMVURFX0ZJTEVTOgogICAgICAgICAgICBjb250aW51ZQogICAgICAgIGlmIGFueShwYXJ0IGluIEVYQ0xVREVfRElSUyBmb3IgcGFydCBpbiByZWwucGFydHMpOgogICAgICAgICAgICBjb250aW51ZQogICAgICAgIHlpZWxkIHBhdGgKCgpkZWYgaXRlcl9yaXNldF9hcnRpY2xlcygpOgogICAgIiIiNyBhcnRpa2VsIHJpc2V0IChidWthbiBoYWxhbWFuIGRhZnRhci90ZW1wbGF0ZSkuIiIiCiAgICByaXNldCA9IFNJVEUgLyAicmlzZXQiCiAgICBmb3IgcGF0aCBpbiBzb3J0ZWQocmlzZXQuZ2xvYigiKi5odG1sIikpOgogICAgICAgIGlmIHBhdGgubmFtZSBpbiAoImluZGV4Lmh0bWwiLCAiYXJ0aWtlbC5odG1sIik6CiAgICAgICAgICAgIGNvbnRpbnVlCiAgICAgICAgeWllbGQgcGF0aAoKCmRlZiBfcHJlc2VydmVfbGluZXMocyk6CiAgICAiIiJHYW50aSBzdHJpbmcgZGVuZ2FuIHNwYXNpLCBwZXJ0YWhhbmthbiBqdW1sYWggYmFyaXMuIiIiCiAgICByZXR1cm4gIiIuam9pbigiXG4iIGlmIGNoID09ICJcbiIgZWxzZSAiICIgZm9yIGNoIGluIHMpCgoKZGVmIHZpc2libGVfdGV4dChodG1sKToKICAgICIiIlRla3MgeWFuZyB0ZXJsaWhhdCBkaSBoYWxhbWFuOiB0YW5wYSBrb21lbnRhciBIVE1MLCBibG9rIDxzY3JpcHQ+IC8KICAgIDxzdHlsZT4sIGRhbiB0YW5wYSB0YWcuIEp1bWxhaCBiYXJpcyBkaXBlcnRhaGFua2FuIHN1cGF5YSBub21vciBiYXJpcwogICAgZGkgbGFwb3JhbiB0ZXRhcCBha3VyYXQuIiIiCiAgICB0ZXh0ID0gcmUuc3ViKHIiPCEtLS4qPy0tPiIsIGxhbWJkYSBtOiBfcHJlc2VydmVfbGluZXMobS5ncm91cCgwKSksCiAgICAgICAgICAgICAgICAgIGh0bWwsIGZsYWdzPXJlLkRPVEFMTCkKICAgIHRleHQgPSByZS5zdWIociI8c2NyaXB0XGJbXj5dKj4uKj88L3NjcmlwdD4iLAogICAgICAgICAgICAgICAgICBsYW1iZGEgbTogX3ByZXNlcnZlX2xpbmVzKG0uZ3JvdXAoMCkpLAogICAgICAgICAgICAgICAgICB0ZXh0LCBmbGFncz1yZS5ET1RBTEwgfCByZS5JR05PUkVDQVNFKQogICAgdGV4dCA9IHJlLnN1YihyIjxzdHlsZVxiW14+XSo+Lio/PC9zdHlsZT4iLAogICAgICAgICAgICAgICAgICBsYW1iZGEgbTogX3ByZXNlcnZlX2xpbmVzKG0uZ3JvdXAoMCkpLAogICAgICAgICAgICAgICAgICB0ZXh0LCBmbGFncz1yZS5ET1RBTEwgfCByZS5JR05PUkVDQVNFKQogICAgdGV4dCA9IHJlLnN1YihyIjxbXj5dKz4iLCBsYW1iZGEgbTogX3ByZXNlcnZlX2xpbmVzKG0uZ3JvdXAoMCkpLCB0ZXh0KQogICAgcmV0dXJuIGh0bWxfbGliLnVuZXNjYXBlKHRleHQpCgoKZGVmIG1ldGFfZGVzY3JpcHRpb25zKGh0bWwpOgogICAgIiIiSXNpIG1ldGEgZGVzY3JpcHRpb24gKG11bmN1bCBkaSBoYXNpbCBwZW5jYXJpYW4pICsgbm9tb3IgYmFyaXNueWEuIiIiCiAgICBvdXQgPSBbXQogICAgZm9yIG0gaW4gcmUuZmluZGl0ZXIociI8bWV0YVxiW14+XSo+IiwgaHRtbCwgcmUuSUdOT1JFQ0FTRSk6CiAgICAgICAgdGFnID0gbS5ncm91cCgwKQogICAgICAgIGlmIG5vdCByZS5zZWFyY2gociIiIm5hbWU9WyInXWRlc2NyaXB0aW9uWyInXSIiIiwgdGFnLCByZS5JR05PUkVDQVNFKToKICAgICAgICAgICAgY29udGludWUKICAgICAgICBjbSA9IHJlLnNlYXJjaChyIiIiY29udGVudD1bIiddKFteIiddKilbIiddIiIiLCB0YWcsIHJlLklHTk9SRUNBU0UpCiAgICAgICAgaWYgY206CiAgICAgICAgICAgIGxpbmUgPSBodG1sWzptLnN0YXJ0KCldLmNvdW50KCJcbiIpICsgMQogICAgICAgICAgICBvdXQuYXBwZW5kKChodG1sX2xpYi51bmVzY2FwZShjbS5ncm91cCgxKSksIGxpbmUpKQogICAgcmV0dXJuIG91dAoKCmRlZiBjaGVja19jb3VudHModGV4dCwgcmVsLCBleHBlY3RlZF9hZ2VudHMsIHByb2JsZW1zKToKICAgICIiIihhKSBBbmdrYSBhZ2VuL2F2YXRhciBoYXJ1cyBzYW1hIGRlbmdhbiBmYWN0cy5qc29uLiIiIgogICAgZm9yIG0gaW4gcmUuZmluZGl0ZXIociIoXGQrKVxzK2F2YXRhciIsIHRleHQsIHJlLklHTk9SRUNBU0UpOgogICAgICAgIGlmIGludChtLmdyb3VwKDEpKSAhPSBleHBlY3RlZF9hZ2VudHM6CiAgICAgICAgICAgIHByb2JsZW1zLmFwcGVuZChmIntyZWx9OiBqdW1sYWggYXZhdGFyIHNhbGFoOiAne20uZ3JvdXAoMCl9JyAiCiAgICAgICAgICAgICAgICAgICAgICAgICAgICBmIihoYXJ1c255YSB7ZXhwZWN0ZWRfYWdlbnRzfSkiKQogICAgZm9yIG0gaW4gcmUuZmluZGl0ZXIociIoXGQrKVxzK2FnZW4iLCB0ZXh0LCByZS5JR05PUkVDQVNFKToKICAgICAgICBpZiBpbnQobS5ncm91cCgxKSkgIT0gZXhwZWN0ZWRfYWdlbnRzOgogICAgICAgICAgICBwcm9ibGVtcy5hcHBlbmQoZiJ7cmVsfToganVtbGFoIGFnZW4gc2FsYWg6ICd7bS5ncm91cCgwKX0nICIKICAgICAgICAgICAgICAgICAgICAgICAgICAgIGYiKGhhcnVzbnlhIHtleHBlY3RlZF9hZ2VudHN9KSIpCiAgICBpZiByZS5zZWFyY2gociJXYWtpbCBDRU8iLCB0ZXh0KToKICAgICAgICBwcm9ibGVtcy5hcHBlbmQoZiJ7cmVsfTogcGVyYW4gbGFtYSAnV2FraWwgQ0VPJyBtYXNpaCBtdW5jdWwgIgogICAgICAgICAgICAgICAgICAgICAgICBmIihoYXJ1c255YSAnQXNpc3RlbiBDRU8nKSIpCgoKZGVmIGNoZWNrX2Jsb2NrZWQodGV4dCwgcmVsLCBwcm9ibGVtcyk6CiAgICAiIiIoYikgRnJhc2EgYmxva2lyIHRpZGFrIGJvbGVoIG11bmN1bC4iIiIKICAgIGZvciBwYXR0ZXJuLCBsYWJlbCBpbiBCTE9DS0VEOgogICAgICAgIGZvciBtIGluIHJlLmZpbmRpdGVyKHBhdHRlcm4sIHRleHQsIHJlLklHTk9SRUNBU0UpOgogICAgICAgICAgICBsaW5lID0gdGV4dFs6bS5zdGFydCgpXS5jb3VudCgiXG4iKSArIDEKICAgICAgICAgICAgcHJvYmxlbXMuYXBwZW5kKGYie3JlbH06e2xpbmV9OiBmcmFzYSBibG9raXIge2xhYmVsfTogIgogICAgICAgICAgICAgICAgICAgICAgICAgICAgZiIne20uZ3JvdXAoMCl9JyIpCgoKZGVmIGNoZWNrX2R1cGxpY2F0ZV9oMihwcm9ibGVtcyk6CiAgICAiIiIoYykgSnVkdWwgPGgyPiB5YW5nIHNhbWEgdGlkYWsgYm9sZWggZGlwYWthaSBkaSAyKyBhcnRpa2VsIHJpc2V0LiIiIgogICAgc2VlbiA9IHt9CiAgICBmb3IgcGF0aCBpbiBpdGVyX3Jpc2V0X2FydGljbGVzKCk6CiAgICAgICAgdGV4dCA9IHBhdGgucmVhZF90ZXh0KGVuY29kaW5nPSJ1dGYtOCIpCiAgICAgICAgZm9yIG0gaW4gcmUuZmluZGl0ZXIociI8aDJbXj5dKj4oLio/KTwvaDI+IiwgdGV4dCwgcmUuRE9UQUxMKToKICAgICAgICAgICAgdGl0bGUgPSByZS5zdWIociI8W14+XSs+IiwgIiIsIG0uZ3JvdXAoMSkpCiAgICAgICAgICAgIHRpdGxlID0gcmUuc3ViKHIiXHMrIiwgIiAiLCB0aXRsZSkuc3RyaXAoKQogICAgICAgICAgICBrZXkgPSB0aXRsZS5sb3dlcigpCiAgICAgICAgICAgIGlmIG5vdCBrZXk6CiAgICAgICAgICAgICAgICBjb250aW51ZQogICAgICAgICAgICBpZiBrZXkgaW4gc2VlbjoKICAgICAgICAgICAgICAgIHByb2JsZW1zLmFwcGVuZCgKICAgICAgICAgICAgICAgICAgICBmInJpc2V0L3twYXRoLm5hbWV9OiBqdWR1bCA8aDI+ICd7dGl0bGV9JyBzdWRhaCBkaXBha2FpIGRpICIKICAgICAgICAgICAgICAgICAgICBmInJpc2V0L3tzZWVuW2tleV19IChkdXBsaWthdCkiKQogICAgICAgICAgICBlbHNlOgogICAgICAgICAgICAgICAgc2VlbltrZXldID0gcGF0aC5uYW1lCgoKZGVmIGNoZWNrX2xpdmUodGV4dCwgcmVsLCBwcm9ibGVtcywgc291cmNlX2xhYmVsPSJ0ZWtzIHRlcmxpaGF0IiwKICAgICAgICAgICAgICAgYmFzZV9saW5lPTEpOgogICAgIiIiKGQpIEthdGEgImxpdmUiIGhhbnlhIGJvbGVoIG11bmN1bCBkYWxhbSBmcmFzYSBhbGxvd2xpc3QuCiAgICBgdGV4dGAgYWRhbGFoIHRla3MgeWFuZyBzdWRhaCBkaWJlcnNpaGthbiBkYXJpIHRhZzsgYGJhc2VfbGluZWAKICAgIGFkYWxhaCBub21vciBiYXJpcyBhd2FsIHRla3MgaW5pIGRpIGZpbGUgKDEgdW50dWsgdGVrcyBoYWxhbWFuLAogICAgbm9tb3IgYmFyaXMgdGFnIDxtZXRhPiB1bnR1ayBtZXRhIGRlc2NyaXB0aW9uKS4iIiIKICAgIGxvdyA9IHRleHQubG93ZXIoKQogICAgYWxsb3dlZF9zcGFucyA9IHNldCgpCiAgICBmb3IgcGhyYXNlIGluIExJVkVfQUxMT1dMSVNUOgogICAgICAgIHN0YXJ0ID0gMAogICAgICAgIHdoaWxlIFRydWU6CiAgICAgICAgICAgIGkgPSBsb3cuZmluZChwaHJhc2UsIHN0YXJ0KQogICAgICAgICAgICBpZiBpIDwgMDoKICAgICAgICAgICAgICAgIGJyZWFrCiAgICAgICAgICAgIGxpID0gcGhyYXNlLnJmaW5kKCJsaXZlIikKICAgICAgICAgICAgYWxsb3dlZF9zcGFucy5hZGQoKGkgKyBsaSwgaSArIGxpICsgbGVuKCJsaXZlIikpKQogICAgICAgICAgICBzdGFydCA9IGkgKyAxCiAgICBmb3IgbSBpbiByZS5maW5kaXRlcihyIlxibGl2ZVxiIiwgdGV4dCwgcmUuSUdOT1JFQ0FTRSk6CiAgICAgICAgaWYgKG0uc3RhcnQoKSwgbS5lbmQoKSkgaW4gYWxsb3dlZF9zcGFuczoKICAgICAgICAgICAgY29udGludWUKICAgICAgICBsaW5lID0gYmFzZV9saW5lICsgdGV4dFs6bS5zdGFydCgpXS5jb3VudCgiXG4iKQogICAgICAgIGN0eCA9IHJlLnN1YihyIlxzKyIsICIgIiwgdGV4dFttYXgoMCwgbS5zdGFydCgpIC0gNDUpOm0uZW5kKCkgKyA0NV0pLnN0cmlwKCkKICAgICAgICBwcm9ibGVtcy5hcHBlbmQoZiJ7cmVsfTp7bGluZX06IGthdGEgJ2xpdmUnIGRpIHtzb3VyY2VfbGFiZWx9ICIKICAgICAgICAgICAgICAgICAgICAgICAgZiIodmlld2VyIG1lbmFtcGlsa2FuIHNuYXBzaG90LCBidWthbiBsaXZlKTogIgogICAgICAgICAgICAgICAgICAgICAgICBmIicuLi57Y3R4fS4uLiciKQoKCmRlZiBjaGVja19idWthbl9tZWxhaW5rYW4ocHJvYmxlbXMpOgogICAgIiIiKGUpIFBvbGEgJ2J1a2FuIC4uLiBtZWxhaW5rYW4nIG1ha3NpbWFsIDF4IHBlciBhcnRpa2VsIHJpc2V0LiIiIgogICAgcGF0dGVybiA9IHJlLmNvbXBpbGUociJidWthblxiW15cbi5dezAsMTIwfT9tZWxhaW5rYW4iLAogICAgICAgICAgICAgICAgICAgICAgICAgcmUuSUdOT1JFQ0FTRSB8IHJlLkRPVEFMTCkKICAgIGZvciBwYXRoIGluIGl0ZXJfcmlzZXRfYXJ0aWNsZXMoKToKICAgICAgICB0ZXh0ID0gdmlzaWJsZV90ZXh0KHBhdGgucmVhZF90ZXh0KGVuY29kaW5nPSJ1dGYtOCIpKQogICAgICAgIG1hdGNoZXMgPSBwYXR0ZXJuLmZpbmRhbGwodGV4dCkKICAgICAgICBpZiBsZW4obWF0Y2hlcykgPiAxOgogICAgICAgICAgICBzaG93biA9ICI7ICIuam9pbigKICAgICAgICAgICAgICAgIHJlLnN1YihyIlxzKyIsICIgIiwgbSkuc3RyaXAoKVs6NjBdIGZvciBtIGluIG1hdGNoZXNbOjNdKQogICAgICAgICAgICBwcm9ibGVtcy5hcHBlbmQoCiAgICAgICAgICAgICAgICBmInJpc2V0L3twYXRoLm5hbWV9OiBwb2xhICdidWthbiAuLi4gbWVsYWlua2FuJyBtdW5jdWwgIgogICAgICAgICAgICAgICAgZiJ7bGVuKG1hdGNoZXMpfXggKG1ha3MgMXgpOiB7c2hvd259IikKCgpkZWYgY2hlY2tfdGl0bGVfaDEocHJvYmxlbXMpOgogICAgIiIiKGYpIDx0aXRsZT4gYXJ0aWtlbCByaXNldCBoYXJ1cyBjb2NvayBkZW5nYW4gSDEuIiIiCiAgICBmb3IgcGF0aCBpbiBpdGVyX3Jpc2V0X2FydGljbGVzKCk6CiAgICAgICAgdGV4dCA9IHBhdGgucmVhZF90ZXh0KGVuY29kaW5nPSJ1dGYtOCIpCiAgICAgICAgdG0gPSByZS5zZWFyY2gociI8dGl0bGU+KC4qPyk8L3RpdGxlPiIsIHRleHQsCiAgICAgICAgICAgICAgICAgICAgICAgcmUuRE9UQUxMIHwgcmUuSUdOT1JFQ0FTRSkKICAgICAgICBoMW0gPSByZS5zZWFyY2gociI8aDFbXj5dKj4oLio/KTwvaDE+IiwgdGV4dCwKICAgICAgICAgICAgICAgICAgICAgICAgcmUuRE9UQUxMIHwgcmUuSUdOT1JFQ0FTRSkKICAgICAgICBpZiBub3QgdG0gb3Igbm90IGgxbToKICAgICAgICAgICAgcHJvYmxlbXMuYXBwZW5kKGYicmlzZXQve3BhdGgubmFtZX06IDx0aXRsZT4gYXRhdSA8aDE+ICIKICAgICAgICAgICAgICAgICAgICAgICAgICAgIGYidGlkYWsgZGl0ZW11a2FuIikKICAgICAgICAgICAgY29udGludWUKICAgICAgICB0aXRsZSA9IHJlLnN1YihyIlxzKyIsICIgIiwgcmUuc3ViKHIiPFtePl0rPiIsICIiLCB0bS5ncm91cCgxKSkpLnN0cmlwKCkKICAgICAgICBoMSA9IHJlLnN1YihyIlxzKyIsICIgIiwgcmUuc3ViKHIiPFtePl0rPiIsICIiLCBoMW0uZ3JvdXAoMSkpKS5zdHJpcCgpCiAgICAgICAgY29yZSA9IHJlLnN1YihyIlxzKsK3XHMqTkVVR0lccyokIiwgIiIsIHRpdGxlKS5zdHJpcCgpCiAgICAgICAgaWYgY29yZS5sb3dlcigpIG5vdCBpbiBoMS5sb3dlcigpIGFuZCBoMS5sb3dlcigpIG5vdCBpbiBjb3JlLmxvd2VyKCk6CiAgICAgICAgICAgIHByb2JsZW1zLmFwcGVuZChmInJpc2V0L3twYXRoLm5hbWV9OiA8dGl0bGU+IHRpZGFrIGNvY29rICIKICAgICAgICAgICAgICAgICAgICAgICAgICAgIGYiZGVuZ2FuIEgxICh0aXRsZTogJ3tjb3JlfScgfCBIMTogJ3toMX0nKSIpCgoKZGVmIGNoZWNrX2Zvb3Rlcih0ZXh0LCByZWwsIHByb2JsZW1zKToKICAgICIiIihnKSBGb290ZXIgaGFydXMgbWVtdWF0IHRhdXRhbiAnQnVrdSBUYW11Jy4iIiIKICAgIG0gPSByZS5zZWFyY2gociI8Zm9vdGVyW14+XSo+KC4qPyk8L2Zvb3Rlcj4iLCB0ZXh0LAogICAgICAgICAgICAgICAgICByZS5ET1RBTEwgfCByZS5JR05PUkVDQVNFKQogICAgaWYgbm90IG06CiAgICAgICAgcHJvYmxlbXMuYXBwZW5kKGYie3JlbH06IHRpZGFrIGFkYSA8Zm9vdGVyPiIpCiAgICAgICAgcmV0dXJuCiAgICBpZiAiQnVrdSBUYW11IiBub3QgaW4gbS5ncm91cCgxKToKICAgICAgICBwcm9ibGVtcy5hcHBlbmQoZiJ7cmVsfTogZm9vdGVyIGJlbHVtIG1lbXVhdCB0YXV0YW4gJ0J1a3UgVGFtdSciKQoKCmRlZiBtYWluKCk6CiAgICBmYWN0cyA9IGpzb24ubG9hZHMoRkFDVFMucmVhZF90ZXh0KGVuY29kaW5nPSJ1dGYtOCIpKQogICAgZXhwZWN0ZWRfYWdlbnRzID0gZmFjdHNbInNxdWFkIl1bImFnZW50c190b3RhbCJdCiAgICBwcm9ibGVtcyA9IFtdCgogICAgZm9yIHBhdGggaW4gaXRlcl9odG1sX2ZpbGVzKCk6CiAgICAgICAgcmVsID0gcGF0aC5yZWxhdGl2ZV90byhTSVRFKQogICAgICAgIHRleHQgPSBwYXRoLnJlYWRfdGV4dChlbmNvZGluZz0idXRmLTgiKQogICAgICAgIGNoZWNrX2NvdW50cyh0ZXh0LCByZWwsIGV4cGVjdGVkX2FnZW50cywgcHJvYmxlbXMpCiAgICAgICAgY2hlY2tfYmxvY2tlZCh0ZXh0LCByZWwsIHByb2JsZW1zKQogICAgICAgIGNoZWNrX2xpdmUodmlzaWJsZV90ZXh0KHRleHQpLCByZWwsIHByb2JsZW1zKQogICAgICAgIGZvciBkZXNjLCBsaW5lIGluIG1ldGFfZGVzY3JpcHRpb25zKHRleHQpOgogICAgICAgICAgICBjaGVja19saXZlKGRlc2MsIHJlbCwgcHJvYmxlbXMsCiAgICAgICAgICAgICAgICAgICAgICAgc291cmNlX2xhYmVsPSJtZXRhIGRlc2NyaXB0aW9uIiwgYmFzZV9saW5lPWxpbmUpCiAgICAgICAgY2hlY2tfZm9vdGVyKHRleHQsIHJlbCwgcHJvYmxlbXMpCgogICAgY2hlY2tfZHVwbGljYXRlX2gyKHByb2JsZW1zKQogICAgY2hlY2tfYnVrYW5fbWVsYWlua2FuKHByb2JsZW1zKQogICAgY2hlY2tfdGl0bGVfaDEocHJvYmxlbXMpCgogICAgaWYgcHJvYmxlbXM6CiAgICAgICAgcHJpbnQoZiJHQUdBTDoge2xlbihwcm9ibGVtcyl9IHRlbXVhbjoiKQogICAgICAgIGZvciBwIGluIHByb2JsZW1zOgogICAgICAgICAgICBwcmludChmIiAgLSB7cH0iKQogICAgICAgIHJldHVybiAxCgogICAgcHJpbnQoZiJMT0xPUzogMCB0ZW11YW4gIgogICAgICAgICAgZiIoe2V4cGVjdGVkX2FnZW50c30gYWdlbiArIHtmYWN0c1snc3F1YWQnXVsnb3duZXJfdG90YWwnXX0gb3duZXIsICIKICAgICAgICAgIGYiZnJhc2EgYmxva2lyIGJlcnNpaCwganVkdWwgPGgyPiByaXNldCB1bmlrLCB0YW5wYSAnbGl2ZScgZGkgIgogICAgICAgICAgZiJrb250ZWtzIHZpZXdlciwgcG9sYSAnYnVrYW4gLi4uIG1lbGFpbmthbicgPD0xeC9hcnRpa2VsLCAiCiAgICAgICAgICBmIjx0aXRsZT4gY29jb2sgSDEsIGZvb3RlciBtZW11YXQgJ0J1a3UgVGFtdScpLiIpCiAgICByZXR1cm4gMAoKCmlmIF9fbmFtZV9fID09ICJfX21haW5fXyI6CiAgICBzeXMuZXhpdChtYWluKCkpCg==
+#!/usr/bin/env python3
+"""Lint fakta neugi.com terhadap facts.json (kanonik).
+
+Cara pakai (dari root repo):
+  python3 site/data/lint_facts.py
+Atau dari site/data/:
+  python3 lint_facts.py
+Juga dijalankan otomatis oleh GitHub Actions (.github/workflows/lint.yml)
+pada setiap push ke master dan setiap pull request.
+
+Cek:
+  (a) Jumlah agen/avatar di HTML sama dengan facts.json (12 agen + 1 owner
+      = 13 orang). Menolak angka lain ("10 avatar", "11 agen", "13 agen")
+      dan peran lama ("Wakil CEO").
+  (b) Frasa blokir tidak muncul di halaman publik: "KB v", "akun<N>"
+      (nomor akun internal), "free tier", "Remotion", "VoxCPM2",
+      "Modal T4" / "Modal L4" / "di Modal", "tanpa backend".
+  (c) Judul bagian <h2> yang sama tidak dipakai di 2+ artikel riset.
+  (d) Kata "live" tidak muncul di teks terlihat halaman publik, KECUALI
+      frasa yang memang benar-benar bukan klaim viewer live (daftar
+      LIVE_ALLOWLIST di bawah: "bukan live", "tanpa koneksi live",
+      "tidak ada koneksi live", "tidak ada animasi mengetik live",
+      "metrik live" (fitur produk), "situs live" (situs produksi)).
+      Viewer 3D menampilkan snapshot, bukan live — jadi klaim "live"
+      untuk viewer selalu salah. Cek juga meta description (muncul di
+      hasil pencarian).
+  (e) Pola "bukan ... melainkan" maksimal 1x per artikel riset.
+  (f) <title> artikel riset harus cocok dengan H1 (judul <title> tanpa
+      sufiks " · NEUGI" harus terkandung di H1, atau sebaliknya).
+  (g) Footer semua halaman harus memuat tautan "Buku Tamu".
+
+Dikecualikan: site/smar.html (keep as is per keputusan Rangga 24 Nov 2026),
+site/office/ (viewer JS, teksnya di-render browser), site/assets/.
+Aturan (g) juga mengecualikan smar.html.
+
+Keluar 0 kalau lolos, 1 kalau ada temuan. Hanya stdlib Python.
+"""
+
+import html as html_lib
+import json
+import re
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+SITE = HERE.parent
+FACTS = HERE / "facts.json"
+
+# Frasa blokir (b): pola regex, case-insensitive.
+BLOCKED = [
+    (r"KB\s+v", '"KB v" (penanda internal knowledge base)'),
+    (r"akun\d", '"akun<N>" (nomor akun internal)'),
+    (r"free tier", '"free tier"'),
+    (r"Remotion", '"Remotion" (tooling internal)'),
+    (r"VoxCPM2", '"VoxCPM2" (tooling internal)'),
+    (r"Modal\s+(T4|L4)", '"Modal T4/L4" (nama provider)'),
+    (r"di\s+Modal", '"di Modal" (nama provider)'),
+    (r"app\s+Modal", '"app Modal" (nama aplikasi internal)'),
+    (r"tanpa backend", '"tanpa backend" (klaim basi; satu-satunya backend adalah Buku Tamu)'),
+]
+
+# Frasa "live" yang diizinkan (d): kata "live" di dalamnya merujuk ke
+# sesuatu yang memang live / negasi, BUKAN klaim viewer live.
+LIVE_ALLOWLIST = [
+    "bukan live",
+    "tanpa koneksi live",
+    "tidak ada koneksi live",
+    "tidak ada animasi mengetik live",
+    "metrik live",
+    "situs live",
+]
+
+# File yang tidak dicek.
+EXCLUDE_FILES = {"smar.html"}
+EXCLUDE_DIRS = {"office", "assets", "data"}
+
+
+def iter_html_files():
+    """Semua .html di site/, kecuali yang dikecualikan."""
+    for path in sorted(SITE.rglob("*.html")):
+        rel = path.relative_to(SITE)
+        if rel.name in EXCLUDE_FILES:
+            continue
+        if any(part in EXCLUDE_DIRS for part in rel.parts):
+            continue
+        yield path
+
+
+def iter_riset_articles():
+    """7 artikel riset (bukan halaman daftar/template)."""
+    riset = SITE / "riset"
+    for path in sorted(riset.glob("*.html")):
+        if path.name in ("index.html", "artikel.html"):
+            continue
+        yield path
+
+
+def _preserve_lines(s):
+    """Ganti string dengan spasi, pertahankan jumlah baris."""
+    return "".join("\n" if ch == "\n" else " " for ch in s)
+
+
+def visible_text(html):
+    """Teks yang terlihat di halaman: tanpa komentar HTML, blok <script> /
+    <style>, dan tanpa tag. Jumlah baris dipertahankan supaya nomor baris
+    di laporan tetap akurat."""
+    text = re.sub(r"<!--.*?-->", lambda m: _preserve_lines(m.group(0)),
+                  html, flags=re.DOTALL)
+    text = re.sub(r"<script\b[^>]*>.*?</script>",
+                  lambda m: _preserve_lines(m.group(0)),
+                  text, flags=re.DOTALL | re.IGNORECASE)
+    text = re.sub(r"<style\b[^>]*>.*?</style>",
+                  lambda m: _preserve_lines(m.group(0)),
+                  text, flags=re.DOTALL | re.IGNORECASE)
+    text = re.sub(r"<[^>]+>", lambda m: _preserve_lines(m.group(0)), text)
+    return html_lib.unescape(text)
+
+
+def meta_descriptions(html):
+    """Isi meta description (muncul di hasil pencarian) + nomor barisnya."""
+    out = []
+    for m in re.finditer(r"<meta\b[^>]*>", html, re.IGNORECASE):
+        tag = m.group(0)
+        if not re.search(r"""name=["']description["']""", tag, re.IGNORECASE):
+            continue
+        cm = re.search(r"""content=["']([^"']*)["']""", tag, re.IGNORECASE)
+        if cm:
+            line = html[:m.start()].count("\n") + 1
+            out.append((html_lib.unescape(cm.group(1)), line))
+    return out
+
+
+def check_counts(text, rel, expected_agents, problems):
+    """(a) Angka agen/avatar harus sama dengan facts.json."""
+    for m in re.finditer(r"(\d+)\s+avatar", text, re.IGNORECASE):
+        if int(m.group(1)) != expected_agents:
+            problems.append(f"{rel}: jumlah avatar salah: '{m.group(0)}' "
+                            f"(harusnya {expected_agents})")
+    for m in re.finditer(r"(\d+)\s+agen", text, re.IGNORECASE):
+        if int(m.group(1)) != expected_agents:
+            problems.append(f"{rel}: jumlah agen salah: '{m.group(0)}' "
+                            f"(harusnya {expected_agents})")
+    if re.search(r"Wakil CEO", text):
+        problems.append(f"{rel}: peran lama 'Wakil CEO' masih muncul "
+                        f"(harusnya 'Asisten CEO')")
+
+
+def check_blocked(text, rel, problems):
+    """(b) Frasa blokir tidak boleh muncul."""
+    for pattern, label in BLOCKED:
+        for m in re.finditer(pattern, text, re.IGNORECASE):
+            line = text[:m.start()].count("\n") + 1
+            problems.append(f"{rel}:{line}: frasa blokir {label}: "
+                            f"'{m.group(0)}'")
+
+
+def check_duplicate_h2(problems):
+    """(c) Judul <h2> yang sama tidak boleh dipakai di 2+ artikel riset."""
+    seen = {}
+    for path in iter_riset_articles():
+        text = path.read_text(encoding="utf-8")
+        for m in re.finditer(r"<h2[^>]*>(.*?)</h2>", text, re.DOTALL):
+            title = re.sub(r"<[^>]+>", "", m.group(1))
+            title = re.sub(r"\s+", " ", title).strip()
+            key = title.lower()
+            if not key:
+                continue
+            if key in seen:
+                problems.append(
+                    f"riset/{path.name}: judul <h2> '{title}' sudah dipakai di "
+                    f"riset/{seen[key]} (duplikat)")
+            else:
+                seen[key] = path.name
+
+
+def check_live(text, rel, problems, source_label="teks terlihat",
+               base_line=1):
+    """(d) Kata "live" hanya boleh muncul dalam frasa allowlist.
+    `text` adalah teks yang sudah dibersihkan dari tag; `base_line`
+    adalah nomor baris awal teks ini di file (1 untuk teks halaman,
+    nomor baris tag <meta> untuk meta description)."""
+    low = text.lower()
+    allowed_spans = set()
+    for phrase in LIVE_ALLOWLIST:
+        start = 0
+        while True:
+            i = low.find(phrase, start)
+            if i < 0:
+                break
+            li = phrase.rfind("live")
+            allowed_spans.add((i + li, i + li + len("live")))
+            start = i + 1
+    for m in re.finditer(r"\blive\b", text, re.IGNORECASE):
+        if (m.start(), m.end()) in allowed_spans:
+            continue
+        line = base_line + text[:m.start()].count("\n")
+        ctx = re.sub(r"\s+", " ", text[max(0, m.start() - 45):m.end() + 45]).strip()
+        problems.append(f"{rel}:{line}: kata 'live' di {source_label} "
+                        f"(viewer menampilkan snapshot, bukan live): "
+                        f"'...{ctx}...'")
+
+
+def check_bukan_melainkan(problems):
+    """(e) Pola 'bukan ... melainkan' maksimal 1x per artikel riset."""
+    pattern = re.compile(r"bukan\b[^\n.]{0,120}?melainkan",
+                         re.IGNORECASE | re.DOTALL)
+    for path in iter_riset_articles():
+        text = visible_text(path.read_text(encoding="utf-8"))
+        matches = pattern.findall(text)
+        if len(matches) > 1:
+            shown = "; ".join(
+                re.sub(r"\s+", " ", m).strip()[:60] for m in matches[:3])
+            problems.append(
+                f"riset/{path.name}: pola 'bukan ... melainkan' muncul "
+                f"{len(matches)}x (maks 1x): {shown}")
+
+
+def check_title_h1(problems):
+    """(f) <title> artikel riset harus cocok dengan H1."""
+    for path in iter_riset_articles():
+        text = path.read_text(encoding="utf-8")
+        tm = re.search(r"<title>(.*?)</title>", text,
+                       re.DOTALL | re.IGNORECASE)
+        h1m = re.search(r"<h1[^>]*>(.*?)</h1>", text,
+                        re.DOTALL | re.IGNORECASE)
+        if not tm or not h1m:
+            problems.append(f"riset/{path.name}: <title> atau <h1> "
+                            f"tidak ditemukan")
+            continue
+        title = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", tm.group(1))).strip()
+        h1 = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", h1m.group(1))).strip()
+        core = re.sub(r"\s*·\s*NEUGI\s*$", "", title).strip()
+        if core.lower() not in h1.lower() and h1.lower() not in core.lower():
+            problems.append(f"riset/{path.name}: <title> tidak cocok "
+                            f"dengan H1 (title: '{core}' | H1: '{h1}')")
+
+
+def check_footer(text, rel, problems):
+    """(g) Footer harus memuat tautan 'Buku Tamu'."""
+    m = re.search(r"<footer[^>]*>(.*?)</footer>", text,
+                  re.DOTALL | re.IGNORECASE)
+    if not m:
+        problems.append(f"{rel}: tidak ada <footer>")
+        return
+    if "Buku Tamu" not in m.group(1):
+        problems.append(f"{rel}: footer belum memuat tautan 'Buku Tamu'")
+
+
+def main():
+    facts = json.loads(FACTS.read_text(encoding="utf-8"))
+    expected_agents = facts["squad"]["agents_total"]
+    problems = []
+
+    for path in iter_html_files():
+        rel = path.relative_to(SITE)
+        text = path.read_text(encoding="utf-8")
+        check_counts(text, rel, expected_agents, problems)
+        check_blocked(text, rel, problems)
+        check_live(visible_text(text), rel, problems)
+        for desc, line in meta_descriptions(text):
+            check_live(desc, rel, problems,
+                       source_label="meta description", base_line=line)
+        check_footer(text, rel, problems)
+
+    check_duplicate_h2(problems)
+    check_bukan_melainkan(problems)
+    check_title_h1(problems)
+
+    if problems:
+        print(f"GAGAL: {len(problems)} temuan:")
+        for p in problems:
+            print(f"  - {p}")
+        return 1
+
+    print(f"LOLOS: 0 temuan "
+          f"({expected_agents} agen + {facts['squad']['owner_total']} owner, "
+          f"frasa blokir bersih, judul <h2> riset unik, tanpa 'live' di "
+          f"konteks viewer, pola 'bukan ... melainkan' <=1x/artikel, "
+          f"<title> cocok H1, footer memuat 'Buku Tamu').")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
