@@ -185,42 +185,43 @@ const raycaster = new THREE.Raycaster();
 const pointerNDC = new THREE.Vector2();
 
 /* --- pose rigged (0.4.9, Upgrade 11/10 → 100/10) ------------------ */
-/* JOINT_ROLES dari materials/joint-map-v2.md/.json (cari joint dari
-   ROLE, jangan hardcode nomor bone di luar tabel ini). Seto (29):
-   shoulder_L bone_7 (rantai kepala 3 tulang menggeser lengan),
-   head = bone_6 (head1 bone_5 tidak dipakai pose); chest_extra
-   15/16 (duri bahu) JANGAN diputar sebagai lengan; ekor Seto/Deto
-   tidak punya tulang → tidak ada animasi ekor. Deto (34) seperti
-   Oto/Beto. L/R = kiri/kanan karakter sendiri. */
+/* CHIBI BATCH 2026-11-25 (Hunyuan3D-2.0, Draco+WebP, 13 avatar):
+   JOINT_ROLES dari joint_map_<nama>.json (cari joint dari ROLE,
+   jangan hardcode nomor bone di luar tabel ini). Jumlah joints
+   variabel per avatar (22/28/34/46) — viewer resolve by role.
+   Sumber: output/chibi/<nama>/joint_map_<nama>.json (oto v3,
+   beto v3) + joint_map_chibi.json (rangga pilot).
+   Joints: rangga 34, oto 46, beto 28, geto 22, ceto 34, leto 34,
+   seto 22, deto 22, zeto 28, neto 28, meto 22, reto 34,
+   atharia 28. Deploy ini sekaligus memperbaiki ketukaran live
+   ceto/leto (file chibi Ceto pink + Leto lavender sudah benar).
+   Ekor Seto/Deto tidak punya tulang → tidak ada animasi ekor.
+   L/R = kiri/kanan karakter sendiri. */
 const JOINT_ROLES = {
-  /* RANGGA v6 (Hunyuan3D 2.1, 2026-11-22, QC lolos, deploy 24 Nov):
-     34 joints (jari terdeteksi SkinTokens). Bahu kanan + kaki bergeser
-     dari v5 (22 joint): shoulderR 10→16, thigh 14/18→26/30, shin
-     15/19→27/31, forearmR 12→18, handR 13→19; jari 10-15 / 20-25.
-     Delta lengan terukur (IDLE_ARM_DELTAS) keyed by ROLE, jadi tetap
-     berlaku — applyIdlePose resolve indeks lewat tabel ini. */
+  /* RANGGA pilot chibi (Hunyuan3D-2.0, 2026-11-25, QC lolos):
+     34 joints, pola SAMA seperti v6 (shoulderR 16, thigh 26/30,
+     jari 10-15 / 20-25). Delta lengan terukur (IDLE_ARM_DELTAS)
+     keyed by ROLE, jadi tetap berlaku — applyIdlePose resolve
+     indeks lewat tabel ini. */
   rangga: { shoulderL: 6, shoulderR: 16, thighL: 26, thighR: 30, shinL: 27, shinR: 31, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 18, handL: 9, handR: 19, fingerL: [10, 11, 12, 13, 14, 15], fingerR: [20, 21, 22, 23, 24, 25] },
   zeto: { shoulderL: 6, shoulderR: 13, thighL: 20, thighR: 24, shinL: 21, shinR: 25, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 15, handL: 9, handR: 16, fingerL: null, fingerR: null },
   neto: { shoulderL: 6, shoulderR: 13, thighL: 20, thighR: 24, shinL: 21, shinR: 25, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 15, handL: 9, handR: 16, fingerL: null, fingerR: null },
-  leto: { shoulderL: 6, shoulderR: 13, thighL: 20, thighR: 24, shinL: 21, shinR: 25, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 15, handL: 9, handR: 16, fingerL: null, fingerR: null },
-  ceto: { shoulderL: 6, shoulderR: 13, thighL: 20, thighR: 24, shinL: 21, shinR: 25, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 15, handL: 9, handR: 16, fingerL: null, fingerR: null },
-  beto: { shoulderL: 6, shoulderR: 16, thighL: 26, thighR: 30, shinL: 27, shinR: 31, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 18, handL: 9, handR: 19, fingerL: [10, 11, 12, 13, 14, 15], fingerR: [20, 21, 22, 23, 24, 25] },
-  oto: { shoulderL: 6, shoulderR: 16, thighL: 26, thighR: 30, shinL: 27, shinR: 31, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 18, handL: 9, handR: 19, fingerL: [10, 11, 12, 13, 14, 15], fingerR: [20, 21, 22, 23, 24, 25] },
-  geto: { shoulderL: 6, shoulderR: 10, thighL: 14, thighR: 19, shinL: 15, shinR: 20, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 12, handL: 9, handR: 13, fingerL: null, fingerR: null },
-  seto: { shoulderL: 7, shoulderR: 11, thighL: 19, thighR: 24, shinL: 20, shinR: 25, spine: 2, neck: 4, head: 6, forearmL: 9, forearmR: 13, handL: 10, handR: 14, fingerL: null, fingerR: null },
-  deto: { shoulderL: 6, shoulderR: 16, thighL: 26, thighR: 30, shinL: 27, shinR: 31, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 18, handL: 9, handR: 19, fingerL: [10, 11, 12, 13, 14, 15], fingerR: [20, 21, 22, 23, 24, 25] },
-  /* FEET FIX 2026-11-21 — Meto (joint-map-11-avatars.json, file_0216):
-     22 joint, pola sama seperti Rangga/Geto (thigh 14/18, shin 15/19).
-     Tanpa entri ini Meto tidak dapat pose duduk (captureBoneBase lewati),
-     jadi kakinya tidak pernah terukur saat duduk. */
+  leto: { shoulderL: 6, shoulderR: 16, thighL: 26, thighR: 30, shinL: 27, shinR: 31, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 18, handL: 9, handR: 19, fingerL: [10, 11, 12, 13, 14, 15], fingerR: [20, 21, 22, 23, 24, 25] },
+  ceto: { shoulderL: 6, shoulderR: 16, thighL: 26, thighR: 30, shinL: 27, shinR: 31, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 18, handL: 9, handR: 19, fingerL: [10, 11, 12, 13, 14, 15], fingerR: [20, 21, 22, 23, 24, 25] },
+  beto: { shoulderL: 6, shoulderR: 13, thighL: 20, thighR: 24, shinL: 21, shinR: 25, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 15, handL: 9, handR: 16, fingerL: null, fingerR: null },
+  oto: { shoulderL: 6, shoulderR: 22, thighL: 38, thighR: 42, shinL: 39, shinR: 43, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 24, handL: 9, handR: 25, fingerL: [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21], fingerR: [26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37] },
+  geto: { shoulderL: 6, shoulderR: 10, thighL: 14, thighR: 18, shinL: 15, shinR: 19, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 12, handL: 9, handR: 13, fingerL: null, fingerR: null },
+  seto: { shoulderL: 6, shoulderR: 10, thighL: 14, thighR: 18, shinL: 15, shinR: 19, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 12, handL: 9, handR: 13, fingerL: null, fingerR: null },
+  deto: { shoulderL: 6, shoulderR: 10, thighL: 14, thighR: 18, shinL: 15, shinR: 19, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 12, handL: 9, handR: 13, fingerL: null, fingerR: null },
+  /* FEET FIX 2026-11-21 — Meto (22 joint, pola Geto: thigh 14/18,
+     shin 15/19). Tanpa entri ini Meto tidak dapat pose duduk
+     (captureBoneBase lewati), jadi kakinya tidak pernah terukur
+     saat duduk. */
   meto: { shoulderL: 6, shoulderR: 10, thighL: 14, thighR: 18, shinL: 15, shinR: 19, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 12, handL: 9, handR: 13, fingerL: null, fingerR: null },
-  /* ATHARIA + RETO 2026-11-24 (joint-map.json, 28 joint, pola Zeto/
-     Neto: bahu kiri 6, bahu kanan 13, paha 20/24). Tanpa entri ini
-     applyIdlePose + captureBoneBase lewati mereka, lengan tetap
-     T-pose bind. Delta lengan terukur belum ada — pakai fallback
-     Z +-75 bahu sampai diukur di harness. */
+  /* ATHARIA + RETO — delta lengan kini TERUKUR (batch chibi
+     2026-11-25, measure_<nama>.json), bukan lagi fallback Z +-75. */
   atharia: { shoulderL: 6, shoulderR: 13, thighL: 20, thighR: 24, shinL: 21, shinR: 25, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 15, handL: 9, handR: 16, fingerL: null, fingerR: null },
-  reto: { shoulderL: 6, shoulderR: 13, thighL: 20, thighR: 24, shinL: 21, shinR: 25, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 15, handL: 9, handR: 16, fingerL: null, fingerR: null },
+  reto: { shoulderL: 6, shoulderR: 16, thighL: 26, thighR: 30, shinL: 27, shinR: 31, spine: 2, neck: 4, head: 5, forearmL: 8, forearmR: 18, handL: 9, handR: 19, fingerL: [10, 11, 12, 13, 14, 15], fingerR: [20, 21, 22, 23, 24, 25] },
 };
 /* DUDUK LESEHAN 2026-11-21 (Item 2+3) — grup turun sebesar drop saat
    duduk supaya PANAT menyentuh permukaan pad (PAD_TOP 0.10).
@@ -242,8 +243,10 @@ const JOINT_ROLES = {
    (di atas monitor 0.98), lutut ke depan (+0.07..+0.27),
    ujung kaki terlipat di belakang lutut 0.05-0.24 di atas lantai. */
 const SIT_DROPS = {
-  rangga: 0.239, oto: 0.052, beto: 0.128, zeto: 0.000, neto: 0.000,
-  geto: 0.234, leto: 0.187, ceto: 0.142, deto: 0.000, seto: 0.163, meto: 0.169,
+  rangga: 0.207, oto: 0.183, beto: 0.269, zeto: 0.136, neto: 0.180,
+  geto: 0.205, leto: 0.293, ceto: 0.280, deto: 0.148, seto: 0.175, meto: 0.260,
+  atharia: 0.350, reto: 0.350, /* 0.350 = ter-clamp di maks formula
+    (seatUnder reto 0.459 / atharia 0.491) — verifikasi visual saat duduk */
 };
 const SIT_DROP_DEFAULT = 0.12; /* avatar baru tanpa ukur: tengah-tengah */
 function sitDropFor(name) {
@@ -515,7 +518,8 @@ const TYPE_HAND_SOL = {
   deto: { axisL: [0.531, 0.847, -0.018], degL: 100.6, axisR: [0.543, -0.839, 0.001], degR: 100.6 },
   meto: { axisL: [0.376, 0.912, -0.163], degL: 97.2, axisR: [0.364, -0.915, 0.174], degR: 97.3 },
 };
-const TYPE_FINGER_CURL_DEG = 20; /* tekuk jari mengetik, hanya Beto/Oto/Deto (punya finger bones) */
+const TYPE_FINGER_CURL_DEG = 20; /* tekuk jari mengetik, hanya yang punya finger bones
+   (chibi batch: Rangga/Oto/Ceto/Leto/Reto — Beto/Deto tidak punya) */
 /* --- Tugas 3+4: idle berdiri ---
    Siku tekuk 16 deg (sudut siku ~167 deg, tidak lurus kaku),
    spine condong 3 deg, bahu abduksi 15 deg (lengan keluar dari
@@ -579,8 +583,8 @@ function typingWeight(name) {
    dengan easing smoothstep (bukan linear robotik). HP = pose
    statis (head menunduk 15°, lengan kiri sedikit maju) + sesekali
    head tilt kecil (tiap siklus 6 dtk, 1.2 dtk pertama).
-   Tangan menggenggam: jari sedikit menekuk (Oto/Beto/Deto pakai
-   finger_L/R; avatar lain goyang hand kecil). */
+   Tangan menggenggam: jari sedikit menekuk (yang punya finger_L/R
+   pakai jari; avatar lain goyang hand kecil). */
 function activityDeltas(name, activity, nowMs) {
   const roles = JOINT_ROLES[name];
   if (!roles || !activity) return [];
@@ -2538,8 +2542,8 @@ function buildPerpustakaan() {
 }
 
 /* --- avatar GLB -------------------------------------------------- */
-/* GLB 13/13 di public/models/ (13 rigged Draco + WebP,
-   total ~2,08 MB / 2.177.532 B).
+/* GLB 13/13 di public/models/ (13 rigged Draco + WebP, chibi
+   batch 2026-11-25, total ~21,1 MB / 22.118.208 B).
    Skala tiap file belum tentu sama — dinormalisasi ke tinggi 1.6
    dari bounding box, kaki di y=0. Gagal/timeout -> stand-in
    primitif warna agen (ruangan tetap tampil, bukan halaman kosong).
@@ -2668,74 +2672,90 @@ function fixAvatarMaterials(obj) {
    Tanpa entri di tabel (avatar baru tanpa ukur): fallback ke
    perilaku lama Z +-75 di bahu saja. Nomor bone TIDAK ditulis di
    tabel ini — diambil dari JOINT_ROLES (satu sumber).
-   SHOWCASE: tabel 11 avatar termasuk Meto (joint-map-11-avatars.json).
+   CHIBI BATCH 2026-11-25: tabel 13 avatar (termasuk Atharia + Reto
+   yang kini terukur — dulu fallback Z +-75). Sumber per avatar:
+   output/chibi/<nama>/measure_<nama>.json (oto v3, beto v3)
+   + measure_chibi.json (rangga pilot). Fixed arms terverifikasi
+   harness: semua 13 avatar tepat 5.00/8.00/0.00 deg (L/R).
 */
 const IDLE_ARM_DELTAS = {
   rangga: {
-    shoulderL: { axis: [-0.5745, 0.0703, -0.8155], deg: 66.15 },
-    shoulderR: { axis: [-0.5745, -0.0703, 0.8155], deg: 66.15 },
-    forearmL: { axis: [-0.9763, -0.0252, 0.2149], deg: 13.94 },
-    forearmR: { axis: [-0.9762, 0.0252, -0.2154], deg: 14.00 },
+    shoulderL: { axis: [-0.6178, -0.0000, -0.7863], deg: 52.99 },
+    shoulderR: { axis: [-0.6178, 0.0000, 0.7863], deg: 52.99 },
+    forearmL: { axis: [0.9447, -0.1694, -0.2808], deg: 20.99 },
+    forearmR: { axis: [0.9525, 0.1790, 0.2464], deg: 19.15 },
   },
   oto: {
-    shoulderL: { axis: [-0.6306, 0.0000, -0.7761], deg: 78.52 },
-    shoulderR: { axis: [-0.6306, 0.0000, 0.7761], deg: 78.52 },
-    forearmL: { axis: [-0.9939, 0.0000, 0.1104], deg: 3.48 },
-    forearmR: { axis: [-0.9939, 0.0000, -0.1104], deg: 3.48 },
+    shoulderL: { axis: [-0.6585, -0.0000, -0.7526], deg: 65.82 },
+    shoulderR: { axis: [-0.6585, -0.0000, 0.7526], deg: 65.82 },
+    forearmL: { axis: [0.9874, -0.1165, -0.1068], deg: 17.30 },
+    forearmR: { axis: [0.9826, 0.1544, 0.1035], deg: 17.30 },
   },
   beto: {
-    shoulderL: { axis: [-0.7511, 0.0172, -0.6600], deg: 77.88 },
-    shoulderR: { axis: [-0.7513, -0.0168, 0.6598], deg: 78.02 },
-    forearmL: { axis: [-0.9748, -0.0317, -0.2207], deg: 4.28 },
-    forearmR: { axis: [-0.9736, 0.0301, 0.2264], deg: 4.13 },
+    shoulderL: { axis: [-0.7071, -0.0000, -0.7071], deg: 49.09 },
+    shoulderR: { axis: [-0.7646, 0.0347, -0.6436], deg: 40.40 },
+    forearmL: { axis: [0.2836, 0.1169, -0.9518], deg: 15.30 },
+    forearmR: { axis: [0.9423, 0.0770, -0.3259], deg: 6.79 },
   },
   zeto: {
-    shoulderL: { axis: [-0.8124, 0.0580, -0.5803], deg: 73.96 },
-    shoulderR: { axis: [-0.8240, 0.1007, 0.5575], deg: 73.98 },
-    forearmL: { axis: [-0.9487, -0.1897, 0.2530], deg: 10.90 },
-    forearmR: { axis: [-0.8772, -0.1136, -0.4664], deg: 11.21 },
+    shoulderL: { axis: [-0.6331, -0.0766, -0.7703], deg: 73.37 },
+    shoulderR: { axis: [-0.6331, 0.0766, 0.7703], deg: 73.37 },
+    forearmL: { axis: [0.6056, -0.2043, 0.7691], deg: 25.70 },
+    forearmR: { axis: [0.6056, 0.2043, -0.7691], deg: 25.70 },
   },
   neto: {
-    shoulderL: { axis: [-0.7499, 0.0235, -0.6611], deg: 81.12 },
-    shoulderR: { axis: [-0.7499, -0.0235, 0.6611], deg: 81.12 },
-    forearmL: { axis: [-0.9440, 0.0245, 0.3290], deg: 3.30 },
-    forearmR: { axis: [-0.9440, -0.0245, -0.3290], deg: 3.30 },
+    shoulderL: { axis: [-0.6549, -0.0000, -0.7557], deg: 63.20 },
+    shoulderR: { axis: [-0.6549, 0.0000, 0.7557], deg: 63.20 },
+    forearmL: { axis: [0.9682, -0.0816, -0.2367], deg: 15.50 },
+    forearmR: { axis: [0.9611, 0.1517, 0.2310], deg: 15.50 },
   },
   geto: {
-    shoulderL: { axis: [-0.4650, -0.1147, -0.8778], deg: 78.37 },
-    shoulderR: { axis: [-0.4650, 0.1147, 0.8778], deg: 78.37 },
-    forearmL: { axis: [0.0207, -0.0855, 0.9961], deg: 11.21 },
-    forearmR: { axis: [0.0207, 0.0855, -0.9961], deg: 11.21 },
+    shoulderL: { axis: [-0.5408, -0.0000, -0.8412], deg: 53.17 },
+    shoulderR: { axis: [-0.5408, 0.0000, 0.8412], deg: 52.26 },
+    forearmL: { axis: [0.9295, -0.2468, 0.2741], deg: 6.83 },
+    forearmR: { axis: [0.9658, 0.2512, -0.0638], deg: 3.79 },
   },
   leto: {
-    shoulderL: { axis: [-0.6402, 0.0000, -0.7682], deg: 75.79 },
-    shoulderR: { axis: [-0.6402, 0.0000, 0.7682], deg: 75.79 },
-    forearmL: { axis: [-0.8781, 0.0194, 0.4781], deg: 4.67 },
-    forearmR: { axis: [-0.8781, -0.0194, -0.4781], deg: 4.67 },
+    shoulderL: { axis: [-0.6317, 0.0702, -0.7720], deg: 52.99 },
+    shoulderR: { axis: [-0.6317, -0.0702, 0.7720], deg: 52.99 },
+    forearmL: { axis: [0.9597, -0.1975, 0.2000], deg: 6.85 },
+    forearmR: { axis: [0.9597, 0.1975, -0.2000], deg: 6.85 },
   },
   ceto: {
-    shoulderL: { axis: [-0.6017, 0.0190, -0.7985], deg: 71.34 },
-    shoulderR: { axis: [-0.6017, -0.0190, 0.7985], deg: 71.34 },
-    forearmL: { axis: [-0.9109, -0.0349, 0.4111], deg: 9.12 },
-    forearmR: { axis: [-0.9109, 0.0349, -0.4111], deg: 9.12 },
+    shoulderL: { axis: [-0.5787, 0.0235, -0.8152], deg: 55.48 },
+    shoulderR: { axis: [-0.6199, -0.0257, 0.7843], deg: 54.64 },
+    forearmL: { axis: [0.9420, -0.1175, -0.3144], deg: 9.02 },
+    forearmR: { axis: [0.9473, 0.1791, 0.2657], deg: 8.27 },
   },
   deto: {
-    shoulderL: { axis: [-0.6444, -0.0010, -0.7646], deg: 75.12 },
-    shoulderR: { axis: [-0.6456, 0.0023, 0.7637], deg: 74.87 },
-    forearmL: { axis: [-0.2238, -0.0147, 0.9745], deg: 11.83 },
-    forearmR: { axis: [-0.2443, 0.0134, -0.9696], deg: 11.82 },
+    shoulderL: { axis: [-0.6459, 0.0000, -0.7634], deg: 61.37 },
+    shoulderR: { axis: [-0.6281, -0.0231, 0.7778], deg: 61.38 },
+    forearmL: { axis: [0.6707, -0.2453, 0.6999], deg: 28.36 },
+    forearmR: { axis: [0.7050, 0.2339, -0.6695], deg: 24.41 },
   },
   seto: {
-    shoulderL: { axis: [-0.6319, -0.6782, -0.3753], deg: 75.17 },
-    shoulderR: { axis: [-0.6319, 0.6782, 0.3753], deg: 75.17 },
-    forearmL: { axis: [-0.0035, -0.1671, 0.9859], deg: 44.53 },
-    forearmR: { axis: [-0.0035, 0.1671, -0.9859], deg: 44.53 },
+    shoulderL: { axis: [-0.6038, -0.0327, -0.7964], deg: 65.11 },
+    shoulderR: { axis: [-0.6502, 0.0504, 0.7581], deg: 65.06 },
+    forearmL: { axis: [0.7553, -0.4371, 0.4883], deg: 24.29 },
+    forearmR: { axis: [0.7299, 0.4505, -0.5140], deg: 22.27 },
   },
   meto: {
-    shoulderL: { axis: [-0.7180, -0.0187, -0.6958], deg: 72.91 },
-    shoulderR: { axis: [-0.7182, 0.0191, 0.6955], deg: 72.62 },
-    forearmL: { axis: [-0.5971, -0.0346, 0.8014], deg: 8.92 },
-    forearmR: { axis: [-0.6260, 0.0289, -0.7793], deg: 9.13 },
+    shoulderL: { axis: [-0.5987, 0.0665, -0.7982], deg: 55.64 },
+    shoulderR: { axis: [-0.5987, -0.0665, 0.7982], deg: 55.64 },
+    forearmL: { axis: [0.9757, -0.2116, 0.0561], deg: 13.46 },
+    forearmR: { axis: [0.9757, 0.2116, -0.0561], deg: 13.46 },
+  },
+  atharia: {
+    shoulderL: { axis: [-0.6533, 0.0901, -0.7518], deg: 41.06 },
+    shoulderR: { axis: [-0.6533, -0.0901, 0.7518], deg: 41.06 },
+    forearmL: { axis: [0.8568, -0.2066, -0.4724], deg: 13.71 },
+    forearmR: { axis: [0.8568, 0.2066, 0.4724], deg: 13.71 },
+  },
+  reto: {
+    shoulderL: { axis: [-0.6851, 0.0028, -0.7284], deg: 40.99 },
+    shoulderR: { axis: [-0.6868, -0.0005, 0.7269], deg: 40.14 },
+    forearmL: { axis: [0.9654, -0.2485, -0.0789], deg: 33.57 },
+    forearmR: { axis: [0.9695, 0.2444, 0.0173], deg: 31.59 },
   },
 };
 function applyIdlePose(obj, name) {
