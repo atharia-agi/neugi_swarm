@@ -243,8 +243,8 @@ const JOINT_ROLES = {
    (di atas monitor 0.98), lutut ke depan (+0.07..+0.27),
    ujung kaki terlipat di belakang lutut 0.05-0.24 di atas lantai. */
 const SIT_DROPS = {
-  rangga: 0.207, oto: 0.183, beto: 0.269, zeto: 0.136, neto: 0.180,
-  geto: 0.205, leto: 0.293, ceto: 0.280, deto: 0.148, seto: 0.175, meto: 0.260,
+  rangga: 0.207, oto: 0.188, beto: 0.273, zeto: 0.136, neto: 0.181,
+  geto: 0.205, leto: 0.294, ceto: 0.281, deto: 0.155, seto: 0.175, meto: 0.260,
   atharia: 0.350, reto: 0.350, /* 0.350 = ter-clamp di maks formula
     (seatUnder reto 0.459 / atharia 0.491) — verifikasi visual saat duduk */
 };
