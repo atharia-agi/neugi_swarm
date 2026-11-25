@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-25T04:12:18.152174Z",
+  "generated_at": "2026-11-25T06:42:15.981678Z",
   "agents": [
     {
       "id": "rangga",
@@ -15,9 +15,9 @@
       "name": "Oto",
       "role": "CEO",
       "color": "#a3ff00",
-      "room": "ruang-kerja",
-      "state": "working",
-      "task": "\u2014 KUNCI KAGGLE (perintah Rangga, 23 Nov 20:05 WIB)"
+      "room": "pantry",
+      "state": "idle",
+      "task": null
     },
     {
       "id": "beto",
@@ -42,18 +42,18 @@
       "name": "Neto",
       "role": "CRO",
       "color": "#0f766e",
-      "room": "ruang-kerja",
-      "state": "working",
-      "task": "\u2014 GO-AHEAD DUAL MOMENTUM + PENYEDERHANAAN FLOW (Oto)"
+      "room": "lounge",
+      "state": "idle",
+      "task": null
     },
     {
       "id": "geto",
       "name": "Geto",
       "role": "Backup",
       "color": "#c4b5fd",
-      "room": "studio-konten",
-      "state": "working",
-      "task": "\u2014 KLARIFIKASI SCOPE KONTEN (perintah Rangga, 23 Nov 19:52 WIB)"
+      "room": "taman",
+      "state": "away",
+      "task": null
     },
     {
       "id": "leto",
@@ -87,9 +87,9 @@
       "name": "Deto",
       "role": "Asisten CEO",
       "color": "#64748b",
-      "room": "ruang-kerja",
-      "state": "working",
-      "task": "\u2014 GO-AHEAD DUAL MOMENTUM + PENYEDERHANAAN FLOW (Oto)"
+      "room": "taman",
+      "state": "away",
+      "task": null
     },
     {
       "id": "meto",
