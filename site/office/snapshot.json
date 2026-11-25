@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-25T02:42:16.443710Z",
+  "generated_at": "2026-11-25T04:12:18.152174Z",
   "agents": [
     {
       "id": "rangga",
@@ -24,8 +24,8 @@
       "name": "Beto",
       "role": "CTO",
       "color": "#fc7a24",
-      "room": "pantry",
-      "state": "idle",
+      "room": "taman",
+      "state": "away",
       "task": null
     },
     {
@@ -78,8 +78,8 @@
       "name": "Seto",
       "role": "Dukungan Umum",
       "color": "#ff7f50",
-      "room": "pantry",
-      "state": "idle",
+      "room": "taman",
+      "state": "away",
       "task": null
     },
     {
