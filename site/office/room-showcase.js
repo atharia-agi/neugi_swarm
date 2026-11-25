@@ -543,6 +543,146 @@ const IDLE_STAND_ABD_EXTRA = { rangga: 10, oto: 10, beto: 10, zeto: 15, neto: 20
 /* abduksi ekstra idle berdiri per avatar (chibi 2026-11-25: torso lebar, lengan
    menggantung di depan perut pada 15 deg; total: rangga/oto/beto/leto/atharia 25,
    zeto/ceto 30, neto/geto/seto 35, deto 40, meto/reto 15) */
+/* --- Gerak hidup prosedural (2026-11-25) --------------------------------
+   Rangga: avatar berdiri "mematung" dan tangan mengetik diam — ruangan
+   terasa mati. Lapisan ini menambah gerak KECIL di atas pose yang sudah
+   terverifikasi angkanya, TANPA mengubah pose dasarnya:
+   - Berdiri: napas (spine X ±1.5°, periode 4.5-6 dtk), goyang beban
+     (spine Z ±1.2° dunia, 7-10 dtk + twist Y ±1° + kompensasi bahu
+     2.0° di sisi yang terancam, supaya lengan tetap di luar torso),
+     kepala melayang pelan (yaw ±13° dari 2 sinus tak sinkron +
+     sesekali melirik ±22° dgn ease in/out), lengan ikut napas
+     open-only (bahu +0.6° / siku +0.8° hanya saat membuka — lengan
+     tidak pernah menutup di bawah posisi diam, supaya gate idle
+     tetap lolos di semua fase).
+   - Mengetik: tiap tangan mengangkat lalu mengetuk kembali ke posisi
+     diam (LIFT-ONLY: tangan TIDAK PERNAH turun di bawah posisi diam,
+     karena jarak tangan ke keys cuma 0.002-0.028 — turun 2 mm saja
+     sudah menembus keyboard). L/R bergantian, ritme beda per avatar.
+   Semua murni fungsi waktu (nowMs) + seed dari nama — tanpa state,
+   tanpa akumulasi; pose disusun ulang dari base tiap panggilan
+   (applyPoseWeighted), jadi gerak ini hilang sendiri saat avatar
+   duduk (bukan mengetik) / berjalan / beraktivitas. Amplitudo dijaga
+   supaya gate idle (exit side/side, siku 160-174) dan gate mengetik
+   (inKb, palm ≤20°, separasi ≥0.25) tetap lolos di semua fase —
+   terverifikasi harness (lihat REPORT-idle-life.md). REDUCED
+   (prefers-reduced-motion): timer tidak jalan, pose kembali statis
+   seperti semula. */
+const LIFE_BREATH_DEG = 1.5;   /* napas: spine X */
+const LIFE_SWAY_DEG = 1.2;     /* goyang beban: spine Z (dunia) — 1.5°
+   terbukti makan margin tangan sampai 0.014 (harness idle-life);
+   1.2° + kompensasi bahu di bawah cukup */
+const LIFE_SWAY_COMP_DEG = 2.0; /* kompensasi goyang: bahu sisi yang
+   terancam membuka ekstra (half-wave, searah abduksi) supaya lengan
+   tetap di luar torso saat badan miring — lengan "menggantung"
+   vertikal sementara torso miring, seperti orang sungguhan */
+const LIFE_ARM_BIAS_DEG = 0.5; /* bias abduksi konstan selama idle
+   hidup: lengan menggantung 0.5° lebih terbuka dari pose diam
+   terverifikasi (+0.003 margin) — menutupi sisa efek napas/twist
+   (±0.001-0.002, mis. Seto R sempat 0.010 = tepat di gate tanpa
+   ini). Tidak terlihat (0.5° ≈ 3 mm di tangan), dan hanya aktif
+   saat idle hidup (diskala standW) — pose diam tetap seperti semula. */
+const LIFE_SWAY_COMP_MIN_DEG = 0.5; /* kompensasi kecil sisi "aman":
+   permukaan torso di tinggi tangan ikut bergeser saat miring
+   (Atharia R sempat 0.009 < gate 0.01 tanpa ini) — 0.5° menambah
+   margin ~0.003 di sisi yang tidak terancam */
+const LIFE_TWIST_DEG = 1.0;    /* twist: spine Y (dunia) */
+const LIFE_SHOULDER_DEG = 0.6; /* lengan ikut napas: bahu Z (dunia) */
+const LIFE_ELBOW_DEG = 0.8;    /* lengan ikut napas: siku X lokal */
+const LIFE_HEAD_DRIFT_DEG = 8; /* kepala melayang: sinus 1 */
+const LIFE_HEAD_DRIFT2_DEG = 5; /* kepala melayang: sinus 2 */
+const LIFE_HEAD_PITCH_DEG = 3; /* kepala: angguk pelan */
+const LIFE_GLANCE_DEG = 22;    /* lirikan maks (dibatasi total ±25°) */
+const LIFE_GLANCE_PERIOD_S = 26; /* satu lirikan tiap ~26 dtk per avatar */
+const TYPE_LIFT_FOREARM_DEG = -2.0; /* ketik: angkat tangan via siku
+   (negatif = searah tekuk -30°, tangan naik ~0.009; JANGAN positif:
+   tangan malah turun menembus keys — terverifikasi harness) */
+const TYPE_LIFT_HAND_DEG = 1.0;  /* ketik: kompensasi setengah pitch
+   pergelangan supaya telapak tetap menghadap bawah */
+const TYPE_LIFT_FINGER_DEG = 8;  /* ketik: jari mengangkat (uncurl,
+   lawan dari TYPE_FINGER_CURL_DEG +20) lalu mengetuk kembali */
+/* Seed deterministik dari nama (FNV-1a) — tiap avatar punya fase,
+   periode dan amplitudo sendiri, tidak pernah sinkron. */
+function lifeSeed(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return ((h >>> 0) % 10000) / 10000;
+}
+/* Delta hidup idle berdiri (skala oleh standW di pemanggil). */
+function idleLifeDeltas(name, nowMs) {
+  const roles = JOINT_ROLES[name];
+  if (!roles) return [];
+  const t = nowMs / 1000;
+  const W = Math.PI * 2;
+  const sA = lifeSeed(name), sB = lifeSeed(name + '#2'), sC = lifeSeed(name + '#3'), sD = lifeSeed(name + '#4');
+  const breathT = 4.5 + sA * 1.5; /* 4.5-6 dtk */
+  const swayT = 7 + sB * 3;       /* 7-10 dtk */
+  const breath = Math.sin(W * t / breathT + sA * W);
+  const sway = Math.sin(W * t / swayT + sB * W);
+  const twist = Math.sin(W * t / (swayT + 1.7) + sC * W);
+  /* Napas lengan open-only: lengan hanya MEMBUKA dari posisi diam,
+     tidak pernah menutup ke arah torso (menutup 0.6° saja sudah
+     makan margin 0.004; siku Beto R yang rest-nya 160.39° juga
+     tidak boleh menutup — gate siku min 160°). */
+  const breathOpen = Math.max(0, breath);   /* dada naik: lengan buka */
+  const breathOpenElb = Math.max(0, -breath); /* dada turun: siku buka */
+  /* Kompensasi goyang (half-wave per sisi): +sway mengancam tangan
+     kanan, -sway mengancam tangan kiri — sisi yang terancam saja
+     yang membuka ekstra. */
+  const swayCompL = LIFE_SWAY_COMP_DEG * Math.max(0, -sway) + LIFE_SWAY_COMP_MIN_DEG * Math.max(0, sway);
+  const swayCompR = LIFE_SWAY_COMP_DEG * Math.max(0, sway) + LIFE_SWAY_COMP_MIN_DEG * Math.max(0, -sway);
+  /* Kepala: drift 2 sinus (11 + 17 dtk) + lirikan terjadwal. */
+  const headDrift = LIFE_HEAD_DRIFT_DEG * Math.sin(W * t / 11 + sC * W)
+    + LIFE_HEAD_DRIFT2_DEG * Math.sin(W * t / 17 + sD * W);
+  const gp = LIFE_GLANCE_PERIOD_S;
+  const gIdx = Math.floor(t / gp + sD);
+  const gPhase = (t / gp + sD) - gIdx; /* 0..1 dalam satu periode lirikan */
+  const gOff = 0.1 + 0.7 * lifeSeed(name + '#g' + gIdx); /* posisi jendela */
+  const gTarget = (lifeSeed(name + '#t' + gIdx) - 0.5) * 2 * LIFE_GLANCE_DEG;
+  let glance = 0;
+  if (gPhase >= gOff && gPhase <= gOff + 3 / gp) {
+    const k = (gPhase - gOff) / (3 / gp);
+    glance = gTarget * (k < 0.5 ? smoothstep(k * 2) : smoothstep((1 - k) * 2));
+  }
+  const headYaw = Math.max(-25, Math.min(25, headDrift + glance));
+  const headPitch = LIFE_HEAD_PITCH_DEG * Math.sin(W * t / 13 + sA * W);
+  return [
+    { bone: roles.spine, axis: [1, 0, 0], deg: LIFE_BREATH_DEG * breath },
+    { bone: roles.spine, axis: worldAxisLocal(name, roles.spine, [0, 0, 1]), deg: LIFE_SWAY_DEG * sway },
+    { bone: roles.spine, axis: worldAxisLocal(name, roles.spine, [0, 1, 0]), deg: LIFE_TWIST_DEG * twist },
+    { bone: roles.shoulderL, axis: worldAxisLocal(name, roles.shoulderL, [0, 0, 1]), deg: LIFE_ARM_BIAS_DEG + LIFE_SHOULDER_DEG * breathOpen + swayCompL },
+    { bone: roles.shoulderR, axis: worldAxisLocal(name, roles.shoulderR, [0, 0, 1]), deg: -LIFE_ARM_BIAS_DEG - LIFE_SHOULDER_DEG * breathOpen - swayCompR },
+    { bone: roles.forearmL, axis: [1, 0, 0], deg: LIFE_ELBOW_DEG * breathOpenElb },
+    { bone: roles.forearmR, axis: [1, 0, 0], deg: LIFE_ELBOW_DEG * breathOpenElb },
+    { bone: roles.head, axis: worldAxisLocal(name, roles.head, [0, 1, 0]), deg: headYaw },
+    { bone: roles.head, axis: worldAxisLocal(name, roles.head, [1, 0, 0]), deg: headPitch },
+  ];
+}
+/* Delta gerak mengetik (skala oleh typeW di pemanggil). Lift-only:
+   tiap tangan mengangkat (bump sin^2, 60% siklus) lalu kembali ke
+   posisi diam — tidak pernah di bawah diam. */
+function typingLifeDeltas(name, nowMs) {
+  const roles = JOINT_ROLES[name];
+  if (!roles) return [];
+  const t = nowMs / 1000;
+  const sA = lifeSeed(name), sB = lifeSeed(name + '#2');
+  const period = 1.1 + sA * 0.8; /* 1.1-1.9 dtk per siklus tangan */
+  const tap = (ph) => {
+    const u = (((t / period + ph) % 1) + 1) % 1;
+    return u < 0.6 ? Math.sin(Math.PI * u / 0.6) ** 2 : 0;
+  };
+  const liftL = tap(sB);       /* tangan kiri */
+  const liftR = tap(sB + 0.5); /* kanan setengah siklus beda */
+  const out = [
+    { bone: roles.forearmL, axis: [1, 0, 0], deg: TYPE_LIFT_FOREARM_DEG * liftL },
+    { bone: roles.forearmR, axis: [1, 0, 0], deg: TYPE_LIFT_FOREARM_DEG * liftR },
+    { bone: roles.handL, axis: [1, 0, 0], deg: TYPE_LIFT_HAND_DEG * liftL },
+    { bone: roles.handR, axis: [1, 0, 0], deg: TYPE_LIFT_HAND_DEG * liftR },
+  ];
+  if (roles.fingerL) for (const b of roles.fingerL) out.push({ bone: b, axis: [1, 0, 0], deg: -TYPE_LIFT_FINGER_DEG * liftL });
+  if (roles.fingerR) for (const b of roles.fingerR) out.push({ bone: b, axis: [1, 0, 0], deg: -TYPE_LIFT_FINGER_DEG * liftR });
+  return out;
+}
 /* Sumbu dunia sembarang dalam frame lokal sebuah bone (konjugasi
    dengan base quaternion — seperti sitWorldAxis tapi umum). */
 function worldAxisLocal(name, boneIdx, worldAxis) {
@@ -695,6 +835,9 @@ function applyPoseWeighted(name, nowMs = performance.now()) {
     deltas.push({ bone: roles.forearmL, axis: [1, 0, 0], deg: -IDLE_STAND_ELBOW_DEG * standW });
     deltas.push({ bone: roles.forearmR, axis: [1, 0, 0], deg: -IDLE_STAND_ELBOW_DEG * standW });
     deltas.push({ bone: roles.spine, axis: [1, 0, 0], deg: IDLE_STAND_SPINE_DEG * standW });
+    /* Gerak hidup idle (napas/goyang/kepala) — hanya saat berdiri,
+       diskala standW seperti delta idle lainnya. */
+    for (const d of idleLifeDeltas(name, nowMs)) deltas.push({ ...d, deg: d.deg * standW });
   }
   if (anim.sittingW > 0.001) {
     for (const d of sitDeltas(name, roles)) deltas.push({ ...d, deg: d.deg * anim.sittingW });
@@ -727,6 +870,13 @@ function applyPoseWeighted(name, nowMs = performance.now()) {
     /* Fase 2b: rotasi tangan + tekuk jari (sumbu lokal konstan —
        tidak tergantung urutan; out sudah di fase 2a). */
     addBoneDeltas(name, typingHandDeltas(name, roles, typeW, worldAxisFromCurrent, false));
+  }
+  /* Fase 3: gerak mengetik (lift-only, di atas pose mengetik yang
+     sudah ter-solve — tidak pernah di bawah posisi diam). */
+  if (typeW > 0.001) {
+    const lifeD = typingLifeDeltas(name, nowMs);
+    for (const d of lifeD) d.deg *= typeW;
+    addBoneDeltas(name, lifeD);
   }
 }
 /* Jalur cepat: samakan bobot render dengan target SEKETIKA (dipakai
@@ -3581,6 +3731,46 @@ function startActivityTimer() {
   }, 500);
 }
 
+/* Timer hidup (interval 250 ms, seperti monitor): napas/idle + ketik
+   berubah terus, jadi pose harus disusun ulang berkala. Hanya
+   requestRender bila ada perubahan (signature per avatar, seperti
+   activityTimer). Tidak jalan saat REDUCED / tab tersembunyi / tidak
+   ada agen yang berdiri atau mengetik — 0 render/detik bila semua
+   diam atau duduk. 250 ms (bukan 500) supaya ketikan ~1.5 dtk
+   tersampel 5-6x per siklus; napas ~5 dtk tersampel ~20x. */
+let lifeTimer = null;
+const lifePoseCache = {}; /* name -> signature gerak hidup terakhir */
+function startLifeTimer() {
+  if (lifeTimer) return;
+  lifeTimer = setInterval(() => {
+    if (REDUCED || document.hidden || !state) return;
+    const now = performance.now();
+    let changed = false;
+    for (const st of state.agents) {
+      const name = st.name;
+      if (walks[name]) continue;
+      const anim = poseAnim[name];
+      if (!anim) continue;
+      const typeW = typingWeight(name);
+      const standW = (anim.sittingW <= 0.001 && typeW <= 0.001) ? (1 - (anim.activityW || 0)) : 0;
+      if (standW <= 0.001 && typeW <= 0.001) {
+        if (lifePoseCache[name] !== '') lifePoseCache[name] = '';
+        continue;
+      }
+      const sigParts = [];
+      if (standW > 0.001) for (const d of idleLifeDeltas(name, now)) sigParts.push(d.bone + '=' + (d.deg * standW).toFixed(1));
+      if (typeW > 0.001) for (const d of typingLifeDeltas(name, now)) sigParts.push(d.bone + '=' + (d.deg * typeW).toFixed(1));
+      const sig = sigParts.join(',');
+      if (lifePoseCache[name] !== sig) {
+        lifePoseCache[name] = sig;
+        applyPoseWeighted(name, now);
+        changed = true;
+      }
+    }
+    if (changed) requestRender();
+  }, 250);
+}
+
 /* Pose selebrasi (§5.4.3, bonus): lompat kecil 3x saat tugas
    selesai terdeteksi di polling. */
 function celebrate(name) {
@@ -4675,6 +4865,7 @@ async function init() {
   startAmbient();
   startWorkTimer();
   startActivityTimer();
+  startLifeTimer();
   startClockTimer();
   startMonitorTimer();
   markReady();
