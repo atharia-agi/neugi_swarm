@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-23T04:12:14.323995Z",
+  "generated_at": "2026-11-25T02:42:16.443710Z",
   "agents": [
     {
       "id": "rangga",
@@ -17,52 +17,52 @@
       "color": "#a3ff00",
       "room": "ruang-kerja",
       "state": "working",
-      "task": "[OTO \u2014 TAMBAHAN ATURAN TAG, 22 Nov 13:52 WIB] Lanjutan aturan hemat token tadi:"
+      "task": "\u2014 KUNCI KAGGLE (perintah Rangga, 23 Nov 20:05 WIB)"
     },
     {
       "id": "beto",
       "name": "Beto",
       "role": "CTO",
       "color": "#fc7a24",
-      "room": "ruang-kerja",
-      "state": "working",
-      "task": "\u2014 Konfirmasi SSH key OTO-VM (balasan msg_0623)."
+      "room": "pantry",
+      "state": "idle",
+      "task": null
     },
     {
       "id": "zeto",
       "name": "Zeto",
-      "role": "CSO",
+      "role": "Audit",
       "color": "#ca4f40",
-      "room": "war-room",
-      "state": "working",
-      "task": "\u2014 tugas security deep dive: neugi.com (publik)."
+      "room": "taman",
+      "state": "away",
+      "task": null
     },
     {
       "id": "neto",
       "name": "Neto",
       "role": "CRO",
       "color": "#0f766e",
-      "room": "taman",
-      "state": "away",
-      "task": null
+      "room": "ruang-kerja",
+      "state": "working",
+      "task": "\u2014 GO-AHEAD DUAL MOMENTUM + PENYEDERHANAAN FLOW (Oto)"
     },
     {
       "id": "geto",
       "name": "Geto",
       "role": "Backup",
       "color": "#c4b5fd",
-      "room": "war-room",
+      "room": "studio-konten",
       "state": "working",
-      "task": "\u2014 hunting bounty make.fun lagi, perintah Rangga."
+      "task": "\u2014 KLARIFIKASI SCOPE KONTEN (perintah Rangga, 23 Nov 19:52 WIB)"
     },
     {
       "id": "leto",
       "name": "Leto",
       "role": "Intern",
       "color": "#f4a7b9",
-      "room": "ruang-kerja",
-      "state": "working",
-      "task": "\u2014 TAMBAHAN soal QR (instruksi Rangga):"
+      "room": "taman",
+      "state": "away",
+      "task": null
     },
     {
       "id": "ceto",
@@ -78,27 +78,45 @@
       "name": "Seto",
       "role": "Dukungan Umum",
       "color": "#ff7f50",
-      "room": "taman",
-      "state": "away",
+      "room": "pantry",
+      "state": "idle",
       "task": null
     },
     {
       "id": "deto",
       "name": "Deto",
-      "role": "Dukungan Umum",
+      "role": "Asisten CEO",
       "color": "#64748b",
       "room": "ruang-kerja",
       "state": "working",
-      "task": "\u2014 Jawaban --wallet buat tiny-chess-01"
+      "task": "\u2014 GO-AHEAD DUAL MOMENTUM + PENYEDERHANAAN FLOW (Oto)"
     },
     {
       "id": "meto",
       "name": "Meto",
       "role": "Support",
       "color": "#22c55e",
-      "room": "perpustakaan",
+      "room": "taman",
+      "state": "away",
+      "task": null
+    },
+    {
+      "id": "atharia",
+      "name": "Atharia",
+      "role": "Support",
+      "color": "#a855f7",
+      "room": "taman",
+      "state": "away",
+      "task": null
+    },
+    {
+      "id": "reto",
+      "name": "Reto",
+      "role": "Support",
+      "color": "#ef4444",
+      "room": "ruang-kerja",
       "state": "working",
-      "task": "\u2014 TUGAS dari Rangga: jalanin OCI Always Free retry 24/7 sampai dapet VM. Paket v2 (sudah diperbaiki dari deep research + preflight live)."
+      "task": "\u2014 TOKEN DITERIMA, bagus. IDE 3 DIPILIH: opsi 3, maleo-ai whisper-tiny-id + whisper-base-id. (balasan msg_20261124_0968)"
     }
   ]
 }
