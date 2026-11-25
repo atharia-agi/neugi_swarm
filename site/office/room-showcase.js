@@ -485,10 +485,18 @@ const ARM_FIX_FWD_DEG = 25;   /* bahu maju (world-X), semua pose */
    dengan fix 30° keduanya lolos, margin ≥ +0.035). */
 const ARM_FIX_FWD_EXTRA = { neto: 5, zeto: 5 };
 const TYPE_SPINE_DEG = 15;    /* tambahan condong (sit +10 -> total 25) */
+const TYPE_SPINE_EXTRA = { rangga: 5, zeto: 10, neto: 5, geto: 5 };
+/* condong ekstra mengetik per avatar (chibi reach; lain 0) */
 const TYPE_HEAD_DEG = -10.5;  /* kompensasi kepala (sit +10 -> total ~0) */
 const TYPE_SHOULDER_DEG = 50; /* tambahan maju bahu (fix 25 + 50 = 75 total) */
+const TYPE_SHOULDER_FWD_EXTRA = { rangga: 15, oto: 20, beto: 15, zeto: 25, neto: 15, geto: 15, leto: 20, ceto: 15, seto: 20, deto: 15, meto: 20, atharia: 10, reto: 20 };
+/* maju bahu ekstra mengetik per avatar (chibi reach: lengan pendek + sit drop besar) */
 const TYPE_FOREARM_DEG = -30; /* siku tekuk (forearm lokal X) */
-const DESK_SLIDE = 0.15;      /* geser duduk ke arah meja saat di meja */
+const DESK_SLIDE = 0.25;      /* geser duduk ke arah meja saat di meja
+   (0.15 -> 0.25, chibi 2026-11-25: tangan mencapai keyboard; per-avatar di bawah) */
+const DESK_SLIDE_EXTRA = { ceto: -0.05, neto: 0.05, leto: 0.05, meto: 0.10, beto: 0.10 };
+/* slide akhir: rangga/oto/zeto/geto/seto/deto/atharia/reto 0.25, ceto 0.20,
+   neto/leto 0.30, meto/beto 0.35 (lutut tetap clear >= 0.06 dari meja) */
 /* --- Tugas 1: tangan mengetik (FK probe fk-hands.json, v7) ---
    Telapak harus menghadap bawah (palm 0.0-0.05 deg) + tangan
    terpisah >= 0.25 (separasi 0.265-0.304). Rotasi pergelangan
@@ -504,19 +512,22 @@ const DESK_SLIDE = 0.15;      /* geser duduk ke arah meja saat di meja */
    dibalik + sudut jadi 238.2-360+360=+121.8 — JANGAN -121.8:
    flip sumbu DAN kurangi 360 sekaligus itu transformasi ganda,
    hasilnya rotasi yang salah 243.6 deg). */
-const TYPE_SHOULDER_OUT_DEG = { rangga: 15, oto: 15, beto: 10, zeto: 15, neto: 5, geto: 35, leto: 20, ceto: 20, seto: 10, deto: 15, meto: 15 };
+const TYPE_SHOULDER_OUT_DEG = { rangga: 15, oto: 10, beto: 10, zeto: 20, neto: 15, geto: 20, leto: 15, ceto: 20, seto: 10, deto: 15, meto: 15, atharia: 10, reto: 10 };
+/* diukur ulang fk-hands 2026-11-25 pada skeleton chibi (dulu skeleton lama; beto 0 -> 10 stlh perbaikan delta bahu R) */
 const TYPE_HAND_SOL = {
-  rangga: { axisL: [0.379, 0.91, -0.169], degL: 91.9, axisR: [0.397, -0.905, 0.152], degR: 91.5 },
-  oto: { axisL: [0.478, 0.865, -0.154], degL: 91.6, axisR: [0.471, -0.868, 0.161], degR: 91.8 },
-  beto: { axisL: [0.58, 0.812, -0.065], degL: 93.8, axisR: [0.597, -0.801, 0.046], degR: 93.7 },
-  zeto: { axisL: [0.746, 0.248, 0.618], degL: 112.6, axisR: [0.428, -0.903, 0.045], degR: 92.8 },
-  neto: { axisL: [0.65, 0.748, 0.134], degL: 99.1, axisR: [0.819, -0.386, -0.426], degR: 112.9 },
-  geto: { axisL: [0.408, 0.899, -0.156], degL: 84.2, axisR: [0.292, -0.915, 0.277], degR: 87.0 },
-  leto: { axisL: [0.586, 0.807, -0.068], degL: 88.4, axisR: [0.807, -0.505, -0.307], degR: 93.9 },
-  ceto: { axisL: [0.491, 0.862, -0.127], degL: 87.3, axisR: [0.661, -0.744, -0.093], degR: 86.9 },
-  seto: { axisL: [0.206, 0.964, -0.171], degL: 121.4, axisR: [0.188, -0.965, 0.181], degR: 121.8 },
-  deto: { axisL: [0.531, 0.847, -0.018], degL: 100.6, axisR: [0.543, -0.839, 0.001], degR: 100.6 },
-  meto: { axisL: [0.376, 0.912, -0.163], degL: 97.2, axisR: [0.364, -0.915, 0.174], degR: 97.3 },
+  rangga: { axisL: [0.785, -0.218, 0.58], degL: 84.804, axisR: [0.363, -0.334, -0.87], degR: 88.593 },
+  oto: { axisL: [0.165, 0.985, 0.059], degL: 121.079, axisR: [0.159, -0.986, -0.056], degR: 122.051 },
+  beto: { axisL: [0.304, 0.384, 0.872], degL: 100.323, axisR: [0.447, -0.603, -0.66], degR: 132.114 },
+  zeto: { axisL: [0.22, 0.974, 0.054], degL: 110.31, axisR: [0.456, -0.86, -0.229], degR: 114.663 },
+  neto: { axisL: [0.631, 0.703, 0.327], degL: 128.38, axisR: [0.855, 0.081, -0.513], degR: 177.642 },
+  geto: { axisL: [0.144, 0.989, -0.02], degL: 114.749, axisR: [0.178, -0.984, -0.013], degR: 114.516 },
+  leto: { axisL: [0.153, 0.984, 0.089], degL: 119.761, axisR: [0.164, -0.982, -0.095], degR: 119.874 },
+  ceto: { axisL: [0.058, 0.998, -0.021], degL: 114.167, axisR: [0.066, -0.998, 0.015], degR: 115.366 },
+  seto: { axisL: [0.112, 0.988, 0.104], degL: 111.886, axisR: [0.046, -0.998, -0.052], degR: 113.103 },
+  deto: { axisL: [0.155, 0.988, 0.018], degL: 120.942, axisR: [0.146, -0.989, -0.01], degR: 117.722 },
+  meto: { axisL: [0.032, 0.999, 0.023], degL: 122.774, axisR: [0.041, -0.999, -0.028], degR: 122.803 },
+  atharia: { axisL: [0.875, -0.247, 0.417], degL: 90.671, axisR: [0.72, -0.078, -0.69], degR: 87.459 },
+  reto: { axisL: [0.832, -0.499, -0.241], degL: 119.767, axisR: [0.842, 0.498, 0.209], degR: 119.528 },
 };
 const TYPE_FINGER_CURL_DEG = 20; /* tekuk jari mengetik, hanya yang punya finger bones
    (chibi batch: Rangga/Oto/Ceto/Leto/Reto — Beto/Deto tidak punya) */
@@ -528,6 +539,10 @@ const TYPE_FINGER_CURL_DEG = 20; /* tekuk jari mengetik, hanya yang punya finger
 const IDLE_STAND_ELBOW_DEG = 16;
 const IDLE_STAND_SPINE_DEG = 3;
 const IDLE_STAND_ABD_DEG = 15;
+const IDLE_STAND_ABD_EXTRA = { rangga: 10, oto: 10, beto: 10, zeto: 15, neto: 20, geto: 20, leto: 10, ceto: 15, seto: 20, deto: 25, atharia: 10 };
+/* abduksi ekstra idle berdiri per avatar (chibi 2026-11-25: torso lebar, lengan
+   menggantung di depan perut pada 15 deg; total: rangga/oto/beto/leto/atharia 25,
+   zeto/ceto 30, neto/geto/seto 35, deto 40, meto/reto 15) */
 /* Sumbu dunia sembarang dalam frame lokal sebuah bone (konjugasi
    dengan base quaternion — seperti sitWorldAxis tapi umum). */
 function worldAxisLocal(name, boneIdx, worldAxis) {
@@ -675,8 +690,8 @@ function applyPoseWeighted(name, nowMs = performance.now()) {
      bahu abduksi 15 deg (lengan keluar dari torso). */
   const standW = (anim.sittingW <= 0.001 && typeW <= 0.001) ? (1 - (anim.activityW || 0)) : 0;
   if (standW > 0.001) {
-    deltas.push({ bone: roles.shoulderL, axis: worldAxisLocal(name, roles.shoulderL, [0, 0, 1]), deg: IDLE_STAND_ABD_DEG * standW });
-    deltas.push({ bone: roles.shoulderR, axis: worldAxisLocal(name, roles.shoulderR, [0, 0, 1]), deg: -IDLE_STAND_ABD_DEG * standW });
+    deltas.push({ bone: roles.shoulderL, axis: worldAxisLocal(name, roles.shoulderL, [0, 0, 1]), deg: (IDLE_STAND_ABD_DEG + (IDLE_STAND_ABD_EXTRA[name] || 0)) * standW });
+    deltas.push({ bone: roles.shoulderR, axis: worldAxisLocal(name, roles.shoulderR, [0, 0, 1]), deg: -(IDLE_STAND_ABD_DEG + (IDLE_STAND_ABD_EXTRA[name] || 0)) * standW });
     deltas.push({ bone: roles.forearmL, axis: [1, 0, 0], deg: -IDLE_STAND_ELBOW_DEG * standW });
     deltas.push({ bone: roles.forearmR, axis: [1, 0, 0], deg: -IDLE_STAND_ELBOW_DEG * standW });
     deltas.push({ bone: roles.spine, axis: [1, 0, 0], deg: IDLE_STAND_SPINE_DEG * standW });
@@ -685,7 +700,7 @@ function applyPoseWeighted(name, nowMs = performance.now()) {
     for (const d of sitDeltas(name, roles)) deltas.push({ ...d, deg: d.deg * anim.sittingW });
   }
   if (typeW > 0.001) {
-    deltas.push({ bone: roles.spine, axis: [1, 0, 0], deg: TYPE_SPINE_DEG * typeW });
+    deltas.push({ bone: roles.spine, axis: [1, 0, 0], deg: (TYPE_SPINE_DEG + (TYPE_SPINE_EXTRA[name] || 0)) * typeW });
     deltas.push({ bone: roles.head, axis: [1, 0, 0], deg: TYPE_HEAD_DEG * typeW });
   }
   if (anim.activityW > 0.001 && anim.activity) {
@@ -698,8 +713,8 @@ function applyPoseWeighted(name, nowMs = performance.now()) {
      bahu maju tambahan + siku tekuk mengetik. */
   if (typeW > 0.001) {
     addBoneDeltas(name, [
-      { bone: roles.shoulderL, axis: worldAxisFromCurrent(name, roles.shoulderL, [1, 0, 0]), deg: -TYPE_SHOULDER_DEG * typeW },
-      { bone: roles.shoulderR, axis: worldAxisFromCurrent(name, roles.shoulderR, [1, 0, 0]), deg: -TYPE_SHOULDER_DEG * typeW },
+      { bone: roles.shoulderL, axis: worldAxisFromCurrent(name, roles.shoulderL, [1, 0, 0]), deg: -(TYPE_SHOULDER_DEG + (TYPE_SHOULDER_FWD_EXTRA[name] || 0)) * typeW },
+      { bone: roles.shoulderR, axis: worldAxisFromCurrent(name, roles.shoulderR, [1, 0, 0]), deg: -(TYPE_SHOULDER_DEG + (TYPE_SHOULDER_FWD_EXTRA[name] || 0)) * typeW },
       { bone: roles.forearmL, axis: [1, 0, 0], deg: TYPE_FOREARM_DEG * typeW },
       { bone: roles.forearmR, axis: [1, 0, 0], deg: TYPE_FOREARM_DEG * typeW },
       /* Tugas 1: bahu ke luar — sumbu dihitung di array yang SAMA
@@ -830,8 +845,8 @@ function ensurePoseBlend() {
           const pos = avatarPos[name];
           if (pos && agentAtDesk(name)) {
             const rot = avatarSlotRot[name] || 0;
-            g.position.x = pos.x + Math.sin(rot) * DESK_SLIDE * anim.sittingW;
-            g.position.z = pos.z + Math.cos(rot) * DESK_SLIDE * anim.sittingW;
+            g.position.x = pos.x + Math.sin(rot) * (DESK_SLIDE + (DESK_SLIDE_EXTRA[name] || 0)) * anim.sittingW;
+            g.position.z = pos.z + Math.cos(rot) * (DESK_SLIDE + (DESK_SLIDE_EXTRA[name] || 0)) * anim.sittingW;
           } else if (pos) {
             g.position.x = pos.x;
             g.position.z = pos.z;
@@ -2693,7 +2708,9 @@ const IDLE_ARM_DELTAS = {
   },
   beto: {
     shoulderL: { axis: [-0.7071, -0.0000, -0.7071], deg: 49.09 },
-    shoulderR: { axis: [-0.7646, 0.0347, -0.6436], deg: 40.40 },
+    shoulderR: { axis: [-0.974, -0.197, 0.11], deg: 64.187 }, /* DIPERBAIKI 2026-11-25:
+       delta lama salah ukur — lengan R menggantung 46.9 deg menyimpang dari cermin L
+       (upperFrontal 67 deg, tangan R 0.09 lebih tinggi); delta baru = cermin L (err 0.02 deg) */
     forearmL: { axis: [0.2836, 0.1169, -0.9518], deg: 15.30 },
     forearmR: { axis: [0.9423, 0.0770, -0.3259], deg: 6.79 },
   },
@@ -3267,12 +3284,13 @@ function setAvatarPos(name, slot, room, sitting = false, opts = {}) {
   g.position.z = slot.z;
   /* Geser duduk ke meja (DESK_SLIDE) bila duduk di meja: avatar
      "nyurung" mendekati meja supaya tangan mencapai keyboard
-     (fk-sweep2: lutut tidak menembus meja pada 0.15). Posisi logis
+     (fk-sweep2: lutut tidak menembus meja pada 0.15; chibi 2026-11-25: slide 0.20-0.35,
+     lutut tetap clear >= 0.06 dari meja). Posisi logis
      (avatarPos) tetap di slot; hanya posisi render yang digeser. */
   if (sitting && isDeskSlotFn(room, slot)) {
     const rot = (slot && typeof slot.rot === 'number') ? slot.rot : 0;
-    g.position.x += Math.sin(rot) * DESK_SLIDE;
-    g.position.z += Math.cos(rot) * DESK_SLIDE;
+    g.position.x += Math.sin(rot) * (DESK_SLIDE + (DESK_SLIDE_EXTRA[name] || 0));
+    g.position.z += Math.cos(rot) * (DESK_SLIDE + (DESK_SLIDE_EXTRA[name] || 0));
   }
   g.scale.set(1, 1, 1);
   const turn = avatarMeshes[name];
@@ -3444,10 +3462,10 @@ function walkAgent(name, toSlot, toRoom, opts = {}) {
         const typeW = (targetSit && isDeskSlotFn(toRoom, toSlot))
           ? sitW * (1 - ((poseAnim[name] && poseAnim[name].activityW) || 0)) : 0;
         if (typeW > 0.001) {
-          deltas.push({ bone: roles.spine, axis: [1, 0, 0], deg: TYPE_SPINE_DEG * typeW });
+          deltas.push({ bone: roles.spine, axis: [1, 0, 0], deg: (TYPE_SPINE_DEG + (TYPE_SPINE_EXTRA[name] || 0)) * typeW });
           deltas.push({ bone: roles.head, axis: [1, 0, 0], deg: TYPE_HEAD_DEG * typeW });
-          deltas.push({ bone: roles.shoulderL, axis: worldAxisLocal(name, roles.shoulderL, [1, 0, 0]), deg: -TYPE_SHOULDER_DEG * typeW });
-          deltas.push({ bone: roles.shoulderR, axis: worldAxisLocal(name, roles.shoulderR, [1, 0, 0]), deg: -TYPE_SHOULDER_DEG * typeW });
+          deltas.push({ bone: roles.shoulderL, axis: worldAxisLocal(name, roles.shoulderL, [1, 0, 0]), deg: -(TYPE_SHOULDER_DEG + (TYPE_SHOULDER_FWD_EXTRA[name] || 0)) * typeW });
+          deltas.push({ bone: roles.shoulderR, axis: worldAxisLocal(name, roles.shoulderR, [1, 0, 0]), deg: -(TYPE_SHOULDER_DEG + (TYPE_SHOULDER_FWD_EXTRA[name] || 0)) * typeW });
           deltas.push({ bone: roles.forearmL, axis: [1, 0, 0], deg: TYPE_FOREARM_DEG * typeW });
           deltas.push({ bone: roles.forearmR, axis: [1, 0, 0], deg: TYPE_FOREARM_DEG * typeW });
           /* Tugas 1 (transien, single-phase — pose akhir persis
