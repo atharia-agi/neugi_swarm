@@ -2787,7 +2787,10 @@ function buildLabAI() {
      sisi), lebih tinggi (1.7), pintu GELAP sebagai kotak (bukan
      plane), aksen volt: strip LED atas + gagang + display.
      Footprint TETAP 1.4x0.9 (rect tabrakan test_board.py
-     (15.6, 0.55, 17.0, 1.45) tetap berlaku). */
+     (15.6, 0.55, 17.0, 1.45) tetap berlaku). Display: angka
+     "37.0°C" dari canvas texture (cek visual 26 Nov 2026:
+     kotak volt polos lama tidak terbaca) — gelap + digit volt,
+     tetap dalam palet krem/volt. */
   const incubator = box(1.4, 1.7, 0.9, 0xf3eee2);
   incubator.position.set(16.3, 0.85, 1.0);
   scene.add(incubator);
@@ -2805,9 +2808,15 @@ function buildLabAI() {
     { emissive: 0xa3ff00, emissiveIntensity: 0.8 });
   incubatorHandle.position.set(16.68, 0.82, 1.53);
   scene.add(incubatorHandle);
-  const incubatorDisplay = box(0.2, 0.15, 0.04, 0xa3ff00,
-    { emissive: 0xa3ff00, emissiveIntensity: 0.8 });
-  incubatorDisplay.position.set(15.95, 1.22, 1.53);
+  const incubatorDisplayTex = textTexture(256, 128, (g, w, h) => {
+    g.fillStyle = '#0f1115'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#a3ff00'; g.lineWidth = 6; g.strokeRect(5, 5, w - 10, h - 10);
+    g.fillStyle = '#a3ff00'; g.font = 'bold 58px ui-monospace, monospace';
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText('37.0°C', w / 2, h / 2 + 4);
+  });
+  const incubatorDisplay = panelPlane(0.44, 0.22, incubatorDisplayTex);
+  incubatorDisplay.position.set(16.05, 1.22, 1.545);
   scene.add(incubatorDisplay);
   /* Tanaman sudut tetap. */
   scene.add(place(cyl(0.45, 0.35, 0.5, C.pot), 20, 0.25, 13));
@@ -3229,6 +3238,8 @@ function updateBubbles() {
      < 0.9) = teks tugas disembunyikan — pill kecil tidak menumpuk
      jauh di atas avatarnya. */
   const farZoom = cameraMode !== 'follow' && camZoom < 0.9;
+  const w = wrap.clientWidth || 800;
+  const h = wrap.clientHeight || 600;
   bubbleLayer.classList.toggle('overview', cameraMode !== 'follow');
   bubbleLayer.classList.toggle('far-zoom', farZoom);
   /* Batas tampil (§5.12 / 11/10): maks 3 pill ber-TEKS di canvas —
@@ -3306,43 +3317,72 @@ function updateBubbles() {
        seperti posisi sprite lama; 0.45 di atas puncak kepala (1.6),
        jadi tidak menutupi wajah. */
     const p = projectToScreen(pos.x, 2.05 + (g.position.y || 0), pos.z);
+    /* Follow mode (cek visual 26 Nov 2026, perbaikan 12:30 WIB):
+       pill agen JAUH yang anchornya jatuh di luar layar JANGAN
+       dijepit ke tepi (clamp lama menumpuk semua label jauh di
+       tepi atas/kanan, lepas dari avatarnya) — sembunyikan saja.
+       Pill di belakang kamera juga tidak ikut pass anti-tumpuk
+       (koordinat proyeksinya terbalik, dulu ikut mendorong pill
+       lain). Di overview semua agen memang di dalam frustum, jadi
+       aturan ini praktis hanya kena follow mode. Oklusi dinding:
+       tidak ada dinding interior (ruangan open-plan, cuma 4
+       dinding luar) — agen di ruangan lain tidak tertutup dinding,
+       hanya bisa jauh/off-screen, sudah ditangkap aturan ini. */
+    if (p.behind || (cameraMode === 'follow' && (p.x < -24 || p.x > w + 24 || p.y < -24 || p.y > h + 24))) {
+      el.style.display = 'none';
+      continue;
+    }
     el.dataset.px = p.x.toFixed(1);
     el.dataset.py = p.y.toFixed(1);
     el.style.left = p.x + 'px';
     el.style.top = p.y + 'px';
-    el.style.visibility = p.behind ? 'hidden' : 'visible';
+    el.style.visibility = 'visible';
     placed.push(el);
   }
-  /* Anti-tumpuk + clamp (satu pass): tiap bubble ditempatkan berurutan.
-     Bila bertumpuk dengan yang sudah ditempatkan, geser ke ATAS 42px;
-     bila tidak ada ruang di atas (mentok tepi atas 34px), geser ke
-     BAWAH 42px — lebih baik menutupi sebagian kepala avatar sebentar
-     daripada dua bubble saling menimpa tak terbaca. Clamp kiri/kanan
-     setengah lebar bubble (~95px). */
-  const w = wrap.clientWidth || 800;
-  const step = farZoom ? 30 : 42; /* langkah geser anti-tumpuk */
-  const vGap = farZoom ? 26 : 36;
-  const placedXY = [];
-  for (const el of placed) {
-    let x = Math.min(Math.max(parseFloat(el.dataset.px), 95), Math.max(95, w - 95));
-    let y = Math.max(parseFloat(el.dataset.py), 34);
+/* Anti-tumpuk berbasis RECT + tinggi pill ASLI (cek visual 26 Nov
+   2026, perbaikan 12:30 WIB): vGap tetap 36px dulu menumpuk karena
+   pill ber-TEKS bisa ~48px tingginya — dua pill yang top-nya 42px
+   tetap saling menimpa. Sekarang tiap pill diukur
+   (offsetWidth/offsetHeight) dan diuji tumpang-tindih sebagai rect
+   (anchor = tengah-bawah pill, translate(-50%,-100%)); yang
+   bertabrakan digeser ke ATAS sampai bersih, maks 150px di atas
+   anchornya; bila mentok, geser ke BAWAH rect yang ditabrak.
+   Tinggi asli otomatis menangkap pill yang mengecil di far-zoom
+   (teks tugas disembunyikan) — tanpa angka khusus lagi. Clamp
+   kiri/kanan memakai setengah lebar pill, bukan 95px tetap. */
+  const GAP = 4; /* celah antar pill */
+  const MAX_UP = 150; /* geser ke atas maks di atas anchor */
+  const placedRects = [];
+  const ordered = placed.slice().sort((a, b) => parseFloat(a.dataset.py) - parseFloat(b.dataset.py));
+  for (const el of ordered) {
+    const pw = el.offsetWidth || 190;
+    const ph = el.offsetHeight || 28;
+    let x = Math.min(Math.max(parseFloat(el.dataset.px), pw / 2 + GAP), Math.max(pw / 2 + GAP, w - pw / 2 - GAP));
+    let y = Math.min(Math.max(parseFloat(el.dataset.py), ph + GAP), h - GAP);
     const anchorY = y;
+    const rectOf = () => ({ x0: x - pw / 2, x1: x + pw / 2, y0: y - ph, y1: y });
+    const hits = (r) => placedRects.filter((q) => r.x0 < q.x1 + GAP && r.x1 > q.x0 - GAP && r.y0 < q.y1 + GAP && r.y1 > q.y0 - GAP);
     let guard = 0;
-    let moved = true;
-    while (moved && guard < 12) {
-      moved = false; guard++;
-      for (const p of placedXY) {
-        if (Math.abs(p.x - x) < 100 && Math.abs(p.y - y) < vGap) {
-          const up = p.y - step;
-          /* Jangan dorong pill lebih dari ~90px di atas anchornya —
-             dulu bisa naik 12x42px sampai lepas dari avatarnya
-             (cek visual 26 Nov 2026, zoom jauh). */
-          y = (up >= 34 && anchorY - up <= 90) ? up : p.y + step;
-          moved = true;
-        }
-      }
+    let clash = hits(rectOf());
+    while (clash.length && guard < 24) {
+      guard++;
+      /* Kolom = semua pill yang tumpang-tindih horizontal dengan
+         pill ini (x tidak berubah selama loop). Pindah ke atas
+         SEMUA rect kolom, atau — bila itu terlalu jauh dari anchor
+         — ke bawah SEMUA rect kolom. Kedua posisi dijamin bebas
+         tabrakan dengan kolom (bukan cuma dengan yang sedang
+         ditabrak — itu bisa osilasi naik-turun), jadi loop
+         berhenti. */
+      const column = placedRects.filter((q) => rectOf().x0 < q.x1 + GAP && rectOf().x1 > q.x0 - GAP);
+      const upY = Math.min(...column.map((q) => q.y0 - GAP));
+      /* Naik hanya bila muat di atas tepi layar DAN masih dalam
+         MAX_UP dari anchor; kalau tidak, turun ke bawah kolom. */
+      const upFits = upY >= ph + GAP && (anchorY - upY <= MAX_UP);
+      y = upFits ? upY : Math.max(...column.map((q) => q.y1 + GAP + ph));
+      y = Math.min(Math.max(y, ph + GAP), h - GAP);
+      clash = hits(rectOf());
     }
-    placedXY.push({ x, y });
+    placedRects.push(rectOf());
     el.style.left = x + 'px';
     el.style.top = y + 'px';
   }
@@ -4494,6 +4534,16 @@ function bindInput() {
       const dy = e.clientY - dragLast.y;
       dragMoved += Math.abs(dx) + Math.abs(dy);
       if (cameraMode === 'follow') {
+        /* followYaw SENGAJA tanpa clamp (cek visual 26 Nov 2026):
+           clamp ±1.15 seperti azimuth overview akan mengunci kamera
+           ke setengah-belakang agen (followYaw=0 = di belakang
+           agen) sehingga wajah/depan agen tidak pernah terlihat —
+           padahal follow memang untuk melihat agen. Alasan clamp
+           overview (orbit 360° menampilkan punggung gedung: dinding
+           utara putih kosong + punggung TV hitam) tidak berlaku di
+           sini: kamera follow dekat dengan agen, di dalam ruangan,
+           dan posisinya sudah dijepit ke dalam denah
+           (updateFollowCamera). */
         followYaw -= dx * 0.005;
         followPitch = Math.min(1.25, Math.max(0.08, followPitch + dy * 0.003));
       } else if (panMode) {
