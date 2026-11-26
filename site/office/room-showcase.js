@@ -2724,11 +2724,23 @@ function buildLabAI() {
   const bottleColors = [0xd9a441, 0x0f766e, 0xca4f40, 0xf3eee2, 0x7fb069, 0xfc7a24];
   bottleColors.forEach((col, i) => {
     const z = 3.6 + i * 1.3;
-    scene.add(place(cyl(0.09, 0.11, 0.45, col), 20.18, 0.68, z));
-    scene.add(place(cyl(0.04, 0.04, 0.16, col), 20.18, 0.98, z));
-    scene.add(place(cyl(0.09, 0.11, 0.45, col), 20.18, 1.28, z + 0.6));
-    scene.add(place(cyl(0.04, 0.04, 0.16, col), 20.18, 1.58, z + 0.6));
+    scene.add(place(cyl(0.09, 0.11, 0.45, col), 20.04, 0.68, z));
+    scene.add(place(cyl(0.04, 0.04, 0.16, col), 20.04, 0.98, z));
+    scene.add(place(cyl(0.09, 0.11, 0.45, col), 20.04, 1.28, z + 0.6));
+    scene.add(place(cyl(0.04, 0.04, 0.16, col), 20.04, 1.58, z + 0.6));
   });
+  /* Rak reagen YANG KELIHATAN (cek visual 26 Nov 2026): botol lama
+     setengah tertanam di muka rak datar (x=20.18, muka rak 20.15)
+     tanpa papan — kebaca pajangan dinding. Sekarang: papan belakang
+     gelap + 2 papan rak menonjol + braket, botol digeser ke barat
+     (x=20.04) supaya berdiri DI ATAS papan, bukan di dalam dinding. */
+  scene.add(place(box(0.04, 1.5, 8.4, 0x7a5c38), 20.14, 1.0, 7));
+  for (const shelfY of [0.42, 1.02]) {
+    scene.add(place(box(0.34, 0.06, 8.0, 0x7a5c38), 20.08, shelfY, 7));
+    for (const bz of [3.6, 7.0, 10.4]) {
+      scene.add(place(box(0.34, 0.14, 0.1, 0x7a5c38), 20.08, shelfY - 0.1, bz));
+    }
+  }
   /* Meja lab utama dari slot bermeja (data-driven) + pad duduk. */
   const room = ROOMS['lab-ai'];
   for (const s of room.slots) {
@@ -2767,18 +2779,36 @@ function buildLabAI() {
   scene.add(place(sph(0.12, 0x0f766e), 18.15, 0.62, 7.5));
   scene.add(place(cyl(0.04, 0.04, 0.16, 0x0f766e), 18.15, 0.78, 7.5));
   /* Inkubator di strip utara (16.3, 1.0) — jauh dari pintu (x=18)
-     + lane (x=19.4). */
-  const incubator = box(1.4, 1.3, 0.9, 0x2e2a26);
-  incubator.position.set(16.3, 0.65, 1.0);
+     + lane (x=19.4). DIAGNOSIS cek visual 26 Nov 2026 (tidak
+     kelihatan dari depan maupun setelah orbit 180°): badan lama
+     1.4x1.3 arang gelap 0x2e2a26 + pintu PlaneGeometry satu-sisi
+     (hilang dari belakang) — terlalu kecil + terlalu gelap di
+     skala overview. PERBAIKAN: badan KREM (kelihatan dari semua
+     sisi), lebih tinggi (1.7), pintu GELAP sebagai kotak (bukan
+     plane), aksen volt: strip LED atas + gagang + display.
+     Footprint TETAP 1.4x0.9 (rect tabrakan test_board.py
+     (15.6, 0.55, 17.0, 1.45) tetap berlaku). */
+  const incubator = box(1.4, 1.7, 0.9, 0xf3eee2);
+  incubator.position.set(16.3, 0.85, 1.0);
   scene.add(incubator);
-  const incubatorDoor = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.9, 0.8), mat('incubator-door', 0xf3eee2));
-  incubatorDoor.position.set(16.3, 0.65, 1.46);
+  const incubatorCap = box(1.44, 0.08, 0.94, 0x2e2a26);
+  incubatorCap.position.set(16.3, 1.74, 1.0);
+  scene.add(incubatorCap);
+  const incubatorDoor = box(1.0, 1.1, 0.06, 0x2e2a26);
+  incubatorDoor.position.set(16.3, 0.82, 1.48);
   scene.add(incubatorDoor);
-  const incubatorLed = box(1.4, 0.06, 0.06, 0xa3ff00,
+  const incubatorLed = box(1.4, 0.08, 0.06, 0xa3ff00,
     { emissive: 0xa3ff00, emissiveIntensity: 1.0 });
-  incubatorLed.position.set(16.3, 1.28, 1.46);
+  incubatorLed.position.set(16.3, 1.62, 1.48);
   scene.add(incubatorLed);
+  const incubatorHandle = box(0.07, 0.55, 0.05, 0xa3ff00,
+    { emissive: 0xa3ff00, emissiveIntensity: 0.8 });
+  incubatorHandle.position.set(16.68, 0.82, 1.53);
+  scene.add(incubatorHandle);
+  const incubatorDisplay = box(0.2, 0.15, 0.04, 0xa3ff00,
+    { emissive: 0xa3ff00, emissiveIntensity: 0.8 });
+  incubatorDisplay.position.set(15.95, 1.22, 1.53);
+  scene.add(incubatorDisplay);
   /* Tanaman sudut tetap. */
   scene.add(place(cyl(0.45, 0.35, 0.5, C.pot), 20, 0.25, 13));
   scene.add(place(sph(0.55, C.plant), 20, 1.0, 13));
@@ -3194,6 +3224,13 @@ function projectToScreen(x, y, z) {
 
 function updateBubbles() {
   if (!state || !camera || !bubbleLayer) return;
+  /* Kelas ukuran pill (cek visual 26 Nov 2026): overview = pill
+     tugas dikecilkan (max-width 150px, CSS); zoom jauh (camZoom
+     < 0.9) = teks tugas disembunyikan — pill kecil tidak menumpuk
+     jauh di atas avatarnya. */
+  const farZoom = cameraMode !== 'follow' && camZoom < 0.9;
+  bubbleLayer.classList.toggle('overview', cameraMode !== 'follow');
+  bubbleLayer.classList.toggle('far-zoom', farZoom);
   /* Batas tampil (§5.12 / 11/10): maks 3 pill ber-TEKS di canvas —
      speech dulu (terbaru), lalu status (terbaru). Pill mood-only
      tidak dihitung (tampil untuk semua agen). */
@@ -3283,18 +3320,24 @@ function updateBubbles() {
      daripada dua bubble saling menimpa tak terbaca. Clamp kiri/kanan
      setengah lebar bubble (~95px). */
   const w = wrap.clientWidth || 800;
+  const step = farZoom ? 30 : 42; /* langkah geser anti-tumpuk */
+  const vGap = farZoom ? 26 : 36;
   const placedXY = [];
   for (const el of placed) {
     let x = Math.min(Math.max(parseFloat(el.dataset.px), 95), Math.max(95, w - 95));
     let y = Math.max(parseFloat(el.dataset.py), 34);
+    const anchorY = y;
     let guard = 0;
     let moved = true;
     while (moved && guard < 12) {
       moved = false; guard++;
       for (const p of placedXY) {
-        if (Math.abs(p.x - x) < 100 && Math.abs(p.y - y) < 36) {
-          const up = p.y - 42;
-          y = up >= 34 ? up : p.y + 42;
+        if (Math.abs(p.x - x) < 100 && Math.abs(p.y - y) < vGap) {
+          const up = p.y - step;
+          /* Jangan dorong pill lebih dari ~90px di atas anchornya —
+             dulu bisa naik 12x42px sampai lepas dari avatarnya
+             (cek visual 26 Nov 2026, zoom jauh). */
+          y = (up >= 34 && anchorY - up <= 90) ? up : p.y + step;
           moved = true;
         }
       }
@@ -4325,6 +4368,7 @@ function startPolling() {
    Berhenti saat fullscreen / tab hidden / prefers-reduced-motion. */
 let heroTimer = null;
 let heroRotateEnabled = true; /* mount({autoRotate:false}) mematikan */
+let heroRotateDir = 1; /* arah sapuan auto-rotate hero — bolak-balik di clamp azimuth ±1.15 */
 function startHeroRotate() {
   if (heroTimer || REDUCED || !heroRotateEnabled) return;
   heroTimer = setInterval(() => {
@@ -4332,7 +4376,9 @@ function startHeroRotate() {
     /* Tugas 5: jeda 5 dtk sesudah interaksi user — auto-rotate
        tidak boleh melawan drag di hero. */
     if (Date.now() - heroLastInteract < 5000) return;
-    azimuth += 0.015;
+    azimuth += 0.015 * heroRotateDir;
+    if (azimuth >= 1.15) { azimuth = 1.15; heroRotateDir = -1; }
+    else if (azimuth <= -1.15) { azimuth = -1.15; heroRotateDir = 1; }
     updateCamera();
     requestRender();
   }, 120);
@@ -4465,10 +4511,14 @@ function bindInput() {
         camPan.z = Math.min(12, Math.max(-12, camPan.z + dx * k * rz + dy * k * fz));
         updateCamera();
       } else {
-        /* Tugas 5: orbit 360 deg bebas (clamp lama ±1.1 rad dihapus)
-           + tilt: drag vertikal mengubah elevasi, konvensi sama
-           seperti followPitch (drag bawah = kamera naik). */
-        azimuth -= dx * 0.005;
+        /* Orbit di-clamp ±1.15 rad (kamera tetap di sisi selatan,
+           clamp lama ±1.1 rad dari sebelum Tugas 5 dipulihkan):
+           orbit 360 deg bebas ternyata menampilkan sisi belakang
+           gedung — dinding utara putih kosong + punggung TV hitam
+           memenuhi layar (cek visual 26 Nov 2026). Tilt: drag
+           vertikal mengubah elevasi, konvensi sama seperti
+           followPitch (drag bawah = kamera naik). */
+        azimuth = Math.min(1.15, Math.max(-1.15, azimuth - dx * 0.005));
         camElev = Math.min(1.25, Math.max(0.25, camElev + dy * 0.003));
         updateCamera();
       }
@@ -4548,6 +4598,12 @@ function bindInput() {
   canvas.addEventListener('pointerup', up);
   canvas.addEventListener('pointercancel', (e) => { pointers.delete(e.pointerId); dragLast = null; panLast = null; });
   canvas.addEventListener('wheel', (e) => {
+    /* Scroll halaman MENANG (cek visual 26 Nov 2026): wheel biasa
+       dulu preventDefault + zoom — scroll halaman mati di atas
+       kanvas. Sekarang wheel biasa dibiarkan ke halaman (tanpa
+       preventDefault, tanpa zoom). Zoom hanya via Ctrl/Cmd+wheel
+       (gestur pinch trackpad) atau pinch 2 jari di layar sentuh. */
+    if (!e.ctrlKey && !e.metaKey) return;
     e.preventDefault();
     heroLastInteract = Date.now(); /* Tugas 5: jeda auto-rotate hero */
     if (cameraMode === 'follow') {

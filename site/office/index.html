@@ -54,6 +54,15 @@
   .bubble.status.stale { opacity: .55; }
   .bubble.status.boss { border: 2px solid #a3ff00; }
   .bubble.speech { border-color: #a3ff00; }
+  /* Overview: pill tugas dikecilkan supaya tidak menutupi ruangan
+     (cek visual 26 Nov 2026 — pill "REVIEW plan LoRA…" menutupi
+     sebagian besar lab di tampilan overview). */
+  #roomBubbles.overview .bubble { max-width: 150px; }
+  /* Zoom jauh: sembunyikan teks tugas, tinggal nama + wajah —
+     pill kecil = tidak menumpuk jauh dari avatarnya. */
+  #roomBubbles.far-zoom .bubble { max-width: 120px; font-size: .7rem; padding: .1rem .3rem; }
+  #roomBubbles.far-zoom .bubble .txt,
+  #roomBubbles.far-zoom .bubble .time { display: none; }
   .room-fallback { padding: 1rem; color: #9aa0a6; }
   #roomStatus {
     font-size: .9rem; color: #9aa0a6; padding: .4rem .8rem;
