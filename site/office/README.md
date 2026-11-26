@@ -58,7 +58,7 @@ produksi) TIDAK disentuh.
   ditebak). Id yang tidak dikenal dilewati.
 - `room`: id ruangan. Ruangan yang dikenal: `kantor-rangga`,
   `ruang-rapat`, `ruang-kerja`, `lounge`, `pantry`, `taman`,
-  `studio-konten`, `war-room`, `perpustakaan`. Id ruangan lain yang
+  `studio-konten`, `war-room`, `lab-ai`. Id ruangan lain yang
   valid tetap diterima apa adanya (viewer tidak mengarang posisi).
 - `state`: `working` | `meeting` | `idle` | `away`. Nilai lain =
   `idle`.

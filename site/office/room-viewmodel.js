@@ -13,7 +13,7 @@
    DENAH 0.4.9 (Worker F): floor plan 42x28 (dulu 26x18), 9 ruang
    (dulu 6): 4 utara (kantor-rangga, pantry, lounge,
    studio-konten) + 5 selatan (ruang-kerja, ruang-rapat, taman,
-   war-room, perpustakaan). */
+   war-room, lab-ai). */
 
 /* 13 agen yang dikenal (label/peran/warna = AVATAR_PARTS di
    index.html + warna identitas M1/M2). Agen di luar daftar ini
@@ -156,8 +156,8 @@ export const ROOMS = {
       { x: 12, z: 9.4, rot: Math.PI, lane: 9.6 },
     ],
   },
-  perpustakaan: {
-    label: 'Perpustakaan',
+  'lab-ai': {
+    label: 'Lab AI',
     door: { x: 18, z: GANG_Z },
     lane: 19.4,
     legDy: -1,
@@ -212,22 +212,34 @@ function lower(s) {
      'backtest' / 'crypto' (Neto; 'Crypto scouting' Geto),
      'pentest' / 'threat' / 'ospek' (intel Zeto: 'Ospek #2
      NGINX2Root + studi MCP Rinwall'), 'security' / 'bounty'.
-   - perpustakaan: 'Audit tugas terbuka di board' (Leto),
-     'Audit lead IG & Threads' (Ceto), 'laporan' / 'analisis'
-     (laporan mingguan Leto), 'riset' / 'studi' / 'scouting'
-     (tanpa 'crypto' — 'crypto' dimenangkan war-room duluan).
+   - lab-ai: 'REVIEW plan LoRA LFM3 v2' (Reto/Geto, 26 Nov),
+     'SWARAI' / 'Nano' / 'Duplex' (kerja model suara), 'training' /
+     'checkpoint' / 'epoch' (latihan model), 'eksperimen' /
+     'kaggle' / 'benchmark' (eksperimen Reto di Kaggle).
+     DIHAPUS dari routing tema (26 Nov 2026, overhaul Lab AI):
+     'audit', 'riset', 'research', 'baca', 'scouting', 'analisis',
+     'laporan', 'studi', 'lead', 'intel', 'evaluasi', 'review',
+     'dokumentasi' — kata-kata generik ini dulu menumpuk 5 agen di
+     perpustakaan (snapshot 26 Nov 09:57 WIB: beto/zeto/geto/ceto/
+     reto semua di sana karena judul tugas mereka mengandung kata
+     itu). Tugas bertema generik kini jatuh ke lane home
+     masing-masing (aturan 6, LANE_HOME) — Beto/Ceto/Geto ke
+     ruang-kerja, Zeto ke war-room; hanya kerja lab/ML yang masuk
+     Lab AI. 'audit keamanan' tetap frasa war-room (didahulukan
+     sebelum generik).
    Grounding dicatat apa adanya: saat pengecekan (20 Nov 2026,
    ~22:30 WIB) daftar tugas board mengembalikan 0 tugas
    (activity counts.tasks = 0), jadi kata kunci di-ground ke
    judul historis yang tercatat di MEMORY.md + judul fixture
    (yang mencerminkan tugas board nyata) — BUKAN karangan.
    Pencocokan: substring case-insensitive pada judul tugas aktif.
-   Prioritas first-match: konten -> war-room -> perpustakaan
+   Prioritas first-match: konten -> war-room -> lab-ai
    (lihat resolveRoom). Overlap yang diputus prioritas:
    'Crypto scouting' -> war-room ('crypto' menang atas
-   'scouting'); 'Audit lead IG & Threads' -> perpustakaan
-   ('audit'/'lead' — 'threads'/'instagram' SENGAJA tidak masuk
-   kata kunci studio supaya audit platform tidak dikira konten);
+   'scouting'); 'Audit lead IG & Threads' -> lane home Ceto
+   (ruang-kerja; 'audit'/'lead' sudah bukan kata kunci tema —
+   'threads'/'instagram' SENGAJA tidak masuk kata kunci studio
+   supaya audit platform tidak dikira konten);
    'audit keamanan' -> war-room (frasa, sebelum 'audit' generik).
    Daftar ini data, bukan tebakan: tambah kata kunci baru hanya
    dengan contoh judul nyata. */
@@ -237,9 +249,10 @@ export const ROOM_KEYWORDS = {
   'war-room': ['audit keamanan', 'bounty', 'pentest', 'security',
     'shopify', 'hackerone', 'bugcrowd', 'trading', 'crypto',
     'backtest', 'binance', 'threat', 'ospek', 'nginx', 'mcp'],
-  perpustakaan: ['audit', 'riset', 'research', 'baca', 'scouting',
-    'analisis', 'analytics', 'laporan', 'studi', 'lead', 'intel',
-    'evaluasi', 'review', 'dokumentasi'],
+  'lab-ai': ['lab', 'eksperimen', 'swarai', 'nano', 'duplex', 'lora',
+    'kokoro', 'asr', 'tts', 'training', 'fine-tune', 'finetune',
+    'checkpoint', 'epoch', 'dataset', 'kaggle', 'inference',
+    'benchmark', 'voice'],
 };
 
 /* Ruangan baru dari judul tugas aktif (null bila tidak cocok).
@@ -247,7 +260,7 @@ export const ROOM_KEYWORDS = {
 export function roomForTask(title) {
   const t = lower(title);
   if (!t) return null;
-  for (const roomId of ['studio-konten', 'war-room', 'perpustakaan']) {
+  for (const roomId of ['studio-konten', 'war-room', 'lab-ai']) {
     if (ROOM_KEYWORDS[roomId].some((k) => t.includes(k))) return roomId;
   }
   return null;
@@ -259,8 +272,11 @@ export function roomForTask(title) {
    2. membalas @mention <15 mnt -> Ruang rapat
    3. tugas aktif bertema konten -> Studio Konten
    4. tugas aktif bertema security/bounty/trading -> War Room
-   5. tugas aktif bertema riset/baca -> Perpustakaan
-   6. tugas aktif + aktivitas <1 jam -> Ruang kerja
+   5. tugas aktif bertema lab/ML -> Lab AI
+   6. tugas aktif tanpa tema + aktivitas <1 jam -> lane home
+      (LANE_HOME di bawah: ruang kerja / war-room / lab sesuai
+      lane masing-masing, perintah Rangga 26 Nov 2026 10:10 WIB —
+      penempatan disesuaikan lane, bukan sekadar merata)
    7. aktivitas <15 mnt tanpa tugas aktif -> Lounge
       (ADAPTASI JUJUR: read_state per agen TIDAK terekspos API
       board — tidak ada endpoint yang mengembalikan last_seen_at
@@ -272,8 +288,9 @@ export function roomForTask(title) {
    8. tanpa aktivitas 1-2 jam -> Pantry
    9. >2 jam / tanpa sinyal -> Taman
    Aturan 3-5 TIDAK memakai batas umur: status tugas 'aktif' di
-   board adalah sinyalnya (tugas basi tetap bertema — lihat
-   staleApi 'Audit lead' di tes: tetap Perpustakaan, glyph Z).
+   board adalah sinyalnya (tugas basi tetap bertema bila judulnya
+   bertema — mis. 'LoRA' basi tetap lab-ai; 'Audit lead' di tes:
+   tanpa tema → LANE_HOME (dulu Perpustakaan), glyph Z tetap).
    HOME BASE OTO (21 Nov 2026, perintah Rangga 17:09 WIB:
    "tugas lo monitoring masa jauh dari workspace"). Blok
    `if (name === 'oto')` di bawah mengesampingkan aturan 2-7
@@ -281,12 +298,34 @@ export function roomForTask(title) {
    s.allMeeting — dihitung buildRoomState khusus buat cabang ini;
    view-model lama tidak punya cabang @all sama sekali, dan agen
    lain tetap tidak membacanya); tugas aktif apa pun temanya ->
-   Ruang Kerja (judul tugas monitoring Oto mengandung 'baca' yang
-   tanpa ini melemparnya ke Perpustakaan via roomForTask); idle
+   Ruang Kerja (dulu: judul tugas monitoring Oto mengandung 'baca'
+   yang tanpa ini melemparnya ke Perpustakaan via roomForTask —
+   kata generik itu sudah dihapus di overhaul Lab AI 26 Nov 2026,
+   blok ini dipertahankan untuk rapat @all + idle Oto); idle
    segar <15 mnt tanpa tugas -> Ruang Kerja (bukan Lounge).
    Idle 15 mnt-2 jam -> Pantry, >2 jam -> Taman tetap berlaku
    buat Oto. Agen lain tidak masuk blok itu — perilaku mereka
    tidak berubah. */
+/* LANE HOME (overhaul Lab AI, 26 Nov 2026; perintah Rangga
+   10:10 WIB: penempatan disesuaikan lane masing-masing).
+   Dipakai aturan 6: agen bertugas tanpa tema judul jatuh ke
+   ruangan lane-nya — bukan menumpuk di satu ruangan. Rangga
+   (kantor-rangga) dan Oto (home base ruang-kerja, blok di bawah)
+   tidak ada di peta ini. */
+export const LANE_HOME = {
+  beto: 'ruang-kerja',    /* CTO — workstation coding */
+  zeto: 'war-room',       /* audit keamanan — ruang audit */
+  neto: 'war-room',       /* CRO — meja trading */
+  geto: 'ruang-kerja',    /* wartawan — meja newsroom */
+  leto: 'lab-ai',         /* server/API — Evolution API maintainer + OTO-VM caretaker, dekat rak server (Rangga 26 Nov 10:23) */
+  ceto: 'ruang-kerja',    /* sales — meja sales */
+  seto: 'ruang-kerja',    /* dukungan umum — meja kerja */
+  deto: 'ruang-kerja',    /* asisten CEO — meja kerja */
+  meto: 'ruang-kerja',    /* support — meja kerja */
+  atharia: 'ruang-kerja', /* support — meja kerja */
+  reto: 'lab-ai',         /* ML/eksperimen + SWARAI — meja lab */
+};
+
 export function resolveRoom(name, s, nowMs) {
   const age = s.lastActiveMs > 0 ? nowMs - s.lastActiveMs : Infinity;
   if (name === 'rangga') return 'kantor-rangga';
@@ -297,8 +336,8 @@ export function resolveRoom(name, s, nowMs) {
        ke rapat — membalas @mention biasa BUKAN rapat buat Oto,
        itu rutinitas jawabannya sebagai orchestrator).
      - tugas aktif (apa pun temanya) -> Ruang Kerja: judul tugas
-       monitoring Oto mengandung 'baca' yang tanpa pengecualian
-       ini melemparnya ke Perpustakaan via roomForTask.
+       monitoring Oto bisa mengandung kata kunci lab yang tanpa
+       pengecualian ini melemparnya ke Lab AI via roomForTask.
      - idle segar <15 mnt tanpa tugas -> Ruang Kerja (bukan
        Lounge): masih monitoring.
      - idle 15 mnt-2 jam -> Pantry, >2 jam -> Taman: tetap,
@@ -316,7 +355,7 @@ export function resolveRoom(name, s, nowMs) {
   if (s.activeTask) {
     const themed = roomForTask(s.activeTask.title);
     if (themed) return themed;
-    if (age < HOUR_1) return 'ruang-kerja';
+    if (age < HOUR_1) return LANE_HOME[name] || 'ruang-kerja';
   }
   if (!s.activeTask && age < MIN_15) return 'lounge';
   if (age < HOUR_2) return 'pantry';
@@ -374,7 +413,7 @@ export function assignSlots(agentStates) {
    slot dengan flag `desk: true` di ROOMS — semua 9 slot
    'ruang-kerja' (grid 3x3, spasi x 6 / z 4), slot pertama
    'kantor-rangga' {x:-18, z:-11}, slot pertama 'studio-konten'
-   {x:13.5, z:-11}, slot pertama 'perpustakaan' {x:17.5, z:4.5}.
+   {x:13.5, z:-11}, slot pertama 'lab-ai' {x:17.5, z:4.5}.
    Di sanalah kursi + laptop/meja berada, jadi agen di slot itu
    DUDUK. Slot lain (lounge/pantry/taman/ruang-rapat/war-room/
    slot kedua kantor-rangga/overflow dekat pintu) = berdiri.

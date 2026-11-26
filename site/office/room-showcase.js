@@ -1745,7 +1745,7 @@ function buildScene() {
   scene.add(place(box(0.25, 1.0, 14, C.divider), -5, 0.5, 7));         /* kerja | rapat */
   scene.add(place(box(0.25, 1.0, 14, C.divider), 2, 0.5, 7));          /* rapat | taman */
   scene.add(place(box(0.25, 1.0, 14, C.divider), 9, 0.5, 7));          /* taman | war-room */
-  scene.add(place(box(0.25, 1.0, 14, C.divider), 15, 0.5, 7));         /* war-room | perpustakaan */
+  scene.add(place(box(0.25, 1.0, 14, C.divider), 15, 0.5, 7));         /* war-room | lab-ai */
 
   buildWallPanels();
   buildWorkRoom();
@@ -1756,7 +1756,7 @@ function buildScene() {
   buildRanggaOffice();
   buildStudioKonten();
   buildWarRoom();
-  buildPerpustakaan();
+  buildLabAI();
 
   mentionGroup = new THREE.Group();
   handoverGroup = new THREE.Group();
@@ -2675,35 +2675,114 @@ function buildWarRoom() {
   scene.add(board);
 }
 
-function buildPerpustakaan() {
-  /* Rak buku di sekat barat + timur (dengan buku warna-warni)
-     + meja baca dari slot bermeja (data-driven) + tanaman. */
-  for (const rx of [15.4, 20.5]) {
-    const rak = box(0.7, 2.2, 9, C.desk);
-    rak.position.set(rx, 1.1, 7);
-    scene.add(rak);
+/* Meja lab: permukaan + kaki panel (tanpa monitor — gantinya
+   alat lab di atas meja). Dipakai Lab AI (meja utama + bench
+   kedua). */
+function buildLabBench(x, z, w, d, topY) {
+  const top = box(w, 0.12, d, C.deskTop);
+  top.position.set(x, topY - 0.06, z);
+  scene.add(top);
+  for (const sx of [-w / 2 + 0.08, w / 2 - 0.08]) {
+    const leg = box(0.1, topY - 0.12, d - 0.1, C.desk);
+    leg.position.set(x + sx, (topY - 0.12) / 2, z);
+    scene.add(leg);
   }
-  const bookColors = [0xca4f40, 0x0f766e, 0xfc7a24, 0xc4b5fd, 0xf4a7b9, 0x1e3a8a];
-  bookColors.forEach((col, i) => {
+}
+
+/* Lab AI (overhaul 26 Nov 2026; dulu Perpustakaan): rak server di
+   sekat barat (strip LED volt) + rak reagen/botol lab di sekat
+   timur + meja lab dari slot bermeja + bench inkubator di strip
+   utara. Palet krem dipertahankan; aksen cyberpunk HANYA via LED
+   volt #a3ff00 + lampu hangat — TANPA neon biru/ungu. Semua
+   primitif kode, tanpa GLB baru. */
+function buildLabAI() {
+  /* Rak barat (x=15.4): rak server — badan gelap hangat + unit
+     + strip LED volt di tepi atas + titik status. */
+  const rackW = box(0.7, 2.2, 9, 0x2e2a26);
+  rackW.position.set(15.4, 1.1, 7);
+  scene.add(rackW);
+  for (let i = 0; i < 4; i++) {
+    const unit = box(0.1, 0.42, 8.6, 0x3a352f);
+    unit.position.set(15.78, 0.35 + i * 0.52, 7);
+    scene.add(unit);
+    for (let j = 0; j < 5; j++) {
+      const dot = box(0.06, 0.06, 0.06, 0xa3ff00,
+        { emissive: 0xa3ff00, emissiveIntensity: 0.9 });
+      dot.position.set(15.84, 0.35 + i * 0.52, 3.6 + j * 1.6);
+      scene.add(dot);
+    }
+  }
+  const ledStrip = box(0.06, 0.06, 9, 0xa3ff00,
+    { emissive: 0xa3ff00, emissiveIntensity: 1.0 });
+  ledStrip.position.set(15.78, 2.16, 7);
+  scene.add(ledStrip);
+  /* Rak timur (x=20.5): rak reagen — badan kayu + botol-botol lab
+     (silinder + leher sempit, warna hangat). */
+  const rackE = box(0.7, 2.2, 9, C.desk);
+  rackE.position.set(20.5, 1.1, 7);
+  scene.add(rackE);
+  const bottleColors = [0xd9a441, 0x0f766e, 0xca4f40, 0xf3eee2, 0x7fb069, 0xfc7a24];
+  bottleColors.forEach((col, i) => {
     const z = 3.6 + i * 1.3;
-    scene.add(place(box(0.18, 0.5, 0.6, col), 15.82, 0.7 + (i % 3) * 0.6, z));
-    scene.add(place(box(0.18, 0.5, 0.6, col), 20.18, 0.7 + ((i + 1) % 3) * 0.6, z));
+    scene.add(place(cyl(0.09, 0.11, 0.45, col), 20.18, 0.68, z));
+    scene.add(place(cyl(0.04, 0.04, 0.16, col), 20.18, 0.98, z));
+    scene.add(place(cyl(0.09, 0.11, 0.45, col), 20.18, 1.28, z + 0.6));
+    scene.add(place(cyl(0.04, 0.04, 0.16, col), 20.18, 1.58, z + 0.6));
   });
-  const room = ROOMS.perpustakaan;
+  /* Meja lab utama dari slot bermeja (data-driven) + pad duduk. */
+  const room = ROOMS['lab-ai'];
   for (const s of room.slots) {
-    if (s.desk) buildDesk(s.x, s.z + 1.1, 2.2);
+    if (s.desk) {
+      buildLabBench(s.x, s.z + 1.1, 2.2, 0.9, DESK_TOP_Y);
+      scene.add(place(box(0.7, 0.1, 0.7, C.chair), s.x, PAD_TOP - 0.05, s.z));
+    }
   }
+  /* Alat di atas meja lab utama: mikroskop di sisi timur supaya
+     tidak menutup wajah agen yang duduk; rak tabung reaksi +
+     labu di sisi barat/tengah. */
+  const benchY = DESK_TOP_Y;
+  scene.add(place(cyl(0.09, 0.11, 0.06, 0x2e2a26), 18.15, benchY + 0.03, 5.6));
+  const microArm = cyl(0.03, 0.03, 0.32, 0x555555);
+  microArm.rotation.z = -0.6;
+  scene.add(place(microArm, 18.15, benchY + 0.18, 5.6));
+  const microTube = cyl(0.05, 0.05, 0.26, 0x222222);
+  microTube.rotation.z = -0.6;
+  scene.add(place(microTube, 18.28, benchY + 0.32, 5.6));
+  scene.add(place(box(0.4, 0.06, 0.14, C.desk), 16.9, benchY + 0.03, 5.6));
+  [0xd9a441, 0x0f766e, 0xca4f40, 0x7fb069].forEach((col, i) => {
+    scene.add(place(cyl(0.035, 0.035, 0.24, col), 16.78 + i * 0.09, benchY + 0.18, 5.6));
+  });
+  scene.add(place(sph(0.12, 0xd9a441), 17.5, benchY + 0.12, 5.95));
+  scene.add(place(cyl(0.04, 0.04, 0.16, 0xd9a441), 17.5, benchY + 0.28, 5.95));
+  /* Bench kedua — island di tengah ruangan (17.9, 7.5), tempat
+     kerja berdiri bersama (tanpa pad). Posisi di antara dua slot
+     berdiri (17.9, 9.6) DITOLAK tes tabrakan: bench di sana
+     menutup jalur masuk slot (16.8, 10) — lihat FURNITURE di
+     test_board.py. */
+  buildLabBench(17.9, 7.5, 1.2, 0.8, 0.5);
+  scene.add(place(box(0.4, 0.06, 0.14, C.desk), 17.6, 0.53, 7.5));
+  [0x0f766e, 0xd9a441, 0xca4f40].forEach((col, i) => {
+    scene.add(place(cyl(0.035, 0.035, 0.24, col), 17.48 + i * 0.09, 0.65, 7.5));
+  });
+  scene.add(place(sph(0.12, 0x0f766e), 18.15, 0.62, 7.5));
+  scene.add(place(cyl(0.04, 0.04, 0.16, 0x0f766e), 18.15, 0.78, 7.5));
+  /* Inkubator di strip utara (16.3, 1.0) — jauh dari pintu (x=18)
+     + lane (x=19.4). */
+  const incubator = box(1.4, 1.3, 0.9, 0x2e2a26);
+  incubator.position.set(16.3, 0.65, 1.0);
+  scene.add(incubator);
+  const incubatorDoor = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.9, 0.8), mat('incubator-door', 0xf3eee2));
+  incubatorDoor.position.set(16.3, 0.65, 1.46);
+  scene.add(incubatorDoor);
+  const incubatorLed = box(1.4, 0.06, 0.06, 0xa3ff00,
+    { emissive: 0xa3ff00, emissiveIntensity: 1.0 });
+  incubatorLed.position.set(16.3, 1.28, 1.46);
+  scene.add(incubatorLed);
+  /* Tanaman sudut tetap. */
   scene.add(place(cyl(0.45, 0.35, 0.5, C.pot), 20, 0.25, 13));
   scene.add(place(sph(0.55, C.plant), 20, 1.0, 13));
   scene.add(place(sph(0.35, C.plantDark), 20.2, 1.45, 12.9));
-  /* Tugas 2: meja baca di antara dua slot baca (19,9) + (16.8,10)
-     + pad lesehan di kedua slot itu (kursi baca). */
-  scene.add(place(box(1.2, 0.08, 0.8, C.deskTop), 17.9, 0.5, 9.6));
-  for (const [lx, lz] of [[17.4, 9.3], [18.4, 9.3], [17.4, 9.9], [18.4, 9.9]]) {
-    scene.add(place(box(0.08, 0.5, 0.08, C.desk), lx, 0.25, lz));
-  }
-  scene.add(place(box(0.65, 0.1, 0.65, C.chair), 19, PAD_TOP - 0.05, 9));
-  scene.add(place(box(0.65, 0.1, 0.65, C.chair), 16.8, PAD_TOP - 0.05, 10));
 }
 
 /* --- avatar GLB -------------------------------------------------- */
