@@ -1889,7 +1889,11 @@ function buildWallPanels() {
     wbTex.tex.needsUpdate = true;
   } };
   dynamicPanels.whiteboard.redraw('blackboard-umum', 0, false);
-  wallPanel(5, 2.3, -13.92, 0, 3.4, 1.8, wbTex, 'thread');
+  /* DIPINDAH 27 Nov 2026 (x 5 -> -0,5): di x 5 tertutup TV dinamis
+     (5,25, 2,4) ~85% + TV statis lounge. Posisi baru = di atas
+     ruang rapat (x -5..2), jelas dari Papan Tugas (x -7,2..-2,8)
+     dan dari TV (x 3,8..6,7). */
+  wallPanel(-0.5, 2.3, -13.92, 0, 3.4, 1.8, wbTex, 'thread');
 
   /* Jam dinding — jam asli (jam client), digambar ulang tiap polling. */
   const clockTex = textTexture(128, 128, () => {});
@@ -1981,7 +1985,12 @@ function buildWallPanels() {
     doorTex.tex.needsUpdate = true;
   } };
   dynamicPanels.threadDoor.redraw('blackboard-umum', 0, 0, false);
-  wallPanel(0, 1.3, 13.92, Math.PI, 5, 1.6, doorTex, 'thread');
+  /* DIPINDAH 27 Nov 2026 (x 0 -> 5,25): di x 0 papan ketutup layar
+     proyektor (x -3,1..0,1) + tanaman (1,5,13), duduk di batas
+     pantry|lounge, dan sejajar sumbu gerbang/driveway (x 0) shg
+     dari atas tampak 'di belakang gerbang'. Posisi baru = tengah
+     dinding selatan lounge [0..10,5], lepas dari gerbang. */
+  wallPanel(5.25, 1.3, 13.92, Math.PI, 5, 1.6, doorTex, 'thread');
 
   /* TV Lounge — pesan board terbaru (data nyata). */
   const tvTex = textTexture(512, 256, () => {});
@@ -2502,9 +2511,9 @@ function buildLounge() {
   scene.add(place(sph(0.35, C.plantDark), 10.0, 1.45, -13.1));
   /* Tugas 2: TV di dinding utara di atas sofa (slot lounge menghadap
      utara) + mug di meja kopi + rak buku kecil di dinding timur. */
-  scene.add(place(box(2.2, 1.3, 0.08, 0x111111), 5.25, 1.6, -13.85));
-  const tv = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 1.1), new THREE.MeshBasicMaterial({ color: 0x1a2a3a }));
-  scene.add(place(tv, 5.25, 1.6, -13.75));
+  /* TV statis DIHAPUS 27 Nov 2026: redundan dengan TV dinamis
+     (5,25, 2,4, tampil pesan board terbaru) dan layar statisnya
+     menutupi bagian bawah TV dinamis + whiteboard rapat. */
   scene.add(place(cyl(0.06, 0.05, 0.12, 0xfc7a24), 4.7, 0.56, -10.6));
   scene.add(place(cyl(0.06, 0.05, 0.12, 0x0f766e), 5.8, 0.56, -10.6));
   scene.add(place(box(0.6, 1.8, 2.0, C.desk), 10.4, 0.9, -6));
@@ -2551,7 +2560,9 @@ function buildPantry() {
 function buildGarden() {
   /* Tanaman (pot + daun bola), bangku, lampu (pusat taman (5.5,7);
      tanaman di 4 sudut ruangan, bangku di selatan, lampu di utara). */
-  for (const [px, pz] of [[3, 1], [8, 1], [3, 13], [8, 13]]) {
+  /* DIPINDAH 27 Nov 2026 (z 13 -> 11, 2 tanaman selatan): daunnya
+     menutupi sudut bawah blackboard yang pindah ke x 5,25. */
+  for (const [px, pz] of [[3, 1], [8, 1], [3, 11], [8, 11]]) {
     scene.add(place(cyl(0.45, 0.35, 0.5, C.pot), px, 0.25, pz));
     scene.add(place(sph(0.55, C.plant), px, 1.0, pz));
     scene.add(place(sph(0.35, C.plantDark), px + 0.2, 1.45, pz - 0.1));
