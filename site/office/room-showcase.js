@@ -1921,7 +1921,12 @@ function buildScene() {
   scene.add(place(box(42.6, 2.2, 0.3, C.wall), 0, 1.1, -14.15));      /* utara */
   scene.add(place(box(0.3, 2.2, 28.6, C.wallDark), -21.15, 1.1, 0));   /* barat */
   scene.add(place(box(0.3, 2.2, 28.6, C.wall), 21.15, 1.1, 0));       /* timur */
-  scene.add(place(box(42.6, 0.9, 0.3, C.wall), 0, 0.45, 14.15));      /* selatan (rendah) */
+  /* selatan (rendah) — DIBAGI 27 Nov 2026: celah 2,4 m di sumbu pintu
+     kaca (x=-1,5) supaya pintu terbaca sebagai bukaan bersih, tanpa
+     sisa tembok di ambang pintu. Segmen barat x -21,3..-2,7 (18,6 m,
+     pusat -12,0); segmen timur x -0,3..21,3 (21,6 m, pusat 10,5). */
+  scene.add(place(box(18.6, 0.9, 0.3, C.wall), -12.0, 0.45, 14.15));  /* selatan barat */
+  scene.add(place(box(21.6, 0.9, 0.3, C.wall), 10.5, 0.45, 14.15));   /* selatan timur */
   scene.add(place(box(0.25, 1.0, 10, C.divider), -10.5, 0.5, -9));     /* kantor | pantry */
   scene.add(place(box(0.25, 1.0, 10, C.divider), 0, 0.5, -9));         /* pantry | lounge */
   scene.add(place(box(0.25, 1.0, 10, C.divider), 10.5, 0.5, -9));      /* lounge | studio */
@@ -2952,20 +2957,22 @@ function buildOutdoor() {
   const yard = new THREE.Mesh(new THREE.PlaneGeometry(42, 5.7), mat('yard', C.gang));
   yard.rotation.x = -Math.PI / 2; yard.position.set(0, 0.01, 17.15); scene.add(yard);
   const walk = new THREE.Mesh(new THREE.PlaneGeometry(3, 5.7), mat('walk', 0xcbb693));
-  walk.rotation.x = -Math.PI / 2; walk.position.set(0, 0.02, 17.15); scene.add(walk);
-  for (const sx of [-1.5, 1.5]) {
+  walk.rotation.x = -Math.PI / 2; walk.position.set(-1.5, 0.02, 17.15); scene.add(walk);
+  for (const sx of [-3.0, 0.0]) {
     scene.add(place(box(0.08, 0.02, 5.7, VOLT), sx, 0.03, 17.15));
   }
-  /* Kanopi pintu masuk selatan. */
+  /* Kanopi pintu masuk selatan — center x=-1,5 (sumbu pintu kaca),
+     BUKAN x=0 (sumbu gerbang/driveway). */
   const canopy = box(6, 0.15, 2.5, 0xefe8d6);
-  canopy.position.set(0, 2.7, 15.5); scene.add(canopy);
+  canopy.position.set(-1.5, 2.7, 15.5); scene.add(canopy);
   const canopyEdge = box(6, 0.06, 0.08, VOLT);
-  canopyEdge.position.set(0, 2.7, 16.72); scene.add(canopyEdge);
-  for (const sx of [-2.7, 2.7]) {
+  canopyEdge.position.set(-1.5, 2.7, 16.72); scene.add(canopyEdge);
+  for (const sx of [-4.2, 1.2]) {
     scene.add(place(cyl(0.09, 0.09, 2.7, 0x555555), sx, 1.35, 16.5));
   }
   /* Tanaman halaman (gaya taman dalam: pot + bola daun) + 2 pohon. */
-  for (const [px, pz] of [[-4, 16], [4, 16], [-4, 19], [4, 19]]) {
+  /* Tanaman halaman — simetris terhadap sumbu pintu (x=-1,5). */
+  for (const [px, pz] of [[-5.5, 16], [2.5, 16], [-5.5, 19], [2.5, 19]]) {
     scene.add(place(cyl(0.45, 0.35, 0.5, C.pot), px, 0.25, pz));
     scene.add(place(sph(0.55, C.plant), px, 1.0, pz));
   }

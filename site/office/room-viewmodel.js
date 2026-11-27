@@ -198,7 +198,7 @@ export const ROOMS = {
      menyentuh slot-slot ini). Tanpa desk. */
   halaman: {
     label: 'Halaman',
-    door: { x: 0, z: 17.5 },
+    door: { x: -1.5, z: 17.5 }, /* sumbu pintu masuk (x=-1,5), sejajar walkway */
     slots: [
       { x: -14, z: 17, rot: 0 },
       { x: 0, z: 17, rot: 0 },
