@@ -173,7 +173,6 @@ const avatarPos = {};      /* name -> {x, z} posisi kaki saat ini */
 const avatarRoom = {};     /* name -> room id saat ini */
 const walks = {};          /* name -> {token, raf} */
 let anyWalking = false;
-let starPlumbob = null;
 let plumbob = null;          /* plumbob agen aktif (§5.12) */
 let currentActiveAgent = null;
 let lastBubblesShown = 0;
@@ -1082,8 +1081,7 @@ function updateActivityProps(name) {
 }
 
 /* Plumbob agen aktif: posisi + warna identitas; sembunyi bila
-   tidak ada agen aktif. Bintang volt Rangga (starPlumbob) JANGAN
-   diubah — itu mesh terpisah. Bob mengambang pelan (±0.05, ~4 dtk)
+   tidak ada agen aktif. Bob mengambang pelan (±0.05, ~4 dtk)
    dihitung dari jam SAAT RENDER (render-on-demand: tanpa timer
    sendiri — plumbob ikut bergerak saat ada render lain, diam saat
    ruangan diam). Lerp halus saat target pindah ditangani
@@ -3430,13 +3428,6 @@ function buildRanggaOffice() {
      hardcode): meja di depan slot avatar Rangga (x, z+1.1). */
   const s0 = ROOMS['kantor-rangga'].slots[0];
   buildDesk(s0.x, s0.z + 1.1, 3.4);
-  /* Bintang volt permanen di atas Rangga (plumbob, §5.4.5). */
-  starPlumbob = new THREE.Mesh(
-    new THREE.OctahedronGeometry(0.28),
-    new THREE.MeshBasicMaterial({ color: VOLT }));
-  starPlumbob.scale.set(1, 1.5, 1);
-  starPlumbob.position.set(s0.x, 2.6, s0.z);
-  scene.add(starPlumbob);
   /* Tugas 2: rak buku di dinding barat (buku di atas rak) + lampu
      meja di ujung barat meja Rangga (desk-lokal x=-1.35, jauh dari
      keyboard/monitor) + tanaman sudut timur-laut + piagam di
@@ -4482,7 +4473,6 @@ function setAvatarPos(name, slot, room, sitting = false, opts = {}) {
   }
   avatarPos[name] = { x: slot.x, z: slot.z };
   avatarRoom[name] = room;
-  if (name === 'rangga' && starPlumbob) starPlumbob.position.set(slot.x, 2.6, slot.z);
   /* Pose: snap langsung bila penempatan awal/teleport fixture;
      bila tidak, blend ~400 ms dari bobot saat ini (100/10). */
   if (opts.snap || !poseAnim[name]) {
@@ -4651,7 +4641,6 @@ function walkAgent(name, toSlot, toRoom, opts = {}) {
         const hop = Math.abs(Math.sin(pe * Math.PI * 4));
         g.scale.set(1 + hop * 0.06, 1 + hop * 0.12, 1 + hop * 0.06);
       }
-      if (name === 'rangga' && starPlumbob) starPlumbob.position.set(x, 2.6 + walkBobY(name, pe), z);
       if (name === currentActiveAgent && plumbob) {
         plumbob.position.set(x, plumbobTargetY(walkBobY(name, pe)), z);
       }
