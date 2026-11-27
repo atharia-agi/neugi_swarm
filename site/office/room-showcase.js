@@ -2838,9 +2838,45 @@ function buildOutdoor() {
     scene.add(place(sph(0.9, C.plant), tx, 1.9, tz));
     scene.add(place(sph(0.6, C.plantDark), tx + 0.3, 2.5, tz));
   }
-  /* Parkir (z 20..29) — aspal + garis petak (4 petak tiap sisi). */
-  const park = new THREE.Mesh(new THREE.PlaneGeometry(42, 9), mat('park', 0x4a4e54));
+  /* Parkir (z 20..29) — PAVING BLOK + RUMPUT (restyle 27 Nov 2026,
+     perintah Rangga 21:16: teras parkiran ala paving blok + rumput,
+     bukan aspal polos lagi). Paving = tekstur canvas running-bond
+     (kotak interlocking krem/tanah 1,5x0,75 m, 0 KB aset, 1 mesh);
+     rumput = bidang hijau + semak di tepi selatan (mengapit
+     driveway) dan tepi timur-barat. Garis petak + mobil parkir
+     tetap di posisi lama, terbaca di atas paving. */
+  const pavingTex = textTexture(1024, 220, (g2) => {
+    g2.fillStyle = '#a08d68'; g2.fillRect(0, 0, 1024, 220);
+    const bw = 1024 / 28, bh = 220 / 12;
+    const rnd = seededRand(20261127);
+    const tones = ['#ddd3b8', '#cdbd97', '#d5c9a8'];
+    for (let r = 0; r < 12; r++) {
+      const off = (r % 2) ? bw / 2 : 0;
+      for (let c = -1; c < 29; c++) {
+        g2.fillStyle = tones[Math.floor(rnd() * tones.length)];
+        g2.fillRect(c * bw + off + 1, r * bh + 1, bw - 2, bh - 2);
+      }
+    }
+    /* Jalur tengah (driveway x -8..8) sedikit lebih gelap supaya
+       lajur sirkulasi dari gerbang ke halaman terbaca. */
+    g2.fillStyle = 'rgba(120, 100, 70, 0.10)';
+    g2.fillRect(1024 * (13 / 42), 0, 1024 * (16 / 42), 220);
+  });
+  const park = new THREE.Mesh(new THREE.PlaneGeometry(42, 9),
+    new THREE.MeshLambertMaterial({ map: pavingTex.tex }));
   park.rotation.x = -Math.PI / 2; park.position.set(0, 0.01, 24.5); scene.add(park);
+  /* Rumput tepi selatan (mengapit driveway x -3,5..3,5) + tepi
+     timur-barat (di luar garis petak terluar x ±20) + semak. */
+  for (const [gx, gz, gw, gd] of [
+    [-12.25, 28.1, 17.5, 1.8], [12.25, 28.1, 17.5, 1.8],
+    [-20.55, 23.6, 0.9, 7.2], [20.55, 23.6, 0.9, 7.2],
+  ]) {
+    const lawn = new THREE.Mesh(new THREE.PlaneGeometry(gw, gd), mat('parklawn', 0x7d9b6a));
+    lawn.rotation.x = -Math.PI / 2; lawn.position.set(gx, 0.02, gz); scene.add(lawn);
+  }
+  for (const [sx, sz, ss] of [[-16, 28.1, 0.7], [-10, 28.1, 0.55], [10, 28.1, 0.6], [16, 28.1, 0.7], [-20.55, 21.5, 0.45], [20.55, 21.5, 0.45]]) {
+    buildShrub(sx, sz, ss, C.plantDark);
+  }
   for (const bx of [-20, -17, -14, -11, -8, 8, 11, 14, 17, 20]) {
     scene.add(place(box(0.08, 0.02, 4.5, 0xf5f5f0), bx, 0.02, 22.75));
   }
