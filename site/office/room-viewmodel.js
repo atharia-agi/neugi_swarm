@@ -126,10 +126,20 @@ export const ROOMS = {
     lane: -0.8,
     legDy: 0,
     slots: [
-      { x: -6.5, z: -9, rot: Math.PI / 2 },
-      { x: -3.5, z: -9, rot: -Math.PI / 2 },
-      { x: -5, z: -10.5, rot: 0 },
-      { x: -5, z: -7.5, rot: Math.PI },
+      { x: -6.5, z: -9, rot: Math.PI / 2, pad: true },
+      { x: -3.5, z: -9, rot: -Math.PI / 2, pad: true },
+      { x: -5, z: -10.5, rot: 0, pad: true },
+      { x: -5, z: -7.5, rot: Math.PI, pad: true },
+      /* Slot berdiri tambahan (2026-11-27, Rangga: agen idle jangan
+         numpuk di tengah jalan): pantry menampung 6+ agen idle, 4
+         pad tidak cukup. Keempat titik ini simetris di sekitar
+         (-5,-9) supaya centroid slot TETAP (-5,-9) — meja pantry +
+         cangkir di room-showcase.js dihitung dari centroid. Berdiri
+         (tanpa pad), di dalam ruangan, jauh dari meja/counter/rak. */
+      { x: -9.3, z: -12.2, rot: 0.9 },
+      { x: -0.7, z: -12.2, rot: -0.9 },
+      { x: -9.3, z: -5.8, rot: 2.3 },
+      { x: -0.7, z: -5.8, rot: -2.3 },
     ],
   },
   taman: {
@@ -142,6 +152,14 @@ export const ROOMS = {
       { x: 7, z: 4, rot: -0.7 },
       { x: 4, z: 10, rot: 0.5 },
       { x: 7, z: 10, rot: -0.5 },
+      /* Slot berdiri tambahan (2026-11-27): taman menampung agen
+         away (>2 jam idle), 4 slot tidak cukup. Di sumbu tengah
+         x=5.5, jauh dari tanaman sudut, air mancur (5.5,7), bangku
+         (5.5,12.5), dan lampu (5.5,1.5). */
+      { x: 5.5, z: 2.5, rot: 0 },
+      { x: 5.5, z: 4, rot: 0 },
+      { x: 5.5, z: 10, rot: Math.PI },
+      { x: 5.5, z: 11, rot: Math.PI },
     ],
   },
   'war-room': {
@@ -152,8 +170,8 @@ export const ROOMS = {
     slots: [
       { x: 10, z: 7, rot: Math.PI / 2, lane: 9.6 },
       { x: 14, z: 7, rot: -Math.PI / 2, lane: 14.3 },
-      { x: 12, z: 4.6, rot: 0, lane: 9.6 },
-      { x: 12, z: 9.4, rot: Math.PI, lane: 9.6 },
+      { x: 12, z: 4.6, rot: 0, lane: 9.6, pad: true },
+      { x: 12, z: 9.4, rot: Math.PI, lane: 9.6, pad: true },
     ],
   },
   'lab-ai': {
@@ -465,8 +483,10 @@ export function faceFor(s, nowMs) {
 }
 
 /* Bagi slot meja di tiap ruangan secara deterministik (urut
-   ROOM_ORDER). Bila agen melebihi slot, sisanya berdiri di dekat
-   pintu ruangan (overflow) — tidak ada dua agen di satu slot. */
+   ROOM_ORDER). Bila agen melebihi slot, sisanya berdiri DI DALAM
+   ruangan, dekat pintu (overflow) — tidak ada dua agen di satu
+   slot, dan TIDAK ADA yang berdiri di gang/koridor (2026-11-27:
+   overflow lama di pintu gang menumpuk agen di tengah jalan). */
 export function assignSlots(agentStates) {
   const byRoom = {};
   for (const st of agentStates) {
@@ -481,8 +501,22 @@ export function assignSlots(agentStates) {
       if (i < room.slots.length) {
         out[st.name] = { x: room.slots[i].x, z: room.slots[i].z, rot: room.slots[i].rot };
       } else {
+        /* Overflow (2026-11-27): 2,2 m MASUK dari pintu ke arah
+           centroid slot (bukan ke gang) — 2,2 m menaruh baris
+           pertama tepat di dalam garis sekat ruangan (sekat utara
+           berakhir z=-4, selatan mulai z=0). Menyebar 3 kolom
+           x 0,9 m, baris berikutnya 0,9 m lebih masuk. Menghadap
+           ke dalam ruangan. */
         const k = i - room.slots.length;
-        out[st.name] = { x: room.door.x + ((k % 3) - 1) * 0.9, z: Math.round((GANG_Z - 0.6 + Math.floor(k / 3) * 0.9) * 100) / 100, rot: 0 };
+        const cz = room.slots.reduce((n, s) => n + s.z, 0) / room.slots.length;
+        const dirZ = Math.sign(cz - room.door.z) || 1;
+        const row = Math.floor(k / 3);
+        const col = (k % 3) - 1;
+        out[st.name] = {
+          x: Math.round((room.door.x + col * 0.9) * 100) / 100,
+          z: Math.round((room.door.z + dirZ * (2.2 + row * 0.9)) * 100) / 100,
+          rot: dirZ < 0 ? Math.PI : 0,
+        };
       }
     });
   }
@@ -503,6 +537,21 @@ export function isDeskSlot(roomId, slot) {
   if (!ROOMS[roomId]) return false;
   const close = (a, b) => Math.abs(a.x - b.x) <= 0.01 && Math.abs(a.z - b.z) <= 0.01;
   return ROOMS[roomId].slots.some((s) => s.desk && close(s, slot));
+}
+
+/* Slot pad lesehan (2026-11-27, Rangga: agen di atas pad harus
+   DUDUK): slot dengan flag `pad: true` — di sanalah pad zabuton
+   berada (4 slot pantry, 2 slot war-room utara/selatan;
+   ruang-rapat TIDAK — pad-nya sudah tidak ada sejak ruangan itu
+   jadi front office). Agen di slot ini DUDUK (pose lesehan yang
+   sama seperti di meja: paha -90, betis +170, grup turun sitDrop),
+   BUKAN mengetik — typingWeight tetap mensyaratkan isDeskSlot.
+   Toleransi 0.01, sama seperti isDeskSlot. */
+export function isPadSlot(roomId, slot) {
+  if (!slot || typeof slot.x !== 'number' || typeof slot.z !== 'number') return false;
+  if (!ROOMS[roomId]) return false;
+  const close = (a, b) => Math.abs(a.x - b.x) <= 0.01 && Math.abs(a.z - b.z) <= 0.01;
+  return ROOMS[roomId].slots.some((s) => s.pad && close(s, slot));
 }
 
 /* Aktivitas idle (UPGRADE 11/10, §5.11) — HANYA dari keadaan
@@ -713,9 +762,11 @@ export function buildRoomState(api, nowMs) {
   const slots = assignSlots(agents);
   for (const st of agents) {
     st.slot = slots[st.name];
-    /* UPGRADE 11/10: duduk bila di slot meja; aktivitas idle
-       hanya dari keadaan nyata (lihat activityFor). */
-    st.sitting = isDeskSlot(st.room, st.slot);
+    /* UPGRADE 11/10: duduk bila di slot meja; 2026-11-27: duduk
+       juga bila di slot pad lesehan (Rangga: agen di atas pad
+       harus duduk). Aktivitas idle hanya dari keadaan nyata
+       (lihat activityFor). */
+    st.sitting = isDeskSlot(st.room, st.slot) || isPadSlot(st.room, st.slot);
     st.activity = activityFor(st.room, !!st.activeTask, st.stale);
   }
 

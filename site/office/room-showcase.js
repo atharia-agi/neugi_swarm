@@ -335,13 +335,23 @@ const activeAgentName = typeof VM.activeAgentName === 'function'
   ? VM.activeAgentName : fallbackActiveAgentName;
 const isDeskSlotFn = typeof VM.isDeskSlot === 'function'
   ? VM.isDeskSlot : fallbackIsDeskSlot;
+/* Fallback pad lesehan (2026-11-27): slot dengan flag pad di
+   ROOMS mana pun (bukan hardcode ruangan) — dipakai bila VM
+   belum mengekspor isPadSlot. */
+function fallbackIsPadSlot(room, slot) {
+  if (!slot || !ROOMS[room]) return false;
+  return ROOMS[room].slots.some((s) => s.pad
+    && Math.abs(s.x - slot.x) < 0.01 && Math.abs(s.z - slot.z) < 0.01);
+}
+const isPadSlotFn = typeof VM.isPadSlot === 'function'
+  ? VM.isPadSlot : fallbackIsPadSlot;
 
 /* sitting/activity per agen: pakai st.* bila view-model sudah
    menyediakannya (Worker A), bila belum hitung dari keadaan nyata
    yang sama seperti kontrak view-model. */
 function agentSitting(st) {
   if (typeof st.sitting === 'boolean') return st.sitting;
-  return isDeskSlotFn(st.room, st.slot);
+  return isDeskSlotFn(st.room, st.slot) || isPadSlotFn(st.room, st.slot);
 }
 function agentActivity(st) {
   if (st.activity !== undefined) return st.activity;
@@ -4856,7 +4866,7 @@ function snapshotToState(snap, nowMs) {
   const slots = assignSlots(agents);
   for (const st of agents) {
     st.slot = slots[st.name];
-    st.sitting = isDeskSlotFn(st.room, st.slot);
+    st.sitting = isDeskSlotFn(st.room, st.slot) || isPadSlotFn(st.room, st.slot);
     const snapSt = (byId[st.name] && byId[st.name].state) || '';
     st.activity = st.room === 'pantry' && !st.activeTask ? 'coffee'
       : (st.room === 'ruang-kerja' && snapSt === 'idle' ? 'phone' : null);
