@@ -1770,6 +1770,7 @@ function buildScene() {
   buildGarden();
   buildOutdoor();
   buildCity();
+  buildHills();
   buildRanggaOffice();
   buildStudioKonten();
   buildWarRoom();
@@ -3022,10 +3023,11 @@ function buildStreetSign(x, z) {
 function buildCity() {
   /* Tanah dasar kota (y -0,01, DI BAWAH lantai kantor y=0 dan
      bidang luar y 0,01-0,02 — hanya tampil di area kosong:
-     samping kantor + seberang jalan). */
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(140, 90), mat('cityground', 0xa89f8d));
+     samping kantor + seberang jalan + belakang kantor sampai
+     z -50, tempat perbukitan). */
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(140, 120), mat('cityground', 0xa89f8d));
   ground.rotation.x = -Math.PI / 2;
-  ground.position.set(0, -0.01, 20);
+  ground.position.set(0, -0.01, 10);
   scene.add(ground);
 
   /* Skyline seberang jalan (deret dekat, muka z 42,5 — masuk
@@ -3090,6 +3092,79 @@ function buildCity() {
   buildBin(10, 38.25);
   buildBin(-24, 39.3);
   buildStreetSign(-7, 38.25);
+}
+
+/* Perbukitan + hutan di belakang kantor (27 Nov 2026, perintah
+   Rangga: isi area belakang yang kosong dengan perbukitan dan
+   pohon). Dua deret: dekat RENDAH (tinggi 2,5-3,5 m, tepi selatan
+   z -16,4..-16,8 — 2,4 m lebih dari dinding utara kantor z -14,
+   supaya tidak menutupi kantor dari sudut default) dan jauh
+   TINGGI (5-9 m, puncak mengintip dari balik deret dekat sebagai
+   latar). Bukit = 1 bola pipih (SphereGeometry, skala y/z),
+   pusat di y=0 jadi hanya kubah atas yang tampil; warna hijau
+   tanah redup selaras palet hangat kantor. Pohon duduk DI
+   permukaan bukit (y = hillGroundY), bukan melayang/terbenam. */
+const HILLS = [
+  /* Deret dekat: x, z, r, sx, sy, sz, warna. Tinggi = r*sy. */
+  { x: -32, z: -21, r: 7, sx: 1.2, sy: 0.45, sz: 0.6, c: 0x6f8f5f },
+  { x: -20, z: -22, r: 8, sx: 1.1, sy: 0.4, sz: 0.65, c: 0x5d7d52 },
+  { x: -8, z: -20, r: 6, sx: 1.2, sy: 0.5, sz: 0.6, c: 0x7d9b6a },
+  { x: 4, z: -22, r: 8, sx: 1.15, sy: 0.42, sz: 0.65, c: 0x6f8f5f },
+  { x: 16, z: -21, r: 7, sx: 1.1, sy: 0.48, sz: 0.6, c: 0x5d7d52 },
+  { x: 28, z: -22, r: 8, sx: 1.2, sy: 0.4, sz: 0.65, c: 0x7d9b6a },
+  /* Deret jauh (di luar bounds kamera, mengintip dari balik). */
+  { x: -36, z: -31, r: 9, sx: 1.2, sy: 0.7, sz: 0.8, c: 0x55794c },
+  { x: -24, z: -33, r: 10, sx: 1.15, sy: 0.8, sz: 0.8, c: 0x6f8f5f },
+  { x: -10, z: -30, r: 9, sx: 1.2, sy: 0.65, sz: 0.75, c: 0x5d7d52 },
+  { x: 4, z: -33, r: 11, sx: 1.1, sy: 0.75, sz: 0.8, c: 0x55794c },
+  { x: 18, z: -31, r: 9, sx: 1.2, sy: 0.7, sz: 0.8, c: 0x7d9b6a },
+  { x: 32, z: -33, r: 10, sx: 1.15, sy: 0.85, sz: 0.8, c: 0x5d7d52 },
+];
+/* Tinggi permukaan bukit di (x, z): 0 bila di luar semua kubah. */
+function hillGroundY(x, z) {
+  let y = 0;
+  for (const h of HILLS) {
+    const dx = (x - h.x) / h.sx, dz = (z - h.z) / h.sz;
+    const q = 1 - (dx * dx + dz * dz) / (h.r * h.r);
+    if (q > 0) y = Math.max(y, h.r * h.sy * Math.sqrt(q));
+  }
+  return y;
+}
+function buildForestTree(x, z, s) {
+  /* Pohon hutan: gaya pohon trotoar (batang + 2 bola daun),
+     diperbesar s. Statis, tanpa animasi. */
+  const g = new THREE.Group();
+  const trunk = cyl(0.12 * s, 0.16 * s, 1.4 * s, 0x6b4a2f);
+  trunk.position.y = 0.7 * s; g.add(trunk);
+  const c1 = sph(0.9 * s, C.plant);
+  c1.position.y = 1.9 * s; g.add(c1);
+  const c2 = sph(0.6 * s, C.plantDark);
+  c2.position.set(0.3 * s, 2.5 * s, 0); g.add(c2);
+  g.position.set(x, hillGroundY(x, z), z);
+  scene.add(g);
+}
+function buildHills() {
+  for (const h of HILLS) {
+    const m = sph(h.r, h.c);
+    m.scale.set(h.sx, h.sy, h.sz);
+    m.position.set(h.x, 0, h.z);
+    scene.add(m);
+  }
+  /* 2 pohon per bukit, di lereng atas (radius 0,45r dari pusat),
+     sudut beda per bukit supaya tidak berbaris. */
+  HILLS.forEach((h, i) => {
+    const a1 = 0.6 + i * 0.37, a2 = a1 + 2.4;
+    const rr = h.r * 0.45;
+    for (const a of [a1, a2]) {
+      const tx = h.x + Math.cos(a) * rr * h.sx;
+      const tz = h.z + Math.sin(a) * rr * h.sz;
+      buildForestTree(tx, tz, i < 6 ? 1.1 + (i % 3) * 0.15 : 1.3 + (i % 3) * 0.2);
+    }
+  });
+  /* 4 pohon di lembah antar bukit (tanah datar, y=0). */
+  for (const [x, z, s] of [[-26, -17.5, 1.2], [-2, -18, 1.4], [22, -17.5, 1.2], [34, -19, 1.5]]) {
+    buildForestTree(x, z, s);
+  }
 }
 
 function startTraffic() {

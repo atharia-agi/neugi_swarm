@@ -228,6 +228,27 @@ export const ROOMS = {
       { x: 27, z: 20, rot: 0 },
     ],
   },
+  /* Bukit + hutan di belakang kantor (27 Nov 2026, perintah Rangga:
+     isi area belakang yang kosong dengan perbukitan dan pohon).
+     Slot HANYA untuk bounds kamera (computePlanBounds) — deret
+     dekat saja (z -21..-24) supaya framing tidak mengecil
+     berlebihan; deret jauh (z -30..-33) mengintip dari baliknya,
+     preseden sama seperti 2 menara jauh di 'kota'. TIDAK ada agen
+     di sini (assignSlots hanya memproses room yang ditempati agen).
+     Tanpa door (supaya tidak ada strip ambang pintu di tengah
+     bukit — lihat buildFloor, strip digambar di tiap room.door). */
+  bukit: {
+    label: 'Bukit',
+    slots: [
+      { x: -30, z: -21, rot: 0 },
+      { x: -15, z: -22, rot: 0 },
+      { x: 0, z: -21, rot: 0 },
+      { x: 15, z: -22, rot: 0 },
+      { x: 30, z: -21, rot: 0 },
+      { x: -22, z: -24, rot: 0 },
+      { x: 22, z: -24, rot: 0 },
+    ],
+  },
 };
 
 /* Glyph pixel 16x16 (bukan emoji). Dipetakan 1:1 ke keadaan nyata
