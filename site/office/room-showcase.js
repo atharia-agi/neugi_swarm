@@ -3070,6 +3070,7 @@ function buildOutdoor() {
    hormat document.hidden + prefers-reduced-motion lewat loop itu. */
 let trafficLamps = null; /* {red, yellow, green} bahan lampu lalin */
 let trafficPhase = 0;
+let supercomp = null; /* {leds, flow, strip, screen, lastChase, lastScreenMs} — superkomputer Lab AI (§5.4.6) */
 
 function seededRand(seed) {
   let s = seed >>> 0;
@@ -3501,6 +3502,62 @@ function buildHills() {
   }
 }
 
+/* Layar status inference superkomputer Lab AI: judul + token/s +
+   GPU + bar progres. `t` = performance.now() — nilai dibuat
+   deterministik dari waktu (pseudo-acak stabil), supaya layar
+   berubah hidup tanpa state tambahan. */
+function drawSupercompScreen(g, w, h, t) {
+  const s = Math.floor(t / 500);
+  const rnd = seededRand(1234 + s);
+  const tok = 96 + Math.floor(rnd() * 64);
+  const gpu = 72 + Math.floor(rnd() * 26);
+  const pct = Math.floor(((t / 9000) % 1) * 100);
+  g.fillStyle = '#0f1115'; g.fillRect(0, 0, w, h);
+  g.strokeStyle = '#a3ff00'; g.lineWidth = 4; g.strokeRect(3, 3, w - 6, h - 6);
+  g.fillStyle = '#a3ff00'; g.font = 'bold 20px ui-monospace, monospace';
+  g.textAlign = 'left'; g.textBaseline = 'middle';
+  g.fillText('AI INFERENCE', 12, 18);
+  g.fillStyle = '#e6e6e6'; g.font = '16px ui-monospace, monospace';
+  g.fillText('TOKENS/S ' + tok, 12, 46);
+  g.fillText('GPU ' + gpu + '%', 12, 68);
+  g.fillStyle = '#2e2a26'; g.fillRect(12, 86, w - 24, 14);
+  g.fillStyle = '#a3ff00'; g.fillRect(12, 86, (w - 24) * pct / 100, 14);
+  g.fillStyle = '#9aa0a6'; g.font = '13px ui-monospace, monospace';
+  g.fillText('BATCH ' + pct + '%', 12, 114);
+}
+
+/* Animasi inference superkomputer (dipanggil dari loop lalu lintas
+   startTraffic, 50 ms — TANPA timer baru). Hormat document.hidden
+   + prefers-reduced-motion lewat loop itu. */
+function updateSupercomp(now) {
+  if (!supercomp) return;
+  /* LED chase: pola berubah tiap 250 ms; hanya ubah warna bila
+     pola berganti (hemat render). */
+  const chase = Math.floor(now / 250) % 4;
+  if (chase !== supercomp.lastChase) {
+    supercomp.lastChase = chase;
+    const cols = [VOLT, 0xffd97a, 0x0f766e, 0x3a3a3a];
+    supercomp.leds.forEach((m, i) => {
+      m.color.set(cols[(i + chase) % 4]);
+    });
+  }
+  /* Titik data mengalir turun di muka rak (siklus 2,4 dtk). */
+  for (const f of supercomp.flow) {
+    const k = ((now / 2400) + f.off) % 1;
+    f.mesh.position.y = 1.9 - k * 1.6;
+    f.mesh.visible = k < 0.92;
+  }
+  /* Strip volt berdenyut (MeshBasicMaterial: denyut via warna). */
+  const pulse = 0.55 + 0.45 * Math.sin(now / 600);
+  supercomp.strip.color.setRGB(0.64 * pulse, 1.0 * pulse, 0);
+  /* Layar status: gambar ulang maks tiap 500 ms. */
+  if (now - supercomp.lastScreenMs > 500) {
+    supercomp.lastScreenMs = now;
+    drawSupercompScreen(supercomp.screen.ctx, 256, 128, now);
+    supercomp.screen.tex.needsUpdate = true;
+  }
+}
+
 function startTraffic() {
   /* Loop lalu lintas ringan (pola setInterval heroRotate, 50 ms).
      Hormati tab tersembunyi + prefers-reduced-motion (mobil diam). */
@@ -3528,6 +3585,8 @@ function startTraffic() {
         trafficLamps.green.color.set(phase === 0 ? 0x34c759 : 0x3a3a3a);
       }
     }
+    /* Animasi inference superkomputer Lab AI (tanpa timer baru). */
+    updateSupercomp(now);
     requestRender();
   }, 50);
 }
@@ -3785,6 +3844,72 @@ function buildLabAI() {
   scene.add(place(cyl(0.45, 0.35, 0.5, C.pot), 20, 0.25, 13));
   scene.add(place(sph(0.55, C.plant), 20, 1.0, 13));
   scene.add(place(sph(0.35, C.plantDark), 20.2, 1.45, 12.9));
+  /* Superkomputer AI di strip utara (27 Nov 2026, perintah Rangga:
+     "Utara lab kasih super computer ai bro drpd kosong gt, bikin
+     animasi2 ala2 inference ai"). 3 rak server di tepi utara lab
+     (z -0,76..0), barat pintu (x=18) + lane (x=19,4) — tidak
+     menghalangi jalan masuk/lane/slot/meja/inkubator. Muka rak
+     menghadap selatan (+z) ke dalam ruangan. Palet krem/volt sama
+     seperti rak server barat. Animasi inference (LED chase + titik
+     data mengalir + layar status + strip volt berdenyut) ikut loop
+     setInterval lalu lintas yang sudah ada (startTraffic, 50 ms) —
+     TANPA timer baru; hormat document.hidden + prefers-reduced-
+     motion lewat loop itu (REDUCED = loop tidak jalan, mesin tetap
+     tampil statis menyala). Footprint rect tabrakan test_board.py:
+     (15.46, -0.76, 17.24, 0.0). */
+  const scX = [15.75, 16.35, 16.95];
+  const scZ = -0.4;
+  const scLeds = [];
+  const scFlow = [];
+  for (const [i, x] of scX.entries()) {
+    /* Badan rak gelap hangat + tutup. */
+    scene.add(place(box(0.55, 2.0, 0.7, 0x2e2a26), x, 1.0, scZ));
+    scene.add(place(box(0.57, 0.06, 0.72, 0x3a352f), x, 2.03, scZ));
+    /* 4 unit di muka selatan: panel tipis + slot ventilasi. */
+    for (let u = 0; u < 4; u++) {
+      const uy = 0.35 + u * 0.5;
+      scene.add(place(box(0.45, 0.4, 0.02, 0x3a352f), x, uy, scZ + 0.36));
+      scene.add(place(box(0.4, 0.03, 0.02, 0x16130f), x, uy - 0.18, scZ + 0.37));
+    }
+    /* Kolom LED status di muka (kanan tiap rak): 4 titik, bahan
+       SENDIRI per titik supaya chase bisa ubah warna per titik. */
+    for (let d = 0; d < 4; d++) {
+      const ledMat = new THREE.MeshBasicMaterial({ color: 0x3a3a3a });
+      const led = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.03), ledMat);
+      led.position.set(x + 0.2, 0.35 + d * 0.5, scZ + 0.38);
+      scene.add(led);
+      scLeds.push(ledMat);
+    }
+    /* Titik data mengalir: 2 per rak, turun di muka rak. */
+    for (let f = 0; f < 2; f++) {
+      const dot = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.03),
+        new THREE.MeshBasicMaterial({ color: VOLT }));
+      dot.position.set(x - 0.15 + f * 0.12, 1.9, scZ + 0.38);
+      scene.add(dot);
+      scFlow.push({ mesh: dot, off: (i * 2 + f) * 0.33 });
+    }
+  }
+  /* Strip volt panjang di tepi atas muka rak (berdenyut). */
+  const scStripMat = new THREE.MeshBasicMaterial({ color: VOLT });
+  scene.add(place(new THREE.Mesh(new THREE.BoxGeometry(1.75, 0.05, 0.03), scStripMat), 16.35, 1.98, scZ + 0.37));
+  /* Layar status inference di atas rak tengah (miring ke belakang,
+     menghadap selatan): canvas texture yang digambar ulang di loop
+     animasi (maks 2 Hz). */
+  const scScreenTex = textTexture(256, 128, (g, w, h) => {
+    drawSupercompScreen(g, w, h, 0);
+  });
+  const scScreen = panelPlane(0.9, 0.45, scScreenTex);
+  scScreen.position.set(16.35, 2.38, scZ - 0.05);
+  scScreen.rotation.x = -0.15;
+  scene.add(scScreen);
+  /* Penyangga layar: plat + tiang di atas rak tengah. */
+  scene.add(place(box(0.3, 0.04, 0.2, 0x2e2a26), 16.35, 2.08, scZ - 0.05));
+  scene.add(place(box(0.06, 0.25, 0.06, 0x2e2a26), 16.35, 2.22, scZ - 0.05));
+  /* Kabel lantai (datar 0,02, tidak menghalangi jalan): dari bawah
+     rak ke arah inkubator, berhenti sebelum badan inkubator. */
+  scene.add(place(box(0.08, 0.02, 0.55, 0x16130f), 15.75, 0.01, 0.22));
+  scene.add(place(box(0.08, 0.02, 0.55, 0x16130f), 16.95, 0.01, 0.22));
+  supercomp = { leds: scLeds, flow: scFlow, strip: scStripMat, screen: scScreenTex, lastChase: -1, lastScreenMs: 0 };
 }
 
 /* --- avatar GLB -------------------------------------------------- */
