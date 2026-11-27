@@ -482,43 +482,143 @@ export function faceFor(s, nowMs) {
   return 'netral';
 }
 
-/* Bagi slot meja di tiap ruangan secara deterministik (urut
-   ROOM_ORDER). Bila agen melebihi slot, sisanya berdiri DI DALAM
-   ruangan, dekat pintu (overflow) — tidak ada dua agen di satu
-   slot, dan TIDAK ADA yang berdiri di gang/koridor (2026-11-27:
-   overflow lama di pintu gang menumpuk agen di tengah jalan). */
-export function assignSlots(agentStates) {
+/* Seed deterministik dari string (FNV-1a, sama seperti lifeSeed di
+   showcase) — dipakai buat acak idle yang stabil dalam satu bucket
+   waktu: nama + bucket yang sama selalu menghasilkan pilihan yang
+   sama, jadi penempatan tidak berkedip tiap refresh. */
+export function hashStr(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+
+/* Bucket waktu idle (15 mnt, sama dengan cadence refresh snapshot):
+   di dalam satu bucket penempatan idle STABIL; tiap bucket baru,
+   agen idle boleh pindah ke node acak lain. */
+export const IDLE_WANDER_MS = 15 * 60 * 1000;
+
+/* Ruangan indoor yang boleh menampung agen idle yang mengembara.
+   Ruangan luar (halaman/parkir/jalan/kota/bukit) TIDAK masuk: slot
+   di sana hanya untuk bounds kamera. */
+const WANDER_ROOMS = ['kantor-rangga', 'ruang-rapat', 'lounge', 'studio-konten', 'ruang-kerja', 'pantry', 'taman', 'war-room', 'lab-ai'];
+
+/* Node kosong yang bisa dipakai agen idle (2026-11-27, Rangga:
+   "masih bnyk area node kosong yg random"): slot indoor NON-MEJA
+   yang belum terisi. Meja (desk:true) dicadangkan buat agen kerja —
+   agen idle tidak duduk di meja orang. Pad lesehan BOLEH (duduk di
+   pad = aktivitas idle yang wajar). `taken` = posisi {x,z} yang
+   sudah terisi. */
+export function emptyWanderSlots(taken) {
+  const pool = [];
+  for (const roomId of WANDER_ROOMS) {
+    const room = ROOMS[roomId];
+    if (!room) continue;
+    for (const s of room.slots) {
+      if (s.desk) continue;
+      if ((taken || []).some((t) => Math.abs(t.x - s.x) <= 0.01 && Math.abs(t.z - s.z) <= 0.01)) continue;
+      pool.push({ x: s.x, z: s.z, rot: s.rot, room: roomId });
+    }
+  }
+  return pool;
+}
+
+/* Ruangan tempat sebuah slot berada (dari koordinat) — dipakai buat
+   tahu agen idle yang mengembara BERADA di ruangan mana (aktivitas +
+   jalur jalan harus pakai ruangan penempatan, bukan ruangan logis).
+   Posisi overflow (di dalam ruangan tapi bukan slot) -> null. */
+export function slotRoom(slot) {
+  if (!slot || typeof slot.x !== 'number' || typeof slot.z !== 'number') return null;
+  for (const roomId of Object.keys(ROOMS)) {
+    const room = ROOMS[roomId];
+    if (!room || !room.slots) continue;
+    for (const s of room.slots) {
+      if (Math.abs(s.x - slot.x) <= 0.01 && Math.abs(s.z - slot.z) <= 0.01) return roomId;
+    }
+  }
+  return null;
+}
+
+/* Posisi overflow DI DALAM ruangan (2026-11-27): 2,2 m MASUK dari
+   pintu ke arah centroid slot (bukan ke gang) — 2,2 m menaruh baris
+   pertama tepat di dalam garis sekat ruangan (sekat utara berakhir
+   z=-4, selatan mulai z=0). Menyebar 3 kolom x 0,9 m, baris
+   berikutnya 0,9 m lebih masuk. Menghadap ke dalam ruangan. */
+function overflowSlot(room, k) {
+  const cz = room.slots.reduce((n, s) => n + s.z, 0) / room.slots.length;
+  const dirZ = Math.sign(cz - room.door.z) || 1;
+  const row = Math.floor(k / 3);
+  const col = (k % 3) - 1;
+  return {
+    x: Math.round((room.door.x + col * 0.9) * 100) / 100,
+    z: Math.round((room.door.z + dirZ * (2.2 + row * 0.9)) * 100) / 100,
+    rot: dirZ < 0 ? Math.PI : 0,
+  };
+}
+
+/* Agen idle = tanpa tugas aktif dan bukan di ruang rapat (front
+   office). Agen rapat (membalas/@all) dan agen kerja (tugas aktif)
+   TIDAK mengembara — penempatan mereka bermakna. */
+export function isIdleAgent(st) {
+  return !!st && !st.activeTask && st.room !== 'ruang-rapat';
+}
+
+/* Bagi slot di tiap ruangan secara deterministik (urut ROOM_ORDER).
+   Agen KERJA/rapat: slot di ruangannya sendiri; bila melebihi slot,
+   overflow DI DALAM ruangan dekat pintu (2026-11-27, bukan gang).
+   Agen IDLE (tanpa tugas aktif, bukan rapat): MENGEMBARA — bila
+   nowMs diberikan, tiap bucket 15 mnt mendapat node kosong acak di
+   ruangan indoor mana pun (2026-11-27, Rangga: "masih bnyk area
+   node kosong yg random", "avatar gw jg beraktivitas random").
+   Tanpa nowMs, idle diperlakukan seperti biasa (slot ruangan
+   sendiri + overflow dalam ruangan) supaya pemanggil lama tetap
+   deterministik. Tidak ada dua agen di satu slot, dan TIDAK ADA
+   yang berdiri di gang/koridor. */
+export function assignSlots(agentStates, nowMs) {
   const byRoom = {};
   for (const st of agentStates) {
     (byRoom[st.room] = byRoom[st.room] || []).push(st);
   }
   const out = {};
+  const taken = [];
+  const wander = [];
   for (const roomId of Object.keys(byRoom)) {
     const room = ROOMS[roomId];
+    if (!room) continue;
     const list = byRoom[roomId].slice().sort(
       (a, b) => ROOM_ORDER.indexOf(a.name) - ROOM_ORDER.indexOf(b.name));
-    list.forEach((st, i) => {
-      if (i < room.slots.length) {
-        out[st.name] = { x: room.slots[i].x, z: room.slots[i].z, rot: room.slots[i].rot };
-      } else {
-        /* Overflow (2026-11-27): 2,2 m MASUK dari pintu ke arah
-           centroid slot (bukan ke gang) — 2,2 m menaruh baris
-           pertama tepat di dalam garis sekat ruangan (sekat utara
-           berakhir z=-4, selatan mulai z=0). Menyebar 3 kolom
-           x 0,9 m, baris berikutnya 0,9 m lebih masuk. Menghadap
-           ke dalam ruangan. */
-        const k = i - room.slots.length;
-        const cz = room.slots.reduce((n, s) => n + s.z, 0) / room.slots.length;
-        const dirZ = Math.sign(cz - room.door.z) || 1;
-        const row = Math.floor(k / 3);
-        const col = (k % 3) - 1;
-        out[st.name] = {
-          x: Math.round((room.door.x + col * 0.9) * 100) / 100,
-          z: Math.round((room.door.z + dirZ * (2.2 + row * 0.9)) * 100) / 100,
-          rot: dirZ < 0 ? Math.PI : 0,
-        };
+    let fi = 0;
+    list.forEach((st) => {
+      if (isIdleAgent(st) && nowMs != null) {
+        wander.push(st);
+        return;
       }
+      if (fi < room.slots.length) {
+        out[st.name] = { x: room.slots[fi].x, z: room.slots[fi].z, rot: room.slots[fi].rot };
+        taken.push(out[st.name]);
+      } else {
+        out[st.name] = overflowSlot(room, fi - room.slots.length);
+        taken.push(out[st.name]);
+      }
+      fi++;
     });
+  }
+  /* Sebar agen idle ke node kosong acak (deterministik per bucket). */
+  if (wander.length && nowMs != null) {
+    const bucket = Math.floor(nowMs / IDLE_WANDER_MS);
+    const pool = emptyWanderSlots(taken);
+    wander.sort((a, b) => ROOM_ORDER.indexOf(a.name) - ROOM_ORDER.indexOf(b.name));
+    for (const st of wander) {
+      if (!pool.length) {
+        const room = ROOMS[st.room];
+        out[st.name] = room ? overflowSlot(room, 0) : { x: 0, z: 0, rot: 0 };
+        taken.push(out[st.name]);
+        continue;
+      }
+      const pick = hashStr(st.name + '#' + bucket) % pool.length;
+      const s = pool.splice(pick, 1)[0];
+      out[st.name] = { x: s.x, z: s.z, rot: s.rot };
+      taken.push(out[st.name]);
+    }
   }
   return out;
 }
@@ -541,10 +641,9 @@ export function isDeskSlot(roomId, slot) {
 
 /* Slot pad lesehan (2026-11-27, Rangga: agen di atas pad harus
    DUDUK): slot dengan flag `pad: true` — di sanalah pad zabuton
-   berada (4 slot pantry, 2 slot war-room utara/selatan;
-   ruang-rapat TIDAK — pad-nya sudah tidak ada sejak ruangan itu
-   jadi front office). Agen di slot ini DUDUK (pose lesehan yang
-   sama seperti di meja: paha -90, betis +170, grup turun sitDrop),
+   berada (4 slot pantry, 2 slot war-room utara/selatan; ruang-rapat
+   TIDAK lagi punya pad sejak jadi front office 27 Nov 2026).
+   Agen di slot ini DUDUK (pose lesehan yang sama seperti di meja),
    BUKAN mengetik — typingWeight tetap mensyaratkan isDeskSlot.
    Toleransi 0.01, sama seperti isDeskSlot. */
 export function isPadSlot(roomId, slot) {
@@ -555,16 +654,21 @@ export function isPadSlot(roomId, slot) {
 }
 
 /* Aktivitas idle (UPGRADE 11/10, §5.11) — HANYA dari keadaan
-   nyata: 'coffee' = di pantry tanpa tugas aktif; 'phone' = di
-   meja kerja tapi tugasnya basi atau tanpa tugas aktif (scroll HP,
-   bukan mengetik — animasi mengetik dilarang spek); selain itu
-   null. Dipisah jadi fungsi murni supaya aturan ini bisa diuji
-   langsung: lewat buildRoomState, cabang 'phone' tidak terjangkau
-   karena resolveRoom hanya menaruh agen bertugas segar (<1 jam)
-   di ruang-kerja (lihat NOTES.md worker A). */
-export function activityFor(room, hasActiveTask, stale) {
+   nyata + acak deterministik: 'coffee' = di pantry tanpa tugas
+   aktif; 'phone' = di meja kerja tapi tugasnya basi atau tanpa
+   tugas aktif (scroll HP, bukan mengetik — animasi mengetik
+   dilarang spek); 'phone' juga untuk ~1/3 agen idle di ruangan
+   lain (hash nama + bucket, 2026-11-27: idle harus beraktivitas
+   acak, bukan cuma duduk); selain itu null (berdiri: napas +
+   lirikan via idleLifeDeltas di showcase). Dipisah jadi fungsi
+   murni supaya aturan ini bisa diuji langsung. `name` + `bucket`
+   opsional: tanpa keduanya, 'phone' acak tidak aktif (perilaku
+   lama). */
+export function activityFor(room, hasActiveTask, stale, name, bucket) {
   if (room === 'pantry' && !hasActiveTask) return 'coffee';
   if (room === 'ruang-kerja' && (stale || !hasActiveTask)) return 'phone';
+  if (!hasActiveTask && name != null && bucket != null
+    && hashStr(name + '#act#' + bucket) % 3 === 0) return 'phone';
   return null;
 }
 
@@ -759,15 +863,22 @@ export function buildRoomState(api, nowMs) {
     agents.push(st);
   }
 
-  const slots = assignSlots(agents);
+  const slots = assignSlots(agents, nowMs);
+  const bucket = Math.floor(nowMs / IDLE_WANDER_MS);
   for (const st of agents) {
     st.slot = slots[st.name];
+    /* 2026-11-27 (Rangga: idle jangan di jalan, beraktivitas
+       acak): ruangan agen idle = ruangan PENEMPATAN (slotRoom),
+       bukan ruangan logis — supaya jalur jalan (planWalk) +
+       aktivitas memakai lokasi nyata agen. Agen kerja/rapat
+       tidak mengembara, jadi ruangan mereka tidak berubah. */
+    if (isIdleAgent(st)) st.room = slotRoom(st.slot) || st.room;
     /* UPGRADE 11/10: duduk bila di slot meja; 2026-11-27: duduk
        juga bila di slot pad lesehan (Rangga: agen di atas pad
-       harus duduk). Aktivitas idle hanya dari keadaan nyata
-       (lihat activityFor). */
+       harus duduk). Aktivitas idle dari keadaan nyata + acak
+       deterministik (lihat activityFor). */
     st.sitting = isDeskSlot(st.room, st.slot) || isPadSlot(st.room, st.slot);
-    st.activity = activityFor(st.room, !!st.activeTask, st.stale);
+    st.activity = activityFor(st.room, !!st.activeTask, st.stale, st.name, bucket);
   }
 
   /* Papan tugas dinding (§5.5): 3 tugas terbuka terbaru lintas tim. */
