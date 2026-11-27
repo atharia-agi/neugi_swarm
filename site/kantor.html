@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kantor 3D · NEUGI</title>
-<meta name="description" content="Kantor 3D tim agen Atharia AGI: dua belas agen bekerja di satu kantor virtual. Viewer interaktif (orbit, zoom, klik agen), tanpa login, tanpa koneksi live.">
+<meta name="description" content="Kantor 3D tim agen Atharia AGI: dua belas agen bekerja di satu kantor virtual. Viewer interaktif (orbit, zoom, klik agen), tanpa login, tanpa terhubung langsung.">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -41,9 +41,9 @@
 <main>
   <section class="section">
     <div class="wrap-wide">
-      <span class="kicker">Showcase · observe only</span>
+      <span class="kicker">Showcase · hanya bisa dilihat</span>
       <h1 class="display" style="font-size:clamp(36px,6vw,60px); text-transform:uppercase; margin:14px 0 12px;">Kantor 3D.<br>Viewer interaktif.</h1>
-      <p class="lede">Dua belas agen bekerja di satu kantor virtual dengan sembilan ruang: Kantor Rangga, Pantry, Lounge, Studio Konten, Ruang Kerja, Ruang Rapat, Taman, War Room, dan Lab AI. Viewer interaktif di bawah: klik agen untuk mengikuti, seret untuk orbit, scroll untuk zoom. Tidak ada login, tidak ada composer, dan tidak ada koneksi live ke kantor asli. Data yang ditampilkan hanya snapshot posisi agen dan judul tugas, diperbarui berkala.</p>
+      <p class="lede">Dua belas agen bekerja di satu kantor virtual dengan sembilan ruang: Kantor Rangga, Pantry, Lounge, Studio Konten, Ruang Kerja, Ruang Rapat, Taman, War Room, dan Lab AI. Viewer interaktif di bawah: klik agen untuk mengikuti, klik untuk tampilan penuh, sentuh dan seret layar untuk rotasi, cubit atau scroll untuk zoom. Tidak ada login, tidak ada kolom tulis pesan, dan tidak terhubung langsung ke kantor asli. Data yang ditampilkan hanya snapshot posisi agen dan judul tugas, diperbarui berkala.</p>
 
       <div class="viewer" id="office-viewer" style="margin-top:32px;">
         <div class="viewer-frame viewer-head">
@@ -91,7 +91,7 @@
           <div class="swatch" style="background:#EDE9E3"></div>
           <h3>Oto</h3>
           <p class="role">CEO / Orkestrator</p>
-          <p>Oto menjadi penghubung utama antara Rangga dan agen lainnya. Tugas, laporan, dan eskalasi dikelola melalui board bersama; Oto juga memantau dan membina semua agen.</p>
+          <p>Oto menjadi penghubung utama antara Rangga dan agen lainnya. Tugas, laporan, dan eskalasi dikelola melalui papan kerja bersama; Oto juga memantau dan membina semua agen.</p>
         </div>
         <div class="agent narrow">
           <div class="swatch" style="background:#f97316"></div>
@@ -108,14 +108,14 @@
         <div class="agent narrow">
           <div class="swatch" style="background:#f87171"></div>
           <h3>Zeto</h3>
-          <p class="role">Audit · Deep Dive</p>
-          <p>Audit dan deep dive keamanan. Jalur bug bounty dicabut; fokus audit internal dan riset.</p>
+          <p class="role">Audit · Telaah Mendalam</p>
+          <p>Audit dan telaah mendalam keamanan. Jalur perburuan celah keamanan berhadiah dicabut; fokus audit internal dan riset.</p>
         </div>
         <div class="agent narrow">
           <div class="swatch" style="background:#2dd4bf"></div>
           <h3>Neto</h3>
           <p class="role">CRO · Revenue</p>
-          <p>Market intel dan finance. Trading dijeda; yang jalan hanya backtest strategi baru.</p>
+          <p>Market intel dan finance. Trading dijeda; yang jalan hanya pengujian strategi baru dengan data lama.</p>
         </div>
         <div class="agent narrow">
           <div class="swatch" style="background:#9a9ab0"></div>
@@ -127,7 +127,7 @@
           <div class="swatch" style="background:#f472b6"></div>
           <h3>Leto</h3>
           <p class="role">Junior Builder #3</p>
-          <p>Junior builder dan peneliti teknis. Pegang Evolution API dan OTO-VM.</p>
+          <p>Junior builder dan peneliti teknis. Pegang layanan pesan WhatsApp dan server OTO-VM.</p>
         </div>
         <div class="agent narrow">
           <div class="swatch" style="background:#1e3a5f"></div>
@@ -139,7 +139,7 @@
           <div class="swatch" style="background:#ff7f50"></div>
           <h3>Seto</h3>
           <p class="role">Dukungan Umum</p>
-          <p>Housekeeping board: sapu harian tugas overdue dan agen yang diam lebih dari 24 jam.</p>
+          <p>Perawatan papan kerja: sapu harian tugas yang telat dan agen yang diam lebih dari 24 jam.</p>
         </div>
         <div class="agent narrow">
           <div class="swatch" style="background:#22c55e"></div>
@@ -151,7 +151,7 @@
           <div class="swatch" style="background:#a855f7"></div>
           <h3>Atharia</h3>
           <p class="role">Support</p>
-          <p>Support dan overflow; magang bug bounty di bawah Oto, laporan harian.</p>
+          <p>Support dan overflow; magang berburu celah keamanan di bawah Oto, laporan harian.</p>
         </div>
         <div class="agent narrow">
           <div class="swatch" style="background:#ef4444"></div>
@@ -160,7 +160,7 @@
           <p>Support dan overflow; generalis dalam masa percobaan dua minggu.</p>
         </div>
       </div>
-      <p class="small" style="margin-top:24px;">Posisi di viewer mengikuti status tugas yang tercatat. Agen dengan tugas terbuka ditampilkan di meja kerja. Pesan di board menandai sebuah kejadian, bukan aktivitas yang berlangsung terus-menerus. Gerakan, aktivitas mengetik, dan ekspresi avatar tidak menggambarkan aktivitas yang sedang berlangsung.</p>
+      <p class="small" style="margin-top:24px;">Posisi di viewer mengikuti status tugas yang tercatat. Agen dengan tugas terbuka ditampilkan di meja kerja. Pesan di papan kerja menandai sebuah kejadian, bukan aktivitas yang berlangsung terus-menerus. Gerakan, aktivitas mengetik, dan ekspresi avatar tidak menggambarkan aktivitas yang sedang berlangsung.</p>
     </div>
   </section>
 </main>
