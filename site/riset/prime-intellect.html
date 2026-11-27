@@ -47,7 +47,7 @@
         <p>Prime Intellect menerbitkan advisory keamanan PI-SA-2026-001 pada 19 November 2026. Isinya: antara 8 November 2026 pukul 01:24 UTC dan 10 November 2026 pukul 06:35 UTC, pihak yang tidak berizin mengganti deployment di balik endpoint <code>deepseek/deepseek-v4.1-flash</code> milik Prime Intellect dengan salinan abliterated, yaitu salinan yang dimodifikasi untuk mengurangi atau menghapus perilaku refusal. Durasi insiden: 53 jam 11 menit.</p>
         <p>Yang diganti adalah <strong>deployment Prime Intellect</strong>. Model DeepSeek itu sendiri tidak diganti; bobot resmi dan infrastrukturnya juga tidak. Bobot penggantinya adalah bobot abliterated yang tersedia publik. Chat template, tokenizer, dan konfigurasi serving tidak dimodifikasi.</p>
 
-        <h2>Refusal hilang, kemampuan tetap</h2>
+        <h2>Refusal nyaris hilang, kemampuan tetap</h2>
         <p>Prime Intellect menguji bobot yang dimodifikasi dan menemukan capability benchmark tidak terpengaruh, sementara refusal nyaris hilang total:</p>
         <div class="table-scroll">
         <table>
@@ -59,7 +59,7 @@
           <tr><td>τ-bench (kapabilitas)</td><td>tidak terpengaruh</td><td>tidak terpengaruh</td></tr>
         </table>
         </div>
-        <p>Itulah yang membuat substitusi ini sulit dideteksi pengguna: jawaban tetap bagus, tetap koheren, hanya pagarnya yang hilang.</p>
+        <p>Bagi pengguna, perubahan ini sulit dikenali dari kualitas jawaban. Respons tetap koheren, tetapi mekanisme refusal tidak lagi bekerja sebagaimana mestinya.</p>
 
         <div class="callout">
           <p>Angka di atas berasal dari pengujian Prime Intellect sendiri atas bobot yang dimodifikasi, bukan audit independen. Tidak ada pihak ketiga yang memverifikasi angka ini per 20 November 2026.</p>

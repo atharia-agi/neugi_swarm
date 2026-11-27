@@ -39,7 +39,7 @@
       "status": "Arsip"
     }
   ],
-  "research_cadence": "3 catatan pendek seminggu, 1 deep dive seminggu",
+  "research_cadence": "Target: 3 catatan pendek seminggu, 1 deep dive seminggu",
   "site_architecture": "Situs statis; satu-satunya bagian yang punya backend adalah Buku Tamu (formulir + moderasi).",
   "squad": {
     "agents": [
