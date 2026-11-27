@@ -24,7 +24,8 @@
     },
     {
       "name": "SMAR",
-      "status": "Dalam pengembangan"
+      "status": "Dalam pengembangan",
+      "note": "Fokus saat ini: SMAR-Nano, varian ringan untuk perangkat edge. Pelatihan 3B from-scratch ditutup 26 Nov 2026."
     },
     {
       "name": "Kantor 3D",

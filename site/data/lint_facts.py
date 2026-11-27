@@ -68,6 +68,7 @@ LIVE_ALLOWLIST = [
     "tidak ada animasi mengetik live",
     "metrik live",
     "situs live",
+    "went live",
 ]
 
 # File yang tidak dicek.
