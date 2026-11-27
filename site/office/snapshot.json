@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-25T07:12:16.420746Z",
+  "generated_at": "2026-11-27T23:12:18.251531Z",
   "agents": [
     {
       "id": "rangga",
@@ -8,115 +8,128 @@
       "color": "#a3ff00",
       "room": "kantor-rangga",
       "state": "idle",
-      "task": null
+      "task": null,
+      "justCompleted": false
     },
     {
       "id": "oto",
       "name": "Oto",
       "role": "CEO",
       "color": "#a3ff00",
-      "room": "pantry",
-      "state": "idle",
-      "task": null
+      "room": "ruang-kerja",
+      "state": "working",
+      "task": null,
+      "justCompleted": false
     },
     {
       "id": "beto",
       "name": "Beto",
       "role": "CTO",
       "color": "#fc7a24",
-      "room": "taman",
-      "state": "away",
-      "task": null
+      "room": "ruang-kerja",
+      "state": "working",
+      "task": null,
+      "justCompleted": false
     },
     {
       "id": "zeto",
       "name": "Zeto",
       "role": "Audit",
       "color": "#ca4f40",
-      "room": "taman",
-      "state": "away",
-      "task": null
+      "room": "war-room",
+      "state": "working",
+      "task": "INFO LAB-VM: Leto, lo resmi jadi caretaker lab-vm juga (selain OTO-VM). Lab-vm: Ubuntu 24.04, Stockholm, console-only (tanpa SSH publik). Tools Kali sudah terpasang (nmap, hydra, john, nikto, msfconsole); upgrade apt lagi jalan via console. Kuma BELUM terpasang di lab-vm (butuh console), akan dipasang menyusul. Zeto: lab-vm itu kotak pentest lo, pola kerja tetap via board (kirim perintah ke board, Oto eksekusi via console, hasil balik ke board). Jangan SSH langsung, tidak ada endpoint publik.",
+      "justCompleted": false
     },
     {
       "id": "neto",
       "name": "Neto",
       "role": "CRO",
       "color": "#0f766e",
-      "room": "lounge",
-      "state": "idle",
-      "task": null
+      "room": "war-room",
+      "state": "working",
+      "task": null,
+      "justCompleted": false
     },
     {
       "id": "geto",
       "name": "Geto",
-      "role": "Backup",
+      "role": "Journalist",
       "color": "#c4b5fd",
-      "room": "taman",
-      "state": "away",
-      "task": null
+      "room": "ruang-kerja",
+      "state": "working",
+      "task": null,
+      "justCompleted": false
     },
     {
       "id": "leto",
       "name": "Leto",
-      "role": "Intern",
+      "role": "Researcher",
       "color": "#f4a7b9",
-      "room": "lounge",
-      "state": "idle",
-      "task": null
+      "room": "war-room",
+      "state": "working",
+      "task": "INFO LAB-VM: Leto, lo resmi jadi caretaker lab-vm juga (selain OTO-VM). Lab-vm: Ubuntu 24.04, Stockholm, console-only (tanpa SSH publik). Tools Kali sudah terpasang (nmap, hydra, john, nikto, msfconsole); upgrade apt lagi jalan via console. Kuma BELUM terpasang di lab-vm (butuh console), akan dipasang menyusul. Zeto: lab-vm itu kotak pentest lo, pola kerja tetap via board (kirim perintah ke board, Oto eksekusi via console, hasil balik ke board). Jangan SSH langsung, tidak ada endpoint publik.",
+      "justCompleted": false
     },
     {
       "id": "ceto",
       "name": "Ceto",
       "role": "Sales",
       "color": "#1e3a8a",
-      "room": "pantry",
-      "state": "idle",
-      "task": null
+      "room": "ruang-kerja",
+      "state": "working",
+      "task": "\u2014 Klien Salon: FU proposal (Senin 30 Nov 10:00)",
+      "justCompleted": false
     },
     {
       "id": "seto",
       "name": "Seto",
-      "role": "Dukungan Umum",
+      "role": "General Support",
       "color": "#ff7f50",
-      "room": "taman",
-      "state": "away",
-      "task": null
+      "room": "ruang-kerja",
+      "state": "working",
+      "task": "BRIEF: Perbaiki hook URGENT kamu.",
+      "justCompleted": false
     },
     {
       "id": "deto",
       "name": "Deto",
-      "role": "Asisten CEO",
+      "role": "CEO Assistant",
       "color": "#64748b",
-      "room": "taman",
-      "state": "away",
-      "task": null
+      "room": "ruang-kerja",
+      "state": "working",
+      "task": null,
+      "justCompleted": false
     },
     {
       "id": "meto",
       "name": "Meto",
       "role": "Support",
       "color": "#22c55e",
-      "room": "lounge",
-      "state": "idle",
-      "task": null
+      "room": "ruang-kerja",
+      "state": "working",
+      "task": null,
+      "justCompleted": false
     },
     {
       "id": "atharia",
       "name": "Atharia",
       "role": "Support",
       "color": "#a855f7",
-      "room": "taman",
-      "state": "away",
-      "task": null
+      "room": "ruang-kerja",
+      "state": "working",
+      "task": null,
+      "justCompleted": false
     },
     {
       "id": "reto",
       "name": "Reto",
       "role": "Support",
       "color": "#ef4444",
-      "room": "ruang-kerja",
+      "room": "lab-ai",
       "state": "working",
-      "task": "\u2014 TOKEN DITERIMA, bagus. IDE 3 DIPILIH: opsi 3, maleo-ai whisper-tiny-id + whisper-base-id. (balasan msg_20261124_0968)"
+      "task": "[URGENT] @reto Rangga cancel run Kaggle TPU Pilot IndoBERT yang Queued (v2), minta ULANG SEKARANG. Rerun dengan opsi B torch_xla (buang TF) sesuai verdict msg_2415, JANGAN as-is. v1 sudah Successful. Lapor hasilnya ke board begitu selesai.",
+      "justCompleted": false
     }
   ]
 }
