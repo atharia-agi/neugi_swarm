@@ -4003,43 +4003,51 @@ function buildLabAI() {
   scene.add(place(box(0.08, 0.02, 0.55, 0x16130f), 15.75, 0.01, 0.22));
   scene.add(place(box(0.08, 0.02, 0.55, 0x16130f), 16.95, 0.01, 0.22));
   supercomp = { leds: scLeds, flow: scFlow, strip: scStripMat, screen: scScreenTex, lastChase: -1, lastScreenMs: 0 };
-  /* Rak superkomputer ke-2 di samping pot lab (27 Nov 2026, perintah
-     Rangga: "Simpen 1 superkomputer disamping pot lab"). 1 rak di
-     barat pot sudut (20, 13) — pusat (18.9, 13), muka menghadap
-     utara (-z) ke dalam ruangan (ke arah meja lab + pintu). Ukuran
-     sama dengan rak utara (0,55 x 0,7 x 2,0 m), palet sama. LED +
-     titik data ikut array supercomp yang sudah ada (chase + aliran
-     sama, tanpa fungsi animasi baru); strip volt pakai bahan
-     scStripMat yang sama (denyut serentak). Footprint rect tabrakan
-     test_board.py: (18.625, 12.65, 19.175, 13.35). */
-  const scPotX = 18.9, scPotZ = 13;
-  scene.add(place(box(0.55, 2.0, 0.7, 0x2e2a26), scPotX, 1.0, scPotZ));
-  scene.add(place(box(0.57, 0.06, 0.72, 0x3a352f), scPotX, 2.03, scPotZ));
+  /* Rak superkomputer ke-2 disamping pot lab — DIPERLEBAR 28 Nov
+     2026 (perintah Rangga: "Supercomputer dkt pot lab krg lebar
+     brooo, jgn ada space kosong"). 1 rak di barat pot sudut (20,
+     13) — pusat (19.0125, 13), muka menghadap utara (-z) ke dalam
+     ruangan (ke arah meja lab + pintu). Lebar 0,775 m (x 18.625..
+     19.40): tepi timur 0,05 m dari bola daun (tepi barat x=19,45,
+     pusat (20, 1.0, 13), r=0,55) dan 0,15 m dari silinder pot
+     (tepi barat x=19,55) — LEBAR MAKSIMAL tanpa menyentuh tanaman.
+     Dalam 0,7 x 2,0 m, palet sama dengan rak utara. 4 unit (baris)
+     + 4 LED tetap (terikat tinggi 2,0 m, satu per baris 0,5 m);
+     panel unit + strip volt memanjang ikut lebar; titik data 2 -> 3
+     tersebar di muka yang lebih lebar. LED + titik data ikut array
+     supercomp yang sudah ada (chase + aliran sama, tanpa fungsi
+     animasi baru); strip volt pakai bahan scStripMat yang sama
+     (denyut serentak). Footprint rect tabrakan test_board.py:
+     (18.625, 12.65, 19.40, 13.35). */
+  const scPotX = 19.0125, scPotZ = 13, scPotW = 0.775;
+  scene.add(place(box(scPotW, 2.0, 0.7, 0x2e2a26), scPotX, 1.0, scPotZ));
+  scene.add(place(box(scPotW + 0.02, 0.06, 0.72, 0x3a352f), scPotX, 2.03, scPotZ));
   /* 4 unit di muka utara: panel tipis + slot ventilasi. */
   for (let u = 0; u < 4; u++) {
     const uy = 0.35 + u * 0.5;
-    scene.add(place(box(0.45, 0.4, 0.02, 0x3a352f), scPotX, uy, scPotZ - 0.36));
-    scene.add(place(box(0.4, 0.03, 0.02, 0x16130f), scPotX, uy - 0.18, scPotZ - 0.37));
+    scene.add(place(box(scPotW - 0.1, 0.4, 0.02, 0x3a352f), scPotX, uy, scPotZ - 0.36));
+    scene.add(place(box(scPotW - 0.15, 0.03, 0.02, 0x16130f), scPotX, uy - 0.18, scPotZ - 0.37));
   }
   /* Kolom LED status di muka utara (kanan bila dilihat dari utara):
      4 titik, bahan SENDIRI per titik — ikut chase supercomp. */
   for (let d = 0; d < 4; d++) {
     const ledMat = new THREE.MeshBasicMaterial({ color: 0x3a3a3a });
     const led = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.03), ledMat);
-    led.position.set(scPotX - 0.2, 0.35 + d * 0.5, scPotZ - 0.38);
+    led.position.set(scPotX - scPotW / 2 + 0.075, 0.35 + d * 0.5, scPotZ - 0.38);
     scene.add(led);
     scLeds.push(ledMat);
   }
-  /* Titik data mengalir: 2 titik, turun di muka utara. */
-  for (let f = 0; f < 2; f++) {
+  /* Titik data mengalir: 3 titik, turun di muka utara (tersebar di
+     muka yang lebih lebar). */
+  for (let f = 0; f < 3; f++) {
     const dot = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.03),
       new THREE.MeshBasicMaterial({ color: VOLT }));
-    dot.position.set(scPotX - 0.15 + f * 0.12, 1.9, scPotZ - 0.38);
+    dot.position.set(scPotX - 0.25 + f * 0.25, 1.9, scPotZ - 0.38);
     scene.add(dot);
     scFlow.push({ mesh: dot, off: 0.5 + f * 0.5 });
   }
   /* Strip volt di tepi atas muka utara (denyut, bahan sama). */
-  scene.add(place(new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.05, 0.03), scStripMat), scPotX, 1.98, scPotZ - 0.37));
+  scene.add(place(new THREE.Mesh(new THREE.BoxGeometry(scPotW, 0.05, 0.03), scStripMat), scPotX, 1.98, scPotZ - 0.37));
 }
 
 /* --- avatar GLB -------------------------------------------------- */
