@@ -112,10 +112,18 @@ function panelPlane(w, h, texObj) {
    hangat 0xcfa878 + krem). Satu canvas 512x512 = 8x8 petak; dipakai
    ulang di halaman, lapangan rumput, trotoar samping + utara/
    selatan, dan tanah dasar kota — masing-masing clone dengan
-   repeat = ukuran meter / 8 supaya tiap petak = 1 m. Parkir
-   (concrete 0x4a4e54) dan jalan TIDAK diubah. */
-const MOSAIC_GRASS = [0x5d8a4a, 0x6f9b57, 0x4a7a3e, 0x7da05c];
-const MOSAIC_CONCRETE = [0x9a9a94, 0x8a8a84, 0xa8a8a0];
+   repeat = ukuran meter / 16 supaya tiap petak = 2 m. Parkir
+   (concrete 0x4a4e54) dan jalan TIDAK diubah.
+   PERBAIKAN 28 Nov 2026 (Rangga: "mozaik ga pernah keliatan"):
+   mozaik lama TIDAK hilang dari kode (tekstur terpasang di 5 bidang)
+   tapi tidak kebaca mata — petak 1 m (~6 px di HP overview) +
+   nat 2 px (3 cm, sub-pixel) + jarak luminansi rumput-concrete
+   cuma ~23 (skala 0-255) + cahaya scene sangat terang + mipmap
+   meratakan pola dari jauh = rata jadi abu-hijau datar. Perbaikan:
+   petak 2 m (~12 px), nat 6 px (19 cm, warna gelap), hijau lebih
+   gelap + concrete lebih terang (jarak luminansi ~96, 4x lipat). */
+const MOSAIC_GRASS = [0x2e5c26, 0x3f7031, 0x4a7d3a, 0x5c8f45];
+const MOSAIC_CONCRETE = [0xc8c8c0, 0xb8b8b0, 0xd8d8d0];
 let mosaicBaseTex = null;
 function mosaicGroundTex() {
   if (mosaicBaseTex) return mosaicBaseTex;
@@ -130,13 +138,14 @@ function mosaicGroundTex() {
         g2.fillStyle = '#' + col.toString(16).padStart(6, '0');
         g2.fillRect(tx * S, ty * S, S, S);
         /* Variasi terang-gelap per petak (nuansa buatan tangan). */
-        g2.fillStyle = rnd() < 0.5 ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+        g2.fillStyle = rnd() < 0.5 ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
         g2.fillRect(tx * S, ty * S, S, S);
       }
     }
-    /* Nat antar petak (mozaik kebaca). */
-    g2.strokeStyle = '#5f6b58';
-    g2.lineWidth = 2;
+    /* Nat antar petak (mozaik kebaca) — 6 px, gelap, supaya batas
+       petak kebaca dari jauh (yang 2 px dulu sub-pixel). */
+    g2.strokeStyle = '#2f3a2c';
+    g2.lineWidth = 6;
     for (let i = 0; i <= 8; i++) {
       g2.beginPath(); g2.moveTo(i * S, 0); g2.lineTo(i * S, 512); g2.stroke();
       g2.beginPath(); g2.moveTo(0, i * S); g2.lineTo(512, i * S); g2.stroke();
@@ -149,10 +158,11 @@ function mosaicGroundTex() {
 }
 function mosaicMat(w, h) {
   /* Clone tekstur dasar (berbagi canvas) + repeat supaya tiap
-     petak = 1 m di dunia nyata. */
+     petak = 2 m di dunia nyata (28 Nov 2026: 1 m terlalu kecil,
+     pola hilang di overview/HP — lihat komentar palet di atas). */
   const t = mosaicGroundTex().clone();
   t.needsUpdate = true;
-  t.repeat.set(w / 8, h / 8);
+  t.repeat.set(w / 16, h / 16);
   return new THREE.MeshLambertMaterial({ map: t });
 }
 
@@ -223,7 +233,6 @@ const avatarPos = {};      /* name -> {x, z} posisi kaki saat ini */
 const avatarRoom = {};     /* name -> room id saat ini */
 const walks = {};          /* name -> {token, raf} */
 let anyWalking = false;
-let plumbob = null;          /* plumbob agen aktif (§5.12) */
 let currentActiveAgent = null;
 let lastBubblesShown = 0;
 const dynamicPanels = {};  /* key -> {texObj, redraw} */
@@ -1130,51 +1139,9 @@ function updateActivityProps(name) {
   if (props.phone) props.phone.visible = act === 'phone';
 }
 
-/* Plumbob agen aktif: posisi + warna identitas; sembunyi bila
-   tidak ada agen aktif. Bob mengambang pelan (±0.05, ~4 dtk)
-   dihitung dari jam SAAT RENDER (render-on-demand: tanpa timer
-   sendiri — plumbob ikut bergerak saat ada render lain, diam saat
-   ruangan diam). Lerp halus saat target pindah ditangani
-   animatePlumbobTo. */
-let plumbobAnimRaf = 0;
-function plumbobBobY() {
-  return Math.sin(performance.now() * Math.PI * 2 / 4000) * 0.05;
-}
-function plumbobTargetY(walkBob) {
-  return 2.6 + (walkBob || 0) + plumbobBobY();
-}
-function updatePlumbob() {
-  if (!plumbob) return;
-  const active = currentActiveAgent;
-  const pos = active ? avatarPos[active] : null;
-  if (!active || !pos || !avatarGroups[active] || !avatarGroups[active].visible) {
-    plumbob.visible = false;
-    return;
-  }
-  plumbob.material.color.set(KNOWN_AGENTS[active].color);
-  plumbob.position.set(pos.x, plumbobTargetY(0), pos.z);
-  plumbob.visible = true;
-}
-/* Lerp halus plumbob ke posisi baru (~300 ms, easeOut) — dipakai
-   saat agen aktif pindah (bukan saat jalan: jalan update tiap
-   frame). */
-function animatePlumbobTo(x, y, z) {
-  if (!plumbob) return;
-  if (plumbobAnimRaf) cancelAnimationFrame(plumbobAnimRaf);
-  const from = plumbob.position.clone();
-  const to = new THREE.Vector3(x, y, z);
-  if (from.distanceTo(to) < 0.01) { plumbob.position.copy(to); return; }
-  const start = performance.now();
-  const step = (t) => {
-    const k = Math.min(1, (t - start) / 300);
-    const e = 1 - Math.pow(1 - k, 3);
-    plumbob.position.lerpVectors(from, to, e);
-    requestRender();
-    if (k < 1) plumbobAnimRaf = requestAnimationFrame(step);
-    else plumbobAnimRaf = 0;
-  };
-  plumbobAnimRaf = requestAnimationFrame(step);
-}
+/* Penanda oktahedron di atas kepala agen aktif DIHAPUS 28 Nov 2026
+   (perintah Rangga: hapus penanda untuk semua agen). Agen aktif
+   tetap ditandai class 'active' di portrait strip + kartu follow. */
 
 /* Showcase: tanpa login/token — data hanya dari snapshot.json. */
 function requestRender() {
@@ -1441,8 +1408,8 @@ function getCameraMode() {
      overview (Rangga 22:27 — "kameranya yg moving");
    - keluar follow = zoom out mulus (ortho zoom + pan) kembali ke
      overview. Zoom out HANYA di sini, bukan saat pindah antar agen.
-   REDUCED (prefers-reduced-motion) = transisi instan. Pola rAF
-   mengikuti plumbobAnimRaf. */
+   REDUCED (prefers-reduced-motion) = transisi instan. Semua
+   transisi memakai pola rAF yang sama. */
 let prevOverview = null; /* {camZoom, camPan{x,z}, azimuth, camElev} saat enterFollow */
 let camAnimRaf = 0;
 let camAnim = null; /* {kind: 'enter'|'exit'} */
@@ -2044,14 +2011,6 @@ function buildScene() {
   scene.add(mentionGroup);
   scene.add(handoverGroup);
 
-  /* Plumbob agen aktif (§5.12): satu octahedron warna identitas
-     agen aktif; posisi + visibilitas diatur updatePlumbob(). */
-  plumbob = new THREE.Mesh(
-    new THREE.OctahedronGeometry(0.22),
-    new THREE.MeshBasicMaterial({ color: VOLT }));
-  plumbob.visible = false;
-  scene.add(plumbob);
-
   /* Blob shadow disiapkan per agen (ellipse gelap, gaya Sims). */
   for (const name of ROOM_ORDER) {
     const g = new THREE.Group();
@@ -2072,8 +2031,8 @@ function buildScene() {
   upgradeAAAMaterials(scene); aaaApplyEnvironment(scene); addAAAFloorDetail(scene); addAAAWallDetail(scene); addAAADeskProps(scene);
   /* AAA L3 — mesh Lambert/Standard: meja/props/dinding menjatuhkan
      + menerima bayangan; lantai hanya menerima (tanpa cast supaya
-     tidak acne pada bidangnya sendiri). MeshBasic (panel, plumbob,
-     blob, teks) dilewati — tidak ikut shadow. Blob ellipse per agen
+     tidak acne pada bidangnya sendiri). MeshBasic (panel, blob,
+     teks) dilewati — tidak ikut shadow. Blob ellipse per agen
      DIPERTAHANKAN (keputusan: bayangan nyata jatuh miring ke
      samping, blob menjaga grounding tepat di bawah avatar — tidak
      dobel-gelap karena opacity blob hanya 0.35). */
@@ -3619,6 +3578,30 @@ function drawSupercompScreen(g, w, h, t) {
   g.fillText('BATCH ' + pct + '%', 12, 114);
 }
 
+/* Layar status klaster superkomputer pot lab (28 Nov 2026): sama
+   seperti layar utara (TOKENS/S + GPU + BATCH) tapi judul
+   "AI CLUSTER" + seed beda supaya angkanya beda dari layar utara.
+   Dipakai dua layar di atas rak #3 + #5 (berbagi satu tekstur). */
+function drawClusterScreen(g, w, h, t) {
+  const s = Math.floor(t / 500);
+  const rnd = seededRand(5678 + s);
+  const tok = 120 + Math.floor(rnd() * 80);
+  const gpu = 68 + Math.floor(rnd() * 30);
+  const pct = Math.floor(((t / 11000) % 1) * 100);
+  g.fillStyle = '#0f1115'; g.fillRect(0, 0, w, h);
+  g.strokeStyle = '#a3ff00'; g.lineWidth = 4; g.strokeRect(3, 3, w - 6, h - 6);
+  g.fillStyle = '#a3ff00'; g.font = 'bold 20px ui-monospace, monospace';
+  g.textAlign = 'left'; g.textBaseline = 'middle';
+  g.fillText('AI CLUSTER', 12, 18);
+  g.fillStyle = '#e6e6e6'; g.font = '16px ui-monospace, monospace';
+  g.fillText('TOKENS/S ' + tok, 12, 46);
+  g.fillText('GPU ' + gpu + '%', 12, 68);
+  g.fillStyle = '#2e2a26'; g.fillRect(12, 86, w - 24, 14);
+  g.fillStyle = '#a3ff00'; g.fillRect(12, 86, (w - 24) * pct / 100, 14);
+  g.fillStyle = '#9aa0a6'; g.font = '13px ui-monospace, monospace';
+  g.fillText('BATCH ' + pct + '%', 12, 114);
+}
+
 /* Animasi inference superkomputer (dipanggil dari loop lalu lintas
    startTraffic, 50 ms — TANPA timer baru). Hormat document.hidden
    + prefers-reduced-motion lewat loop itu. */
@@ -3643,11 +3626,16 @@ function updateSupercomp(now) {
   /* Strip volt berdenyut (MeshBasicMaterial: denyut via warna). */
   const pulse = 0.55 + 0.45 * Math.sin(now / 600);
   supercomp.strip.color.setRGB(0.64 * pulse, 1.0 * pulse, 0);
-  /* Layar status: gambar ulang maks tiap 500 ms. */
+  /* Layar status: gambar ulang maks tiap 500 ms (layar utara +
+     layar klaster pot). */
   if (now - supercomp.lastScreenMs > 500) {
     supercomp.lastScreenMs = now;
     drawSupercompScreen(supercomp.screen.ctx, 256, 128, now);
     supercomp.screen.tex.needsUpdate = true;
+    if (supercomp.screen2) {
+      drawClusterScreen(supercomp.screen2.ctx, 256, 128, now);
+      supercomp.screen2.tex.needsUpdate = true;
+    }
   }
 }
 
@@ -4077,7 +4065,7 @@ function buildLabAI() {
      rak ke arah inkubator, berhenti sebelum badan inkubator. */
   scene.add(place(box(0.08, 0.02, 0.55, 0x16130f), 15.75, 0.01, 0.22));
   scene.add(place(box(0.08, 0.02, 0.55, 0x16130f), 16.95, 0.01, 0.22));
-  supercomp = { leds: scLeds, flow: scFlow, strip: scStripMat, screen: scScreenTex, lastChase: -1, lastScreenMs: 0 };
+  supercomp = { leds: scLeds, flow: scFlow, strip: scStripMat, screen: scScreenTex, screen2: null, lastChase: -1, lastScreenMs: 0 };
   /* Rak superkomputer ke-2 disamping pot lab — DIPERLEBAR 28 Nov
      2026 (perintah Rangga: "Supercomputer dkt pot lab krg lebar
      brooo, jgn ada space kosong"). 1 rak di barat pot sudut (20,
@@ -4123,6 +4111,70 @@ function buildLabAI() {
   }
   /* Strip volt di tepi atas muka utara (denyut, bahan sama). */
   scene.add(place(new THREE.Mesh(new THREE.BoxGeometry(scPotW, 0.05, 0.03), scStripMat), scPotX, 1.98, scPotZ - 0.37));
+  /* Klaster superkomputer di samping pot lab (28 Nov 2026, perintah
+     Rangga: "Deket pot jadi cluster supercomouter monitor ai dll").
+     3 rak baru (#3, #4, #5) di barat rak pot #2, sebaris di dinding
+     selatan (z 13), muka menghadap utara — deret 4 rak x 16.24..19.40
+     tanpa celah (gap 0,02 m antar rak), lalu pot (19,45). 2 layar
+     status "AI CLUSTER" di atas rak #3 + #5 + kabel lantai. Palet +
+     animasi sama seperti rak utara/pot (LED chase + titik data ikut
+     array supercomp yang ada; strip volt pakai scStripMat; TANPA
+     timer baru). Footprint rect tabrakan test_board.py:
+     (16.24, 12.65, 19.40, 13.35) — satu rect untuk deret 4 rak. */
+  const scClusterX = [18.2175, 17.4225, 16.6275];
+  const scClusterZ = 13, scClusterW = 0.775;
+  for (const [ci, cx] of scClusterX.entries()) {
+    /* Badan + tutup (palet sama). */
+    scene.add(place(box(scClusterW, 2.0, 0.7, 0x2e2a26), cx, 1.0, scClusterZ));
+    scene.add(place(box(scClusterW + 0.02, 0.06, 0.72, 0x3a352f), cx, 2.03, scClusterZ));
+    /* 4 unit di muka utara: panel + slot ventilasi. */
+    for (let u = 0; u < 4; u++) {
+      const uy = 0.35 + u * 0.5;
+      scene.add(place(box(scClusterW - 0.1, 0.4, 0.02, 0x3a352f), cx, uy, scClusterZ - 0.36));
+      scene.add(place(box(scClusterW - 0.15, 0.03, 0.02, 0x16130f), cx, uy - 0.18, scClusterZ - 0.37));
+    }
+    /* Kolom LED status di muka utara (kanan bila dilihat dari
+       utara): 4 titik, bahan SENDIRI — ikut chase supercomp. */
+    for (let d = 0; d < 4; d++) {
+      const ledMat = new THREE.MeshBasicMaterial({ color: 0x3a3a3a });
+      const led = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.03), ledMat);
+      led.position.set(cx - scClusterW / 2 + 0.075, 0.35 + d * 0.5, scClusterZ - 0.38);
+      scene.add(led);
+      scLeds.push(ledMat);
+    }
+    /* Titik data mengalir: 3 per rak, turun di muka utara (fase
+       tersebar antar rak). */
+    for (let f = 0; f < 3; f++) {
+      const dot = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.03),
+        new THREE.MeshBasicMaterial({ color: VOLT }));
+      dot.position.set(cx - 0.25 + f * 0.25, 1.9, scClusterZ - 0.38);
+      scene.add(dot);
+      scFlow.push({ mesh: dot, off: (ci * 3 + f) * 0.25 });
+    }
+    /* Strip volt di tepi atas muka utara (denyut, bahan sama). */
+    scene.add(place(new THREE.Mesh(new THREE.BoxGeometry(scClusterW, 0.05, 0.03), scStripMat), cx, 1.98, scClusterZ - 0.37));
+  }
+  /* 2 layar status "AI CLUSTER" di atas rak #3 + #5 (berbagi satu
+     tekstur; digambar ulang di updateSupercomp, maks 2 Hz).
+     Dinding selatan rendah (0,9 m) jadi layar tidak bisa di dinding
+     — di atas rak seperti layar utara. */
+  const scClusterTex = textTexture(256, 128, (g, w, h) => {
+    drawClusterScreen(g, w, h, 0);
+  });
+  for (const sx of [18.2175, 16.6275]) {
+    const scClusterScreen = panelPlane(0.9, 0.45, scClusterTex);
+    scClusterScreen.position.set(sx, 2.38, 12.95);
+    scClusterScreen.rotation.set(0.15, Math.PI, 0);
+    scene.add(scClusterScreen);
+    /* Penyangga layar: plat + tiang di atas rak. */
+    scene.add(place(box(0.3, 0.04, 0.2, 0x2e2a26), sx, 2.08, 12.95));
+    scene.add(place(box(0.06, 0.25, 0.06, 0x2e2a26), sx, 2.22, 12.95));
+  }
+  supercomp.screen2 = scClusterTex;
+  /* Kabel lantai (datar 0,02, tidak menghalangi jalan): sepanjang
+     muka deret rak + dari deret ke utara menuju bench island. */
+  scene.add(place(box(2.9, 0.02, 0.08, 0x16130f), 17.82, 0.01, 12.5));
+  scene.add(place(box(0.08, 0.02, 4.5, 0x16130f), 17.8, 0.01, 10.25));
 }
 
 /* --- avatar GLB -------------------------------------------------- */
@@ -4708,7 +4760,7 @@ function miniAvatarHTML(name) {
 /* renderPortraits() mengisi #roomPortraits (container + CSS dibuat
    Worker C di index.html; bila elemen belum ada, diam-diam lewati).
    Satu tombol per agen (ROOM_ORDER): miniatur avatarVoxel + nama +
-   role; agen aktif (sama dengan plumbob) dapat class 'active' +
+   role; agen aktif dapat class 'active' +
    border warna identitas (style inline borderColor). Klik →
    fullscreen + follow agen itu. Tanpa snapshot: semua portrait
    redup, tanpa highlight. */
@@ -4938,7 +4990,6 @@ function setAvatarPos(name, slot, room, sitting = false, opts = {}) {
   } else {
     startPoseTransition(name);
   }
-  if (name === currentActiveAgent) updatePlumbob();
 }
 
 function walkBobY(name, p) {
@@ -5098,9 +5149,6 @@ function walkAgent(name, toSlot, toRoom, opts = {}) {
         const hop = Math.abs(Math.sin(pe * Math.PI * 4));
         g.scale.set(1 + hop * 0.06, 1 + hop * 0.12, 1 + hop * 0.06);
       }
-      if (name === currentActiveAgent && plumbob) {
-        plumbob.position.set(x, plumbobTargetY(walkBobY(name, pe)), z);
-      }
       avatarPos[name] = { x, z };
       render();
       if (p < 1) {
@@ -5174,7 +5222,7 @@ function startClockTimer() {
 /* Timer aktivitas (interval 500 ms, seperti workTimer): pose kopi
    berubah mengikuti siklus ~8 dtk, pose HP berubah saat tilt
    sesekali. Hanya requestRender bila ada perubahan. Tanpa animasi
-   mengetik. (Bob plumbob TIDAK di sini — dihitung saat render.) */
+   mengetik. */
 let activityTimer = null;
 function startActivityTimer() {
   if (activityTimer) return;
@@ -5359,10 +5407,6 @@ function applyState(ns, opts = {}) {
   const initial = !!opts.initial;
   const prev = state;
   state = ns;
-  /* Plumbob agen aktif (tanpa Rangga — dia punya bintang volt).
-     Bila agen aktif PINDAH, plumbob lerp halus ke agen baru
-     (~300 ms) daripada loncat. */
-  const prevActive = currentActiveAgent;
   currentActiveAgent = activeAgentName(ns.agents);
   /* Panel dinding (data nyata). */
   dynamicPanels.taskBoard.redraw(ns.taskBoard, ns.isExample);
@@ -5421,18 +5465,6 @@ function applyState(ns, opts = {}) {
   renderCards();
   renderPortraits();
   refreshFollowCard();
-  if (plumbob && currentActiveAgent && currentActiveAgent !== prevActive && prevActive) {
-    const pos = avatarPos[currentActiveAgent];
-    if (pos) {
-      plumbob.material.color.set(KNOWN_AGENTS[currentActiveAgent].color);
-      plumbob.visible = true;
-      animatePlumbobTo(pos.x, plumbobTargetY(0), pos.z);
-    } else {
-      updatePlumbob();
-    }
-  } else {
-    updatePlumbob();
-  }
   setStatusText();
   requestRender();
 }
@@ -5442,7 +5474,6 @@ function applyEmpty() {
   currentActiveAgent = null;
   if (cameraMode === 'follow') exitFollow();
   hideFollowCard();
-  updatePlumbob();
   for (const name of ROOM_ORDER) {
     avatarGroups[name].visible = false;
     const els = bubbleEls[name];
