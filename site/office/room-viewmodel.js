@@ -70,7 +70,7 @@ export const ROOMS = {
     ],
   },
   'ruang-rapat': {
-    label: 'Ruang Rapat',
+    label: 'Front Office',
     door: { x: -1.5, z: GANG_Z },
     lane: -4.1,
     legDy: 0,
@@ -413,7 +413,7 @@ export function resolveRoom(name, s, nowMs) {
   if (name === 'rangga') return 'kantor-rangga';
   /* HOME BASE OTO (CEO) — perintah Rangga 21 Nov 2026 17:09 WIB:
      "tugas lo monitoring masa jauh dari workspace". Oto default di
-     Ruang Kerja; ke Ruang Rapat HANYA saat rapat nyata (@all).
+     Ruang Kerja; ke Front Office HANYA saat rapat nyata (@all).
      - @all <15 mnt -> rapat (rapat nyata; satu-satunya jalan Oto
        ke rapat — membalas @mention biasa BUKAN rapat buat Oto,
        itu rutinitas jawabannya sebagai orchestrator).

@@ -1764,7 +1764,7 @@ function buildScene() {
 
   buildWallPanels();
   buildWorkRoom();
-  buildMeetingRoom();
+  buildFrontOffice();
   buildLounge();
   buildPantry();
   buildGarden();
@@ -2444,49 +2444,87 @@ function buildWorkRoom() {
   scene.add(place(box(0.42, 0.05, 0.3, 0xf4a7b9), -7.75, 0.445, 3.25, -0.2));
 }
 
-function buildMeetingRoom() {
-  /* Meja rapat tengah + karpet (pusat (-1.5,7); meja 3.6x1.8 —
-     lebih kecil dari lama supaya koridor barat/timur lega
-     untuk lane jalan x=-9.5 / x=-0.7). */
-  /* Karpet rapat (2026-11-21, Oto): lebar disesuaikan ke ruangan (7.0) —
-     sebelumnya 7.6 melewati divider 0.30/sisi (ruang rapat x -5..2 = 7 lebar).
-     Tetap di tengah (-1.5,7). */
-  const carpetEdge = new THREE.Mesh(new THREE.PlaneGeometry(7.0, 5.2), mat('carpetEdge', C.carpetEdge));
-  carpetEdge.rotation.x = -Math.PI / 2;
-  carpetEdge.position.set(-1.5, 0.008, 7);
-  scene.add(carpetEdge);
-  const carpet = new THREE.Mesh(new THREE.PlaneGeometry(6.6, 4.8), mat('carpet', C.carpet));
-  carpet.rotation.x = -Math.PI / 2;
-  carpet.position.set(-1.5, 0.012, 7);
-  scene.add(carpet);
-  const table = box(3.6, 0.14, 1.8, C.deskTop);
-  table.position.set(-1.5, DESK_TOP_Y - 0.07, 7);
-  scene.add(table);
-  for (const [lx, lz] of [[-3, 6.3], [0, 6.3], [-3, 7.7], [0, 7.7]]) {
-    scene.add(place(box(0.14, DESK_TOP_Y - 0.12, 0.14, C.desk), lx, (DESK_TOP_Y - 0.12) / 2, lz));
+function buildFrontOffice() {
+  /* FRONT OFFICE (27 Nov 2026, perintah Rangga: "meja pad dkt pintu
+     masuk kosongin, ganti dgn pajangan2 layaknya front office").
+     Ruang rapat lama (meja tengah + 4 pad lesehan + karpet besar +
+     whiteboard + layar proyektor + gelas) DIHAPUS — ruangan ini tepat
+     di balik pintu masuk utama (x=0, z=14), jadi dijadikan area
+     sambut tamu: meja resepsionis + papan selamat datang + karpet
+     sambut + tanaman + bangku tunggu + papan direktori. Slot agen
+     (ROOMS 'ruang-rapat', 4 slot BERDIRI) DIPERTAHANKAN — agen yang
+     membalas/@all berkumpul di sini sambil berdiri; tidak ada pad,
+     tidak ada yang duduk di atas pajangan. Semua pajangan dijauhkan
+     dari keempat slot ((-4.1,7), (1.1,7), (-1.5,4.4), (-1.5,9.6))
+     + lane jalan (x=-4.1 / x=1.1). Dinding selatan TIDAK dipakai
+     (panel Pintu Thread (0,13.92) milik buildWallPanels — jangan
+     tumpang tindih); papan selamat datang menempel di depan meja. */
+  /* Meja resepsionis (pusat (-1.5,11.5), menghadap selatan/pintu):
+     badan + top overhang + strip volt di depan. */
+  scene.add(place(box(2.4, 1.1, 0.9, C.desk), -1.5, 0.55, 11.5));
+  scene.add(place(box(2.6, 0.08, 1.0, C.deskTop), -1.5, 1.14, 11.5));
+  scene.add(place(box(2.4, 0.06, 0.02, VOLT), -1.5, 0.92, 11.96));
+  /* Papan selamat datang di depan meja (menghadap selatan). */
+  const welcomeTex = textTexture(512, 128, (g2) => {
+    g2.fillStyle = '#161b22'; g2.fillRect(0, 0, 512, 128);
+    g2.fillStyle = '#a3ff00'; g2.font = 'bold 46px sans-serif';
+    g2.textAlign = 'center'; g2.textBaseline = 'middle';
+    g2.fillText('SELAMAT DATANG', 256, 44);
+    g2.fillStyle = '#e6e6e6'; g2.font = 'bold 38px sans-serif';
+    g2.fillText('NEUGI', 256, 96);
+  });
+  scene.add(place(panelPlane(2.0, 0.5, welcomeTex), -1.5, 0.58, 11.97));
+  /* Pajangan di atas meja: vas + buku + lampu meja. */
+  scene.add(place(cyl(0.07, 0.05, 0.22, 0xca4f40), -2.4, 1.29, 11.7));
+  scene.add(place(sph(0.06, PROP_LEAF), -2.4, 1.44, 11.7));
+  scene.add(place(box(0.3, 0.05, 0.22, 0x1e3a8a), -1.5, 1.205, 11.4));
+  scene.add(place(box(0.26, 0.05, 0.2, 0xfc7a24), -1.5, 1.255, 11.4));
+  scene.add(place(cyl(0.09, 0.11, 0.05, 0x555555), -0.6, 1.205, 11.7));
+  scene.add(place(cyl(0.02, 0.02, 0.3, 0x555555), -0.6, 1.38, 11.7));
+  scene.add(place(sph(0.09, C.lamp, { emissive: 0xffd97a, emissiveIntensity: 0.6 }), -0.6, 1.56, 11.7));
+  /* Karpet sambut di depan meja (z 9.9..10.9 — di selatan slot
+     selatan (-1.5,9.6), di utara meja (z 11.05)). */
+  const matEdge = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.0), mat('foMatEdge', C.carpetEdge));
+  matEdge.rotation.x = -Math.PI / 2;
+  matEdge.position.set(-1.5, 0.008, 10.4);
+  scene.add(matEdge);
+  const matIn = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 0.8), mat('foMat', C.carpet));
+  matIn.rotation.x = -Math.PI / 2;
+  matIn.position.set(-1.5, 0.012, 10.4);
+  scene.add(matIn);
+  /* Tanaman sudut selatan (pot + daun) — mengapit pintu masuk.
+     Sudut utara SENGAJA kosong: zona masuk dari gang + lane jalan
+     (x=-4.1 / x=1.1) lewat di sana, tanaman akan menabrak jalur. */
+  for (const [px, pz] of [[-4.5, 13], [1.5, 13]]) {
+    scene.add(place(cyl(0.3, 0.24, 0.35, PROP_POT), px, 0.175, pz));
+    scene.add(place(sph(0.4, PROP_LEAF), px, 0.7, pz));
+    scene.add(place(sph(0.25, PROP_LEAF), px + 0.2, 1.0, pz - 0.1));
   }
-  /* Pad lesehan di KEEMPAT slot rapat (Item 3) — dipusatkan di slot,
-     bukan meleset 0.75 (utara/selatan) / 1.2 (barat/timur, ke utara
-     slot, bukan ke arah meja) seperti kursi lama. Pad rata lantai
-     (0.10) tidak menutup koridor lane mana pun (LAYOUT.md §5). */
-  scene.add(place(box(0.7, 0.1, 0.7, C.chair), -1.5, PAD_TOP - 0.05, 4.4));  /* utara */
-  scene.add(place(box(0.7, 0.1, 0.7, C.chair), -1.5, PAD_TOP - 0.05, 9.6));   /* selatan */
-  scene.add(place(box(0.7, 0.1, 0.7, C.chair), -4.1, PAD_TOP - 0.05, 7));   /* barat */
-  scene.add(place(box(0.7, 0.1, 0.7, C.chair), 1.1, PAD_TOP - 0.05, 7));   /* timur */
-  /* Tugas 2: whiteboard di dinding barat, layar proyektor di dinding
-     selatan, gelas air di meja, tanaman pot di sudut tenggara. */
-  scene.add(place(box(0.1, 1.7, 3.2, C.panelEdge), -4.9, 1.5, 7));
-  const wb = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.5), new THREE.MeshBasicMaterial({ color: 0xf5f5f0 }));
-  scene.add(place(wb, -4.79, 1.5, 7, Math.PI / 2));
-  scene.add(place(box(3.2, 1.9, 0.1, C.panelEdge), -1.5, 1.6, 13.85));
-  const ps = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.7), new THREE.MeshBasicMaterial({ color: 0xf5f5f0 }));
-  scene.add(place(ps, -1.5, 1.6, 13.74, Math.PI));
-  for (const [gx, gz] of [[-2.5, 6.5], [-0.5, 6.5], [-2.5, 7.5], [-0.5, 7.5]]) {
-    scene.add(place(cyl(0.06, 0.05, 0.12, 0x9fc8e8), gx, 0.42, gz));
-  }
-  scene.add(place(cyl(0.3, 0.24, 0.35, PROP_POT), 1.5, 0.175, 13));
-  scene.add(place(sph(0.4, PROP_LEAF), 1.5, 0.7, 13));
-  scene.add(place(sph(0.25, PROP_LEAF), 1.7, 1.0, 12.9));
+  /* Bangku tunggu ramping di dinding barat (menghadap timur) —
+     dibuat tipis (duduk 0.35) supaya tidak masuk koridor lane
+     barat (x=-4.1, koridor -4.4..-3.8) dan tidak menabrak divider. */
+  scene.add(place(box(0.06, 0.7, 2.0, C.bench), -4.82, 0.9, 4.5));
+  scene.add(place(box(0.35, 0.12, 2.0, C.bench), -4.65, 0.5, 4.5));
+  scene.add(place(box(0.3, 0.5, 0.08, C.bench), -4.65, 0.25, 3.7));
+  scene.add(place(box(0.3, 0.5, 0.08, C.bench), -4.65, 0.25, 5.3));
+  /* Papan direktori berdiri di dekat pintu (barat jalur masuk):
+     NEUGI + arah ruangan (barat=kiri, timur=kanan dari pintu). */
+  const dirTex = textTexture(256, 384, (g2) => {
+    g2.fillStyle = '#161b22'; g2.fillRect(0, 0, 256, 384);
+    g2.fillStyle = '#a3ff00'; g2.font = 'bold 40px sans-serif';
+    g2.textAlign = 'center'; g2.textBaseline = 'middle';
+    g2.fillText('NEUGI', 128, 44);
+    g2.fillStyle = '#e6e6e6'; g2.font = '26px sans-serif';
+    g2.fillText('Ruang Kerja  \u2190', 128, 120);
+    g2.fillText('Pantry  \u2190', 128, 170);
+    g2.fillText('Lab AI  \u2192', 128, 220);
+    g2.fillText('Taman  \u2192', 128, 270);
+    g2.fillStyle = '#9aa0a6'; g2.font = '22px sans-serif';
+    g2.fillText('Front Office', 128, 340);
+  });
+  scene.add(place(box(0.08, 1.5, 0.08, 0x555555), -3.85, 0.75, 12.8));
+  scene.add(place(box(0.08, 1.5, 0.08, 0x555555), -3.15, 0.75, 12.8));
+  scene.add(place(panelPlane(0.8, 1.2, dirTex), -3.5, 1.15, 12.8));
 }
 
 function buildLounge() {
