@@ -1775,6 +1775,7 @@ function buildScene() {
   buildWallPanels();
   buildWorkRoom();
   buildFrontOffice();
+  buildGlassDoor();
   buildLounge();
   buildPantry();
   buildGarden();
@@ -1995,12 +1996,15 @@ function buildWallPanels() {
     doorTex.tex.needsUpdate = true;
   } };
   dynamicPanels.threadDoor.redraw('blackboard-umum', 0, 0, false);
-  /* DIPINDAH 27 Nov 2026 (x 0 -> 5,25): di x 0 papan ketutup layar
-     proyektor (x -3,1..0,1) + tanaman (1,5,13), duduk di batas
-     pantry|lounge, dan sejajar sumbu gerbang/driveway (x 0) shg
-     dari atas tampak 'di belakang gerbang'. Posisi baru = tengah
-     dinding selatan lounge [0..10,5], lepas dari gerbang. */
-  wallPanel(5.25, 1.3, 13.92, Math.PI, 5, 1.6, doorTex, 'thread');
+  /* DIPINDAH 27 Nov 2026 (x 5,25 -> -13, perintah Rangga: blackboard
+     geser ke area workstation). Posisi baru = tengah dinding selatan
+     ruang kerja [x -21..-5, pusat -13], menghadap utara ke 9 meja
+     kerja (agen duduk menghadap selatan, papan terbaca dari semua
+     baris meja). Tidak ada aset dinding lain di bentang ini; jarak
+     bersih 2,8 m dari baris meja selatan (z=11,1) + jauh dari
+     tanaman front office (-4,5,13). Tetap di dinding selatan
+     (pola sama seperti posisi lama) + tetap bisa diklik ('thread'). */
+  wallPanel(-13, 1.3, 13.92, Math.PI, 5, 1.6, doorTex, 'thread');
 
   /* TV Lounge — pesan board terbaru (data nyata). */
   const tvTex = textTexture(512, 256, () => {});
@@ -2452,6 +2456,13 @@ function buildWorkRoom() {
   scene.add(place(sph(0.13, PROP_LEAF), -7.75, 0.56, 11.25));
   scene.add(place(box(0.5, 0.06, 0.35, 0x1e3a8a), -7.75, 0.39, 3.25));
   scene.add(place(box(0.42, 0.05, 0.3, 0xf4a7b9), -7.75, 0.445, 3.25, -0.2));
+  /* Tanaman sudut utara (isi strip kosong z -0,8..2, jauh dari lane
+     x=-9,7 + pintu (-9,7, GANG_Z) + baris meja utara (z=3,1)). */
+  for (const [px, pz] of [[-20, 0.5], [-6, 0.5]]) {
+    scene.add(place(cyl(0.45, 0.35, 0.5, C.pot), px, 0.25, pz));
+    scene.add(place(sph(0.55, C.plant), px, 1.0, pz));
+    scene.add(place(sph(0.35, C.plantDark), px + 0.2, 1.45, pz - 0.1));
+  }
 }
 
 function buildFrontOffice() {
@@ -2492,15 +2503,20 @@ function buildFrontOffice() {
   scene.add(place(cyl(0.09, 0.11, 0.05, 0x555555), -0.6, 1.205, 11.7));
   scene.add(place(cyl(0.02, 0.02, 0.3, 0x555555), -0.6, 1.38, 11.7));
   scene.add(place(sph(0.09, C.lamp, { emissive: 0xffd97a, emissiveIntensity: 0.6 }), -0.6, 1.56, 11.7));
-  /* Karpet sambut di depan meja (z 9.9..10.9 — di selatan slot
-     selatan (-1.5,9.6), di utara meja (z 11.05)). */
-  const matEdge = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.0), mat('foMatEdge', C.carpetEdge));
+  /* Karpet sambut DIPINDAH 27 Nov 2026 (z 10,4 -> 12,7): posisi lama
+     ada di sisi STAFF (utara meja), padahal karpet sambut harus di
+     sisi PENGUNJUNG (selatan meja, antara pintu kaca dan meja).
+     Posisi baru = sumbu front office (x=-1,5), sejajar pintu kaca
+     -> karpet -> meja resepsionis. Disempitkan (3,0 -> 2,6) supaya
+     tidak menyentuh tiang papan direktori (-3,15,12,8); tidak
+     menutupi slot mana pun (slot terdekat (-1,5,9,6) 2,6 m jauhnya). */
+  const matEdge = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.0), mat('foMatEdge', C.carpetEdge));
   matEdge.rotation.x = -Math.PI / 2;
-  matEdge.position.set(-1.5, 0.008, 10.4);
+  matEdge.position.set(-1.5, 0.008, 12.7);
   scene.add(matEdge);
-  const matIn = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 0.8), mat('foMat', C.carpet));
+  const matIn = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.8), mat('foMat', C.carpet));
   matIn.rotation.x = -Math.PI / 2;
-  matIn.position.set(-1.5, 0.012, 10.4);
+  matIn.position.set(-1.5, 0.012, 12.7);
   scene.add(matIn);
   /* Tanaman sudut selatan (pot + daun) — mengapit pintu masuk.
      Sudut utara SENGAJA kosong: zona masuk dari gang + lane jalan
@@ -2537,6 +2553,44 @@ function buildFrontOffice() {
   scene.add(place(panelPlane(0.8, 1.2, dirTex), -3.5, 1.15, 12.8));
 }
 
+/* PINTU KACA (27 Nov 2026, perintah Rangga: "Pintu gerbang harusnya
+   pintu kaca dan sejajar sm layout front office"). Pintu ganda
+   (double door) di sumbu front office (x=-1,5 — sejajar meja
+   resepsionis + karpet sambut + papan direktori), di bidang
+   dinding selatan (z=14). Dua panel kaca transparan + bingkai
+   gelap + gagang + strip volt di header. Dinding selatan rendah
+   (0,9) — pintu menjulang di atasnya, gaya sama seperti panel
+   dinding. Kaca = MeshBasicMaterial (bukan Lambert) supaya tidak
+   ikut shadow traverse (kaca transparan tidak boleh menjatuhkan
+   bayangan solid) dan tidak dikonversi AAA. Pintu murni dekoratif:
+   jalur jalan agen (planWalk) tidak pernah lewat z=14, jadi tidak
+   menghalangi gerakan agen. */
+function buildGlassDoor() {
+  const cx = -1.5, cz = 14.0;
+  const W = 2.4, H = 2.2; /* lebar total, tinggi (samakan dinding utara) */
+  const postW = 0.08;
+  /* Bingkai: 2 tiang samping + header + ambang. */
+  scene.add(place(box(postW, H, 0.12, 0x2e2a26), cx - W / 2 + postW / 2, H / 2, cz));
+  scene.add(place(box(postW, H, 0.12, 0x2e2a26), cx + W / 2 - postW / 2, H / 2, cz));
+  scene.add(place(box(W, 0.1, 0.12, 0x2e2a26), cx, H - 0.05, cz));
+  scene.add(place(box(W, 0.06, 0.3, C.panelEdge), cx, 0.03, cz));
+  /* Mullion tengah. */
+  scene.add(place(box(0.06, H - 0.1, 0.1, 0x2e2a26), cx, H / 2, cz));
+  /* Dua panel kaca (transparan, tidak cast shadow). */
+  const glassMat = new THREE.MeshBasicMaterial({ color: 0xbfd9e8, transparent: true, opacity: 0.3 });
+  for (const s of [-1, 1]) {
+    const pane = new THREE.Mesh(new THREE.BoxGeometry(1.08, H - 0.16, 0.04), glassMat);
+    pane.position.set(cx + s * 0.6, H / 2, cz);
+    scene.add(pane);
+  }
+  /* Gagang vertikal di dekat tengah (tiap daun, sisi pengunjung). */
+  for (const s of [-1, 1]) {
+    scene.add(place(cyl(0.025, 0.025, 0.5, 0x555555), cx + s * 0.14, 1.05, cz + 0.06));
+  }
+  /* Strip volt di header (aksen, selaras meja resepsionis). */
+  scene.add(place(box(W - 0.16, 0.04, 0.02, VOLT), cx, H - 0.12, cz + 0.07));
+}
+
 function buildLounge() {
   const sofa = new THREE.Group();
   const base = box(3.6, 0.5, 1.3, C.sofa); base.position.y = 0.25; sofa.add(base);
@@ -2564,6 +2618,17 @@ function buildLounge() {
      menutupi bagian bawah TV dinamis + whiteboard rapat. */
   scene.add(place(cyl(0.06, 0.05, 0.12, 0xfc7a24), 4.7, 0.56, -10.6));
   scene.add(place(cyl(0.06, 0.05, 0.12, 0x0f766e), 5.8, 0.56, -10.6));
+  /* Karpet area duduk (27 Nov 2026): di bawah sofa + slot lounge,
+     tepi selatan karpet (z=-11,3) tidak sampai ke meja kopi
+     (z=-11,1) supaya kaki meja tidak menembus karpet. */
+  const rugEdge = new THREE.Mesh(new THREE.PlaneGeometry(4.0, 1.8), mat('loungeRugEdge', C.carpetEdge));
+  rugEdge.rotation.x = -Math.PI / 2;
+  rugEdge.position.set(5.25, 0.008, -12.2);
+  scene.add(rugEdge);
+  const rugIn = new THREE.Mesh(new THREE.PlaneGeometry(3.8, 1.6), mat('loungeRug', C.carpet));
+  rugIn.rotation.x = -Math.PI / 2;
+  rugIn.position.set(5.25, 0.012, -12.2);
+  scene.add(rugIn);
   scene.add(place(box(0.6, 1.8, 2.0, C.desk), 10.4, 0.9, -6));
   const loungeBooks = [0xfc7a24, 0xc4b5fd, 0xca4f40];
   loungeBooks.forEach((col, i) => {
@@ -3297,6 +3362,11 @@ function buildWarRoom() {
      koridor lane di kedua sisi meja (x=9.6 / x=14.3) harus tetap lega. */
   scene.add(place(box(0.7, 0.1, 0.7, C.chair), 12, PAD_TOP - 0.05, 4.6));
   scene.add(place(box(0.7, 0.1, 0.7, C.chair), 12, PAD_TOP - 0.05, 9.4));
+  /* Tanaman sudut barat-daya (27 Nov 2026): isi sudut kosong,
+     jauh dari slot (12,9,4) + lane x=9,6/14,3 + sekat barat. */
+  scene.add(place(cyl(0.45, 0.35, 0.5, C.pot), 9.7, 0.25, 13));
+  scene.add(place(sph(0.55, C.plant), 9.7, 1.0, 13));
+  scene.add(place(sph(0.35, C.plantDark), 9.9, 1.45, 12.9));
   /* Papan besar menempel sekat timur (x=15) + bidang putih. */
   scene.add(place(box(0.1, 2.2, 4.5, C.panel), 14.82, 1.6, 7));
   const board = new THREE.Mesh(
