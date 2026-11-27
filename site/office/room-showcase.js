@@ -3708,6 +3708,27 @@ function buildRanggaOffice() {
   scene.add(place(box(1.0, 0.8, 0.06, C.panelEdge), -16, 1.6, -13.9));
   const frame = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 0.65), new THREE.MeshBasicMaterial({ color: 0xf5f5f0 }));
   scene.add(place(frame, -16, 1.6, -13.81));
+  /* Whiteboard di dinding timur (27 Nov 2026, Rangga: isi Kantor
+     Rangga) — bingkai + bidang putih menghadap barat; jauh dari
+     lane x=-15, baris jalan z=-12, meja Rangga, dan slot (-13,5,-11). */
+  scene.add(place(box(0.06, 1.5, 2.5, C.panelEdge), -10.68, 1.5, -8));
+  const wbRangga = new THREE.Mesh(
+    new THREE.PlaneGeometry(2.3, 1.3),
+    new THREE.MeshBasicMaterial({ color: 0xf5f5f0 }));
+  wbRangga.position.set(-10.74, 1.5, -8);
+  wbRangga.rotation.y = -Math.PI / 2;
+  scene.add(wbRangga);
+  /* Sudut meeting kecil di tenggara ruangan: meja kecil + 2 pad
+     menghadap meja. Jauh dari pintu (-15,-2), lane x=-15, dan
+     posisi overflow (-15,18,-4,19). */
+  const meetTable = box(1.2, 0.1, 1.2, C.deskTop);
+  meetTable.position.set(-12.5, 0.67, -4.5);
+  scene.add(meetTable);
+  for (const [lx, lz] of [[-12.9, -4.9], [-12.1, -4.9], [-12.9, -4.1], [-12.1, -4.1]]) {
+    scene.add(place(box(0.08, 0.72, 0.08, C.desk), lx, 0.36, lz));
+  }
+  scene.add(place(box(0.65, 0.1, 0.65, C.chair), -13.5, PAD_TOP - 0.05, -4.5));
+  scene.add(place(box(0.65, 0.1, 0.65, C.chair), -11.5, PAD_TOP - 0.05, -4.5));
 }
 
 /* --- ruangan baru 0.4.9 (Worker F) ------------------------------ */
@@ -3757,6 +3778,33 @@ function buildStudioKonten() {
   scene.add(place(box(0.06, 2.2, 0.06, 0x555555), 17.2, 1.1, -8.4));
   const backdrop = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 2.2), new THREE.MeshBasicMaterial({ color: C.plant }));
   scene.add(place(backdrop, 15.75, 1.15, -8.4));
+  /* Teleprompter di depan slot panggung (27 Nov 2026, Rangga: isi
+     Studio) — tiang + layar menghadap selatan ke presenter.
+     Posisi z=-8,0 (0,5 m di utara baris jalan z=-7,5) supaya tidak
+     menghalangi jalur jalan ke slot panggung; 0,4 m di selatan
+     backdrop (z=-8,4). */
+  scene.add(place(cyl(0.05, 0.07, 1.4, 0x555555), 15.75, 0.7, -8.0));
+  scene.add(place(box(0.3, 0.05, 0.3, 0x555555), 15.75, 0.025, -8.0));
+  const tpFrame = box(0.78, 0.53, 0.04, 0x555555);
+  tpFrame.position.set(15.75, 1.5, -8.03);
+  scene.add(tpFrame);
+  const tpScreen = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.7, 0.45),
+    new THREE.MeshBasicMaterial({ color: 0x16181c }));
+  tpScreen.position.set(15.75, 1.5, -8.0);
+  scene.add(tpScreen);
+  /* Rak properti di dinding barat (27 Nov 2026) — panel belakang +
+     3 tingkat, kotak prop warna-warni; jauh dari meja editing,
+     tripod, dan jalur barat ke slot. */
+  scene.add(place(box(0.08, 2.0, 2.0, C.desk), 10.68, 1.0, -7));
+  for (const sy of [0.4, 0.95, 1.5]) {
+    scene.add(place(box(0.45, 0.05, 1.9, C.deskTop), 10.95, sy, -7));
+  }
+  const propColors = [0xca4f40, 0x0f766e, 0xfc7a24, 0xc4b5fd, 0xf4a7b9, 0x1e3a8a];
+  propColors.forEach((col, i) => {
+    const sy = [0.4, 0.95, 1.5][Math.floor(i / 2)];
+    scene.add(place(box(0.35, 0.3, 0.5, col), 10.95, sy + 0.175, -7.6 + (i % 2) * 1.0));
+  });
 }
 
 function buildWarRoom() {
@@ -3788,6 +3836,33 @@ function buildWarRoom() {
   board.position.set(14.76, 1.6, 7);
   board.rotation.y = -Math.PI / 2;
   scene.add(board);
+  /* Layar status kedua di dinding barat (27 Nov 2026, Rangga: isi
+     War Room) — cermin papan timur, tapi layar gelap + strip volt
+     (bukan papan tulis putih). Muka di x=9,12 menghadap timur;
+     lane barat x=9,6 berjarak 0,48 m; segmen jalan z=4,6/9,4 tidak
+     tersentuh (layar z 4,75..9,25). */
+  scene.add(place(box(0.1, 2.2, 4.5, C.panel), 9.18, 1.6, 7));
+  const statusBoard = new THREE.Mesh(
+    new THREE.PlaneGeometry(4.3, 2.0),
+    new THREE.MeshBasicMaterial({ color: 0x16181c }));
+  statusBoard.position.set(9.12, 1.6, 7);
+  statusBoard.rotation.y = Math.PI / 2;
+  scene.add(statusBoard);
+  const statusStrip = box(4.3, 0.09, 0.02, VOLT);
+  statusStrip.position.set(9.11, 2.7, 7);
+  scene.add(statusStrip);
+  /* Kabinet samping di dinding selatan (x=12, z=13,4) — 3,75 m di
+     selatan pad selatan (12,9,4), jauh dari lane + segmen jalan
+     mana pun; cermin tanaman sudut barat-daya (9,7,13). */
+  scene.add(place(box(1.2, 1.2, 0.5, C.desk), 12, 0.6, 13.4));
+  scene.add(place(box(1.2, 0.06, 0.5, C.deskTop), 12, 1.23, 13.4));
+  /* Pad lesehan tambahan mengapit pad utara/selatan (3 kursi tiap
+     sisi meja operasi). Pad di baris jalan z=4,6/9,4: avatar menuju
+     pad tengah sempat melintas di atas pad sisi (0,10 m, singkat)
+     — diterima demi 6 kursi (lihat catatan). */
+  for (const [px, pz] of [[10.6, 4.6], [13.4, 4.6], [10.6, 9.4], [13.4, 9.4]]) {
+    scene.add(place(box(0.7, 0.1, 0.7, C.chair), px, PAD_TOP - 0.05, pz));
+  }
 }
 
 /* Meja lab: permukaan + kaki panel (tanpa monitor — gantinya
