@@ -1310,10 +1310,39 @@ function enterFollow(name) {
   if (!KNOWN_AGENTS[name] || !avatarGroups[name] || !avatarGroups[name].visible) return false;
   fsSeq++; /* follow baru — fullscreenchange basi dari exit lama abaikan */
   if (!perspCam) return false;
+  /* Pindah antar agen (A -> B): kamera TERBANG LANGSUNG dari POV A ke
+     POV B, TANPA zoom out ke overview (Rangga 27 Nov 22:27). Tangkap
+     pose awal dari posisi kamera SAAT INI (di belakang A), bukan dari
+     posisi overview orthoCam — dari situlah "zoom out mendadak" itu
+     berasal. */
+  const switching = cameraMode === 'follow' && followName && followName !== name;
+  const wasEntering = !!(camAnim && camAnim.kind === 'enter');
+  const wasExiting = !!(camAnim && camAnim.kind === 'exit');
+  let fromPos = null;
+  let fromAnchor = null;
+  if (switching) {
+    fromPos = perspCam.position.clone();
+    if (!wasEntering) {
+      /* Follow sudah settle: anchor eksak = pose follow A. */
+      const oldPose = followCamPose();
+      if (oldPose) fromAnchor = oldPose.anchor.clone();
+    }
+    if (!fromAnchor) {
+      /* Masih di tengah animasi masuk: anchor dari arah pandang
+         kamera saat ini (posisi + arah pandang * jarak follow). */
+      const dir = new THREE.Vector3();
+      perspCam.getWorldDirection(dir);
+      fromAnchor = fromPos.clone().addScaledVector(dir, 4);
+    }
+  }
   stopCamAnim();
   /* Simpan overview saat ini supaya exitFollow bisa zoom out mulus
-     kembali ke framing yang sama. */
-  prevOverview = { camZoom, camPan: { x: camPan.x, z: camPan.z }, azimuth, camElev };
+     kembali ke framing yang sama. JANGAN timpa saat pindah antar agen
+     atau saat memotong animasi keluar — overview tersimpan harus tetap
+     overview ASLI, bukan nilai tengah-tengah animasi. */
+  if (!switching && !wasExiting) {
+    prevOverview = { camZoom, camPan: { x: camPan.x, z: camPan.z }, azimuth, camElev };
+  }
   followName = name;
   followYaw = 0;
   followPitch = 0.32;
@@ -1327,9 +1356,10 @@ function enterFollow(name) {
   followPan = { x: 0, z: 0 };
   cameraMode = 'follow';
   camera = perspCam;
-  /* Transisi smooth: terbang dari posisi overview ke belakang agen
+  /* Transisi smooth: masuk baru = terbang dari posisi overview ke
+     belakang agen; pindah antar agen = terbang langsung POV -> POV
      (REDUCED = langsung ke pose akhir). */
-  animateEnterFollow();
+  animateEnterFollow(fromPos, fromAnchor);
   refreshFollowCard();
   requestRender();
   return true;
@@ -1353,12 +1383,16 @@ function getCameraMode() {
   return cameraMode;
 }
 
-/* --- transisi kamera smooth (Rangga 27 Nov 21:12) ----------------- */
-/* Masuk follow = terbang mulus dari posisi overview ke belakang agen;
-   keluar follow = zoom out mulus (ortho zoom + pan) kembali ke
-   overview. Durasi ~700 ms, easeInOutCubic. REDUCED
-   (prefers-reduced-motion) = transisi instan. Pola rAF mengikuti
-   plumbobAnimRaf. */
+/* --- transisi kamera smooth (Rangga 27 Nov 21:12, 22:22, 22:27) ----- */
+/* SEMUA transisi kamera smooth, satu easing (~700 ms, easeInOutCubic):
+   - masuk follow = terbang mulus dari posisi overview ke belakang agen
+     (zoom in);
+   - pindah antar agen = terbang LANGSUNG POV -> POV, TANPA zoom out ke
+     overview (Rangga 22:27 — "kameranya yg moving");
+   - keluar follow = zoom out mulus (ortho zoom + pan) kembali ke
+     overview. Zoom out HANYA di sini, bukan saat pindah antar agen.
+   REDUCED (prefers-reduced-motion) = transisi instan. Pola rAF
+   mengikuti plumbobAnimRaf. */
 let prevOverview = null; /* {camZoom, camPan{x,z}, azimuth, camElev} saat enterFollow */
 let camAnimRaf = 0;
 let camAnim = null; /* {kind: 'enter'|'exit'} */
@@ -1368,17 +1402,22 @@ function stopCamAnim() {
   if (camAnimRaf) { cancelAnimationFrame(camAnimRaf); camAnimRaf = 0; }
   camAnim = null;
 }
-function animateEnterFollow() {
-  /* Terbang mulus: perspCam mulai dari posisi overview (ortho, jauh,
-     wide shot) lalu lerp ke pose follow. Pose target dihitung ulang
-     tiap frame (followCamPose) supaya agen yang jalan / drag user
-     selama terbang tetap diikuti. */
+function animateEnterFollow(fromPos, fromAnchor) {
+  /* Terbang mulus ke pose follow. Pose target dihitung ulang tiap frame
+     (followCamPose) supaya agen yang jalan / drag user selama terbang
+     tetap diikuti. Titik awal:
+     - masuk baru: posisi overview (ortho, jauh, wide shot) -> zoom in;
+     - pindah antar agen: fromPos/fromAnchor yang diteruskan enterFollow
+       (posisi + anchor kamera SAAT INI di belakang agen lama) -> terbang
+       langsung POV -> POV, TANPA zoom out ke overview (Rangga 22:27). */
   const first = followCamPose();
   if (!first) return;
   if (REDUCED) { updateFollowCamera(); return; }
-  const fromPos = orthoCam ? orthoCam.position.clone() : first.pos.clone();
-  const b = computePlanBounds();
-  const fromAnchor = new THREE.Vector3(b.cx + camPan.x, 0, b.cz + camPan.z);
+  if (!fromPos || !fromAnchor) {
+    fromPos = orthoCam ? orthoCam.position.clone() : first.pos.clone();
+    const b = computePlanBounds();
+    fromAnchor = new THREE.Vector3(b.cx + camPan.x, 0, b.cz + camPan.z);
+  }
   const fromFov = perspCam.fov;
   /* Terapkan pose awal SEBELUM frame pertama supaya render pertama
      sudah di posisi overview, bukan posisi follow lama. */
@@ -5554,6 +5593,23 @@ function moveRoomWrap(to) {
   const w = roomWrapEl();
   if (w && to) to.appendChild(w);
 }
+/* Resize renderer ke ukuran wrap — TANPA clear buffer bila ukuran sudah
+   sama. setSize selalu mengosongkan buffer canvas; selama transisi
+   fullscreen ResizeObserver menembak berkali-kali dan tiap clear = satu
+   kedip hitam di atas background gelap (Rangga 27 Nov 22:28). Guard
+   ini + background hangat di bawah membuat transisi tidak pernah
+   menampilkan hitam. */
+function resizeRendererToWrap() {
+  if (!renderer || !wrap) return;
+  const w = wrap.clientWidth || 800;
+  const h = wrap.clientHeight || 600;
+  const pr = renderer.getPixelRatio() || 1;
+  const bw = Math.round(renderer.domElement.width / pr);
+  const bh = Math.round(renderer.domElement.height / pr);
+  if (bw !== w || bh !== h) renderer.setSize(w, h, false);
+  fitCamera();
+  updateCamera();
+}
 async function enterFullscreen() {
   /* Penjaga race Esc: bila exit sedang berjalan (fsExiting), jangan
      early-return — entri baru mengambil alih; fullscreenchange basi
@@ -5566,6 +5622,12 @@ async function enterFullscreen() {
   overlay.hidden = false;
   displayMode = 'fullscreen';
   stopHeroRotate();
+  /* ANTI-KEDIP (Rangga 22:28): isi buffer dengan frame ukuran fullscreen
+     SEBELUM browser memulai transisi fullscreen — overlay (position:
+     fixed inset:0) sudah seukuran viewport begitu di-unhide, jadi
+     resize + render sinkron di sini; tanpa ini kanvas tampil kecil di
+     tengah overlay hitam selama transisi. */
+  if (renderer) { resizeRendererToWrap(); requestRender(); }
   try {
     if (overlay.requestFullscreen) {
       await overlay.requestFullscreen().catch(() => { fsFallback = true; });
@@ -5574,10 +5636,9 @@ async function enterFullscreen() {
     }
   } catch (_) { fsFallback = true; }
   if (fsFallback) overlay.classList.add('fs-fallback');
-  if (renderer) {
-    renderer.setSize(roomWrapEl().clientWidth || 800, roomWrapEl().clientHeight || 600, false);
-    fitCamera(); updateCamera();
-  }
+  /* Ukuran final baru pasti setelah transisi; resize terjaga (no-op
+     bila sudah sama) + render ulang. */
+  if (renderer) { resizeRendererToWrap(); }
   requestRender();
   return true;
 }
@@ -5590,10 +5651,7 @@ function exitFullscreenCleanup() {
   fsFallback = false;
   displayMode = 'hero';
   startHeroRotate();
-  if (renderer) {
-    renderer.setSize(roomWrapEl().clientWidth || 800, roomWrapEl().clientHeight || 600, false);
-    fitCamera(); updateCamera();
-  }
+  if (renderer) { resizeRendererToWrap(); }
   requestRender();
 }
 function exitFullscreen() {
@@ -5999,8 +6057,8 @@ window.__showcase = showcaseHook;
    bila belum jalan. Mount kedua = no-op (return false). */
 let showcaseMounted = false;
 const SHOWCASE_CSS = `
-#stageHero{position:relative;height:480px;border:1px solid #2d333b;border-radius:8px;overflow:hidden;cursor:pointer;background:#0f1115}
-#roomWrap{position:relative;width:100%;height:100%;background:#0f1115}
+#stageHero{position:relative;height:480px;border:1px solid #2d333b;border-radius:8px;overflow:hidden;cursor:pointer;background:#e8e2d4}
+#roomWrap{position:relative;width:100%;height:100%;background:#e8e2d4}
 #roomCanvas{position:absolute;inset:0}
 #roomCanvas canvas{display:block;width:100%;height:100%;touch-action:none}
 #roomBubbles{position:absolute;inset:0;overflow:hidden;pointer-events:none}
@@ -6015,7 +6073,7 @@ const SHOWCASE_CSS = `
 .hero-actions{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin-top:.6rem}
 .hint{font-size:.9rem;color:#9aa0a6;margin:0}
 #btnEnterFs,#btnExitFs{font:inherit;font-size:1rem;padding:.5rem .6rem;border:1px solid #2d333b;border-radius:6px;background:#21262d;color:#e6e6e6;min-height:44px;cursor:pointer}
-#fsOverlay{position:fixed;inset:0;z-index:50;background:#0f1115}
+#fsOverlay{position:fixed;inset:0;z-index:50;background:#e8e2d4}
 #fsOverlay[hidden]{display:none}
 #stageFs{position:absolute;inset:0}
 #btnExitFs{position:absolute;top:.6rem;right:.6rem;z-index:60}
@@ -6155,9 +6213,7 @@ async function init() {
   bindShowcaseChrome();
   new ResizeObserver(() => {
     if (!renderer) return;
-    renderer.setSize(wrap.clientWidth || 800, wrap.clientHeight || 600, false);
-    fitCamera();
-    updateCamera();
+    resizeRendererToWrap();
     requestRender();
   }).observe(wrap);
   await loadAvatars();
@@ -6209,6 +6265,10 @@ document.addEventListener('fullscreenchange', () => {
      rapikan — follow sudah dilepas keydown lebih dulu. */
   if (!document.fullscreenElement && displayMode === 'fullscreen' && !fsFallback) {
     if (fsExitSeq === -1 || fsSeq === fsExitSeq) { fsExiting = false; fsExitSeq = -1; exitFullscreenCleanup(); }
+  } else if (document.fullscreenElement && displayMode === 'fullscreen') {
+    /* Masuk fullscreen (ukuran final baru pasti di event ini):
+       resize terjaga + render ulang supaya tidak ada frame kosong. */
+    if (renderer) { resizeRendererToWrap(); requestRender(); }
   }
 });
 
