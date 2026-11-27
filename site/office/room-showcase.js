@@ -2770,7 +2770,9 @@ function buildLounge() {
   scene.add(place(sph(0.55, C.plant), 9.8, 1.0, -13));
   scene.add(place(sph(0.35, C.plantDark), 10.0, 1.45, -13.1));
   /* Tugas 2: TV di dinding utara di atas sofa (slot lounge menghadap
-     utara) + mug di meja kopi + rak buku kecil di dinding timur. */
+     selatan ke meja kopi + pusat ruangan, sejak 27 Nov 2026 — dulu
+     menghadap utara ke TV/dinding, avatar kelihatan ngadep tembok)
+     + mug di meja kopi + rak buku kecil di dinding timur. */
   /* TV statis DIHAPUS 27 Nov 2026: redundan dengan TV dinamis
      (5,25, 2,4, tampil pesan board terbaru) dan layar statisnya
      menutupi bagian bawah TV dinamis + whiteboard rapat. */

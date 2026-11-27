@@ -87,9 +87,14 @@ export const ROOMS = {
     lane: 0.7,
     legDy: 0,
     slots: [
-      { x: 2.5, z: -11.5, rot: Math.PI },
-      { x: 5.25, z: -11.5, rot: Math.PI },
-      { x: 8, z: -11.5, rot: Math.PI },
+      /* DIUBAH 27 Nov 2026 (Rangga: avatar jangan menghadap tembok):
+         dulu rot Math.PI — menghadap utara ke TV/dinding utara, punggung
+         ke meja kopi + pusat ruangan. Sekarang menghadap selatan ke
+         meja kopi + pusat lounge (searah sofa, yang menghadap selatan),
+         miring ke centroid seperti slot berdiri pantry/taman. */
+      { x: 2.5, z: -11.5, rot: 0.7 },
+      { x: 5.25, z: -11.5, rot: 0 },
+      { x: 8, z: -11.5, rot: -0.7 },
     ],
   },
   'studio-konten': {
