@@ -3115,6 +3115,77 @@ function buildCityBuilding(x, z, w, h, d, color, seed, faces) {
   return g;
 }
 
+function shopSignTex(name, bg, fg) {
+  /* Papan nama toko: canvas 320x64, ukuran font menyesuaikan
+     panjang nama supaya tidak meluber. */
+  const fs = name.length <= 8 ? 36 : name.length <= 11 ? 30 : 25;
+  return textTexture(320, 64, (g2) => {
+    g2.fillStyle = bg; g2.fillRect(0, 0, 320, 64);
+    g2.fillStyle = fg; g2.font = 'bold ' + fs + 'px sans-serif';
+    g2.textAlign = 'center'; g2.textBaseline = 'middle';
+    g2.fillText(name, 160, 34);
+  });
+}
+
+function buildKiosk(x, z, name, bodyColor, awningColor, faceDir) {
+  /* Kios kecil (3,2 x 2,6 x 3 m): badan + atap + strip volt +
+     awning miring + etalase kaca + meja display + papan nama dua
+     sisi. faceDir +1 = menghadap +x (sisi barat, ke arah kantor),
+     -1 = menghadap -x (sisi timur). */
+  const g = new THREE.Group();
+  const body = box(3.2, 2.6, 3, bodyColor);
+  body.position.y = 1.3; g.add(body);
+  const roof = box(3.5, 0.15, 3.3, 0x2a2f33);
+  roof.position.y = 2.68; g.add(roof);
+  const strip = box(3.5, 0.07, 3.32, VOLT);
+  strip.position.y = 2.58; g.add(strip);
+  const awn = box(3.0, 0.06, 1.1, awningColor);
+  awn.position.set(0, 2.35, 1.85); awn.rotation.x = 0.45; g.add(awn);
+  const glass = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.0),
+    new THREE.MeshBasicMaterial({ color: 0xbfd9e8 }));
+  glass.position.set(0, 1.35, 1.53); g.add(glass);
+  const table = box(2.2, 0.8, 0.6, C.deskTop);
+  table.position.set(0, 0.4, 1.9); g.add(table);
+  const sign = shopSignTex(name, '#16181c', '#f3eee2');
+  for (const sz of [1, -1]) {
+    const s = panelPlane(2.75, 0.55, sign);
+    s.position.set(0, 2.15, sz * 1.56);
+    if (sz < 0) s.rotation.y = Math.PI;
+    g.add(s);
+  }
+  g.position.set(x, 0, z);
+  g.rotation.y = faceDir > 0 ? Math.PI / 2 : -Math.PI / 2;
+  scene.add(g);
+}
+
+function buildRuko(x, z, name, color1, color2, seed, faceDir) {
+  /* Ruko 2 lantai (4,2 x 6,5 x 4 m): lantai dasar toko (etalase
+     kaca + pintu + papan nama di antara lantai) + lantai atas
+     (fasad jendela menyala) + atap. faceDir sama seperti
+     buildKiosk. */
+  const g = new THREE.Group();
+  const ground = box(4.2, 3.0, 4, color1);
+  ground.position.y = 1.5; g.add(ground);
+  const upper = box(4.2, 3.2, 4, color2);
+  upper.position.y = 4.6; g.add(upper);
+  const roof = box(4.4, 0.2, 4.2, 0x2a2f33);
+  roof.position.y = 6.3; g.add(roof);
+  const glass = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 2.0),
+    new THREE.MeshBasicMaterial({ color: 0xbfd9e8 }));
+  glass.position.set(0, 1.4, 2.03); g.add(glass);
+  const door = box(0.8, 2.0, 0.05, 0x2a2f33);
+  door.position.set(-1.3, 1.0, 2.06); g.add(door);
+  const sign = shopSignTex(name, '#16181c', '#a3ff00');
+  const s = panelPlane(3.5, 0.7, sign);
+  s.position.set(0, 2.65, 2.08); g.add(s);
+  const fac = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 3.2),
+    facadeMaterial(4.2, 3.2, '#3a3f44', seed));
+  fac.position.set(0, 4.6, 2.06); g.add(fac);
+  g.position.set(x, 0, z);
+  g.rotation.y = faceDir > 0 ? Math.PI / 2 : -Math.PI / 2;
+  scene.add(g);
+}
+
 function buildStreetLamp(x, z, armDir) {
   /* Tiang lampu jalan: lengan mengarah ke jalan (armDir +1 = +z,
      -1 = -z), kepala menyala kuning hangat (emissive). */
@@ -3281,6 +3352,36 @@ function buildCity() {
   buildCityBuilding(-27, 16, 6, 6, 5, 0x7a8b7d, 307, 'nsew');
   buildCityBuilding(27, 0, 6, 7, 5, 0x9c8a76, 311, 'nsew');
   buildCityBuilding(27, 20, 6, 9, 5, 0x6e6a63, 317, 'nsew');
+
+  /* Trotoar samping (x ±24..30, z -13..29): alas terang di bawah
+     deretan kios/ruko kiri-kanan kantor, menyambung trotoar utara
+     (z 29) tanpa menabrak parkir (x ±21) atau bukit (z -16,4). */
+  for (const sx of [-1, 1]) {
+    const sw = new THREE.Mesh(new THREE.PlaneGeometry(6, 42), mat('walk2', 0xcfc8b8));
+    sw.rotation.x = -Math.PI / 2;
+    sw.position.set(sx * 27, 0.005, 8);
+    scene.add(sw);
+  }
+
+  /* Deretan kios + ruko di kiri-kanan kantor (27 Nov 2026, perintah
+     Rangga 21:22: yang belum tinggal bangunan, kios, ruko samping
+     kanan-kiri kantor). Semua menghadap ke kantor (fasad ke sumbu
+     x 0). Mengisi sela di antara 4 gedung yang sudah ada + ujung
+     utara/selatan deret; TIDAK masuk depan gerbang (z > 30) atau
+     belakang kantor (z < -14, perbukitan). */
+  // Barat (x -27, menghadap +x).
+  buildKiosk(-27, -11, 'WARUNG KOPI', 0x9c8a76, VOLT, 1);
+  buildRuko(-27, -5, 'TOKO BANGUNAN', 0x8a7f70, 0x7a8b7d, 401, 1);
+  buildKiosk(-27, 10, 'WARTEG', 0x7a8b7d, 0x2dd4bf, 1);
+  buildRuko(-27, 22, 'APOTEK SEHAT', 0x9c8a76, 0x8a7f70, 407, 1);
+  buildKiosk(-27, 27, 'ES TEH', 0xa08b6d, 0xf97316, 1);
+  // Timur (x 27, menghadap -x).
+  buildRuko(27, -10, 'LAUNDRY', 0x6e6a63, 0x9c8a76, 411, -1);
+  buildKiosk(27, -5, 'ROTI BAKAR', 0x8a7f70, 0xea580c, -1);
+  buildKiosk(27, 6, 'BUAH SEGAR', 0x7a8b7d, 0x22c55e, -1);
+  buildRuko(27, 10.5, 'BARBERSHOP', 0x9c8a76, 0x6e6a63, 417, -1);
+  buildKiosk(27, 15, 'PULSA', 0x8a7f70, 0x3b82f6, -1);
+  buildKiosk(27, 26, 'SATE AYAM', 0x6e6a63, 0xef4444, -1);
 
   /* Gerbang kantor. */
   buildGate();
