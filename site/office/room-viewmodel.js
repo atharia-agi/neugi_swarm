@@ -167,6 +167,43 @@ export const ROOMS = {
       { x: 16.8, z: 10, rot: 0.4 },
     ],
   },
+  /* Area luar (ekspansi 27 Nov 2026, perintah Rangga): halaman +
+     parkir + jalan di selatan kantor. Slot di sini HANYA untuk
+     bounds kamera (computePlanBounds di room-showcase.js) — TIDAK
+     ada agen yang ditempatkan di luar (snapshot pipeline tidak
+     mengenal ruangan ini, jadi assignSlots/planWalk tidak pernah
+     menyentuh slot-slot ini). Tanpa desk. */
+  halaman: {
+    label: 'Halaman',
+    door: { x: 0, z: 17.5 },
+    slots: [
+      { x: -14, z: 17, rot: 0 },
+      { x: 0, z: 17, rot: 0 },
+      { x: 14, z: 17, rot: 0 },
+      { x: -14, z: 20, rot: 0 },
+      { x: 14, z: 20, rot: 0 },
+    ],
+  },
+  parkir: {
+    label: 'Parkir',
+    door: { x: 0, z: 25 },
+    slots: [
+      { x: -16, z: 23, rot: 0 },
+      { x: -10, z: 27, rot: 0 },
+      { x: 0, z: 25, rot: 0 },
+      { x: 10, z: 27, rot: 0 },
+      { x: 16, z: 23, rot: 0 },
+    ],
+  },
+  jalan: {
+    label: 'Jalan',
+    door: { x: 0, z: 34 },
+    slots: [
+      { x: -20, z: 34, rot: 0 },
+      { x: 0, z: 34, rot: 0 },
+      { x: 20, z: 34, rot: 0 },
+    ],
+  },
 };
 
 /* Glyph pixel 16x16 (bukan emoji). Dipetakan 1:1 ke keadaan nyata

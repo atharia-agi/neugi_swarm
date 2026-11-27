@@ -1753,6 +1753,7 @@ function buildScene() {
   buildLounge();
   buildPantry();
   buildGarden();
+  buildOutdoor();
   buildRanggaOffice();
   buildStudioKonten();
   buildWarRoom();
@@ -2565,6 +2566,197 @@ function buildGarden() {
   scene.add(place(cyl(0.55, 0.55, 0.06, 0x5b9bd5), 5.5, 0.24, 7));
   scene.add(place(cyl(0.1, 0.12, 0.5, C.panel), 5.5, 0.45, 7));
   scene.add(place(sph(0.14, 0x5b9bd5), 5.5, 0.75, 7));
+}
+
+/* --- ekspansi luar (27 Nov 2026, perintah Rangga: BILLBOARD) ---- */
+/* Halaman + parkir + jalan di selatan kantor (z > 14.15), dengan
+   2 billboard besar (NEUGI + webiz.id) di trotoar antara parkir
+   dan jalan, dan mobil lalu lalang di jalan. Semua di luar denah
+   dalam (z -14..14) — tidak menimpa objek yang sudah ada.
+   Billboard = papan 3D (box + tiang + footing) + logo sebagai
+   tekstur di kedua sisi, logo dipakai APA ADANYA dari aset repo
+   (bukan digambar ulang, bukan hasil image-to-3D — lihat catatan
+   di bawah buildBillboard). Satu aksen kuat tetap volt. */
+let trafficCars = [];
+let trafficTimer = 0;
+let trafficLast = 0;
+
+function buildCar(color) {
+  /* Mobil simpel (box + kabin + 4 roda + lampu). Depan = +x. */
+  const g = new THREE.Group();
+  const body = box(4.0, 0.6, 1.8, color);
+  body.position.y = 0.75; g.add(body);
+  const cabin = box(2.0, 0.55, 1.6, 0x2a2f33);
+  cabin.position.set(-0.2, 1.3, 0); g.add(cabin);
+  const wheelGeo = new THREE.CylinderGeometry(0.32, 0.32, 0.25, 10);
+  const wheelMat = mat('wheel', 0x1a1a1a);
+  for (const [wx, wz] of [[1.35, 0.85], [1.35, -0.85], [-1.35, 0.85], [-1.35, -0.85]]) {
+    const w = new THREE.Mesh(wheelGeo, wheelMat);
+    w.rotation.x = Math.PI / 2;
+    w.position.set(wx, 0.32, wz);
+    g.add(w);
+  }
+  for (const hz of [-0.55, 0.55]) {
+    const hl = box(0.08, 0.14, 0.3, 0xffe9a8, { emissive: 0xffd97a, emissiveIntensity: 0.8 });
+    hl.position.set(2.0, 0.75, hz); g.add(hl);
+    const tl = box(0.08, 0.14, 0.3, 0xca4f40, { emissive: 0xca4f40, emissiveIntensity: 0.6 });
+    tl.position.set(-2.0, 0.75, hz); g.add(tl);
+  }
+  return { group: g };
+}
+
+function buildBillboard(x, z, spec) {
+  /* Billboard 3D: papan + tiang + footing, logo sebagai tekstur.
+     CATATAN METODE (27 Nov 2026): Hunyuan 3D image-to-3D TIDAK
+     dipakai di sini — image-to-3D merekonstruksi OBJEK 3D dari
+     foto, dan pada logo datar (teks di atas latar hitam) hasilnya
+     relief meleleh yang menghancurkan huruf. Billboard yang benar
+     adalah papan 3D dengan logo sebagai tekstur: logo tampil
+     piksel-sempurna apa adanya (aset repo yang sama dengan logo
+     footer), papan + tiang + footing memberi bentuk 3D-nya, tanpa
+     biaya GPU dan tanpa upload GLB biner. */
+  const g = new THREE.Group();
+  const { w, h, poleH, url } = spec;
+  const cy = poleH + h / 2;
+  const back = box(w + 0.3, h + 0.3, 0.22, 0x16181c);
+  back.position.y = cy; g.add(back);
+  const strip = box(w + 0.3, 0.09, 0.24, VOLT);
+  strip.position.y = cy + h / 2 + 0.12; g.add(strip);
+  const loader = new THREE.TextureLoader();
+  const tex = loader.load(url,
+    () => requestRender(),
+    undefined,
+    () => console.warn('Billboard: logo gagal dimuat:', url));
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  const faceMat = new THREE.MeshBasicMaterial({ map: tex });
+  const front = new THREE.Mesh(new THREE.PlaneGeometry(w, h), faceMat);
+  front.position.set(0, cy, 0.13); g.add(front);
+  const backFace = new THREE.Mesh(new THREE.PlaneGeometry(w, h), faceMat);
+  backFace.position.set(0, cy, -0.13); backFace.rotation.y = Math.PI; g.add(backFace);
+  for (const sx of [-1, 1]) {
+    const px = sx * (w / 2 - 0.8);
+    const pole = cyl(0.16, 0.2, poleH, 0x555555);
+    pole.position.set(px, poleH / 2, 0); g.add(pole);
+    const foot = box(0.8, 0.35, 0.8, 0x9a8a6f);
+    foot.position.set(px, 0.175, 0); g.add(foot);
+  }
+  g.position.set(x, 0, z);
+  scene.add(g);
+  return g;
+}
+
+function buildOutdoor() {
+  /* Halaman (z 14.3..20) — paving krem + walkway dari pintu. */
+  const yard = new THREE.Mesh(new THREE.PlaneGeometry(42, 5.7), mat('yard', C.gang));
+  yard.rotation.x = -Math.PI / 2; yard.position.set(0, 0.01, 17.15); scene.add(yard);
+  const walk = new THREE.Mesh(new THREE.PlaneGeometry(3, 5.7), mat('walk', 0xcbb693));
+  walk.rotation.x = -Math.PI / 2; walk.position.set(0, 0.02, 17.15); scene.add(walk);
+  for (const sx of [-1.5, 1.5]) {
+    scene.add(place(box(0.08, 0.02, 5.7, VOLT), sx, 0.03, 17.15));
+  }
+  /* Kanopi pintu masuk selatan. */
+  const canopy = box(6, 0.15, 2.5, 0xefe8d6);
+  canopy.position.set(0, 2.7, 15.5); scene.add(canopy);
+  const canopyEdge = box(6, 0.06, 0.08, VOLT);
+  canopyEdge.position.set(0, 2.7, 16.72); scene.add(canopyEdge);
+  for (const sx of [-2.7, 2.7]) {
+    scene.add(place(cyl(0.09, 0.09, 2.7, 0x555555), sx, 1.35, 16.5));
+  }
+  /* Tanaman halaman (gaya taman dalam: pot + bola daun) + 2 pohon. */
+  for (const [px, pz] of [[-4, 16], [4, 16], [-4, 19], [4, 19]]) {
+    scene.add(place(cyl(0.45, 0.35, 0.5, C.pot), px, 0.25, pz));
+    scene.add(place(sph(0.55, C.plant), px, 1.0, pz));
+  }
+  for (const [tx, tz] of [[-19, 18], [19, 18]]) {
+    scene.add(place(cyl(0.12, 0.16, 1.4, 0x6b4a2f), tx, 0.7, tz));
+    scene.add(place(sph(0.9, C.plant), tx, 1.9, tz));
+    scene.add(place(sph(0.6, C.plantDark), tx + 0.3, 2.5, tz));
+  }
+  /* Parkir (z 20..29) — aspal + garis petak (4 petak tiap sisi). */
+  const park = new THREE.Mesh(new THREE.PlaneGeometry(42, 9), mat('park', 0x4a4e54));
+  park.rotation.x = -Math.PI / 2; park.position.set(0, 0.01, 24.5); scene.add(park);
+  for (const bx of [-20, -17, -14, -11, -8, 8, 11, 14, 17, 20]) {
+    scene.add(place(box(0.08, 0.02, 4.5, 0xf5f5f0), bx, 0.02, 22.75));
+  }
+  /* Trotoar utara + selatan. */
+  for (const sz of [29.75, 38.25]) {
+    const sw = new THREE.Mesh(new THREE.PlaneGeometry(84, 1.5), mat('walk2', 0xcfc8b8));
+    sw.rotation.x = -Math.PI / 2; sw.position.set(0, 0.01, sz); scene.add(sw);
+  }
+  /* Jalan (z 30.5..37.5) — aspal + garis tepi + marka tengah. */
+  const road = new THREE.Mesh(new THREE.PlaneGeometry(84, 7), mat('road', 0x3a3e42));
+  road.rotation.x = -Math.PI / 2; road.position.set(0, 0.01, 34); scene.add(road);
+  for (const ez of [30.7, 37.3]) {
+    scene.add(place(box(84, 0.02, 0.12, 0xf5f5f0), 0, 0.02, ez));
+  }
+  for (let dx = -40; dx <= 40; dx += 4) {
+    scene.add(place(box(2, 0.02, 0.14, 0xf5f5f0), dx, 0.02, 34));
+  }
+  /* Rambu P di pintu parkir (kanan driveway tengah). */
+  const pTex = textTexture(128, 128, (g2) => {
+    g2.fillStyle = '#1d4ed8'; g2.fillRect(0, 0, 128, 128);
+    g2.fillStyle = '#ffffff'; g2.font = 'bold 84px sans-serif';
+    g2.textAlign = 'center'; g2.textBaseline = 'middle';
+    g2.fillText('P', 64, 70);
+  });
+  const pSign = panelPlane(0.7, 0.7, pTex);
+  pSign.position.set(3.5, 2.0, 29.75); scene.add(pSign);
+  scene.add(place(cyl(0.06, 0.06, 2.2, 0x555555), 3.5, 1.1, 29.75));
+  /* Billboard (logo apa adanya, menghadap jalan/+z). NEUGI 6x4
+     (logo 1536x1024 = 1.5:1), webiz 9x2.4 (logo 1129x300).
+     Posisi di trotoar (z 29.75), mengapit driveway — TIDAK di
+     belakang mobil parkir (mobil parkir digeser ke petak di luar
+     bayangan billboard). */
+  buildBillboard(-13, 29.75, { url: MODULE_BASE + '../assets/neugi-logo.jpg', w: 6.0, h: 4.0, poleH: 2.4 });
+  buildBillboard(13, 29.75, { url: MODULE_BASE + '../assets/webiz-logo.webp', w: 9.0, h: 2.4, poleH: 2.2 });
+  /* Mobil parkir (statis, menghadap selatan/aisle). */
+  const parked = [
+    { x: -18.5, z: 22.75, color: 0xf5f5f0 },
+    { x: -9.5, z: 22.75, color: 0x3a3f44 },
+    { x: 18.5, z: 22.75, color: 0xca4f40 },
+  ];
+  for (const p of parked) {
+    const car = buildCar(p.color);
+    car.group.position.set(p.x, 0, p.z);
+    car.group.rotation.y = -Math.PI / 2;
+    scene.add(car.group);
+  }
+  /* Mobil lalu lalang (2 lajur, setir kiri Indonesia: lajur utara
+     ke timur, lajur selatan ke barat; 1 lajur = 1 kecepatan supaya
+     tidak saling kejar). */
+  const moving = [
+    { x: -30, z: 32.5, dir: 1, speed: 6, color: VOLT },
+    { x: 5, z: 32.5, dir: 1, speed: 6, color: 0xf5f5f0 },
+    { x: 25, z: 35.5, dir: -1, speed: 5.5, color: 0x3a3f44 },
+    { x: -10, z: 35.5, dir: -1, speed: 5.5, color: 0xca4f40 },
+  ];
+  for (const m of moving) {
+    const car = buildCar(m.color);
+    car.group.position.set(m.x, 0, m.z);
+    if (m.dir < 0) car.group.rotation.y = Math.PI;
+    scene.add(car.group);
+    trafficCars.push({ group: car.group, dir: m.dir, speed: m.speed });
+  }
+}
+
+function startTraffic() {
+  /* Loop lalu lintas ringan (pola setInterval heroRotate, 50 ms).
+     Hormati tab tersembunyi + prefers-reduced-motion (mobil diam). */
+  if (trafficTimer || REDUCED || !trafficCars.length) return;
+  trafficLast = performance.now();
+  trafficTimer = setInterval(() => {
+    if (document.hidden || !renderer || !webglOK) return;
+    const now = performance.now();
+    const dt = Math.min((now - trafficLast) / 1000, 0.2);
+    trafficLast = now;
+    for (const c of trafficCars) {
+      c.group.position.x += c.dir * c.speed * dt;
+      if (c.dir > 0 && c.group.position.x > 44) c.group.position.x = -44;
+      if (c.dir < 0 && c.group.position.x < -44) c.group.position.x = 44;
+    }
+    requestRender();
+  }, 50);
 }
 
 function buildRanggaOffice() {
@@ -5048,6 +5240,7 @@ async function init() {
   startPolling();
   startHeroRotate();
   startAmbient();
+  startTraffic();
   startWorkTimer();
   startActivityTimer();
   startLifeTimer();
