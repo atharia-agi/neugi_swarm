@@ -130,7 +130,7 @@ let keyLight = null;     /* AAA L1: directional hangat (key) — dipakai L3 untu
 let azimuth = Math.PI / 4; /* kamera isometrik default (tenggara) */
 let camZoom = 1;
 let camElev = 0.62; /* elevasi overview (rad) — drag vertikal, clamp [0.25, 1.25] (Tugas 5) */
-let camPan = { x: 0, z: 0 }; /* geser target overview (2 jari / Shift+drag), clamp ±12 (Tugas 5) */
+let camPan = { x: 0, z: 0 }; /* geser target overview (2 jari / Shift+drag), dijepit ke bounds denah via clampCamPan (FREE CAM 2026-11-27: batas = jalan raya) */
 let heroLastInteract = 0; /* ms interaksi user terakhir di hero — jeda auto-rotate 5 dtk (Tugas 5) */
 let webglOK = false;
 /* Kamera Sims 4: mode 'overview' | 'follow'. Follow = perspektif
@@ -1158,6 +1158,17 @@ function updateCamera() {
   orthoCam.zoom = camZoom;
   orthoCam.updateProjectionMatrix();
 }
+/* FREE CAM 2026-11-27 (Rangga: orbit 360, batas = jalan raya):
+   pan overview dijepit ke bounds denah (kantor + luar sampai
+   jalan), bukan angka hardcode ±12 — target kamera tidak boleh
+   keluar denah. Bounds data-driven dari ROOMS via
+   computePlanBounds (x -22..22, z -13.5..36 sesudah ekspansi
+   luar; jalan di z 30.5-37.5). */
+function clampCamPan() {
+  const b = computePlanBounds();
+  camPan.x = Math.min(b.maxX - b.cx, Math.max(b.minX - b.cx, camPan.x));
+  camPan.z = Math.min(b.maxZ - b.cz, Math.max(b.minZ - b.cz, camPan.z));
+}
 function fitCamera() {
   if (!orthoCam || !wrap) return;
   const w = wrap.clientWidth || 800;
@@ -1172,7 +1183,11 @@ function fitCamera() {
   const el = 0.62;
   const projW = (b.w + b.d) / Math.SQRT2;
   const projH = projW * Math.sin(el) + 3;
-  const size = Math.min(40, Math.max(projH, projW / aspect));
+  /* FREE CAM 2026-11-27: cap 40 -> 70 supaya framing default
+     memuat SELURUH scene yang membesar (kantor + halaman +
+     parkir + jalan; butuh ~41.4 di landscape). Portrait tetap
+     dibatasi (cap 70) supaya tidak mengecil berlebihan. */
+  const size = Math.min(70, Math.max(projH, projW / aspect));
   orthoCam.left = -size * aspect / 2;
   orthoCam.right = size * aspect / 2;
   orthoCam.top = size / 2;
@@ -4600,7 +4615,7 @@ function startPolling() {
    Berhenti saat fullscreen / tab hidden / prefers-reduced-motion. */
 let heroTimer = null;
 let heroRotateEnabled = true; /* mount({autoRotate:false}) mematikan */
-let heroRotateDir = 1; /* arah sapuan auto-rotate hero — bolak-balik di clamp azimuth ±1.15 */
+let heroRotateDir = 1; /* arah auto-rotate hero — putaran penuh 360° searah (FREE CAM 2026-11-27; dulu bolak-balik di clamp azimuth ±1.15) */
 function startHeroRotate() {
   if (heroTimer || REDUCED || !heroRotateEnabled) return;
   heroTimer = setInterval(() => {
@@ -4609,8 +4624,10 @@ function startHeroRotate() {
        tidak boleh melawan drag di hero. */
     if (Date.now() - heroLastInteract < 5000) return;
     azimuth += 0.015 * heroRotateDir;
-    if (azimuth >= 1.15) { azimuth = 1.15; heroRotateDir = -1; }
-    else if (azimuth <= -1.15) { azimuth = -1.15; heroRotateDir = 1; }
+    /* FREE CAM: putaran penuh tanpa clamp — normalisasi ke
+       [0, 2π) supaya angka tidak membesar tanpa batas. */
+    if (azimuth >= Math.PI * 2) azimuth -= Math.PI * 2;
+    else if (azimuth < 0) azimuth += Math.PI * 2;
     updateCamera();
     requestRender();
   }, 120);
@@ -4727,15 +4744,12 @@ function bindInput() {
       dragMoved += Math.abs(dx) + Math.abs(dy);
       if (cameraMode === 'follow') {
         /* followYaw SENGAJA tanpa clamp (cek visual 26 Nov 2026):
-           clamp ±1.15 seperti azimuth overview akan mengunci kamera
-           ke setengah-belakang agen (followYaw=0 = di belakang
-           agen) sehingga wajah/depan agen tidak pernah terlihat —
-           padahal follow memang untuk melihat agen. Alasan clamp
-           overview (orbit 360° menampilkan punggung gedung: dinding
-           utara putih kosong + punggung TV hitam) tidak berlaku di
-           sini: kamera follow dekat dengan agen, di dalam ruangan,
-           dan posisinya sudah dijepit ke dalam denah
-           (updateFollowCamera). */
+           clamp akan mengunci kamera ke setengah-belakang agen
+           (followYaw=0 = di belakang agen) sehingga wajah/depan
+           agen tidak pernah terlihat — padahal follow memang untuk
+           melihat agen. Sejak FREE CAM 2026-11-27, azimuth
+           overview juga tanpa clamp; kamera follow tetap dijepit
+           ke dalam denah (updateFollowCamera). */
         followYaw -= dx * 0.005;
         followPitch = Math.min(1.25, Math.max(0.08, followPitch + dy * 0.003));
       } else if (panMode) {
@@ -4749,18 +4763,26 @@ function bindInput() {
         const rz = -Math.sin(azimuth);
         const fx = Math.sin(azimuth);
         const fz = Math.cos(azimuth);
-        camPan.x = Math.min(12, Math.max(-12, camPan.x + dx * k * rx + dy * k * fx));
-        camPan.z = Math.min(12, Math.max(-12, camPan.z + dx * k * rz + dy * k * fz));
+        camPan.x += dx * k * rx + dy * k * fx;
+        camPan.z += dx * k * rz + dy * k * fz;
+        clampCamPan();
         updateCamera();
       } else {
-        /* Orbit di-clamp ±1.15 rad (kamera tetap di sisi selatan,
-           clamp lama ±1.1 rad dari sebelum Tugas 5 dipulihkan):
-           orbit 360 deg bebas ternyata menampilkan sisi belakang
-           gedung — dinding utara putih kosong + punggung TV hitam
-           memenuhi layar (cek visual 26 Nov 2026). Tilt: drag
-           vertikal mengubah elevasi, konvensi sama seperti
-           followPitch (drag bawah = kamera naik). */
-        azimuth = Math.min(1.15, Math.max(-1.15, azimuth - dx * 0.005));
+        /* FREE CAM 2026-11-27 (Rangga: orbit 360, batas = jalan
+           raya): clamp azimuth ±1.15 DIHAPUS — kamera boleh muter
+           penuh mengelilingi scene. Alasan clamp lama (orbit bebas
+           menampilkan sisi belakang gedung: dinding utara putih
+           kosong + punggung TV hitam, cek visual 26 Nov 2026)
+           sudah tidak berlaku sebagai pembatas: Rangga minta free
+           cam, dan batas gerak sekarang jalan raya (pan dijepit
+           clampCamPan). Azimuth dinormalisasi ke [0, 2π). Tilt:
+           drag vertikal mengubah elevasi [0.25, 1.25] (dari atas
+           sampai hampir horizontal, kamera tidak masuk bawah
+           lantai), konvensi sama seperti followPitch (drag bawah
+           = kamera naik). */
+        azimuth -= dx * 0.005;
+        if (azimuth >= Math.PI * 2) azimuth -= Math.PI * 2;
+        else if (azimuth < 0) azimuth += Math.PI * 2;
         camElev = Math.min(1.25, Math.max(0.25, camElev + dy * 0.003));
         updateCamera();
       }
@@ -4812,8 +4834,9 @@ function bindInput() {
           const rz = -Math.sin(azimuth);
           const fx = Math.sin(azimuth);
           const fz = Math.cos(azimuth);
-          camPan.x = Math.min(12, Math.max(-12, camPan.x + mdx * k * rx + mdy * k * fx));
-          camPan.z = Math.min(12, Math.max(-12, camPan.z + mdx * k * rz + mdy * k * fz));
+          camPan.x += mdx * k * rx + mdy * k * fx;
+          camPan.z += mdx * k * rz + mdy * k * fz;
+          clampCamPan();
         }
         panLast = mid;
         updateCamera();
