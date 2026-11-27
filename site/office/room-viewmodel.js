@@ -269,8 +269,10 @@ export const ROOMS = {
 
 /* Glyph pixel 16x16 (bukan emoji). Dipetakan 1:1 ke keadaan nyata
    (§5.3): laptop=kerja, centang=baru selesai, Z=diam, panah
-   atas=mengunggah, panah balas=membalas, buku=membaca. Isi SVG
-   inner (path/rect, fill/stroke = currentColor). */
+   atas=mengunggah, panah balas=membalas, buku=membaca,
+   gelembung=rapat, cangkir=kopi, HP=scroll HP, daun=away (taman),
+   jejak=jalan antar ruangan. Isi SVG inner (path/rect,
+   fill/stroke = currentColor). */
 export const GLYPH_DEFS = {
   work: '<rect x="3" y="4" width="10" height="7" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="2" y="11" width="12" height="1.8" fill="currentColor"/>',
   done: '<path d="M3 8.5 L6.5 12 L13 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/>',
@@ -278,6 +280,11 @@ export const GLYPH_DEFS = {
   upload: '<path d="M8 2.5 V10 M4.5 6 L8 2.5 L11.5 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square"/><rect x="3" y="11" width="10" height="1.8" fill="currentColor"/>',
   reply: '<path d="M12 4 H6 a3.5 3.5 0 0 0 0 7 h6 M9 1.5 L5.5 4.5 L9 7.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square"/>',
   read: '<rect x="3" y="3" width="4.5" height="10" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="8.5" y="3" width="4.5" height="10" fill="none" stroke="currentColor" stroke-width="1.4"/>',
+  meeting: '<rect x="1.5" y="2.5" width="8" height="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4 8.5 V11 L6.5 8.5" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="8.5" width="5.5" height="4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M11 12.5 V14 L13 12.5" fill="none" stroke="currentColor" stroke-width="1.5"/>',
+  coffee: '<path d="M3.5 6.5 h7 v4.5 a2 2 0 0 1 -2 2 h-3 a2 2 0 0 1 -2 -2 z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 7.5 h1.5 a1.5 1.5 0 0 1 0 3 h-1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 4.5 v-2 M8.5 4.5 v-2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"/>',
+  phone: '<rect x="5" y="2" width="6" height="12" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M7.5 4 h1" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"/><path d="M7 12.5 h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"/>',
+  leaf: '<path d="M13 3 C6.5 3.5 3.5 7 3.5 12.5 C9 12.5 12.5 9.5 13 3 Z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4.5 11.5 L11 5" fill="none" stroke="currentColor" stroke-width="1.3"/>',
+  walk: '<ellipse cx="6" cy="4.5" rx="1.8" ry="2.8" fill="currentColor"/><ellipse cx="10.5" cy="11.5" rx="1.8" ry="2.8" fill="currentColor"/>',
 };
 
 export function trunc(s, maxLen) {
@@ -464,23 +471,28 @@ export function glyphFor(s, nowMs) {
   if (s.recentFile) return 'upload';
   if (s.replying) return 'reply';
   if (s.justCompletedMs && nowMs - s.justCompletedMs <= MIN_15) return 'done';
+  /* Rapat (ruang-rapat / allMeeting): dua gelembung bicara. */
+  if (s.allMeeting || s.room === 'ruang-rapat') return 'meeting';
   /* Tugas aktif yang basi >2 jam = glyph Z (proxy jujur "blocked",
-     §5.10), bukan laptop — agennya diam walau tugas masih terbuka. */
-  if (s.activeTask && nowMs - s.lastActiveMs <= HOUR_2) return 'work';
+     §5.10), bukan laptop — agennya diam walau tugas masih terbuka.
+     Option A: aktif di board <30 mnt tanpa tugas terbuka juga
+     bekerja (laptop), bukan scroll HP. */
+  if ((s.activeTask || s.activeBoard) && nowMs - s.lastActiveMs <= HOUR_2) return 'work';
+  /* Istirahat kopi (pantry tanpa tugas) / scroll HP (meja kerja
+     tanpa tugas): ikon aktivitas nyata, bukan Z. */
+  if (s.room === 'pantry' && !s.activeTask) return 'coffee';
+  if (s.room === 'ruang-kerja' && !s.activeTask) return 'phone';
+  /* Away (taman): daun. */
+  if (s.room === 'taman') return 'leaf';
   /* Aktivitas <15 mnt tanpa tugas aktif = sedang di board
      (membaca/mengobrol) — buku. Di bawah itu = diam (Z). */
   if (s.lastActiveMs && nowMs - s.lastActiveMs <= MIN_15) return 'read';
   return 'zzz';
 }
 
-/* Micro-expression (§5.7): HANYA ke keadaan nyata — fokus (tugas
-   aktif), senyum (baru selesai <15 mnt), netral (tidak ada
-   keduanya). Tanpa wajah blocked, tanpa emosi ditebak. */
-export function faceFor(s, nowMs) {
-  if (s.activeTask) return 'fokus';
-  if (s.justCompletedMs && nowMs - s.justCompletedMs <= MIN_15) return 'senyum';
-  return 'netral';
-}
+/* faceFor (micro-expression: fokus/senyum/netral) DIHAPUS 27 Nov 2026
+   — perintah Rangga: gambar smile/disc mood dihapus, cukup ikon
+   aktivitas saja (lihat GLYPH_DEFS + glyphFor). */
 
 /* Seed deterministik dari string (FNV-1a, sama seperti lifeSeed di
    showcase) — dipakai buat acak idle yang stabil dalam satu bucket
@@ -859,7 +871,6 @@ export function buildRoomState(api, nowMs) {
         ? myTasks.slice().sort((a, b) => ts(b.updated_at || b.created_at) - ts(a.updated_at || a.created_at))[0] : null,
     };
     st.glyph = glyphFor(st, now);
-    st.face = faceFor(st, now);
     agents.push(st);
   }
 

@@ -1134,7 +1134,9 @@ function requestRender() {
   render();
 }
 function render() {
-  if (cameraMode === 'follow') updateFollowCamera();
+  /* Selama animasi masuk follow, kamera digerakkan animasi (bukan
+     updateFollowCamera) supaya tidak loncat ke pose akhir. */
+  if (cameraMode === 'follow' && !(camAnim && camAnim.kind === 'enter')) updateFollowCamera();
   /* Tugas 6: perbarui matriks kamera SEBELUM memproyeksikan bubble —
      Vector3.project memakai camera.matrixWorldInverse, yang baru
      diperbarui di dalam renderer.render(); tanpa ini bubble memakai
@@ -1236,12 +1238,14 @@ function fitCamera() {
 }
 
 /* --- kamera follow TPS ------------------------------------------- */
-/* Posisi kamera follow dari posisi + arah hadap agen saat ini
-   (turn.rotation.y; saat jalan = arah gerak): di belakang bahu
-   (followYaw), di atas (followPitch), jarak followDist; anchor =
-   torso agen + pan. Pitch di-clamp [0.08, 1.25] supaya kamera
-   tidak masuk bawah lantai; posisi x/z di-clamp ke bounds + 4
-   supaya tidak nyangkut jauh di luar dinding.
+/* Pose kamera follow (posisi + anchor + FOV) TANPA menerapkannya —
+   dipakai updateFollowCamera tiap frame DAN animasi masuk follow
+   (transisi smooth, Rangga 27 Nov 21:12). Posisi kamera follow dari
+   posisi + arah hadap agen saat ini (turn.rotation.y; saat jalan =
+   arah gerak): di belakang bahu (followYaw), di atas (followPitch),
+   jarak followDist; anchor = torso agen + pan. Pitch di-clamp
+   [0.08, 1.25] supaya kamera tidak masuk bawah lantai; posisi x/z
+   di-clamp ke bounds + 4 supaya tidak nyangkut jauh di luar dinding.
    ARAH HADAP (0.4.9): saat agen DIAM, pakai avatarSlotRot (arah
    hadap slot — kursi menghadap meja) BUKAN turn.rotation.y:
    tatapan bos (§5.4.5) memutar badan ke meja Rangga saat
@@ -1252,11 +1256,11 @@ function fitCamera() {
    agen yang berjalan. Anchor = torso (1.1), bukan kepala (1.5):
    kamera mengunci ke kepala + rambut chibi yang besar membuat
    rambut memenuhi frame; torso membuat seluruh badan terlihat. */
-function updateFollowCamera() {
-  if (!perspCam || !followName) return;
+function followCamPose() {
+  if (!perspCam || !followName) return null;
   const pos = avatarPos[followName];
   const g = avatarGroups[followName];
-  if (!pos || !g || !g.visible) return;
+  if (!pos || !g || !g.visible) return null;
   const turn = avatarMeshes[followName];
   /* Diam = hadap slot (kursi -> meja); jalan = arah gerak. */
   const walkingNow = !!(walks[followName] && !walks[followName].cancelled);
@@ -1291,10 +1295,15 @@ function updateFollowCamera() {
   /* FOV portrait lebih lebar (Fase 2, port dari Beto msg_0394): di layar
      portrait (aspect < 1) kamera follow memakai FOV 80 — avatar tidak lagi
      memenuhi frame. Desktop tetap 55. */
-  const fovPortrait = (perspCam.aspect || 1.6) < 1 ? 80 : 55;
-  if (perspCam.fov !== fovPortrait) perspCam.fov = fovPortrait;
-  perspCam.position.set(cx, cy, cz);
-  perspCam.lookAt(anchor);
+  const fov = (perspCam.aspect || 1.6) < 1 ? 80 : 55;
+  return { pos: new THREE.Vector3(cx, cy, cz), anchor, fov };
+}
+function updateFollowCamera() {
+  const pose = followCamPose();
+  if (!pose) return;
+  if (perspCam.fov !== pose.fov) perspCam.fov = pose.fov;
+  perspCam.position.copy(pose.pos);
+  perspCam.lookAt(pose.anchor);
   perspCam.updateProjectionMatrix();
   /* Tugas 6: pill indikator agen yang di-follow disembunyikan di
      updateBubbles (dulu sprite wajah disembunyikan di sini). */
@@ -1303,6 +1312,10 @@ function enterFollow(name) {
   if (!KNOWN_AGENTS[name] || !avatarGroups[name] || !avatarGroups[name].visible) return false;
   fsSeq++; /* follow baru — fullscreenchange basi dari exit lama abaikan */
   if (!perspCam) return false;
+  stopCamAnim();
+  /* Simpan overview saat ini supaya exitFollow bisa zoom out mulus
+     kembali ke framing yang sama. */
+  prevOverview = { camZoom, camPan: { x: camPan.x, z: camPan.z }, azimuth, camElev };
   followName = name;
   followYaw = 0;
   followPitch = 0.32;
@@ -1316,24 +1329,147 @@ function enterFollow(name) {
   followPan = { x: 0, z: 0 };
   cameraMode = 'follow';
   camera = perspCam;
-  updateFollowCamera();
+  /* Transisi smooth: terbang dari posisi overview ke belakang agen
+     (REDUCED = langsung ke pose akhir). */
+  animateEnterFollow();
   refreshFollowCard();
   requestRender();
   return true;
 }
 function exitFollow() {
   if (cameraMode !== 'follow') return false;
+  stopCamAnim();
+  /* Nama agen disimpan dulu: animasi zoom out mulai dari agen. */
+  const name = followName;
   cameraMode = 'overview';
   followName = null;
   camera = orthoCam;
-  updateCamera();
   fitCamera();
   hideFollowCard();
+  /* Zoom out smooth ke overview tersimpan (REDUCED = langsung). */
+  animateExitFollow(name);
   requestRender();
   return true;
 }
 function getCameraMode() {
   return cameraMode;
+}
+
+/* --- transisi kamera smooth (Rangga 27 Nov 21:12) ----------------- */
+/* Masuk follow = terbang mulus dari posisi overview ke belakang agen;
+   keluar follow = zoom out mulus (ortho zoom + pan) kembali ke
+   overview. Durasi ~700 ms, easeInOutCubic. REDUCED
+   (prefers-reduced-motion) = transisi instan. Pola rAF mengikuti
+   plumbobAnimRaf. */
+let prevOverview = null; /* {camZoom, camPan{x,z}, azimuth, camElev} saat enterFollow */
+let camAnimRaf = 0;
+let camAnim = null; /* {kind: 'enter'|'exit'} */
+/* easeInOutCubic sudah ada (dipakai transisi pose) — dipakai ulang
+   di sini, jangan dideklarasi dua kali. */
+function stopCamAnim() {
+  if (camAnimRaf) { cancelAnimationFrame(camAnimRaf); camAnimRaf = 0; }
+  camAnim = null;
+}
+function animateEnterFollow() {
+  /* Terbang mulus: perspCam mulai dari posisi overview (ortho, jauh,
+     wide shot) lalu lerp ke pose follow. Pose target dihitung ulang
+     tiap frame (followCamPose) supaya agen yang jalan / drag user
+     selama terbang tetap diikuti. */
+  const first = followCamPose();
+  if (!first) return;
+  if (REDUCED) { updateFollowCamera(); return; }
+  const fromPos = orthoCam ? orthoCam.position.clone() : first.pos.clone();
+  const b = computePlanBounds();
+  const fromAnchor = new THREE.Vector3(b.cx + camPan.x, 0, b.cz + camPan.z);
+  const fromFov = perspCam.fov;
+  /* Terapkan pose awal SEBELUM frame pertama supaya render pertama
+     sudah di posisi overview, bukan posisi follow lama. */
+  perspCam.position.copy(fromPos);
+  perspCam.lookAt(fromAnchor);
+  perspCam.updateProjectionMatrix();
+  stopCamAnim();
+  const t0 = performance.now();
+  const dur = 700;
+  camAnim = { kind: 'enter' };
+  const step = (now) => {
+    const pose = followCamPose();
+    if (!pose || !camAnim || camAnim.kind !== 'enter') {
+      camAnimRaf = 0; camAnim = null;
+      updateFollowCamera(); requestRender();
+      return;
+    }
+    const t = Math.min(1, (now - t0) / dur);
+    const k = easeInOutCubic(t);
+    perspCam.position.lerpVectors(fromPos, pose.pos, k);
+    const anchor = new THREE.Vector3().lerpVectors(fromAnchor, pose.anchor, k);
+    perspCam.lookAt(anchor);
+    perspCam.fov = fromFov + (pose.fov - fromFov) * k;
+    perspCam.updateProjectionMatrix();
+    requestRender();
+    if (t < 1) {
+      camAnimRaf = requestAnimationFrame(step);
+    } else {
+      camAnimRaf = 0; camAnim = null;
+      updateFollowCamera();
+      requestRender();
+    }
+  };
+  camAnimRaf = requestAnimationFrame(step);
+}
+function animateExitFollow(agentName) {
+  /* Zoom out mulus ke overview: ortho zoom 2.2 (agen besar, dekat)
+     -> zoom overview tersimpan; pan dari posisi agen -> pan
+     tersimpan. Mulai dari agen supaya frame pertama masih
+     menampilkan agen yang baru ditinggalkan. */
+  const target = prevOverview || { camZoom, camPan: { x: camPan.x, z: camPan.z }, azimuth, camElev };
+  const b = computePlanBounds();
+  const pos = agentName ? avatarPos[agentName] : null;
+  let fromPan = { x: target.camPan.x, z: target.camPan.z };
+  if (pos) {
+    fromPan = {
+      x: Math.min(b.maxX - b.cx, Math.max(b.minX - b.cx, pos.x - b.cx)),
+      z: Math.min(b.maxZ - b.cz, Math.max(b.minZ - b.cz, pos.z - b.cz)),
+    };
+  }
+  const fromZoom = 2.2;
+  camZoom = fromZoom;
+  camPan.x = fromPan.x;
+  camPan.z = fromPan.z;
+  azimuth = target.azimuth;
+  camElev = target.camElev;
+  updateCamera();
+  if (REDUCED) {
+    camZoom = target.camZoom;
+    camPan.x = target.camPan.x;
+    camPan.z = target.camPan.z;
+    updateCamera();
+    return;
+  }
+  stopCamAnim();
+  const t0 = performance.now();
+  const dur = 700;
+  camAnim = { kind: 'exit' };
+  const step = (now) => {
+    if (!camAnim || camAnim.kind !== 'exit') { camAnimRaf = 0; camAnim = null; return; }
+    const t = Math.min(1, (now - t0) / dur);
+    const k = easeInOutCubic(t);
+    camZoom = fromZoom + (target.camZoom - fromZoom) * k;
+    camPan.x = fromPan.x + (target.camPan.x - fromPan.x) * k;
+    camPan.z = fromPan.z + (target.camPan.z - fromPan.z) * k;
+    updateCamera();
+    requestRender();
+    if (t < 1) {
+      camAnimRaf = requestAnimationFrame(step);
+    } else {
+      camAnimRaf = 0; camAnim = null;
+      camZoom = target.camZoom;
+      camPan.x = target.camPan.x;
+      camPan.z = target.camPan.z;
+      updateCamera();
+      requestRender();
+    }
+  };
+  camAnimRaf = requestAnimationFrame(step);
 }
 
 /* AAA-DETAIL-START — Lapis detail + material AAA (Worker D, 0.4.9).
@@ -3930,57 +4066,54 @@ async function loadAvatars() {
     avatarGroups[name].add(turn);
     /* Props aktivitas ditempel ke bone tangan (bila ada skeleton). */
     attachActivityProps(name);
-    /* Tugas 6: wajah pixel 3D (drawFace) DIHAPUS — mood pindah ke
-       pill indikator HTML (satu indikator per agen, lihat
-       moodFaceSvg + updateBubbles). */
+    /* Tugas 6: wajah pixel 3D (drawFace) DIHAPUS — indikator di atas
+       kepala kini hanya ikon aktivitas (lihat updateBubbles);
+       gambar smile/disc mood DIHAPUS 27 Nov 2026 (perintah Rangga:
+       cukup ikon aktivitas saja). */
   });
 }
 
 /* --- indikator gabungan (overlay HTML, Tugas 6 revisi) ----------- */
-/* SATU pill per agen di atas kepala: wajah mood (replika drawFace)
-   + glyph aktivitas + teks status/ucapan. Prioritas: speech (15 dtk)
-   > status (kerja) > mood-only. Pill SELALU terpasang (mood-only
-   tidak pernah hilang — seperti disc 3D lama yang selalu ada);
-   perubahan konten di-cache (signature) + fade opacity 0.25 dtk,
-   jadi tidak lompat/kedip/muncul-hilang kasar. Anchor tunggal
-   y = 2.05 + posisi grup (ikut saat duduk); proyeksi memakai
+/* SATU pill per agen di atas kepala: HANYA ikon aktivitas (glyph
+   pixel 16x16, GLYPH_DEFS) + teks status/ucapan bila ada. Gambar
+   smile/disc mood DIHAPUS 27 Nov 2026 (perintah Rangga: cukup ikon
+   aktivitas saja). Prioritas teks: speech (15 dtk) > status (kerja)
+   > ikon saja. Pill SELALU terpasang (ikon saja tidak pernah
+   hilang); perubahan konten di-cache (signature) + fade opacity
+   0.25 dtk, jadi tidak lompat/kedip/muncul-hilang kasar. Anchor
+   tunggal y = 2.05 + posisi grup (ikut saat duduk); proyeksi memakai
    matriks kamera yang baru (render() memanggil
    camera.updateMatrixWorld() dulu — perbaikan drift). Maks 3 pill
-   ber-TEKS (speech/status, §5.12); pill mood-only tampil untuk
-   semua 13 agen. Di bawah 700px hanya glyph (teks lengkap pindah
-   ke kartu agen). Pass anti-tumpuk: bila dua pill bertumpuk, yang
-   kedua digeser ke atas. */
+   ber-TEKS (speech/status, §5.12); pill ikon saja tampil untuk
+   semua 13 agen. Di bawah 700px hanya ikon + nama (teks lengkap
+   pindah ke kartu agen). Pass anti-tumpuk: bila dua pill bertumpuk,
+   yang kedua digeser ke atas. */
 const bubbleEls = {}; /* name -> {el, sig} */
 function glyphSvg(glyph) {
   return '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">'
     + (GLYPH_DEFS[glyph] || '') + '</svg>';
 }
-/* Wajah pixel 14px (disc volt #a3ff00 + mata + mulut hitam; fokus =
-   mata kotak + dua garis, senyum = busur, netral = garis). Disc
-   HARUS terang karena stage hitam — disc hitam #0f1115 lama
-   tenggelam di background, cuma mata/mulut yang kelihatan
-   (Rangga 23 Nov 05:44 WIB: 'smiley hitam aneh, kan boxnya hitam').
-   Bukan emoji, bukan emosi ditebak. */
-function moodFaceSvg(variant) {
-  let mouth;
-  if (variant === 'senyum') mouth = '<path d="M 21.3 19.7 A 6 6 0 0 1 10.7 19.7" stroke="#0f1115" stroke-width="2" fill="none"/>';
-  else if (variant === 'fokus') mouth = '<path d="M 11 22 H 21 M 11 25 H 21" stroke="#0f1115" stroke-width="2"/>';
-  else mouth = '<path d="M 12 23 H 20" stroke="#0f1115" stroke-width="2"/>';
-  return '<svg viewBox="0 0 32 32" width="14" height="14" aria-hidden="true">'
-    + '<circle cx="16" cy="16" r="15" fill="#a3ff00"/>'
-    + '<rect x="9" y="11" width="4" height="4" fill="#0f1115"/>'
-    + '<rect x="19" y="11" width="4" height="4" fill="#0f1115"/>'
-    + mouth + '</svg>';
-}
+/* moodFaceSvg (disc smile volt + mata/mulut) DIHAPUS 27 Nov 2026 —
+   perintah Rangga: cukup ikon aktivitas saja (GLYPH_DEFS). */
 function ensureBubbles() {
   for (const name of ROOM_ORDER) {
     if (bubbleEls[name]) continue;
     const el = document.createElement('div');
-    el.className = 'bubble indicator mood';
+    el.className = 'bubble indicator';
     el.dataset.agent = name;
     el.style.display = 'none';
     el.style.transition = 'opacity .25s ease';
-    el.innerHTML = '<span class="face"></span><span class="glyph" style="display:none"></span><span class="nm"></span><span class="txt"></span><span class="time" style="display:none"></span>';
+    el.innerHTML = '<span class="glyph"></span><span class="nm"></span><span class="txt"></span><span class="time" style="display:none"></span>';
+    /* Klik namecard = POV agen (Rangga 27 Nov 21:12): sama seperti
+       klik avatar — hero -> fullscreen + follow, fullscreen -> follow.
+       Layer #roomBubbles pointer-events:none, tapi .bubble
+       pointer-events:auto (lihat SHOWCASE_CSS), jadi klik di pill
+       mendarat di sini, bukan tembus ke canvas. */
+    el.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      if (displayMode === 'hero') { enterFullscreen(); }
+      enterFollow(name);
+    });
     bubbleLayer.appendChild(el);
     bubbleEls[name] = { el, sig: '' };
   }
@@ -4005,7 +4138,7 @@ function updateBubbles() {
   bubbleLayer.classList.toggle('overview', cameraMode !== 'follow');
   bubbleLayer.classList.toggle('far-zoom', farZoom);
   /* Batas tampil (§5.12 / 11/10): maks 3 pill ber-TEKS di canvas —
-     speech dulu (terbaru), lalu status (terbaru). Pill mood-only
+     speech dulu (terbaru), lalu status (terbaru). Pill ikon saja
      tidak dihitung (tampil untuk semua agen). */
   const candidates = [];
   for (const st of state.agents) {
@@ -4032,17 +4165,19 @@ function updateBubbles() {
       el.style.display = 'none';
       continue;
     }
-    /* Mode: speech > status > mood-only. */
-    let mode = 'mood';
+    /* Mode teks: speech > status > ikon saja. Ikon aktivitas SELALU
+       tampil (semua mode); saat agen sedang berjalan antar ruangan,
+       ikon diganti jejak langkah. */
+    let mode = 'icon';
     if (el.dataset.show === '1' && st.speech && shown.has('speech:' + st.name)) mode = 'speech';
     else if (st.statusText && shown.has('status:' + st.name)) mode = 'status';
-    const face = st.face || 'netral';
-    const glyph = mode === 'status' ? st.glyph : null;
+    const walking = !!(walks[st.name] && !walks[st.name].cancelled);
+    const glyph = walking ? 'walk' : (st.glyph || 'zzz');
     const text = mode === 'speech' ? st.speech.text : mode === 'status' ? (st.statusText || '').replace(/^Mengerjakan: /, '').replace(/^— /, '') : ''; /* pill: judul tugas saja, prefix sudah diwakili glyph kerja */
     const time = mode === 'speech' ? st.speech.hhmm : null;
     const stale = mode === 'status' && !!st.stale;
     const boss = mode === 'status' && st.name === 'rangga' && state.bossActive;
-    const sig = mode + '|' + face + '|' + (glyph || '') + '|' + text + '|' + (time || '') + '|' + (stale ? 1 : 0) + '|' + (boss ? 1 : 0);
+    const sig = mode + '|' + glyph + '|' + text + '|' + (time || '') + '|' + (stale ? 1 : 0) + '|' + (boss ? 1 : 0);
     /* Opacity akhir = 0.55 bila stale (cermin .bubble.status.stale
        di host CSS — opacity inline menimpa class, jadi nilainya
        ditulis eksplisit di sini). */
@@ -4053,9 +4188,8 @@ function updateBubbles() {
          frame (render-on-demand: updateBubbles jalan tiap render). */
       const first = entry.sig === '';
       const apply = () => {
-        el.querySelector('.face').innerHTML = moodFaceSvg(face);
         const gEl = el.querySelector('.glyph');
-        if (glyph) { gEl.innerHTML = glyphSvg(glyph); gEl.style.display = ''; } else { gEl.style.display = 'none'; }
+        gEl.innerHTML = glyphSvg(glyph);
         const nmEl = el.querySelector('.nm');
         if (nmEl) nmEl.textContent = st.label || st.name;
         const tEl = el.querySelector('.txt');
@@ -4065,7 +4199,7 @@ function updateBubbles() {
         if (time) { tmEl.textContent = time; tmEl.style.display = ''; } else { tmEl.style.display = 'none'; }
         el.classList.toggle('status', mode === 'status');
         el.classList.toggle('speech', mode === 'speech');
-        el.classList.toggle('mood', mode === 'mood');
+        el.classList.toggle('icon', mode === 'icon');
         el.classList.toggle('stale', stale);
         el.classList.toggle('boss', boss);
         el.style.opacity = targetOpacity;
@@ -4801,9 +4935,9 @@ function setStatusText(extra) {
      dihitung dari snapshot (angka tugas terbuka ruangan ada di footer
      room, dari endpoint tugas). Label di
      sini hitung AGEN yang sedang bekerja, bukan tugas. snapshotToState
-     tidak menyimpan string state mentah — yang tersisa face 'fokus'
-     (state working/meeting) vs 'netral' (idle/away); hitung dari situ. */
-  const working = state ? state.agents.filter((a) => a.face === 'fokus').length : 0;
+     menyimpan keadaan itu sebagai glyph 'work'/'meeting'; hitung
+     dari situ (ikon smile/face sudah dihapus 27 Nov 2026). */
+  const working = state ? state.agents.filter((a) => a.glyph === 'work' || a.glyph === 'meeting').length : 0;
   const ageMin = Math.round((Date.now() - snapGeneratedMs) / 60000);
   let text = 'Snapshot per ' + hhmmss + ' · ' + working + ' agen bekerja · polling 60 detik · via ' + snapSource;
   if (ageMin >= 120) text += ' · snapshot basi (' + ageMin + ' mnt)';
@@ -4830,7 +4964,7 @@ function applyState(ns, opts = {}) {
   dynamicPanels.tv.redraw(ns.tv, ns.isExample);
   dynamicPanels.clock.redraw();
   refreshDesks();
-  /* Avatar (wajah mood kini di pill indikator — lihat updateBubbles). */
+  /* Avatar (ikon aktivitas kini di pill indikator — lihat updateBubbles). */
   for (const st of ns.agents) {
     const g = avatarGroups[st.name];
     g.visible = true;
@@ -4989,8 +5123,9 @@ function snapshotToState(snap, nowMs) {
       lastMessage: null,
       lastTask: null,
     };
-    agentState.glyph = (working || meeting) && !staleSnap ? 'work' : 'zzz';
-    agentState.face = (working || meeting) ? 'fokus' : 'netral';
+    /* Ikon aktivitas ditentukan di loop kedua (butuh st.activity +
+       room + state snapshot); placeholder sampai di sana. */
+    agentState.glyph = 'zzz';
     agents.push(agentState);
   }
   /* 2026-11-27 (Rangga: idle jangan di jalan, beraktivitas acak):
@@ -5018,6 +5153,21 @@ function snapshotToState(snap, nowMs) {
         : (st.room === 'ruang-kerja' && !st.activeTask ? 'phone'
         : (!st.activeTask && hashStrFn(st.name + '#act#' + bucket) % 3 === 0 ? 'phone' : null));
     }
+    /* Ikon aktivitas (27 Nov 2026 — smile/face dihapus, cukup ikon):
+       urutan = baru selesai > rapat > kerja > kopi > HP > away
+       (daun, taman) > diam (Z). Data basi (>2 jam) selalu Z.
+       snapSt = state mentah snapshot; st.room = ruangan penempatan
+       (idle mengembara) — daun pakai ruangan penempatan. */
+    const snapSt = (byId[st.name] && byId[st.name].state) || '';
+    const justDone = !!(byId[st.name] && byId[st.name].justCompleted);
+    st.glyph = st.stale ? 'zzz'
+      : justDone ? 'done'
+      : snapSt === 'meeting' ? 'meeting'
+      : snapSt === 'working' ? 'work'
+      : st.activity === 'coffee' ? 'coffee'
+      : st.activity === 'phone' ? 'phone'
+      : st.room === 'taman' ? 'leaf'
+      : 'zzz';
   }
   const taskBoard = agents.filter((a) => a.activeTask)
     .slice(0, 3)
@@ -5626,7 +5776,7 @@ const showcaseHook = {
       activeAgent: currentActiveAgent,
       bubblesShown: lastBubblesShown,
       agents: state ? state.agents.map((a) => ({
-        name: a.name, room: a.room, glyph: a.glyph, face: a.face,
+        name: a.name, room: a.room, glyph: a.glyph,
         sitting: poseState[a.name] ? poseState[a.name].sitting : agentSitting(a),
         activity: agentActivity(a),
         activityProp: (() => {
@@ -5666,7 +5816,7 @@ const SHOWCASE_CSS = `
 #roomCanvas{position:absolute;inset:0}
 #roomCanvas canvas{display:block;width:100%;height:100%;touch-action:none}
 #roomBubbles{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-.bubble{position:absolute;transform:translate(-50%,-100%);max-width:240px;display:flex;gap:.3rem;align-items:center;background:rgba(22,27,34,.94);border:1px solid #2d333b;border-radius:6px;padding:.15rem .4rem;font-size:.8rem;line-height:1.3;color:#e6e6e6;white-space:nowrap;overflow:hidden}
+.bubble{position:absolute;transform:translate(-50%,-100%);max-width:240px;display:flex;gap:.3rem;align-items:center;background:rgba(22,27,34,.94);border:1px solid #2d333b;border-radius:6px;padding:.15rem .4rem;font-size:.8rem;line-height:1.3;color:#e6e6e6;white-space:nowrap;overflow:hidden;pointer-events:auto;cursor:pointer}
 .bubble .txt{overflow:hidden;text-overflow:ellipsis}
 .bubble .nm{display:none;font-weight:700;flex:none}
 .bubble.status .nm,.bubble.speech .nm{display:inline} /* pill ber-TEKS selalu bawa nama pemilik tugas (desktop) */
