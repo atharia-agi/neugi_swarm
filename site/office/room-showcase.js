@@ -173,12 +173,10 @@ function mosaicMat(w, h) {
 let wrap = document.getElementById('roomCanvas');
 let bubbleLayer = document.getElementById('roomBubbles');
 let statusEl = document.getElementById('roomStatus');
-let cardsEl = document.getElementById('roomCards');
 function bindShowcaseEls() {
   wrap = document.getElementById('roomCanvas') || wrap;
   bubbleLayer = document.getElementById('roomBubbles') || bubbleLayer;
   statusEl = document.getElementById('roomStatus') || statusEl;
-  cardsEl = document.getElementById('roomCards') || cardsEl;
 }
 
 let renderer = null;
@@ -2005,6 +2003,7 @@ function buildScene() {
   buildStudioKonten();
   buildWarRoom();
   buildLabAI();
+  buildRoomLabels();
 
   mentionGroup = new THREE.Group();
   handoverGroup = new THREE.Group();
@@ -2762,6 +2761,46 @@ function buildFrontOffice() {
   scene.add(place(box(0.08, 1.5, 0.08, 0x555555), -3.85, 0.75, 12.8));
   scene.add(place(box(0.08, 1.5, 0.08, 0x555555), -3.15, 0.75, 12.8));
   scene.add(place(panelPlane(0.8, 1.2, dirTex), -3.5, 1.15, 12.8));
+}
+
+/* --- label nama ruangan di lantai (28 Nov 2026) ------------------ */
+/* Rangga: list ruangan di page DIHAPUS (halaman kepanjangan) — nama
+   ruangan pindah ke label di scene 3D. Satu pelat gelap per ruangan
+   (9 ruangan dalam), di lantai tepat di dalam pintu (1,4 m dari
+   sumbu pintu ke arah dalam ruangan) — zona masuk yang bebas
+   furnitur + slot di semua ruangan (cek harness: tidak ada slot /
+   furnitur dalam rect label). Pola sama seperti papan direktori /
+   plakat sambutan: textTexture + panelPlane, pelat gelap #161b22 +
+   teks terang + garis volt. Pelat 3,0 x 0,75 m, y=0,02 (di atas
+   lantai, di bawah kaki avatar) — tidak menghalangi jalan
+   (planWalk tidak membaca pelat) dan tidak menutupi slot. Teks
+   menghadap selatan (terbaca dari overview default, kamera SE). */
+const ROOM_LABELS = [
+  { room: 'kantor-rangga', x: -15, z: -3.4 },
+  { room: 'ruang-rapat', x: -1.5, z: -0.6 },
+  { room: 'lounge', x: 5, z: -3.4 },
+  { room: 'studio-konten', x: 16, z: -3.4 },
+  { room: 'ruang-kerja', x: -9.7, z: -0.6 },
+  { room: 'pantry', x: -5, z: -3.4 },
+  { room: 'taman', x: 5.5, z: -0.6 },
+  { room: 'war-room', x: 12, z: -0.6 },
+  { room: 'lab-ai', x: 18, z: -0.6 },
+];
+function buildRoomLabels() {
+  for (const { room, x, z } of ROOM_LABELS) {
+    const label = ROOMS[room] ? ROOMS[room].label : room;
+    const tex = textTexture(512, 128, (g2) => {
+      g2.fillStyle = '#161b22'; g2.fillRect(0, 0, 512, 128);
+      g2.fillStyle = '#e6e6e6'; g2.font = 'bold 58px sans-serif';
+      g2.textAlign = 'center'; g2.textBaseline = 'middle';
+      g2.fillText(label, 256, 56);
+      g2.fillStyle = '#a3ff00'; g2.fillRect(166, 104, 180, 8);
+    });
+    const plate = panelPlane(3.0, 0.75, tex);
+    plate.rotation.x = -Math.PI / 2;
+    plate.position.set(x, 0.02, z);
+    scene.add(plate);
+  }
 }
 
 /* PINTU KACA (27 Nov 2026, perintah Rangga: "Pintu gerbang harusnya
@@ -4801,10 +4840,15 @@ function renderPortraits() {
 
 /* --- kartu info agen saat follow (chip "Mengikuti <nama>") -------- */
 /* Dibuat dinamis di room-showcase.js: panel kecil di sudut canvas
-   saat follow — chip "Mengikuti <nama> · <peran>" + status/tugas
-   aktif + tombol tutup (× = lepas follow). Read-only: TANPA tombol
-   lompat (tidak ada pesan/tugas untuk dilompati). Semua teks via
-   textContent. */
+   saat follow — chip "Mengikuti <nama> · <peran>" + ruangan saat
+   ini + status/tugas aktif + tombol tutup (× = lepas follow).
+   Read-only: TANPA tombol lompat (tidak ada pesan/tugas untuk
+   dilompati). Semua teks via textContent.
+   LEBAR 28 Nov 2026 (Rangga: kartu Mengikuti sempit, nama ke-wrap
+   3 baris): maxWidth 340px + media query min(340px, 100vw-16px),
+   dan status/meta TIDAK lagi disembunyikan di HP (aturan lama
+   display:none dihapus) — info agen pindah ke sini setelah list
+   ruangan di page dihapus. */
 function ensureFollowCard() {
   if (followCardEl) return followCardEl;
   if (!wrap) return null;
@@ -4814,7 +4858,7 @@ function ensureFollowCard() {
   el.style.left = '8px';
   el.style.bottom = '8px';
   el.style.zIndex = '5';
-  el.style.maxWidth = '260px';
+  el.style.maxWidth = '340px';
   el.style.background = 'rgba(22, 27, 34, .95)';
   el.style.border = '1px solid #2d333b';
   el.style.borderRadius = '8px';
@@ -4831,6 +4875,8 @@ function ensureFollowCard() {
   mini.className = 'mini-avatar';
   head.appendChild(mini);
   const nm = document.createElement('b');
+  nm.style.flex = '1 1 auto';
+  nm.style.minWidth = '0';
   head.appendChild(nm);
   const close = document.createElement('button');
   close.type = 'button';
@@ -4838,6 +4884,7 @@ function ensureFollowCard() {
     blok Dingbats U+2600–U+27BF). */
   close.setAttribute('aria-label', 'Keluar follow');
   close.style.marginLeft = 'auto';
+  close.style.flexShrink = '0';
   close.style.background = 'transparent';
   close.style.border = 'none';
   close.style.color = '#9aa0a6';
@@ -4846,16 +4893,24 @@ function ensureFollowCard() {
   close.addEventListener('click', () => exitFollow());
   head.appendChild(close);
   el.appendChild(head);
+  const room = document.createElement('div');
+  room.className = 'follow-room';
+  room.style.color = '#9aa0a6';
+  room.style.fontSize = '.8rem';
+  room.style.overflowWrap = 'break-word';
+  el.appendChild(room);
   const status = document.createElement('div');
   status.className = 'follow-status';
+  status.style.overflowWrap = 'break-word';
   el.appendChild(status);
   const meta = document.createElement('div');
   meta.className = 'follow-meta';
   meta.style.color = '#9aa0a6';
   meta.style.fontSize = '.8rem';
+  meta.style.overflowWrap = 'break-word';
   el.appendChild(meta);
   /* Showcase read-only: tanpa tombol lompat. Chip follow = kartu ini. */
-  el.userData = { mini, nm, status, meta };
+  el.userData = { mini, nm, room, status, meta };
   wrap.appendChild(el);
   followCardEl = el;
   return el;
@@ -4870,71 +4925,15 @@ function refreshFollowCard() {
   u.mini.innerHTML = miniAvatarHTML(followName);
   u.nm.textContent = 'Mengikuti ' + info.label + ' · ' + info.role;
   el.style.borderColor = info.color;
+  /* Ruangan SAAT INI dari state snapshot (bukan home lane): st.room
+     diisi snapshotToState + diperbarui saat agen pindah (wander). */
+  u.room.textContent = st && st.room ? ('Ruangan: ' + (ROOMS[st.room] ? ROOMS[st.room].label : st.room)) : '';
   u.status.textContent = st ? (st.statusText || '— mode otonom —') : '—';
   u.meta.textContent = st ? ('aktif ' + st.lastActiveLabel + ' · ' + st.openCount + ' tugas') : '';
   el.style.display = 'block';
 }
 function hideFollowCard() {
   if (followCardEl) followCardEl.style.display = 'none';
-}
-
-/* --- kartu vertikal HP (§5.8, mode utama HP) -------------------- */
-/* Dibangun dengan DOM API (textContent) — judul tugas dari API
-   tidak pernah masuk innerHTML. avatarVoxel (SVG, data tetap +
-   esc) adalah satu-satunya innerHTML di sini, sama seperti
-   pemakaian di roomSvg M2. */
-function renderCards() {
-  if (!cardsEl || !state) return;
-  cardsEl.textContent = '';
-  const selfName = state.self;
-  for (const roomId of Object.keys(ROOMS)) {
-    const members = state.agents.filter((a) => a.room === roomId);
-    if (!members.length) continue;
-    const group = document.createElement('div');
-    group.className = 'room-group';
-    const h = document.createElement('h4');
-    h.textContent = ROOMS[roomId].label + ' · ' + members.length;
-    group.appendChild(h);
-    for (const st of members) {
-      const card = document.createElement('button');
-      card.className = 'agent-card';
-      card.dataset.agent = st.name;
-      card.type = 'button';
-      const mini = document.createElement('span');
-      mini.className = 'mini-avatar';
-      mini.innerHTML = miniAvatarHTML(st.name);
-      card.appendChild(mini);
-      const main = document.createElement('span');
-      main.className = 'card-main';
-      const nm = document.createElement('b');
-      nm.textContent = st.label + ' · ' + st.role;
-      main.appendChild(nm);
-      const status = document.createElement('span');
-      status.className = 'card-status';
-      status.textContent = st.statusText || '— mode otonom —';
-      status.title = st.statusText || '';
-      if (st.stale) status.classList.add('stale');
-      main.appendChild(status);
-      const meta = document.createElement('span');
-      meta.className = 'card-meta';
-      meta.textContent = 'aktif ' + st.lastActiveLabel + ' · ' + st.openCount + ' tugas';
-      main.appendChild(meta);
-      card.appendChild(main);
-      if (selfName && st.name === selfName && state.unreadSelf != null && state.unreadSelf > 0) {
-        const badge = document.createElement('span');
-        badge.className = 'badge';
-        badge.textContent = String(state.unreadSelf);
-        card.appendChild(badge);
-      }
-      card.addEventListener('click', () => { enterFullscreen(); enterFollow(st.name); });
-      group.appendChild(card);
-    }
-    cardsEl.appendChild(group);
-  }
-  const note = document.createElement('p');
-  note.className = 'cards-note';
-  note.textContent = 'Ketuk kartu untuk mengikuti agen itu di layar penuh.';
-  cardsEl.appendChild(note);
 }
 
 /* --- gerakan ------------------------------------------------------- */
@@ -5462,7 +5461,6 @@ function applyState(ns, opts = {}) {
     flashFileShelf();
   }
   rebuildLines();
-  renderCards();
   renderPortraits();
   refreshFollowCard();
   setStatusText();
@@ -5490,13 +5488,6 @@ function applyEmpty() {
   dynamicPanels.threadDoor.redraw('blackboard-umum', 0, 0, false);
   dynamicPanels.tv.redraw(null, false);
   for (const d of desks) { drawMonitor(d.monTex, null); drawPlate(d.plateTex, null, null); }
-  if (cardsEl) {
-    cardsEl.textContent = '';
-    const p = document.createElement('p');
-    p.className = 'cards-note';
-    p.textContent = 'Snapshot belum tersedia — ruangan kosong. Coba lagi sebentar lagi.';
-    cardsEl.appendChild(p);
-  }
   renderPortraits();
   setStatusText();
   requestRender();
@@ -6296,14 +6287,7 @@ const SHOWCASE_CSS = `
 #roomPortraits .portrait .mini-avatar svg{width:56px;height:60px;display:block}
 #roomPortraits .portrait .portrait-name{font-size:10px;line-height:1.2;color:#e6e6e6}
 #roomPortraits .portrait .portrait-role{font-size:10px;line-height:1.2;color:#9aa0a6}
-#roomCards{display:block;padding:.2rem .2rem}
-.agent-card{display:flex;gap:.6rem;align-items:center;width:100%;min-height:64px;text-align:left;margin:.3rem 0;padding:.4rem .5rem;border:1px solid #2d333b;border-radius:8px;background:#21262d;color:#e6e6e6;cursor:pointer}
-.agent-card .mini-avatar svg{width:44px;height:48px;flex:none}
-.agent-card .card-main{flex:1;min-width:0;display:flex;flex-direction:column}
-.agent-card .card-status{font-size:.9rem;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-clamp:2;white-space:normal}
-.agent-card .card-meta{font-size:.85rem;color:#9aa0a6}
-.cards-note{font-size:.9rem;color:#9aa0a6}
-@media (max-width:700px){#stageHero{height:340px}.bubble .txt,.bubble .time{display:none}.bubble .nm{display:inline}.hero-actions{flex-direction:column;align-items:flex-start}#roomFollowCard{max-width:170px !important}#roomFollowCard .follow-status,#roomFollowCard .follow-meta{display:none}}
+@media (max-width:700px){#stageHero{height:340px}.bubble .txt,.bubble .time{display:none}.bubble .nm{display:inline}.hero-actions{flex-direction:column;align-items:flex-start}#roomFollowCard{max-width:min(340px,calc(100vw - 16px)) !important}}
 `;
 function ensureShowcaseCss() {
   if (document.getElementById('neugi-showcase-css')) return;
@@ -6344,9 +6328,6 @@ function ensureShowcaseDom(targetEl) {
   const portraits = mk('div', 'roomPortraits');
   portraits.setAttribute('aria-label', 'Portrait agen');
   root.appendChild(portraits);
-  const cards = mk('div', 'roomCards');
-  cards.setAttribute('aria-label', 'Daftar agen per ruangan');
-  root.appendChild(cards);
   /* Overlay fullscreen menempel di <body> (bukan di slot) supaya tidak
      terpotong overflow slot + position:fixed selalu relatif viewport. */
   if (!document.getElementById('fsOverlay')) {
@@ -6453,8 +6434,9 @@ async function init() {
   markReady();
 }
 
-/* Fallback tanpa WebGL: kartu tetap dibangun dari snapshot
-   (tanpa scene); tanpa login, tanpa lobby. */
+/* Fallback tanpa WebGL: portrait strip + status tetap dibangun dari
+   snapshot (tanpa scene); tanpa login, tanpa lobby. (List ruangan
+   dihapus 28 Nov 2026 — kartu tidak lagi dibangun di mana pun.) */
 async function buildSceneFallbackOnly() {
   const snap = await fetchSnapshot();
   if (snap) {
@@ -6463,7 +6445,7 @@ async function buildSceneFallbackOnly() {
     lastFetchMs = Date.now();
     state = snapshotToState(snap, Date.now());
   }
-  renderCards();
+  renderPortraits();
   setStatusText();
 }
 

@@ -84,7 +84,7 @@
   #btnExitFs { position: absolute; top: .6rem; right: .6rem; z-index: 60; }
   #btnExitFs .key { color: #9aa0a6; font-size: .85rem; }
 
-  /* --- portrait strip + kartu agen ---------------------------------- */
+  /* --- portrait strip ------------------------------------------- */
   .avatar-voxel { shape-rendering: crispEdges; }
   #roomPortraits {
     display: flex; gap: .5rem; overflow-x: auto;
@@ -105,21 +105,6 @@
     outline: 2px solid #a3ff00; outline-offset: 1px; border-color: #a3ff00;
   }
   #roomPortraits .portrait.dim { opacity: .55; }
-  #roomCards { display: block; padding: .2rem .2rem; }
-  .room-group h4 { margin: .8rem 0 .3rem; font-size: .95rem; color: #a3ff00; }
-  .agent-card {
-    display: flex; gap: .6rem; align-items: center; width: 100%; min-height: 64px;
-    text-align: left; margin: .3rem 0; padding: .4rem .5rem;
-    border: 1px solid #2d333b; border-radius: 8px; background: #21262d; color: inherit;
-    cursor: pointer;
-  }
-  .agent-card:hover { border-color: #9aa0a6; }
-  .agent-card .mini-avatar svg { width: 44px; height: 48px; flex: none; }
-  .agent-card .card-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-  .agent-card .card-status { font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .agent-card .card-status.stale { opacity: .55; }
-  .agent-card .card-meta { font-size: .85rem; color: #9aa0a6; }
-  .cards-note { font-size: .9rem; color: #9aa0a6; }
 
   @media (max-width: 700px) {
     #stageHero { height: 340px; }
@@ -147,9 +132,8 @@
       <p class="hint">Klik ruangan untuk layar penuh · klik agen untuk mengikuti · seret untuk orbit, cubit atau scroll untuk zoom</p>
     </div>
   </section>
-  <section id="cards" aria-label="Daftar agen per ruangan">
+  <section id="cards" aria-label="Portrait agen">
     <div id="roomPortraits" aria-label="Portrait agen"></div>
-    <div id="roomCards" aria-label="Daftar agen per ruangan"></div>
   </section>
   <p class="foot">Showcase statis — tidak ada server, tidak ada data live. Snapshot diperbarui berkala oleh tim.</p>
 </main>
