@@ -2813,15 +2813,19 @@ function buildOutdoor() {
 }
 
 /* --- KOTA SIBUK (27 Nov 2026, perintah Rangga: isi area luar yang
-   masih kosong ala kota sibuk. KOREKSI 20:42: TANPA pejalan kaki.)
-   Elemen: skyline gedung seberang jalan + gedung samping, gerbang
-   kantor, lampu jalan, lampu lalu lintas, zebra cross, halte bus,
-   toko, pohon, bangku, tempat sampah, papan nama jalan, mobil
-   tambahan. Semua primitif sederhana + material dishare (mat()),
-   tanpa aset baru — fasad jendela digambar di canvas (0 KB aset).
-   Animasi hemat: lampu lalu lintas ikut loop setInterval lalu
-   lintas yang sudah ada (tanpa timer baru); hormat document.hidden
-   + prefers-reduced-motion lewat loop itu. */
+   masih kosong ala kota sibuk. KOREKSI 20:42: TANPA pejalan kaki.
+   KOREKSI 21:03: area depan gerbang (seberang jalan) HANYA jalan
+   + hamparan rumput/semak — TIDAK ADA gedung; gedung HANYA di
+   kiri-kanan kantor. Skyline + toko + halte seberang jalan
+   DIHAPUS, diganti hamparan rumput + semak.)
+   Elemen: gedung samping (kiri-kanan), gerbang kantor, lampu
+   jalan, lampu lalu lintas, zebra cross, hamparan rumput + semak
+   seberang jalan, pohon, bangku, tempat sampah, papan nama jalan,
+   mobil tambahan. Semua primitif sederhana + material dishare
+   (mat()), tanpa aset baru — fasad jendela digambar di canvas
+   (0 KB aset). Animasi hemat: lampu lalu lintas ikut loop
+   setInterval lalu lintas yang sudah ada (tanpa timer baru);
+   hormat document.hidden + prefers-reduced-motion lewat loop itu. */
 let trafficLamps = null; /* {red, yellow, green} bahan lampu lalin */
 let trafficPhase = 0;
 
@@ -2949,74 +2953,6 @@ function buildGate() {
   scene.add(g);
 }
 
-function buildBusStop(x, z) {
-  /* Halte bus di trotoar seberang: atap + panel belakang + bangku
-     + rambu BUS (buka ke arah jalan/utara). */
-  const g = new THREE.Group();
-  for (const sx of [-2.2, 2.2]) {
-    const post = box(0.12, 2.4, 0.12, 0x3a3f44);
-    post.position.set(sx, 1.2, 0); g.add(post);
-  }
-  const roof = box(4.8, 0.12, 1.7, 0x2a2f33);
-  roof.position.set(0, 2.45, 0); g.add(roof);
-  const back = box(4.8, 1.4, 0.08, C.panelEdge);
-  back.position.set(0, 1.3, 0.8); g.add(back);
-  const bench = box(3.6, 0.1, 0.45, C.bench);
-  bench.position.set(0, 0.5, 0.35); g.add(bench);
-  for (const sx of [-1.6, 1.6]) {
-    const leg = box(0.1, 0.5, 0.4, 0x3a3f44);
-    leg.position.set(sx, 0.25, 0.35); g.add(leg);
-  }
-  const busTex = textTexture(128, 128, (g2) => {
-    g2.fillStyle = '#1d4ed8'; g2.fillRect(0, 0, 128, 128);
-    g2.fillStyle = '#ffffff'; g2.font = 'bold 44px sans-serif';
-    g2.textAlign = 'center'; g2.textBaseline = 'middle';
-    g2.fillText('BUS', 64, 68);
-  });
-  const pole = cyl(0.06, 0.06, 2.6, 0x555555);
-  pole.position.set(3.0, 1.3, 0); g.add(pole);
-  for (const sz of [1, -1]) {
-    const sign = panelPlane(0.6, 0.6, busTex);
-    sign.position.set(3.0, 2.35, sz * 0.06);
-    if (sz < 0) sign.rotation.y = Math.PI;
-    g.add(sign);
-  }
-  g.position.set(x, 0, z);
-  scene.add(g);
-}
-
-function buildShop(x, z, color, awnColor, label) {
-  /* Toko kecil tepi jalan: badan + etalase kaca + awning miring
-     + papan nama, di kedua sisi (depan jalan + belakang) supaya
-     terbaca dari segala sudut kamera (preseden billboard). */
-  const g = new THREE.Group();
-  const body = box(4.5, 3, 2.5, color);
-  body.position.y = 1.5; g.add(body);
-  const signTex = textTexture(256, 64, (g2) => {
-    g2.fillStyle = '#16181c'; g2.fillRect(0, 0, 256, 64);
-    g2.fillStyle = '#a3ff00'; g2.font = 'bold 36px sans-serif';
-    g2.textAlign = 'center'; g2.textBaseline = 'middle';
-    g2.fillText(label, 128, 34);
-  });
-  for (const sz of [1, -1]) {
-    const win = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 1.3),
-      new THREE.MeshBasicMaterial({ color: 0x2a3438 }));
-    win.position.set(0, 1.15, sz * 1.28);
-    if (sz < 0) win.rotation.y = Math.PI;
-    g.add(win);
-    const awn = box(4.7, 0.08, 1.3, awnColor);
-    awn.position.set(0, 2.15, sz * 1.85);
-    awn.rotation.x = sz * 0.3;
-    g.add(awn);
-    const sign = panelPlane(2.6, 0.65, signTex);
-    sign.position.set(0, 2.72, sz * 1.28);
-    if (sz < 0) sign.rotation.y = Math.PI;
-    g.add(sign);
-  }
-  g.position.set(x, 0, z);
-  scene.add(g);
-}
-
 function buildCityTree(x, z) {
   /* Pohon trotoar (gaya taman dalam: batang + 2 bola daun). */
   const g = new THREE.Group();
@@ -3026,6 +2962,18 @@ function buildCityTree(x, z) {
   c1.position.y = 1.9; g.add(c1);
   const c2 = sph(0.6, C.plantDark);
   c2.position.set(0.3, 2.5, 0); g.add(c2);
+  g.position.set(x, 0, z);
+  scene.add(g);
+}
+
+function buildShrub(x, z, s, color) {
+  /* Semak rendah di hamparan rumput: 2 bola pipih (tinggi total
+     0,4-0,9 m), warna hijau variasi. Statis, tanpa animasi. */
+  const g = new THREE.Group();
+  const b1 = sph(0.7 * s, color);
+  b1.scale.set(1, 0.55, 1); b1.position.y = 0.35 * s; g.add(b1);
+  const b2 = sph(0.45 * s, C.plant);
+  b2.scale.set(1, 0.6, 1); b2.position.set(0.3 * s, 0.45 * s, 0.1 * s); g.add(b2);
   g.position.set(x, 0, z);
   scene.add(g);
 }
@@ -3079,22 +3027,21 @@ function buildCity() {
   ground.position.set(0, -0.01, 10);
   scene.add(ground);
 
-  /* Skyline seberang jalan (deret dekat, muka z 42,5 — masuk
-     bounds kamera via room 'kota') + 2 menara jauh (z 50,
-     puncak mengintip dari balik deret dekat). */
-  const skyline = [
-    { x: -34, w: 7, h: 9, d: 5, c: 0x8a7f70 },
-    { x: -24, w: 8, h: 12, d: 5, c: 0x7a7268 },
-    { x: -14, w: 6, h: 7, d: 5, c: 0x9c8a76 },
-    { x: -4, w: 9, h: 13, d: 5, c: 0x6e6a63 },
-    { x: 6, w: 7, h: 8, d: 5, c: 0x8a7f70 },
-    { x: 16, w: 8, h: 11, d: 5, c: 0x7a8b7d },
-    { x: 26, w: 6, h: 9, d: 5, c: 0x9c8a76 },
-    { x: 34, w: 8, h: 12, d: 5, c: 0x6e6a63 },
-  ];
-  skyline.forEach((b, i) => buildCityBuilding(b.x, 45, b.w, b.h, b.d, b.c, 100 + i * 7, 'ns'));
-  buildCityBuilding(-20, 53, 8, 18, 6, 0x6e6a63, 201, 'nsew');
-  buildCityBuilding(22, 53, 8, 20, 6, 0x7a7268, 207, 'nsew');
+  /* Hamparan rumput seberang jalan (KOREKSI 21:03: depan gerbang
+     HANYA jalan + rumput/semak, tanpa gedung). Bidang rumput
+     hijau z 39..56 (di selatan trotoar seberang z 38,25, y 0,005
+     — di atas tanah dasar y -0,01, tidak menabrak trotoar y 0,01)
+     + 28 semak rendah tersebar; koridor x -3..3 dibiarkan kosong
+     supaya sumbu driveway/gerbang tetap terbuka. */
+  const field = new THREE.Mesh(new THREE.PlaneGeometry(72, 17), mat('grassfield', 0x7d9b6a));
+  field.rotation.x = -Math.PI / 2;
+  field.position.set(0, 0.005, 47.5);
+  scene.add(field);
+  const shrubRnd = seededRand(77);
+  const shrubCols = [C.plantDark, 0x6f8f5f, 0x5d7d52];
+  for (const [sx, sz] of [[-32, 42], [-24, 42], [-16, 42], [-8, 42], [8, 42], [16, 42], [24, 42], [32, 42], [-28, 46], [-20, 46], [-12, 46], [12, 46], [20, 46], [28, 46], [-34, 50], [-26, 50], [-18, 50], [-10, 50], [10, 50], [18, 50], [26, 50], [34, 50], [-30, 54], [-22, 54], [-14, 54], [14, 54], [22, 54], [30, 54]]) {
+    buildShrub(sx, sz, 0.6 + shrubRnd() * 0.5, shrubCols[Math.floor(shrubRnd() * 3)]);
+  }
 
   /* Gedung samping kantor (membingkai denah dari timur-barat). */
   buildCityBuilding(-27, 4, 6, 8, 5, 0x8a7f70, 301, 'nsew');
@@ -3125,13 +3072,8 @@ function buildCity() {
     scene.add(place(box(7, 0.02, 0.5, 0xf5f5f0), 0, 0.02, z));
   }
 
-  /* Halte bus (trotoar seberang, x -20) + toko (z 40,2). */
-  buildBusStop(-20, 39.6);
-  buildShop(-8, 40.2, 0xb5654a, VOLT, 'KOPI');
-  buildShop(6, 40.2, 0x7a8b7d, 0xefe8d6, 'WARUNG');
-  buildShop(22, 40.2, 0xefe8d6, 0xb5654a, 'TOKO');
-
-  /* Pohon trotoar seberang (dihindari: halte x -20, toko x -8/6/22). */
+  /* Pohon trotoar seberang (tetap — bagian vegetasi, bukan
+     bangunan; di selatan trotoar, tepi utara hamparan rumput). */
   for (const x of [-36, -28, -12, 2, 14, 28, 36]) buildCityTree(x, 39.3);
 
   /* Bangku trotoar utara + tempat sampah + papan nama jalan. */

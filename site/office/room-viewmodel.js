@@ -205,27 +205,25 @@ export const ROOMS = {
     ],
   },
   /* Kota (ekspansi 27 Nov 2026, perintah Rangga: isi area luar
-     ala kota sibuk). Slot di sini HANYA untuk bounds kamera
-     (computePlanBounds) — deret gedung seberang jalan + gedung
-     samping kantor. TIDAK ada agen yang ditempatkan di sini
-     (assignSlots hanya memproses room yang ditempati agen, dan
-     pipeline snapshot tidak mengenal room ini). */
+     ala kota sibuk. KOREKSI 21:03: area depan gerbang (seberang
+     jalan) HANYA jalan + hamparan rumput/semak — TIDAK ADA gedung;
+     gedung HANYA di kiri-kanan kantor. Slot di sini HANYA untuk
+     bounds kamera (computePlanBounds) — gedung samping + tepi
+     dekat hamparan rumput (z 44). Tanpa door (supaya tidak ada
+     strip ambang pintu di tengah rumput — preseden 'bukit').
+     TIDAK ada agen yang ditempatkan di sini (assignSlots hanya
+     memproses room yang ditempati agen, dan pipeline snapshot
+     tidak mengenal room ini). */
   kota: {
     label: 'Kota',
-    door: { x: 0, z: 42.5 },
     slots: [
-      { x: -34, z: 42.5, rot: 0 },
-      { x: -24, z: 42.5, rot: 0 },
-      { x: -14, z: 42.5, rot: 0 },
-      { x: -4, z: 42.5, rot: 0 },
-      { x: 6, z: 42.5, rot: 0 },
-      { x: 16, z: 42.5, rot: 0 },
-      { x: 26, z: 42.5, rot: 0 },
-      { x: 34, z: 42.5, rot: 0 },
       { x: -27, z: 4, rot: 0 },
       { x: -27, z: 16, rot: 0 },
       { x: 27, z: 0, rot: 0 },
       { x: 27, z: 20, rot: 0 },
+      { x: -30, z: 44, rot: 0 },
+      { x: 0, z: 44, rot: 0 },
+      { x: 30, z: 44, rot: 0 },
     ],
   },
   /* Bukit + hutan di belakang kantor (27 Nov 2026, perintah Rangga:
@@ -233,7 +231,7 @@ export const ROOMS = {
      Slot HANYA untuk bounds kamera (computePlanBounds) — deret
      dekat saja (z -21..-24) supaya framing tidak mengecil
      berlebihan; deret jauh (z -30..-33) mengintip dari baliknya,
-     preseden sama seperti 2 menara jauh di 'kota'. TIDAK ada agen
+     preseden sama seperti ujung jauh hamparan rumput di 'kota'. TIDAK ada agen
      di sini (assignSlots hanya memproses room yang ditempati agen).
      Tanpa door (supaya tidak ada strip ambang pintu di tengah
      bukit — lihat buildFloor, strip digambar di tiap room.door). */
