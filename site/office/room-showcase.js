@@ -106,6 +106,56 @@ function panelPlane(w, h, texObj) {
   return m;
 }
 
+/* --- tekstur mozaik ground luar (rumput + concrete) --------------- */
+/* Palet ground luar (27 Nov 2026, perintah Rangga 22:38): rumput
+   mozaik campur tanah concrete, kontras sama lantai office (kayu
+   hangat 0xcfa878 + krem). Satu canvas 512x512 = 8x8 petak; dipakai
+   ulang di halaman, lapangan rumput, trotoar samping + utara/
+   selatan, dan tanah dasar kota — masing-masing clone dengan
+   repeat = ukuran meter / 8 supaya tiap petak = 1 m. Parkir
+   (concrete 0x4a4e54) dan jalan TIDAK diubah. */
+const MOSAIC_GRASS = [0x5d8a4a, 0x6f9b57, 0x4a7a3e, 0x7da05c];
+const MOSAIC_CONCRETE = [0x9a9a94, 0x8a8a84, 0xa8a8a0];
+let mosaicBaseTex = null;
+function mosaicGroundTex() {
+  if (mosaicBaseTex) return mosaicBaseTex;
+  const rnd = seededRand(20261127);
+  const t = textTexture(512, 512, (g2) => {
+    const S = 64; /* 512 / 8 petak */
+    for (let ty = 0; ty < 8; ty++) {
+      for (let tx = 0; tx < 8; tx++) {
+        const grass = rnd() < 0.55;
+        const pal = grass ? MOSAIC_GRASS : MOSAIC_CONCRETE;
+        const col = pal[Math.floor(rnd() * pal.length)];
+        g2.fillStyle = '#' + col.toString(16).padStart(6, '0');
+        g2.fillRect(tx * S, ty * S, S, S);
+        /* Variasi terang-gelap per petak (nuansa buatan tangan). */
+        g2.fillStyle = rnd() < 0.5 ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+        g2.fillRect(tx * S, ty * S, S, S);
+      }
+    }
+    /* Nat antar petak (mozaik kebaca). */
+    g2.strokeStyle = '#5f6b58';
+    g2.lineWidth = 2;
+    for (let i = 0; i <= 8; i++) {
+      g2.beginPath(); g2.moveTo(i * S, 0); g2.lineTo(i * S, 512); g2.stroke();
+      g2.beginPath(); g2.moveTo(0, i * S); g2.lineTo(512, i * S); g2.stroke();
+    }
+  });
+  t.tex.wrapS = THREE.RepeatWrapping;
+  t.tex.wrapT = THREE.RepeatWrapping;
+  mosaicBaseTex = t.tex;
+  return mosaicBaseTex;
+}
+function mosaicMat(w, h) {
+  /* Clone tekstur dasar (berbagi canvas) + repeat supaya tiap
+     petak = 1 m di dunia nyata. */
+  const t = mosaicGroundTex().clone();
+  t.needsUpdate = true;
+  t.repeat.set(w / 8, h / 8);
+  return new THREE.MeshLambertMaterial({ map: t });
+}
+
 /* --- state ----------------------------------------------------- */
 /* Showcase: elemen di-bind ULANG oleh mount() — di office/index.html
    struktur sudah ada saat modul dimuat; di host page (kantor.html)
@@ -2992,8 +3042,9 @@ function buildBillboard(x, z, spec) {
 }
 
 function buildOutdoor() {
-  /* Halaman (z 14.3..20) — paving krem + walkway dari pintu. */
-  const yard = new THREE.Mesh(new THREE.PlaneGeometry(42, 5.7), mat('yard', C.gang));
+  /* Halaman (z 14.3..20) — mozaik rumput + concrete (27 Nov 2026,
+     perintah Rangga 22:38) + walkway dari pintu. */
+  const yard = new THREE.Mesh(new THREE.PlaneGeometry(42, 5.7), mosaicMat(42, 5.7));
   yard.rotation.x = -Math.PI / 2; yard.position.set(0, 0.01, 17.15); scene.add(yard);
   const walk = new THREE.Mesh(new THREE.PlaneGeometry(3, 5.7), mat('walk', 0xcbb693));
   walk.rotation.x = -Math.PI / 2; walk.position.set(-1.5, 0.02, 17.15); scene.add(walk);
@@ -3026,9 +3077,9 @@ function buildOutdoor() {
   for (const bx of [-20, -17, -14, -11, -8, 8, 11, 14, 17, 20]) {
     scene.add(place(box(0.08, 0.02, 4.5, 0xf5f5f0), bx, 0.02, 22.75));
   }
-  /* Trotoar utara + selatan. */
+  /* Trotoar utara + selatan — mozaik rumput + concrete (27 Nov 2026). */
   for (const sz of [29.75, 38.25]) {
-    const sw = new THREE.Mesh(new THREE.PlaneGeometry(84, 1.5), mat('walk2', 0xcfc8b8));
+    const sw = new THREE.Mesh(new THREE.PlaneGeometry(84, 1.5), mosaicMat(84, 1.5));
     sw.rotation.x = -Math.PI / 2; sw.position.set(0, 0.01, sz); scene.add(sw);
   }
   /* Jalan (z 30.5..37.5) — aspal + garis tepi + marka tengah. */
@@ -3374,19 +3425,21 @@ function buildCity() {
   /* Tanah dasar kota (y -0,01, DI BAWAH lantai kantor y=0 dan
      bidang luar y 0,01-0,02 — hanya tampil di area kosong:
      samping kantor + seberang jalan + belakang kantor sampai
-     z -50, tempat perbukitan). */
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(140, 120), mat('cityground', 0xa89f8d));
+     z -50, tempat perbukitan). Mozaik rumput + concrete
+     (27 Nov 2026, perintah Rangga 22:38). */
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(140, 120), mosaicMat(140, 120));
   ground.rotation.x = -Math.PI / 2;
   ground.position.set(0, -0.01, 10);
   scene.add(ground);
 
   /* Hamparan rumput seberang jalan (KOREKSI 21:03: depan gerbang
-     HANYA jalan + rumput/semak, tanpa gedung). Bidang rumput
-     hijau z 39..56 (di selatan trotoar seberang z 38,25, y 0,005
-     — di atas tanah dasar y -0,01, tidak menabrak trotoar y 0,01)
+     HANYA jalan + rumput/semak, tanpa gedung). Bidang mozaik
+     rumput + concrete z 39..56 (27 Nov 2026, perintah Rangga
+     22:38; di selatan trotoar seberang z 38,25, y 0,005 — di atas
+     tanah dasar y -0,01, tidak menabrak trotoar y 0,01)
      + 28 semak rendah tersebar; koridor x -3..3 dibiarkan kosong
      supaya sumbu driveway/gerbang tetap terbuka. */
-  const field = new THREE.Mesh(new THREE.PlaneGeometry(72, 17), mat('grassfield', 0x7d9b6a));
+  const field = new THREE.Mesh(new THREE.PlaneGeometry(72, 17), mosaicMat(72, 17));
   field.rotation.x = -Math.PI / 2;
   field.position.set(0, 0.005, 47.5);
   scene.add(field);
@@ -3402,11 +3455,12 @@ function buildCity() {
   buildCityBuilding(27, 0, 6, 7, 5, 0x9c8a76, 311, 'nsew');
   buildCityBuilding(27, 20, 6, 9, 5, 0x6e6a63, 317, 'nsew');
 
-  /* Trotoar samping (x ±24..30, z -13..29): alas terang di bawah
-     deretan kios/ruko kiri-kanan kantor, menyambung trotoar utara
-     (z 29) tanpa menabrak parkir (x ±21) atau bukit (z -16,4). */
+  /* Trotoar samping (x ±24..30, z -13..29): alas mozaik rumput +
+     concrete (27 Nov 2026) di bawah deretan kios/ruko kiri-kanan
+     kantor, menyambung trotoar utara (z 29) tanpa menabrak parkir
+     (x ±21) atau bukit (z -16,4). */
   for (const sx of [-1, 1]) {
-    const sw = new THREE.Mesh(new THREE.PlaneGeometry(6, 42), mat('walk2', 0xcfc8b8));
+    const sw = new THREE.Mesh(new THREE.PlaneGeometry(6, 42), mosaicMat(6, 42));
     sw.rotation.x = -Math.PI / 2;
     sw.position.set(sx * 27, 0.005, 8);
     scene.add(sw);
