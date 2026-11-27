@@ -4406,7 +4406,7 @@ function refreshFollowCard() {
   u.mini.innerHTML = miniAvatarHTML(followName);
   u.nm.textContent = 'Mengikuti ' + info.label + ' · ' + info.role;
   el.style.borderColor = info.color;
-  u.status.textContent = st ? (st.statusText || '— tidak ada tugas aktif —') : '—';
+  u.status.textContent = st ? (st.statusText || '— mode otonom —') : '—';
   u.meta.textContent = st ? ('aktif ' + st.lastActiveLabel + ' · ' + st.openCount + ' tugas') : '';
   el.style.display = 'block';
 }
@@ -4447,7 +4447,7 @@ function renderCards() {
       main.appendChild(nm);
       const status = document.createElement('span');
       status.className = 'card-status';
-      status.textContent = st.statusText || '— tidak ada tugas aktif —';
+      status.textContent = st.statusText || '— mode otonom —';
       status.title = st.statusText || '';
       if (st.stale) status.classList.add('stale');
       main.appendChild(status);
