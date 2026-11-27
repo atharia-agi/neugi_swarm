@@ -74,11 +74,26 @@ export const ROOMS = {
     door: { x: -1.5, z: GANG_Z },
     lane: -4.1,
     legDy: 0,
+    /* 10 slot berdiri (27 Nov 2026, Rangga: agen numpuk di Front
+       Office): dulu cuma 4 slot, rapat 12 orang berarti 8 agen
+       overflow menumpuk di 3 kolom dekat pintu. Tambahan 6 slot
+       tersebar di seluruh ruangan, dijauhkan dari pajangan: meja
+       resepsionis (x -2,7..-0,3, z 11,05..11,95), karpet sambut
+       (x -2,8..-0,2, z 12,2..13,2), tanaman sudut (-4,5/1,5, z 13),
+       bangku tunggu (x -4,82..-4,47, z 3,5..5,5), papan direktori
+       (x -3,85..-3,15, z 12,8). Slot barat/timur di lane jalan,
+       slot tengah menghadap selatan (searah slot tengah lama). */
     slots: [
       { x: -4.1, z: 7, rot: Math.PI / 2, lane: -4.1 },
       { x: 1.1, z: 7, rot: -Math.PI / 2, lane: 1.1 },
       { x: -1.5, z: 4.4, rot: 0, lane: -4.1 },
       { x: -1.5, z: 9.6, rot: Math.PI, lane: 1.1 },
+      { x: -4.1, z: 2, rot: Math.PI / 2, lane: -4.1 },
+      { x: -4.1, z: 10, rot: Math.PI / 2, lane: -4.1 },
+      { x: 1.1, z: 4.4, rot: -Math.PI / 2, lane: 1.1 },
+      { x: 1.1, z: 10, rot: -Math.PI / 2, lane: 1.1 },
+      { x: -1.5, z: 2, rot: 0, lane: -4.1 },
+      { x: -1.5, z: 7, rot: 0, lane: 1.1 },
     ],
   },
   lounge: {
@@ -558,16 +573,18 @@ export function slotRoom(slot) {
 /* Posisi overflow DI DALAM ruangan (2026-11-27): 2,2 m MASUK dari
    pintu ke arah centroid slot (bukan ke gang) — 2,2 m menaruh baris
    pertama tepat di dalam garis sekat ruangan (sekat utara berakhir
-   z=-4, selatan mulai z=0). Menyebar 3 kolom x 0,9 m, baris
-   berikutnya 0,9 m lebih masuk. Menghadap ke dalam ruangan. */
+   z=-4, selatan mulai z=0). Menyebar 4 kolom x 1,1 m, baris
+   berikutnya 1,1 m lebih masuk (dilebarkan 27 Nov 2026 — 3 kolom
+   x 0,9 m terlalu rapat buat rapat 12 orang: 8 agen numpuk di
+   petak 1,8 m dekat pintu). Menghadap ke dalam ruangan. */
 function overflowSlot(room, k) {
   const cz = room.slots.reduce((n, s) => n + s.z, 0) / room.slots.length;
   const dirZ = Math.sign(cz - room.door.z) || 1;
-  const row = Math.floor(k / 3);
-  const col = (k % 3) - 1;
+  const row = Math.floor(k / 4);
+  const col = (k % 4) - 1.5;
   return {
-    x: Math.round((room.door.x + col * 0.9) * 100) / 100,
-    z: Math.round((room.door.z + dirZ * (2.2 + row * 0.9)) * 100) / 100,
+    x: Math.round((room.door.x + col * 1.1) * 100) / 100,
+    z: Math.round((room.door.z + dirZ * (2.2 + row * 1.1)) * 100) / 100,
     rot: dirZ < 0 ? Math.PI : 0,
   };
 }
@@ -800,13 +817,20 @@ export function buildRoomState(api, nowMs) {
   for (const m of messages) byId[m.id] = m;
 
   /* Meeting @all (khusus home-base Oto — lihat resolveRoom):
-     pesan apa pun yang me-mention 'all' <15 mnt. Dihitung di sini
-     supaya Oto bisa ikut rapat nyata; HANYA cabang Oto yang
-     membaca s.allMeeting — agen lain tidak terpengaruh (di
+     HANYA siaran @all ASLI <15 mnt: 'all' harus mention PERTAMA
+     (pesan ditujukan ke semua orang). Board API mem-parsing "@all"
+     di mana saja di badan pesan jadi mentions — pesan "@seto BRIEF:
+     ... Tes live @all ..." ikut membawa 'all' di mentions walau
+     ditujukan ke Seto, dan itu sempat memicu rapat PALSU 27 Nov
+     2026 (msg_2432/2434 -> 12 agen numpuk di Front Office).
+     KECUALI pesan [URGENT] (Option A): siaran darurat bukan rapat.
+     Dihitung di sini supaya Oto bisa ikut rapat nyata; HANYA cabang
+     Oto yang membaca s.allMeeting — agen lain tidak terpengaruh (di
      view-model lama tidak ada cabang @all sama sekali). */
   const allMeeting = messages.some(
     (m) => now - ts(m.created_at) <= MIN_15
-      && (m.mentions || []).map((x) => lower(x)).includes('all'));
+      && !/^\s*\[URGENT\]/i.test(m.body || '')
+      && (m.mentions || []).map((x) => lower(x))[0] === 'all');
 
   const agents = [];
   for (const name of ROOM_ORDER) {

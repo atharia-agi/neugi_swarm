@@ -4554,10 +4554,19 @@ function updateBubbles() {
          berhenti. */
       const column = placedRects.filter((q) => rectOf().x0 < q.x1 + GAP && rectOf().x1 > q.x0 - GAP);
       const upY = Math.min(...column.map((q) => q.y0 - GAP));
-      /* Naik hanya bila muat di atas tepi layar DAN masih dalam
-         MAX_UP dari anchor; kalau tidak, turun ke bawah kolom. */
-      const upFits = upY >= ph + GAP && (anchorY - upY <= MAX_UP);
-      y = upFits ? upY : Math.max(...column.map((q) => q.y1 + GAP + ph));
+      const downY = Math.max(...column.map((q) => q.y1 + GAP + ph));
+      /* Urutan: naik dekat anchor dulu; kalau tidak muat, turun;
+         kalau turun mentok tepi bawah, naik JAUH (lewat MAX_UP)
+         daripada menumpuk — pill jauh dari avatar masih terbaca,
+         pill yang menumpuk tidak (27 Nov 2026: 8 pill numpuk di
+         Front Office, turunnya mentok clamp bawah lalu guard
+         menyerah dengan overlap). */
+      const upNear = upY >= ph + GAP && (anchorY - upY <= MAX_UP);
+      const downFits = downY <= h - GAP;
+      if (upNear) y = upY;
+      else if (downFits) y = downY;
+      else if (upY >= ph + GAP) y = upY;
+      else y = downY;
       y = Math.min(Math.max(y, ph + GAP), h - GAP);
       clash = hits(rectOf());
     }
