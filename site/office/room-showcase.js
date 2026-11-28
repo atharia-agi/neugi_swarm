@@ -194,7 +194,7 @@ let camPan = { x: 0, z: 0 }; /* geser target overview (2 jari / Shift+drag), dij
 let heroLastInteract = 0; /* ms interaksi user terakhir di hero — jeda auto-rotate 5 dtk (Tugas 5) */
 let webglOK = false;
 /* Kamera Sims 4: mode 'overview' | 'follow'. Follow = perspektif
-   TPS di belakang/di atas bahu agen + mengikuti saat jalan. */
+   TPS di depan/di atas agen (muka kelihatan) + mengikuti saat jalan. */
 let cameraMode = 'overview';
 let followName = null;
 let followYaw = 0;       /* offset yaw dari arah hadap agen */
@@ -366,8 +366,9 @@ const avatarBaseY = {};     /* name -> 0 | -sitDropFor(name) */
 const avatarSlotRot = {};  /* name -> rot slot penempatan (arah hadap
   "duduk/berdiri di slot", BUKAN tatapan bos — dipakai kamera follow;
   tatapan bos (§5.4.5) memutar badan ke meja Rangga, tapi kursi/meja
-  agen tetap menghadap slot.rot; kamera TPS harus di belakang KURSI,
-  bukan di belakang tatapan, supaya monitor tidak menutupi agen. */
+  agen tetap menghadap slot.rot; kamera TPS harus di depan KURSI
+  (arah slot), bukan di depan tatapan, supaya kamera tidak mengayun
+  menjauhi meja agen sendiri saat tatapan bos aktif. */
 const poseState = {};       /* name -> {sitting: bool, activity: 'coffee'|'phone'|null} (target) */
 const poseAnim = {};        /* name -> {sittingW, activityW, activity} (bobot render saat ini) */
 const activityProps = {};   /* name -> {cup, phone} (child of hand bone) */
@@ -1310,20 +1311,24 @@ function fitCamera() {
    dipakai updateFollowCamera tiap frame DAN animasi masuk follow
    (transisi smooth, Rangga 27 Nov 21:12). Posisi kamera follow dari
    posisi + arah hadap agen saat ini (turn.rotation.y; saat jalan =
-   arah gerak): di belakang bahu (followYaw), di atas (followPitch),
-   jarak followDist; anchor = torso agen + pan. Pitch di-clamp
+   arah gerak): di DEPAN agen (followYaw), di atas (followPitch),
+   jarak followDist; anchor = torso agen + pan. Kamera di depan
+   supaya muka agen kelihatan (Rangga 28 Nov 10:22). Pitch di-clamp
    [0.08, 1.25] supaya kamera tidak masuk bawah lantai; posisi x/z
    di-clamp ke bounds + 4 supaya tidak nyangkut jauh di luar dinding.
    ARAH HADAP (0.4.9): saat agen DIAM, pakai avatarSlotRot (arah
    hadap slot — kursi menghadap meja) BUKAN turn.rotation.y:
    tatapan bos (§5.4.5) memutar badan ke meja Rangga saat
-   bossActive, sehingga "belakang badan" jatuh di sisi meja dan
-   monitor menutupi agen (temuan verifikasi 0.4.9: beto duduk
-   terhalang monitornya sendiri). Saat JALAN, pakai
-   turn.rotation.y (= arah gerak) supaya kamera tetap di belakang
-   agen yang berjalan. Anchor = torso (1.1), bukan kepala (1.5):
-   kamera mengunci ke kepala + rambut chibi yang besar membuat
-   rambut memenuhi frame; torso membuat seluruh badan terlihat. */
+   bossActive; memakai arah tatapan akan mengayun kamera menjauhi
+   meja agen sendiri. Saat JALAN, pakai turn.rotation.y (= arah
+   gerak) supaya kamera tetap di depan agen yang berjalan.
+   Monitor di depan agen yang duduk TIDAK menutupi muka: garis
+   pandang ke torso melewati monitor di anchorY + 1.22*tan(pitch),
+   >= 1.06 di kasus terburuk (duduk + portrait), di atas puncak
+   monitor 0.98 (terverifikasi harness). Anchor = torso (1.1),
+   bukan kepala (1.5): kamera mengunci ke kepala + rambut chibi
+   yang besar membuat rambut memenuhi frame; torso membuat seluruh
+   badan terlihat. */
 function followCamPose() {
   if (!perspCam || !followName) return null;
   const pos = avatarPos[followName];
@@ -1337,9 +1342,10 @@ function followCamPose() {
     : (avatarSlotRot[followName] !== undefined
       ? avatarSlotRot[followName]
       : (turn ? turn.rotation.y : 0));
-  const yaw = facing + Math.PI + followYaw;
-  /* Arah hadap agen = (sin(rotY), cos(rotY)); kamera di belakang
-     = arah berlawanan (rotY + π). followYaw memutar di sekitar. */
+  const yaw = facing + followYaw;
+  /* Arah hadap agen = (sin(rotY), cos(rotY)); kamera di DEPAN agen
+     = arah yang sama (rotY), muka kelihatan (Rangga 28 Nov 10:22).
+     followYaw memutar di sekitar. */
   const pitch = Math.min(1.25, Math.max(0.08, followPitch));
   const dist = Math.min(6, Math.max(2.2, followDist));
   /* Anchor = torso agen (ikut turun bila duduk). */
@@ -1347,14 +1353,14 @@ function followCamPose() {
   const anchor = new THREE.Vector3(pos.x + followPan.x, anchorY, pos.z + followPan.z);
   const horiz = dist * Math.cos(pitch);
   /* SHOWCASE FIX (follow Rangga = layar hitam, Oto msg_0349): kamera
-     follow TIDAK boleh keluar denah. Posisi di belakang agen yang
-     duduk di tepi utara (slot rot 0, mis. Rangga (-18,-11)) jatuh di
-     luar dinding utara (z=-14.15) sehingga dinding menutupi agen —
-     layar hitam total (mean luminance 4.8, 100% piksel <16), hanya
-     label DOM yang melayang. Jepit ke dalam FLOOR dengan margin 0.6
-     dari muka dalam dinding; jarak efektif mengecil tapi agen tetap
-     terlihat. (Bug yang sama ada di produksi room3d.js — ranah
-     Maximum Level tahap (b), bukan showcase.) */
+     follow TIDAK boleh keluar denah. Posisi di depan agen yang
+     duduk di tepi denah bisa jatuh di luar dinding sehingga dinding
+     menutupi agen — layar hitam total (mean luminance 4.8, 100%
+     piksel <16), hanya label DOM yang melayang. Jepit ke dalam
+     FLOOR dengan margin 0.6 dari muka dalam dinding; jarak efektif
+     mengecil tapi agen tetap terlihat. (Bug yang sama ada di
+     produksi room3d.js — ranah Maximum Level tahap (b), bukan
+     showcase.) */
   const cx = Math.min(FLOOR.x1 - 0.6, Math.max(FLOOR.x0 + 0.6,
     anchor.x + Math.sin(yaw) * horiz));
   const cz = Math.min(FLOOR.z1 - 0.6, Math.max(FLOOR.z0 + 0.6,
@@ -1385,7 +1391,7 @@ function enterFollow(name, opts) {
   if (!perspCam) return false;
   /* Pindah antar agen (A -> B): kamera TERBANG LANGSUNG dari POV A ke
      POV B, TANPA zoom out ke overview (Rangga 27 Nov 22:27). Tangkap
-     pose awal dari posisi kamera SAAT INI (di belakang A), bukan dari
+     pose awal dari posisi kamera SAAT INI (di depan A), bukan dari
      posisi overview orthoCam — dari situlah "zoom out mendadak" itu
      berasal. */
   const switching = cameraMode === 'follow' && followName && followName !== name;
@@ -1430,7 +1436,7 @@ function enterFollow(name, opts) {
   cameraMode = 'follow';
   camera = perspCam;
   /* Transisi smooth: masuk baru = terbang dari posisi overview ke
-     belakang agen; pindah antar agen = terbang langsung POV -> POV
+     depan agen; pindah antar agen = terbang langsung POV -> POV
      (REDUCED = langsung ke pose akhir). */
   animateEnterFollow(fromPos, fromAnchor, opts && opts.flightMs);
   refreshFollowCard();
@@ -1536,7 +1542,7 @@ function getCameraMode() {
 
 /* --- transisi kamera smooth (Rangga 27 Nov 21:12, 22:22, 22:27) ----- */
 /* SEMUA transisi kamera smooth, satu easing (~700 ms, easeInOutCubic):
-   - masuk follow = terbang mulus dari posisi overview ke belakang agen
+   - masuk follow = terbang mulus dari posisi overview ke depan agen
      (zoom in);
    - pindah antar agen = terbang LANGSUNG POV -> POV, TANPA zoom out ke
      overview (Rangga 22:27 — "kameranya yg moving");
@@ -1559,7 +1565,7 @@ function animateEnterFollow(fromPos, fromAnchor, durMs) {
      tetap diikuti. Titik awal:
      - masuk baru: posisi overview (ortho, jauh, wide shot) -> zoom in;
      - pindah antar agen: fromPos/fromAnchor yang diteruskan enterFollow
-       (posisi + anchor kamera SAAT INI di belakang agen lama) -> terbang
+       (posisi + anchor kamera SAAT INI di depan agen lama) -> terbang
        langsung POV -> POV, TANPA zoom out ke overview (Rangga 22:27). */
   const first = followCamPose();
   if (!first) return;
@@ -2444,7 +2450,8 @@ function buildDesk(x, z, w) {
      diputar: atas layar condong ke selatan = menjauhi avatar yang
      melihat dari utara. Konsekuensi yang Rangga terima: kode tidak
      lagi kebaca dari kamera default selatan — kebaca dari utara
-     (orbit / follow di belakang avatar). */
+     (orbit dari utara; follow kini di depan avatar, dari selatan,
+     jadi kode tidak kebaca dari follow). */
   const monGroup = new THREE.Group();
   monGroup.position.set(0.25, 0, 0);
   monGroup.rotation.y = Math.PI;
@@ -6699,12 +6706,13 @@ function bindInput() {
       dragMoved += Math.abs(dx) + Math.abs(dy);
       if (cameraMode === 'follow') {
         /* followYaw SENGAJA tanpa clamp (cek visual 26 Nov 2026):
-           clamp akan mengunci kamera ke setengah-belakang agen
-           (followYaw=0 = di belakang agen) sehingga wajah/depan
-           agen tidak pernah terlihat — padahal follow memang untuk
-           melihat agen. Sejak FREE CAM 2026-11-27, azimuth
-           overview juga tanpa clamp; kamera follow tetap dijepit
-           ke dalam denah (updateFollowCamera). */
+           clamp akan mengunci kamera ke setengah-depan agen
+           (followYaw=0 = di depan agen, muka kelihatan) sehingga
+           punggung agen tidak pernah terlihat — padahal follow
+           memang untuk melihat agen dari semua sisi (drag orbit).
+           Sejak FREE CAM 2026-11-27, azimuth overview juga tanpa
+           clamp; kamera follow tetap dijepit ke dalam denah
+           (updateFollowCamera). */
         followYaw -= dx * 0.005;
         followPitch = Math.min(1.25, Math.max(0.08, followPitch + dy * 0.003));
       } else if (panMode) {
@@ -6759,7 +6767,9 @@ function bindInput() {
           /* Pan di bidang lantai, relatif arah kamera follow. */
           const turn = avatarMeshes[followName];
           const facing = turn ? turn.rotation.y : 0;
-          const yaw = facing + Math.PI + followYaw;
+          const yaw = facing + followYaw; /* sama seperti followCamPose:
+            kamera di depan agen (Rangga 28 Nov 10:22); yaw di sini
+            harus sama supaya pan ikut jari, bukan berlawanan. */
           const k = 0.01 * followDist;
           const rx = Math.cos(yaw);
           const rz = -Math.sin(yaw);
