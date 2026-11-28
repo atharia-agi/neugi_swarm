@@ -14,8 +14,8 @@
    TANPA klik-untuk-chat: klik avatar = kartu info saja di hero,
    dan kamera follow third-person di mode fullscreen. Semua teks
    dari snapshot dimasukkan ke DOM lewat textContent dan ke canvas
-   lewat fillText — bukan innerHTML (kecuali avatarVoxel yang
-   membangun dari data tetap + esc). Canvas WebGL dibuat dulu, tapi
+   lewat fillText — bukan innerHTML (kecuali miniAvatarHTML yang
+   membangun img chibi dari data tetap + esc). Canvas WebGL dibuat dulu, tapi
    baru ditempel ke DOM setelah render pertama (GLB selesai dimuat
    / fallback). Hero = mini display auto-rotate pelan; klik hero =
    fullscreen overlay dengan room penuh + orbit/zoom + follow. */
@@ -27,14 +27,10 @@ import {
   KNOWN_AGENTS, ROOM_ORDER, ROOMS, FLOOR, GANG_Z, GLYPH_DEFS,
   planWalk, assignSlots, trunc, hhmm,
 } from './room-viewmodel.js';
-/* SHOWCASE: avatar voxel (dulu blok <script> inline di index.html)
-   dipindah ke avatar-voxel.js dan diimpor di sini — supaya viewer yang
-   di-mount dari halaman lain (kantor.html, tanpa index.html) tetap
-   punya avatar di strip portrait, kartu agen, dan chip follow. Tanpa
-   impor ini window.avatarVoxel undefined di host page dan semua
-   portrait tampil kosong (temuan saat verifikasi mount API). Impor
-   relatif terhadap modul, jadi jalan dari host page mana pun. */
-import './avatar-voxel.js';
+/* SHOWCASE: portrait agen kini PNG chibi (site/assets/portraits/,
+   dirender dari model GLB chibi, 28 Nov 2026) — menggantikan avatar
+   voxel SVG. avatar-voxel.js tetap ada di repo (tidak dihapus) tapi
+   tidak lagi diimpor, karena miniAvatarHTML tidak lagi memanggilnya. */
 /* Namespace import: fungsi baru Worker A (selectVisibleBubbles,
    activeAgentName) dipakai BILA sudah diekspor view-model; bila
    belum (BASE 0.4.8.4), fallback lokal di bawah yang mengimplementasi
@@ -5349,18 +5345,21 @@ function updateBubbles() {
   }
 }
 
-/* Miniatur avatar voxel — SATU-SATUNYA tempat room3d.js memanggil
-   avatarVoxel (tes 0.4.8 menghitung kemunculan string itu = 1):
-   portrait strip, kartu info follow, dan kartu agen vertikal HP
-   semuanya lewat helper ini. */
+/* Miniatur avatar CHIBI — portrait PNG dirender dari model GLB chibi
+   (site/assets/portraits/, 28 Nov 2026; dulu avatarVoxel SVG voxel).
+   SATU-SATUNYA tempat portrait dibuat: portrait strip, kartu info
+   follow, dan kartu agen vertikal HP semuanya lewat helper ini. */
 function miniAvatarHTML(name) {
-  return window.avatarVoxel ? window.avatarVoxel(name) : '';
+  const info = KNOWN_AGENTS[name];
+  if (!info) return '';
+  const escA = (v) => String(v ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  return `<img class="avatar-chibi" src="${MODULE_BASE}../assets/portraits/${name}.png?v=20261128" width="56" height="60" alt="Avatar ${escA(info.label)} (${escA(info.role)})" loading="lazy">`;
 }
 
 /* --- portrait strip (§5.12) -------------------------------------- */
 /* renderPortraits() mengisi #roomPortraits (container + CSS dibuat
    Worker C di index.html; bila elemen belum ada, diam-diam lewati).
-   Satu tombol per agen (ROOM_ORDER): miniatur avatarVoxel + nama +
+   Satu tombol per agen (ROOM_ORDER): miniatur avatar chibi + nama +
    role; agen aktif dapat class 'active' +
    border warna identitas (style inline borderColor). Klik →
    fullscreen + follow agen itu. Tanpa snapshot: semua portrait
@@ -7097,6 +7096,7 @@ const SHOWCASE_CSS = `
 #roomPortraits{display:flex;gap:.5rem;overflow-x:auto;padding:.45rem .8rem;background:#161b22;border:1px solid #2d333b;border-radius:8px;margin-top:.8rem}
 #roomPortraits .portrait{flex:none;display:flex;flex-direction:column;align-items:center;gap:.15rem;min-width:64px;padding:.3rem .2rem .25rem;background:transparent;color:#e6e6e6;border:1px solid #2d333b;border-radius:8px;cursor:pointer}
 #roomPortraits .portrait .mini-avatar svg{width:56px;height:60px;display:block}
+#roomPortraits .portrait .mini-avatar img{width:56px;height:60px;display:block}
 #roomPortraits .portrait .portrait-name{font-size:10px;line-height:1.2;color:#e6e6e6}
 #roomPortraits .portrait .portrait-role{font-size:10px;line-height:1.2;color:#9aa0a6}
 @media (max-width:700px){#stageHero{height:340px}.bubble .txt,.bubble .time{display:none}.bubble .nm{display:inline}.hero-actions{flex-direction:column;align-items:flex-start}#roomFollowCard{max-width:min(340px,calc(100vw - 16px)) !important}}
