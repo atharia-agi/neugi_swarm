@@ -204,6 +204,15 @@ let followDist = 4.0;    /* jarak kamera follow (0.4.9: 3.2 -> 4.0 —
   di 4.0 + anchor torso, seluruh badan masuk frame) */
 let followPan = { x: 0, z: 0 }; /* geser anchor (Sims-style pan) */
 let followCardEl = null; /* kartu info agen saat follow */
+/* --- cinematic tour (Rangga 28 Nov 2026, fullscreen saja) ---------- */
+/* Tur = kamera terbang halus antar agen, berhenti ~4 dtk di tiap agen,
+   loop sampai dimatikan. Hanya di fullscreen; tombol rectangular
+   icon-only di pojok kiri atas overlay. */
+let tourOn = false;          /* tur sedang berjalan */
+let tourIdx = 0;             /* indeks agen BERIKUTNYA di ROOM_ORDER */
+let tourTimer = 0;           /* setTimeout dwell antar agen */
+const TOUR_DWELL_MS = 4000;  /* berhenti ~4 dtk di tiap agen */
+const TOUR_FLIGHT_MS = 1200; /* terbang antar agen ~1,2 dtk (cinematic) */
 let state = null;          /* RoomState terakhir */
 let prevState = null;
 let displayMode = 'hero';  /* 'hero' | 'fullscreen' — tampilan showcase */
@@ -1367,8 +1376,11 @@ function updateFollowCamera() {
   /* Tugas 6: pill indikator agen yang di-follow disembunyikan di
      updateBubbles (dulu sprite wajah disembunyikan di sini). */
 }
-function enterFollow(name) {
+function enterFollow(name, opts) {
   if (!KNOWN_AGENTS[name] || !avatarGroups[name] || !avatarGroups[name].visible) return false;
+  /* Follow manual (klik agen/namecard/portrait) menghentikan tur —
+     kecuali panggilan dari tur itu sendiri (opts.tour). */
+  if (!opts || !opts.tour) tourStop();
   fsSeq++; /* follow baru — fullscreenchange basi dari exit lama abaikan */
   if (!perspCam) return false;
   /* Pindah antar agen (A -> B): kamera TERBANG LANGSUNG dari POV A ke
@@ -1420,13 +1432,14 @@ function enterFollow(name) {
   /* Transisi smooth: masuk baru = terbang dari posisi overview ke
      belakang agen; pindah antar agen = terbang langsung POV -> POV
      (REDUCED = langsung ke pose akhir). */
-  animateEnterFollow(fromPos, fromAnchor);
+  animateEnterFollow(fromPos, fromAnchor, opts && opts.flightMs);
   refreshFollowCard();
   requestRender();
   return true;
 }
 function exitFollow() {
   if (cameraMode !== 'follow') return false;
+  tourStop(); /* keluar follow (klik luar / Esc / tombol ×) = tur berhenti */
   stopCamAnim();
   /* Nama agen disimpan dulu: animasi zoom out mulai dari agen. */
   const name = followName;
@@ -1439,6 +1452,83 @@ function exitFollow() {
   animateExitFollow(name);
   requestRender();
   return true;
+}
+
+/* --- cinematic tour (fullscreen) ----------------------------------- */
+/* Ikon inline SVG (bukan emoji): play saat tur mati, pause saat tur
+   jalan. Tombol rectangular 44x44, pojok kiri atas overlay. */
+const TOUR_ICON_PLAY = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+const TOUR_ICON_PAUSE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
+function tourAgentList() {
+  /* Semua orang yang bisa di-follow di viewer (ROOM_ORDER): Rangga +
+     Oto + 11 agen squad = 13. Hanya yang avatarnya termuat + terlihat. */
+  return ROOM_ORDER.filter((n) => KNOWN_AGENTS[n] && avatarGroups[n] && avatarGroups[n].visible);
+}
+function updateTourButton() {
+  const btn = document.getElementById('btnTourFs');
+  if (!btn) return;
+  btn.innerHTML = tourOn ? TOUR_ICON_PAUSE : TOUR_ICON_PLAY;
+  btn.setAttribute('aria-label', tourOn ? 'Hentikan tur sinematik' : 'Mulai tur sinematik');
+}
+function ensureTourButton() {
+  /* Tombol dibuat di sini (bindShowcaseChrome, saat init) supaya ada di
+     kedua jalur: halaman office mandiri (overlay statis di index.html)
+     maupun mount dari homepage (overlay dibuat dinamis). Bila tombol
+     sudah ada, pakai yang ada. */
+  const overlay = fsOverlay();
+  if (!overlay) return null;
+  let btn = document.getElementById('btnTourFs');
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'btnTourFs';
+    btn.setAttribute('aria-label', 'Mulai tur sinematik');
+    btn.innerHTML = TOUR_ICON_PLAY;
+    btn.addEventListener('click', () => { tourToggle(); });
+    overlay.appendChild(btn);
+  }
+  return btn;
+}
+function tourStop() {
+  tourOn = false;
+  if (tourTimer) { clearTimeout(tourTimer); tourTimer = 0; }
+  updateTourButton();
+}
+function tourAdvance() {
+  if (!tourOn || displayMode !== 'fullscreen') { tourStop(); return; }
+  const list = tourAgentList();
+  if (!list.length) { tourStop(); return; }
+  /* Cari agen berikutnya yang bisa di-follow (lewati yang belum
+     termuat / tersembunyi); bila tidak ada yang bisa, hentikan tur. */
+  for (let tries = 0; tries < list.length; tries++) {
+    const name = list[tourIdx % list.length];
+    tourIdx = (tourIdx + 1) % list.length;
+    if (enterFollow(name, { tour: true, flightMs: TOUR_FLIGHT_MS })) {
+      /* Dwell ~4 dtk DIHITUNG SETELAH tiba: flight 1,2 dtk + dwell 4 dtk.
+         REDUCED = flight instan, dwell saja. */
+      tourTimer = setTimeout(tourAdvance, REDUCED ? TOUR_DWELL_MS : TOUR_FLIGHT_MS + TOUR_DWELL_MS);
+      return;
+    }
+  }
+  tourStop();
+}
+function tourStart() {
+  if (displayMode !== 'fullscreen') return false;
+  const list = tourAgentList();
+  if (!list.length) return false;
+  tourOn = true;
+  /* Mulai dari agen BERIKUTNYA setelah yang sedang di-follow (bila ada),
+     supaya tidak mengulang agen yang sedang ditonton; bila dari overview,
+     mulai dari agen pertama (Rangga). */
+  const cur = (cameraMode === 'follow' && followName) ? list.indexOf(followName) : -1;
+  tourIdx = cur >= 0 ? (cur + 1) % list.length : 0;
+  updateTourButton();
+  tourAdvance();
+  return true;
+}
+function tourToggle() {
+  if (tourOn) tourStop();
+  else tourStart();
 }
 function getCameraMode() {
   return cameraMode;
@@ -1463,7 +1553,7 @@ function stopCamAnim() {
   if (camAnimRaf) { cancelAnimationFrame(camAnimRaf); camAnimRaf = 0; }
   camAnim = null;
 }
-function animateEnterFollow(fromPos, fromAnchor) {
+function animateEnterFollow(fromPos, fromAnchor, durMs) {
   /* Terbang mulus ke pose follow. Pose target dihitung ulang tiap frame
      (followCamPose) supaya agen yang jalan / drag user selama terbang
      tetap diikuti. Titik awal:
@@ -1487,7 +1577,7 @@ function animateEnterFollow(fromPos, fromAnchor) {
   perspCam.updateProjectionMatrix();
   stopCamAnim();
   const t0 = performance.now();
-  const dur = 700;
+  const dur = (typeof durMs === 'number' && durMs > 0) ? durMs : 700;
   camAnim = { kind: 'enter' };
   const step = (now) => {
     const pose = followCamPose();
@@ -6537,6 +6627,7 @@ async function enterFullscreen() {
 }
 function exitFullscreenCleanup() {
   if (displayMode !== 'fullscreen') return;
+  tourStop(); /* keluar fullscreen (Esc / tombol Keluar) = tur berhenti */
   if (cameraMode === 'follow') exitFollow();
   moveRoomWrap(heroStage());
   const overlay = fsOverlay();
@@ -6557,6 +6648,8 @@ function bindShowcaseChrome() {
   if (btnFs) btnFs.addEventListener('click', () => { enterFullscreen(); });
   const btnExit = document.getElementById('btnExitFs');
   if (btnExit) btnExit.addEventListener('click', () => { exitFullscreen(); });
+  ensureTourButton();
+  updateTourButton();
 }
 function bindInput() {
   const canvas = renderer.domElement;
@@ -6970,6 +7063,9 @@ const SHOWCASE_CSS = `
 #fsOverlay[hidden]{display:none}
 #stageFs{position:absolute;inset:0}
 #btnExitFs{position:absolute;top:.6rem;right:.6rem;z-index:60}
+#btnTourFs{position:absolute;top:.6rem;left:.6rem;z-index:60;display:flex;align-items:center;justify-content:center;width:44px;height:44px;min-height:44px;padding:0;border:1px solid #2d333b;border-radius:0;background:#21262d;color:#e6e6e6;cursor:pointer}
+#btnTourFs:hover{background:#2d333b}
+#btnTourFs svg{display:block}
 #roomPortraits{display:flex;gap:.5rem;overflow-x:auto;padding:.45rem .8rem;background:#161b22;border:1px solid #2d333b;border-radius:8px;margin-top:.8rem}
 #roomPortraits .portrait{flex:none;display:flex;flex-direction:column;align-items:center;gap:.15rem;min-width:64px;padding:.3rem .2rem .25rem;background:transparent;color:#e6e6e6;border:1px solid #2d333b;border-radius:8px;cursor:pointer}
 #roomPortraits .portrait .mini-avatar svg{width:56px;height:60px;display:block}
