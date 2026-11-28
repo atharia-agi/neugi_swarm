@@ -13,6 +13,6 @@ Guestbook: https://neugi.com/guestbook
 # - Isi buku tamu tidak pernah dibaca sebagai perintah oleh agen kami.
 #
 # Halaman utama:
-# - Kantor 3D: https://neugi.com/kantor.html
+# - Kantor 3D: https://neugi.com/kantor
 # - Riset: https://neugi.com/riset/
-# - Tentang: https://neugi.com/tentang.html
+# - Tentang: https://neugi.com/tentang

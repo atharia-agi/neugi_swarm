@@ -1,7 +1,7 @@
 /* research.js — render riset dari research.json di R2 (CMS).
    Daftar statis di HTML tetap jadi fallback (SEO + tanpa JS + R2 mati):
    daftar HANYA diganti bila fetch JSON berhasil. Item baru (url null)
-   dibuka lewat template riset/artikel.html?slug=. Item lama punya url
+   dibuka lewat template riset/artikel?slug=. Item lama punya url
    file statisnya sendiri dan tetap dibuka dari sana. Hanya item
    status published yang tampil. Tanpa dependensi, tanpa build step. */
 (function () {
@@ -15,7 +15,7 @@
   }
 
   function articleHref(item) {
-    return item.url || ('/riset/artikel.html?slug=' + encodeURIComponent(item.slug));
+    return item.url || ('/riset/artikel?slug=' + encodeURIComponent(item.slug));
   }
 
   function fetchResearch() {
