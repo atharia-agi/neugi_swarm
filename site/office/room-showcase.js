@@ -4526,8 +4526,14 @@ function loadOneAvatar(name) {
       console.warn('GLB timeout, pakai stand-in:', name);
       finish(fallbackAvatar(name));
     }, 8000);
+    /* 2026-11-28 (Rangga: leto & ceto ketukar): file GLB sudah
+       benar sejak batch chibi 25 Nov (ceto = blazer pink, leto =
+       hoodie lavender, terverifikasi dari tekstur), tapi URL-nya
+       tidak berubah sehingga browser yang menyimpan cache lama
+       masih menampilkan model tertukar. Query ?v= memaksa fetch
+       baru; naikkan angkanya setiap kali file GLB diganti. */
     gltfLoader.load(
-      MODULE_BASE + 'models/' + name + '.glb',
+      MODULE_BASE + 'models/' + name + '.glb?v=20261128',
       (gltf) => {
         clearTimeout(timer);
         try {
@@ -5596,13 +5602,17 @@ function snapshotToState(snap, nowMs) {
     agentState.glyph = 'zzz';
     agents.push(agentState);
   }
-  /* 2026-11-27 (Rangga: idle jangan di jalan, beraktivitas acak):
-     genMs jadi seed — di dalam satu snapshot penempatan idle
-     stabil; snapshot baru (tiap 15 mnt) boleh memindahkan idle
-     ke node acak lain, dan applyState akan MENJALANKAN mereka ke
-     sana (walkAgent), bukan teleport. */
-  const bucket = Math.floor(genMs / IDLE_WANDER_MS_V);
-  const slots = assignSlots(agents, genMs);
+  /* 2026-11-28 (Rangga: idle stuck di 1 node): bucket dihitung
+     dari jam nyata (nowMs), BUKAN generated_at snapshot —
+     pipeline hanya push snapshot bila state berubah (atau >90
+     menit), jadi genMs bisa beku sampai 90 menit dan idle tidak
+     pernah pindah. Dengan nowMs, penempatan idle stabil di dalam
+     satu bucket 15 menit lalu pindah ke node acak lain di bucket
+     berikut; viewer me-refresh snapshot tiap 60 detik, dan
+     applyState akan MENJALANKAN mereka ke sana (walkAgent),
+     bukan teleport. */
+  const bucket = Math.floor(nowMs / IDLE_WANDER_MS_V);
+  const slots = assignSlots(agents, nowMs);
   for (const st of agents) {
     st.slot = slots[st.name];
     /* Ruangan agen idle = ruangan PENEMPATAN (bukan logis) supaya
