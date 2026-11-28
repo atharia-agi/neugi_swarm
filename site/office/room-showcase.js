@@ -2012,6 +2012,7 @@ function buildScene() {
   buildRanggaOffice();
   buildStudioKonten();
   buildWarRoom();
+  buildWarRoomProps();
   buildLabAI();
   buildRoomLabels();
 
@@ -3905,14 +3906,20 @@ function buildWarRoom() {
      lane barat x=9,6 berjarak 0,48 m; segmen jalan z=4,6/9,4 tidak
      tersentuh (layar z 4,75..9,25). */
   scene.add(place(box(0.1, 2.2, 4.5, C.panel), 9.18, 1.6, 7));
+  /* PERBAIKAN 28 Nov 2026 (props War Room): bidang gelap lama di
+     x=9,12 TERSEMBUNYI di balik panel (panel x 9,13..9,23) + strip
+     volt lama box(4,3, 0,09, 0,02) menjorok 4,3 m ke timur
+     (tembus sekat ke taman + di atas meja) — w/d tertukar. Bidang
+     dipindah ke timur panel (x=9,24), strip diputar memanjang
+     sumbu z di atas layar. Posisi/ukuran/warna layar tidak berubah. */
   const statusBoard = new THREE.Mesh(
     new THREE.PlaneGeometry(4.3, 2.0),
     new THREE.MeshBasicMaterial({ color: 0x16181c }));
-  statusBoard.position.set(9.12, 1.6, 7);
+  statusBoard.position.set(9.24, 1.6, 7);
   statusBoard.rotation.y = Math.PI / 2;
   scene.add(statusBoard);
-  const statusStrip = box(4.3, 0.09, 0.02, VOLT);
-  statusStrip.position.set(9.11, 2.7, 7);
+  const statusStrip = box(0.02, 0.09, 4.3, VOLT);
+  statusStrip.position.set(9.25, 2.7, 7);
   scene.add(statusStrip);
   /* Kabinet samping di dinding selatan (x=12, z=13,4) — 3,75 m di
      selatan pad selatan (12,9,4), jauh dari lane + segmen jalan
@@ -3926,6 +3933,107 @@ function buildWarRoom() {
   for (const [px, pz] of [[10.6, 4.6], [13.4, 4.6], [10.6, 9.4], [13.4, 9.4]]) {
     scene.add(place(box(0.7, 0.1, 0.7, C.chair), px, PAD_TOP - 0.05, pz));
   }
+}
+
+/* Props War Room per lane (28 Nov 2026, Rangga: "Props war room
+   sepi amat, sesuai lane terkait lah") — semua MENEMPEL dinding
+   (tanpa tapak lantai): tidak menyentuh slot agen, lane x=9,6/
+   14,3, meja operasi, maupun jalur planWalk, jadi pipeline
+   snapshot + FURNITURE test_board.py TIDAK perlu diubah.
+   - Zeto (security/audit): papan SECURITY di dinding barat segmen
+     utara — batang sinyal abstrak (volt/krem, tanpa angka).
+   - Neto (trading/revenue): papan REVENUE di dinding timur segmen
+     selatan — batang chart abstrak (volt/krem, tanpa angka).
+   - Neto (market): papan MARKET di dinding selatan segmen timur —
+     garis langkah abstrak (titik volt, tanpa angka).
+   ATURAN KERAS: tanpa metrik palsu — batang/titik hanya bentuk,
+   label hanya kata, TIDAK ada angka harga/persen/jumlah. */
+function buildWarRoomProps() {
+  /* Label kanvas kecil: teks volt di atas gelap (pola yang sama
+     dengan buildRoomLabels). */
+  function warLabel(text, w, h) {
+    const tex = textTexture(512, 128, (g) => {
+      g.fillStyle = '#16181c'; g.fillRect(0, 0, 512, 128);
+      g.fillStyle = '#a3ff00'; g.font = 'bold 64px ui-monospace, monospace';
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(text, 256, 64);
+    });
+    return panelPlane(w, h, tex);
+  }
+  /* --- A. SECURITY (Zeto) — dinding barat, segmen utara, menghadap
+     timur. Panel z 0,9..3,5: 1,1 m di utara baris pad utara (z=4,6),
+     0,42 m dari lane barat (x=9,6), sama seperti layar status.
+     Bidang layar di timur panel (x=9,24) supaya tidak tersembunyi
+     di balik panel (pelajaran dari layar status lama). */
+  scene.add(place(box(0.1, 1.5, 2.6, C.panel), 9.18, 1.65, 2.2));
+  const secScreen = new THREE.Mesh(
+    new THREE.PlaneGeometry(2.4, 1.3),
+    new THREE.MeshBasicMaterial({ color: 0x16181c }));
+  secScreen.position.set(9.24, 1.65, 2.2);
+  secScreen.rotation.y = Math.PI / 2;
+  scene.add(secScreen);
+  /* Batang sinyal abstrak: 7 batang, tinggi acak, alas y=1,05. */
+  const secHeights = [0.35, 0.7, 0.5, 0.95, 0.6, 0.85, 0.4];
+  secHeights.forEach((hh, i) => {
+    const col = i % 2 === 0 ? VOLT : 0xf3eee2;
+    scene.add(place(box(0.04, hh, 0.22, col), 9.26, 1.05 + hh / 2, 1.3 + i * 0.3));
+  });
+  scene.add(place(box(0.02, 0.03, 2.2, 0xf3eee2), 9.26, 1.05, 2.2));
+  const secLabel = warLabel('SECURITY', 0.9, 0.18);
+  secLabel.position.set(9.25, 2.22, 2.2);
+  secLabel.rotation.y = Math.PI / 2;
+  scene.add(secLabel);
+  const secStrip = box(0.02, 0.06, 2.4, VOLT);
+  secStrip.position.set(9.25, 2.42, 2.2);
+  scene.add(secStrip);
+  /* --- B. REVENUE (Neto) — dinding timur, segmen selatan,
+     menghadap barat. Panel z 10,5..13,1: 1,1 m di selatan baris pad
+     selatan (z=9,4), 0,5 m dari lane timur (x=14,3). */
+  scene.add(place(box(0.1, 1.5, 2.6, C.panel), 14.82, 1.65, 11.8));
+  const revScreen = new THREE.Mesh(
+    new THREE.PlaneGeometry(2.4, 1.3),
+    new THREE.MeshBasicMaterial({ color: 0x16181c }));
+  revScreen.position.set(14.76, 1.65, 11.8);
+  revScreen.rotation.y = -Math.PI / 2;
+  scene.add(revScreen);
+  /* Batang chart abstrak: 8 batang, tinggi acak, alas y=1,05. */
+  const revHeights = [0.5, 0.8, 0.65, 1.0, 0.75, 0.9, 0.55, 0.7];
+  revHeights.forEach((hh, i) => {
+    const col = i % 2 === 0 ? VOLT : 0xf3eee2;
+    scene.add(place(box(0.04, hh, 0.2, col), 14.74, 1.05 + hh / 2, 10.85 + i * 0.27));
+  });
+  scene.add(place(box(0.02, 0.03, 2.2, 0xf3eee2), 14.74, 1.05, 11.8));
+  const revLabel = warLabel('REVENUE', 0.9, 0.18);
+  revLabel.position.set(14.75, 2.22, 11.8);
+  revLabel.rotation.y = -Math.PI / 2;
+  scene.add(revLabel);
+  const revStrip = box(0.02, 0.06, 2.4, VOLT);
+  revStrip.position.set(14.75, 2.42, 11.8);
+  scene.add(revStrip);
+  /* --- C. MARKET (Neto) — dinding selatan, segmen timur, menghadap
+     utara. Panel x 12,7..14,5: 0,1 m di timur kabinet (x 11,4..12,6),
+     jauh dari pad selatan (z=9,4) + lane timur (papan menempel
+     dinding, tebal 0,1 m). */
+  scene.add(place(box(1.8, 1.1, 0.1, C.panel), 13.6, 1.75, 13.85));
+  const mktScreen = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.6, 0.9),
+    new THREE.MeshBasicMaterial({ color: 0x16181c }));
+  mktScreen.position.set(13.6, 1.75, 13.79);
+  mktScreen.rotation.y = Math.PI;
+  scene.add(mktScreen);
+  /* Garis langkah abstrak: 6 titik volt naik-turun, alas y=1,35. */
+  const mktHeights = [1.5, 1.7, 1.6, 1.9, 1.75, 2.0];
+  mktHeights.forEach((yy, i) => {
+    scene.add(place(box(0.12, 0.12, 0.04, VOLT), 12.95 + i * 0.26, yy, 13.77));
+  });
+  scene.add(place(box(1.5, 0.03, 0.02, 0xf3eee2), 13.6, 1.35, 13.77));
+  const mktLabel = warLabel('MARKET', 0.7, 0.16);
+  mktLabel.position.set(13.6, 2.14, 13.78);
+  mktLabel.rotation.y = Math.PI;
+  scene.add(mktLabel);
+  const mktStrip = box(1.6, 0.06, 0.02, VOLT);
+  mktStrip.position.set(13.6, 2.32, 13.78);
+  scene.add(mktStrip);
 }
 
 /* Meja lab: permukaan + kaki panel (tanpa monitor — gantinya
