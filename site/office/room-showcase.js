@@ -1823,10 +1823,13 @@ function addAAAWallDetail(scene) {
   scene.add(place(aaaBox(0.06, 0.14, dLen, C.grid, 0.9), fb.x0 + 0.02, y + 0.07, (fb.z0 + fb.z1) / 2));
   scene.add(place(aaaBox(0.06, 0.14, dLen, C.grid, 0.9), fb.x1 - 0.02, y + 0.07, (fb.z0 + fb.z1) / 2));
   scene.add(place(aaaBox(wLen, 0.14, 0.06, C.grid, 0.9), (fb.x0 + fb.x1) / 2, y + 0.07, fb.z1 - 0.02));
-  /* Trim horizontal (utara/barat/timur saja — dinding selatan rendah). */
+  /* Trim horizontal 4 sisi — selatan dibagi 2 segmen mengikuti segmen
+     tembok (celah pintu kaca x -2,7..-0,3 tetap terbuka, tanpa trim). */
   scene.add(place(aaaBox(wLen, 0.05, 0.05, C.panelEdge, 0.7), (fb.x0 + fb.x1) / 2, y + 1.02, fb.z0 + 0.02));
   scene.add(place(aaaBox(0.05, 0.05, dLen, C.panelEdge, 0.7), fb.x0 + 0.02, y + 1.02, (fb.z0 + fb.z1) / 2));
   scene.add(place(aaaBox(0.05, 0.05, dLen, C.panelEdge, 0.7), fb.x1 - 0.02, y + 1.02, (fb.z0 + fb.z1) / 2));
+  scene.add(place(aaaBox(18.6, 0.05, 0.05, C.panelEdge, 0.7), -12.0, y + 1.02, fb.z1 - 0.02));
+  scene.add(place(aaaBox(21.6, 0.05, 0.05, C.panelEdge, 0.7), 10.5, y + 1.02, fb.z1 - 0.02));
   /* Kaki sekat antar-ruang (dari mesh sekat yang ada di scene). */
   scene.traverse((o) => {
     if (!o.isMesh || !o.geometry || o.geometry.type !== 'BoxGeometry') return;
