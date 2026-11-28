@@ -95,6 +95,8 @@ a:hover { background: var(--volt); text-decoration: none; }
 .post-list h3 a { text-decoration: none; }
 .post-list h3 a:hover { background: var(--volt); }
 .post-list p { margin: 0; font-size: 15px; color: var(--ink-soft); max-width: 64ch; }
+.post-list .reel-hook { margin-top: 10px; font-size: 13px; font-weight: 700; color: var(--black); }
+.post-list .reel-hook::before { content: ""; display: inline-block; width: 10px; height: 10px; background: var(--volt); border: 2px solid var(--black); margin-right: 6px; vertical-align: -1px; }
 .post-list .arrow { font-family: "Archivo Black", sans-serif; font-size: 20px; line-height: 1; padding: 2px 6px; grid-row: 1; grid-column: 3; }
 @media (hover: hover) {
   .post-list li { transition: box-shadow .15s ease, transform .15s ease; }

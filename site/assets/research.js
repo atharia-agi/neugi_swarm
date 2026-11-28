@@ -2,8 +2,10 @@
    Daftar statis di HTML tetap jadi fallback (SEO + tanpa JS + R2 mati):
    daftar HANYA diganti bila fetch JSON berhasil. Item baru (url null)
    dibuka lewat template riset/artikel?slug=. Item lama punya url
-   file statisnya sendiri dan tetap dibuka dari sana. Hanya item
-   status published yang tampil. Tanpa dependensi, tanpa build step. */
+   file statisnya sendiri dan tetap dibuka dari sana.
+   Status: 'published' = riset tim (tampil di /riset);
+   'archived' = berita lama (tampil di /arsip, artikelnya tetap bisa
+   dibuka). Tanpa dependensi, tanpa build step. */
 (function () {
   var RESEARCH_URL = 'https://pub-20982401ea5a4ebdb76f3b502b7074d7.r2.dev/research.json';
   var MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
@@ -21,9 +23,7 @@
   function fetchResearch() {
     return fetch(RESEARCH_URL, { cache: 'no-store' })
       .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(function (d) {
-        return (d.items || []).filter(function (it) { return it.status === 'published'; });
-      })
+      .then(function (d) { return (d.items || []); })
       .catch(function () { return null; });
   }
 
@@ -36,7 +36,9 @@
 
   function renderList(ul, items) {
     var limit = parseInt(ul.getAttribute('data-research-limit') || '0', 10);
-    var show = limit > 0 ? items.slice(0, limit) : items;
+    var want = ul.getAttribute('data-research-status') || 'published';
+    var filtered = items.filter(function (it) { return it.status === want; });
+    var show = limit > 0 ? filtered.slice(0, limit) : filtered;
     ul.textContent = '';
     show.forEach(function (item, i) {
       var li = el('li');
@@ -49,6 +51,9 @@
       h3.appendChild(a);
       div.appendChild(h3);
       div.appendChild(el('p', null, item.dek || ''));
+      if (item.reel_candidate && item.reel_hook) {
+        div.appendChild(el('p', 'reel-hook', 'Kandidat reel: ' + item.reel_hook));
+      }
       li.appendChild(div);
       li.appendChild(el('span', 'arrow', '→'));
       ul.appendChild(li);
