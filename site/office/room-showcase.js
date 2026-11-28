@@ -1984,12 +1984,15 @@ function buildScene() {
   scene.add(place(box(42.6, 2.2, 0.3, C.wall), 0, 1.1, -14.15));      /* utara */
   scene.add(place(box(0.3, 2.2, 28.6, C.wallDark), -21.15, 1.1, 0));   /* barat */
   scene.add(place(box(0.3, 2.2, 28.6, C.wall), 21.15, 1.1, 0));       /* timur */
-  /* selatan (rendah) — DIBAGI 27 Nov 2026: celah 2,4 m di sumbu pintu
+  /* selatan — DIBAGI 27 Nov 2026: celah 2,4 m di sumbu pintu
      kaca (x=-1,5) supaya pintu terbaca sebagai bukaan bersih, tanpa
-     sisa tembok di ambang pintu. Segmen barat x -21,3..-2,7 (18,6 m,
-     pusat -12,0); segmen timur x -0,3..21,3 (21,6 m, pusat 10,5). */
-  scene.add(place(box(18.6, 0.9, 0.3, C.wall), -12.0, 0.45, 14.15));  /* selatan barat */
-  scene.add(place(box(21.6, 0.9, 0.3, C.wall), 10.5, 0.45, 14.15));   /* selatan timur */
+     sisa tembok di ambang pintu. Tinggi DISAMAKAN 28 Nov 2026
+     (2,2 m, y=1,1) dengan 3 sisi lain — dulu 0,9 m sehingga tembok
+     depan kelihatan lebih pendek dari utara/barat/timur. Segmen
+     barat x -21,3..-2,7 (18,6 m, pusat -12,0); segmen timur
+     x -0,3..21,3 (21,6 m, pusat 10,5). */
+  scene.add(place(box(18.6, 2.2, 0.3, C.wall), -12.0, 1.1, 14.15));  /* selatan barat */
+  scene.add(place(box(21.6, 2.2, 0.3, C.wall), 10.5, 1.1, 14.15));   /* selatan timur */
   scene.add(place(box(0.25, 1.0, 10, C.divider), -10.5, 0.5, -9));     /* kantor | pantry */
   scene.add(place(box(0.25, 1.0, 10, C.divider), 0, 0.5, -9));         /* pantry | lounge */
   scene.add(place(box(0.25, 1.0, 10, C.divider), 10.5, 0.5, -9));      /* lounge | studio */
