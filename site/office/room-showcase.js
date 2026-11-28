@@ -2920,11 +2920,25 @@ function buildLounge() {
   rugIn.rotation.x = -Math.PI / 2;
   rugIn.position.set(5.25, 0.012, -12.2);
   scene.add(rugIn);
-  scene.add(place(box(0.6, 1.8, 2.0, C.desk), 10.4, 0.9, -6));
-  const loungeBooks = [0xfc7a24, 0xc4b5fd, 0xca4f40];
-  loungeBooks.forEach((col, i) => {
-    scene.add(place(box(0.14, 0.42, 0.32, col), 10.4, 2.01, -6.6 + i * 0.5));
-  });
+  /* Rak buku TERBUKA (28 Nov 2026, audit rak): dulu balok padat
+     0.6x1.8x2.0 di x=10,4 — MENGANGKANGI sekat lounge|studio
+     (x=10,5), separuh di lounge separuh di studio. Sekarang:
+     pindah ke x=10,05 (penuh di lounge, menempel sekat), panel
+     belakang di timur, buku BERDIRI di atas 3 papan. */
+  scene.add(place(box(0.06, 1.8, 2.0, C.desk), 10.32, 0.9, -6)); /* panel belakang (timur, menempel sekat) */
+  for (const sz of [-6.97, -5.03]) {
+    scene.add(place(box(0.54, 1.8, 0.06, C.desk), 10.05, 0.9, sz)); /* panel sisi */
+  }
+  const loungeBooks = [0xfc7a24, 0xc4b5fd, 0xca4f40, 0x0f766e, 0x1e3a8a, 0xd9a441];
+  const loungeHeights = [0.38, 0.42, 0.35, 0.4, 0.36, 0.38];
+  const loungeCount = [8, 7, 5];
+  for (const [bi, by] of [[0, 0.3], [1, 0.85], [2, 1.35]]) {
+    scene.add(place(box(0.5, 0.05, 1.88, C.deskTop), 10.05, by, -6)); /* papan */
+    for (let k = 0; k < loungeCount[bi]; k++) {
+      const h = loungeHeights[(bi * 3 + k) % 6];
+      scene.add(place(box(0.28, h, 0.09, loungeBooks[(bi * 3 + k) % 6]), 10.05, by + 0.025 + h / 2, -6.85 + k * 0.13));
+    }
+  }
 }
 
 function buildPantry() {
@@ -2946,12 +2960,24 @@ function buildPantry() {
   scene.add(place(box(0.8, 1.0, 6, C.desk), -8.1, 0.5, -9));
   scene.add(place(box(0.5, 0.5, 0.4, 0x111111), -8.1, 1.25, -10.5));
   scene.add(place(cyl(0.12, 0.12, 0.18, 0xf5f5f0), -8.1, 1.15, -9.9));
-  const shelf = box(0.7, 2.0, 2.5, C.desk);
-  shelf.position.set(-1.9, 1.0, -5);
-  scene.add(shelf);
+  /* Rak camilan TERBUKA (28 Nov 2026, audit rak): dulu balok padat
+     0.7x2.0x2.5 dan 6 snack TERSEMBUNYI di dalam balok (tidak
+     terlihat). Sekarang: panel belakang di timur (menghadap lane),
+     2 panel sisi, alas + 3 papan, snack KELIHATAN di atas papan,
+     terbuka ke barat (ke meja pantry). Tapak sama, tidak
+     menghalangi lane x=-0,8 / slot (-0,7,-5,8). */
+  scene.add(place(box(0.06, 2.0, 2.5, C.desk), -1.58, 1.0, -5)); /* panel belakang (timur) */
+  for (const sz of [-6.22, -3.78]) {
+    scene.add(place(box(0.64, 2.0, 0.06, C.desk), -1.9, 1.0, sz)); /* panel sisi */
+  }
+  scene.add(place(box(0.6, 0.06, 2.38, C.deskTop), -1.92, 0.03, -5)); /* alas */
   const snackColors = [0xca4f40, 0x0f766e, 0xfc7a24, 0xc4b5fd, 0xf4a7b9, 0x1e3a8a];
+  for (const sy of [0.45, 1.05, 1.65]) {
+    scene.add(place(box(0.6, 0.05, 2.38, C.deskTop), -1.92, sy, -5)); /* papan */
+  }
   snackColors.forEach((col, i) => {
-    scene.add(place(box(0.5, 0.3, 0.4, col), -1.9, 0.4 + Math.floor(i / 3) * 0.8, -5.8 + (i % 3) * 0.8));
+    const sy = [0.45, 1.05, 1.65][Math.floor(i / 2)];
+    scene.add(place(box(0.4, 0.3, 0.35, col), -1.92, sy + 0.175, -5.85 + (i % 2) * 1.7));
   });
   /* Tugas 2: kulkas kecil di ujung utara counter + microwave di atas
      counter (ujung selatan, jauh dari mesin kopi z=-10.5). */
@@ -3945,11 +3971,27 @@ function buildRanggaOffice() {
      meja di ujung barat meja Rangga (desk-lokal x=-1.35, jauh dari
      keyboard/monitor) + tanaman sudut timur-laut + piagam di
      dinding utara. */
-  scene.add(place(box(0.6, 1.8, 2.5, C.desk), -20.6, 0.9, -6));
-  const shelfBooks = [0xca4f40, 0x0f766e, 0x1e3a8a];
-  shelfBooks.forEach((col, i) => {
-    scene.add(place(box(0.14, 0.42, 0.32, col), -20.6, 2.01, -6.9 + i * 0.5));
-  });
+  /* Rak buku TERBUKA (28 Nov 2026, audit rak): dulu balok padat
+     0.6x1.8x2.5 dan cuma 3 buku di ATAS balok. Sekarang: panel
+     belakang menempel dinding barat, 2 panel sisi, 3 papan, buku
+     BERDIRI di atas papan (tinggi bervariasi). Tapak sama. */
+  scene.add(place(box(0.06, 1.8, 2.5, C.desk), -20.87, 0.9, -6)); /* panel belakang (barat, menempel dinding) */
+  for (const sz of [-7.22, -4.78]) {
+    scene.add(place(box(0.54, 1.8, 0.06, C.desk), -20.6, 0.9, sz)); /* panel sisi */
+  }
+  const shelfBooks = [0xca4f40, 0x0f766e, 0x1e3a8a, 0xfc7a24, 0xc4b5fd, 0xf4a7b9, 0xd9a441];
+  const bookHeights = [0.4, 0.35, 0.42, 0.38, 0.36, 0.4];
+  const bookCount = [10, 8, 6];
+  for (const [bi, by] of [[0, 0.3], [1, 0.85], [2, 1.35]]) {
+    scene.add(place(box(0.5, 0.05, 2.38, C.deskTop), -20.6, by, -6)); /* papan */
+    for (let k = 0; k < bookCount[bi]; k++) {
+      const h = bookHeights[(bi * 3 + k) % 6];
+      scene.add(place(box(0.28, h, 0.09, shelfBooks[(bi * 3 + k) % 7]), -20.6, by + 0.025 + h / 2, -7.0 + k * 0.13));
+    }
+  }
+  /* Tumpukan buku rebah di papan tengah (ujung selatan). */
+  scene.add(place(box(0.28, 0.09, 0.4, 0x0f766e), -20.6, 0.92, -5.6));
+  scene.add(place(box(0.28, 0.09, 0.4, 0xca4f40), -20.6, 1.01, -5.6));
   scene.add(place(cyl(0.09, 0.11, 0.05, 0x555555), -19.35, 0.385, -10.0));
   scene.add(place(cyl(0.025, 0.025, 0.35, 0x555555), -19.35, 0.55, -10.0));
   scene.add(place(cyl(0.07, 0.15, 0.14, C.lamp, { emissive: 0xffd97a, emissiveIntensity: 0.5 }), -19.35, 0.75, -10.0));
@@ -4113,6 +4155,17 @@ function buildWarRoom() {
      mana pun; cermin tanaman sudut barat-daya (9,7,13). */
   scene.add(place(box(1.2, 1.2, 0.5, C.desk), 12, 0.6, 13.4));
   scene.add(place(box(1.2, 0.06, 0.5, C.deskTop), 12, 1.23, 13.4));
+  /* Isi kabinet (28 Nov 2026, audit rak): dulu balok kosong tanpa
+     isi. Sekarang: 4 binder berdiri + 1 kotak penyimpanan di atas
+     kabinet, plus sambungan pintu + gagang di muka utara. */
+  const cabBinders = [0xca4f40, 0x0f766e, 0x1e3a8a, 0xd9a441];
+  cabBinders.forEach((col, i) => {
+    scene.add(place(box(0.09, 0.35, 0.32, col), 11.65 + i * 0.12, 1.435, 13.35));
+  });
+  scene.add(place(box(0.35, 0.25, 0.3, 0x7a5c38), 12.35, 1.385, 13.4));
+  scene.add(place(box(0.02, 1.0, 0.02, 0x2e2a26), 12, 0.6, 13.14)); /* sambungan pintu */
+  scene.add(place(box(0.05, 0.14, 0.03, 0x555555), 11.88, 0.65, 13.13)); /* gagang kiri */
+  scene.add(place(box(0.05, 0.14, 0.03, 0x555555), 12.12, 0.65, 13.13)); /* gagang kanan */
   /* Pad lesehan tambahan mengapit pad utara/selatan (3 kursi tiap
      sisi meja operasi). Pad di baris jalan z=4,6/9,4: avatar menuju
      pad tengah sempat melintas di atas pad sisi (0,10 m, singkat)
