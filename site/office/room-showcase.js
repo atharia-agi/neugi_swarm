@@ -2009,6 +2009,7 @@ function buildScene() {
   buildOutdoor();
   buildCity();
   buildHills();
+  buildDynamicSky();
   buildRanggaOffice();
   buildStudioKonten();
   buildWarRoom();
@@ -3713,6 +3714,187 @@ function updateSupercomp(now) {
   }
 }
 
+/* --- langit dinamis RINGAN (28 Nov 2026, perintah Rangga: "lo
+   atur2 aja visualnya biar ttp ringan") — warna langit ikut jam
+   lokal pengunjung + matahari/bulan/bintang + awan PALSU.
+   VERSI RINGAN: tanpa volumetric clouds (berat, dilarang), tanpa
+   raymarching, tanpa atmospheric scattering, tanpa ubah cahaya
+   scene (Ambient/Hemisphere/Directional tetap — pembatalan 23 Nov
+   "cahaya ikut matahari" tetap berlaku; yang berubah hanya
+   LANGIT/background). Dome gradient 2 warna + sprite matahari/
+   bulan + satu THREE.Points bintang + 6 sprite awan billboard
+   = +10 draw call. Update lewat loop 50 ms yang sama dengan
+   lalu lintas (hormati document.hidden + prefers-reduced-motion:
+   REDUCED = loop tidak jalan, langit tetap di fase yang benar
+   tapi statis). */
+
+/* Fase langit (jam lokal pengunjung, pecahan). Keyframe di-lerp
+   halus antar jam — tidak ada lompatan warna. */
+const SKY_KEYS = [
+  { h: 0,  top: 0x0a0f24, hor: 0x1e2747, sun: 0, moon: 1, stars: 1, clouds: 0.12 },
+  { h: 5,  top: 0x0a0f24, hor: 0x1e2747, sun: 0, moon: 1, stars: 1, clouds: 0.12 },
+  { h: 7,  top: 0x8fb4d9, hor: 0xf2b879, sun: 0.9, moon: 0.1, stars: 0.15, clouds: 0.45 },
+  { h: 9,  top: 0x6ea8dd, hor: 0xd8ecf5, sun: 1, moon: 0, stars: 0, clouds: 0.55 },
+  { h: 16, top: 0x6ea8dd, hor: 0xd8ecf5, sun: 1, moon: 0, stars: 0, clouds: 0.55 },
+  { h: 18, top: 0x46588a, hor: 0xe8835a, sun: 0.9, moon: 0.1, stars: 0.15, clouds: 0.45 },
+  { h: 20, top: 0x0a0f24, hor: 0x1e2747, sun: 0, moon: 1, stars: 1, clouds: 0.12 },
+  { h: 24, top: 0x0a0f24, hor: 0x1e2747, sun: 0, moon: 1, stars: 1, clouds: 0.12 },
+];
+function skyHourNow() {
+  const d = new Date();
+  return d.getHours() + d.getMinutes() / 60;
+}
+function skyTargetAt(hour) {
+  let i = 0;
+  while (i < SKY_KEYS.length - 2 && SKY_KEYS[i + 1].h <= hour) i++;
+  const a = SKY_KEYS[i], b = SKY_KEYS[i + 1];
+  const t = Math.min(1, Math.max(0, (hour - a.h) / (b.h - a.h)));
+  const top = new THREE.Color(a.top).lerp(new THREE.Color(b.top), t);
+  const hor = new THREE.Color(a.hor).lerp(new THREE.Color(b.hor), t);
+  const lp = (x, y) => x + (y - x) * t;
+  return { top, hor, sun: lp(a.sun, b.sun), moon: lp(a.moon, b.moon), stars: lp(a.stars, b.stars), clouds: lp(a.clouds, b.clouds) };
+}
+function skySunPos(hour) {
+  /* Busur matahari 05:00-20:00 di langit utara (z negatif) supaya
+     terlihat dari overview default (kamera tenggara, azimuth PI/4).
+     Busur RENDAH (y 8-20) supaya masuk pita langit yang terlihat
+     di kamera ortho (matahari tinggi keluar frame). */
+  const th = Math.min(1, Math.max(0, (hour - 5) / 15)) * Math.PI;
+  return { x: Math.cos(th) * 70, y: 8 + Math.sin(th) * 12, z: -60 };
+}
+function skyMoonPos(hour) {
+  /* Busur bulan 20:00-05:00 (9 jam), langit utara juga. */
+  const hn = (hour + 24 - 20) % 24;
+  const th = Math.min(1, Math.max(0, hn / 9)) * Math.PI;
+  return { x: Math.cos(th) * 70, y: 8 + Math.sin(th) * 10, z: -70 };
+}
+function skyGlowTexture(inner, outer) {
+  /* Disc radial gradient dari canvas (0 KB aset). */
+  return textTexture(128, 128, (ctx, w, h) => {
+    const g = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
+    g.addColorStop(0, inner);
+    g.addColorStop(0.55, outer);
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+  }).tex;
+}
+function skyCloudTexture() {
+  /* Blob awan lembut: 3 lingkaran radial gradient yang tumpang
+     tindih (bukan volumetric, bukan raymarch). */
+  return textTexture(256, 128, (ctx, w, h) => {
+    const blob = (cx, cy, r, a) => {
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      g.addColorStop(0, 'rgba(255,255,255,' + a + ')');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+    };
+    blob(70, 78, 52, 0.85);
+    blob(130, 62, 62, 0.9);
+    blob(192, 80, 48, 0.85);
+  }).tex;
+}
+
+let sky = null;
+function buildDynamicSky() {
+  /* Dome gradient: sphere BackSide, shader 2 warna (tanpa
+     raymarching/scattering). Radius 140: di dalam far=200, di
+     luar ground 140x120 + awan/bintang. renderOrder -1 +
+     depthWrite false supaya tidak menutupi apa pun. */
+  const domeMat = new THREE.ShaderMaterial({
+    side: THREE.BackSide,
+    depthWrite: false,
+    fog: false,
+    uniforms: {
+      topColor: { value: new THREE.Color(0x6ea8dd) },
+      horizonColor: { value: new THREE.Color(0xd8ecf5) },
+    },
+    vertexShader: 'varying vec3 vPos; void main() { vPos = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: 'uniform vec3 topColor; uniform vec3 horizonColor; varying vec3 vPos; void main() { float t = clamp(normalize(vPos).y * 1.5 + 0.15, 0.0, 1.0); gl_FragColor = vec4(mix(horizonColor, topColor, t), 1.0); }',
+  });
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(140, 24, 12), domeMat);
+  dome.renderOrder = -1;
+  dome.frustumCulled = false;
+  scene.add(dome);
+  /* Matahari + bulan: sprite disc radial gradient. */
+  const sun = new THREE.Sprite(new THREE.SpriteMaterial({ map: skyGlowTexture('rgba(255,244,200,1)', 'rgba(255,196,80,0.55)'), transparent: true, depthWrite: false, fog: false }));
+  sun.scale.set(20, 20, 1);
+  scene.add(sun);
+  const moon = new THREE.Sprite(new THREE.SpriteMaterial({ map: skyGlowTexture('rgba(235,240,255,1)', 'rgba(180,195,230,0.4)'), transparent: true, depthWrite: false, fog: false }));
+  moon.scale.set(13, 13, 1);
+  scene.add(moon);
+  /* Bintang: SATU THREE.Points, 320 titik, belahan atas dome
+     (elevasi 5-90 derajat, radius 125). Seed tetap supaya
+     posisi bintang deterministik antar load. */
+  const starGeo = new THREE.BufferGeometry();
+  const starPts = [];
+  let seed = 1234567;
+  const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  for (let i = 0; i < 320; i++) {
+    const az = rnd() * Math.PI * 2;
+    const el = Math.asin(rnd() * 0.92 + 0.08);
+    const r = 125;
+    starPts.push(Math.cos(az) * Math.cos(el) * r, Math.sin(el) * r, Math.sin(az) * Math.cos(el) * r);
+  }
+  starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPts, 3));
+  const starsMat = new THREE.PointsMaterial({ color: 0xffffff, size: 2, sizeAttenuation: false, transparent: true, opacity: 0, depthWrite: false, fog: false });
+  const stars = new THREE.Points(starGeo, starsMat);
+  stars.frustumCulled = false;
+  scene.add(stars);
+  /* Awan: 6 sprite billboard, tekstur blob canvas, di pita
+     langit utara (y 12-22, z -60..-110) supaya masuk frame
+     ortho. Drift pelan ke +x, wrap di x=140. */
+  const cloudTex = skyCloudTexture();
+  const clouds = [];
+  const cloudSpots = [
+    { x: -90, y: 16, z: -80, s: 42 }, { x: -30, y: 20, z: -100, s: 52 },
+    { x: 35, y: 14, z: -75, s: 38 }, { x: 85, y: 18, z: -95, s: 46 },
+    { x: -60, y: 22, z: -110, s: 36 }, { x: 10, y: 12, z: -65, s: 34 },
+  ];
+  for (const c of cloudSpots) {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: cloudTex, transparent: true, opacity: 0.55, depthWrite: false, fog: false }));
+    sp.position.set(c.x, c.y, c.z);
+    sp.scale.set(c.s, c.s * 0.5, 1);
+    sp.userData.drift = 0.4 + (c.s % 5) * 0.1;
+    scene.add(sp);
+    clouds.push(sp);
+  }
+  sky = { dome, domeMat, sun, moon, stars, starsMat, clouds, top: new THREE.Color(0x6ea8dd), hor: new THREE.Color(0xd8ecf5), lastT: 0, settled: false };
+  /* Snap langsung ke fase jam ini (tanpa lerp awal) — kalau
+     REDUCED dan loop 50 ms tidak jalan, langit tetap benar. */
+  skyApplyTarget(skyTargetAt(skyHourNow()), true);
+}
+function skyApplyTarget(t, snap) {
+  if (!sky) return;
+  const k = snap ? 1 : 0.08;
+  sky.top.lerp(t.top, k);
+  sky.hor.lerp(t.hor, k);
+  sky.domeMat.uniforms.topColor.value.copy(sky.top);
+  sky.domeMat.uniforms.horizonColor.value.copy(sky.hor);
+  scene.background = sky.hor;
+  const hour = skyHourNow();
+  const sp = skySunPos(hour);
+  sky.sun.position.set(sp.x, sp.y, sp.z);
+  sky.sun.material.opacity += (t.sun - sky.sun.material.opacity) * k;
+  const mp = skyMoonPos(hour);
+  sky.moon.position.set(mp.x, mp.y, mp.z);
+  sky.moon.material.opacity += (t.moon - sky.moon.material.opacity) * k;
+  sky.starsMat.opacity += (t.stars - sky.starsMat.opacity) * k;
+  for (const c of sky.clouds) c.material.opacity += (t.clouds - c.material.opacity) * k;
+  sky.settled = Math.abs(sky.top.r - t.top.r) < 0.002 && Math.abs(sky.top.g - t.top.g) < 0.002 && Math.abs(sky.top.b - t.top.b) < 0.002;
+}
+function updateDynamicSky(now) {
+  if (!sky) return;
+  const dt = Math.min((now - sky.lastT) / 1000, 0.2) || 0;
+  sky.lastT = now;
+  for (const c of sky.clouds) {
+    c.position.x += c.userData.drift * dt;
+    if (c.position.x > 140) c.position.x = -140;
+  }
+  if (!sky.settled) skyApplyTarget(skyTargetAt(skyHourNow()), false);
+}
+
 function startTraffic() {
   /* Loop lalu lintas ringan (pola setInterval heroRotate, 50 ms).
      Hormati tab tersembunyi + prefers-reduced-motion (mobil diam). */
@@ -3744,6 +3926,8 @@ function startTraffic() {
     updateSupercomp(now);
     /* Animasi layar infra lobi — denyut dot/garis + bar aktivitas. */
     updateInfraScreen(now);
+    /* Langit dinamis ringan — drift awan + lerp fase jam. */
+    updateDynamicSky(now);
     requestRender();
   }, 50);
 }
