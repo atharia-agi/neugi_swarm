@@ -628,6 +628,36 @@ const TYPE_HAND_SOL = {
   atharia: { axisL: [0.875, -0.247, 0.417], degL: 90.671, axisR: [0.72, -0.078, -0.69], degR: 87.459 },
   reto: { axisL: [0.832, -0.499, -0.241], degL: 119.767, axisR: [0.842, 0.498, 0.209], degR: 119.528 },
 };
+/* --- Tangan netral berdiri (28 Nov 2026, joint tangan) ---
+   Telapak harus menghadap paha (medial), punggung tangan terlihat
+   dari depan, ibu jari ke depan — saat ini telapak menghadap depan
+   (posisi anatomis). Rotasi MINIMAL per tangan (frame lokal hand
+   bone, pola TYPE_HAND_SOL), diselesaikan dari pose netral ->
+   telapak medial (FK probe solve-neutral, GLB HEAD 91b99c2, 0
+   console error; telapak ke medial 0.00-0.04 deg di 13/13 avatar,
+   posisi sendi tidak pindah <=0.001). Temuan ukur: putar lengan
+   bawah (pronasi) TIDAK bisa memperbaiki — sumbu telapak nyaris
+   sejajar sumbu lengan bawah pada rangga/beto/atharia/reto
+   (sudut 0 deg), dan jari-jari chibi menyebar (bukan satu arah),
+   jadi arah jari tidak bisa jadi target kedua; hanya telapak
+   yang jadi target (rotasi minimal = perubahan terkecil).
+   Hanya di cabang berdiri netral (standW); pose mengetik
+   (TYPE_HAND_SOL) dan pose lain tidak tersentuh. */
+const TYPE_HAND_NEUTRAL = {
+  rangga: { axisL: [-0.965, 0, 0.263], degL: 140.543, axisR: [-0.978, 0, -0.207], degR: 142.37 },
+  oto: { axisL: [-0.997, -0.081, 0], degL: 64.248, axisR: [-0.997, 0.078, 0], degR: 64.284 },
+  beto: { axisL: [-0.833, 0, 0.554], degL: 147.999, axisR: [-0.833, 0, -0.554], degR: 147.999 },
+  zeto: { axisL: [-0.881, -0.474, 0], degL: 79.021, axisR: [-0.881, 0.474, 0], degR: 79.021 },
+  neto: { axisL: [-0.988, -0.154, 0], degL: 72.322, axisR: [-0.989, 0.151, 0], degR: 72.308 },
+  geto: { axisL: [-0.985, -0.174, 0], degL: 73.807, axisR: [-0.99, 0.14, 0], degR: 75.636 },
+  leto: { axisL: [-0.999, -0.041, 0], degL: 64.772, axisR: [-0.999, 0.041, 0], degR: 64.772 },
+  ceto: { axisL: [-0.993, -0.116, 0], degL: 66.066, axisR: [-0.994, 0.111, 0], degR: 66.119 },
+  seto: { axisL: [-0.735, -0.678, 0], degL: 82.932, axisR: [-0.779, 0.626, 0], degR: 83.485 },
+  deto: { axisL: [-0.842, -0.54, 0], degL: 77.436, axisR: [-0.862, 0.506, 0], degR: 78.384 },
+  meto: { axisL: [-0.996, 0.086, 0], degL: 52.584, axisR: [-0.996, -0.086, 0], degR: 52.584 },
+  atharia: { axisL: [-0.912, 0, 0.41], degL: 140.446, axisR: [-0.912, 0, -0.41], degR: 140.446 },
+  reto: { axisL: [-0.76, 0, 0.65], degL: 117.04, axisR: [-0.794, 0, -0.608], degR: 118.987 },
+};
 const TYPE_FINGER_CURL_DEG = 20; /* tekuk jari mengetik, hanya yang punya finger bones
    (chibi batch: Rangga/Oto/Ceto/Leto/Reto — Beto/Deto tidak punya) */
 /* --- Tugas 3+4: idle berdiri ---
@@ -934,6 +964,13 @@ function applyPoseWeighted(name, nowMs = performance.now()) {
     deltas.push({ bone: roles.forearmL, axis: [1, 0, 0], deg: -IDLE_STAND_ELBOW_DEG * standW });
     deltas.push({ bone: roles.forearmR, axis: [1, 0, 0], deg: -IDLE_STAND_ELBOW_DEG * standW });
     deltas.push({ bone: roles.spine, axis: [1, 0, 0], deg: IDLE_STAND_SPINE_DEG * standW });
+    /* Tangan netral: telapak ke paha (TYPE_HAND_NEUTRAL, diskala standW
+       seperti delta idle lain — 0 saat mengetik/duduk, penuh saat berdiri). */
+    const neutralSol = TYPE_HAND_NEUTRAL[name];
+    if (neutralSol) {
+      deltas.push({ bone: roles.handL, axis: neutralSol.axisL, deg: neutralSol.degL * standW });
+      deltas.push({ bone: roles.handR, axis: neutralSol.axisR, deg: neutralSol.degR * standW });
+    }
     /* Gerak hidup idle (napas/goyang/kepala) — hanya saat berdiri,
        diskala standW seperti delta idle lainnya. */
     for (const d of idleLifeDeltas(name, nowMs)) deltas.push({ ...d, deg: d.deg * standW });
