@@ -3527,10 +3527,18 @@ function buildStreetSign(x, z) {
 function buildCity() {
   /* Tanah dasar kota (y -0,01, DI BAWAH lantai kantor y=0 dan
      bidang luar y 0,01-0,02 — hanya tampil di area kosong:
-     samping kantor + seberang jalan + belakang kantor sampai
-     z -50, tempat perbukitan). Mozaik rumput + concrete
-     (27 Nov 2026, perintah Rangga 22:38). */
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(140, 120), mosaicMat(140, 120));
+     samping kantor + seberang jalan + belakang kantor, tempat
+     perbukitan). Mozaik rumput + concrete (27 Nov 2026,
+     perintah Rangga 22:38).
+     SEAMLESS HORIZON 28 Nov 2026 (Rangga: "land, horizon dan
+     skies ga seamless, ada kotak"): bidang 140x120 terlalu
+     kecil untuk frustum ortho (terutama portrait + zoom-out),
+     tepinya yang keras kelihatan sebagai kotak mengambang di
+     langit. Diperbesar ke 440x440 supaya tepinya jauh di luar
+     frustum di semua zoom/pan (zoom min 0,6 + pan maks), dan
+     fog (lihat buildDynamicSky) memudarkan tanah jauh ke warna
+     horizon. Mozaik tetap petak 2 m (repeat = ukuran/16). */
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(440, 440), mosaicMat(440, 440));
   ground.rotation.x = -Math.PI / 2;
   ground.position.set(0, -0.01, 10);
   scene.add(ground);
@@ -3930,6 +3938,14 @@ function buildDynamicSky() {
     clouds.push(sp);
   }
   sky = { dome, domeMat, sun, moon, stars, starsMat, clouds, top: new THREE.Color(0x6ea8dd), hor: new THREE.Color(0xd8ecf5), lastT: 0, settled: false };
+  /* Fog jauh (SEAMLESS HORIZON 28 Nov 2026): memudarkan tanah
+     jauh ke warna horizon supaya transisi tanah-langit halus.
+     near 120 = kantor/kota/bukit (jarak <80 dari kamera) tidak
+     kena fog; far 260 = tanah di kejauhan memudar penuh ke warna
+     horizon. Warna fog disinkron ke horizon langit di
+     skyApplyTarget (berubah ikut jam). Dome/matahari/bulan/
+     bintang/awan punya fog:false jadi tidak kena. */
+  scene.fog = new THREE.Fog(0xd8ecf5, 120, 260);
   /* Snap langsung ke fase jam ini (tanpa lerp awal) — kalau
      REDUCED dan loop 50 ms tidak jalan, langit tetap benar. */
   skyApplyTarget(skyTargetAt(skyHourNow()), true);
@@ -3942,6 +3958,7 @@ function skyApplyTarget(t, snap) {
   sky.domeMat.uniforms.topColor.value.copy(sky.top);
   sky.domeMat.uniforms.horizonColor.value.copy(sky.hor);
   scene.background = sky.hor;
+  if (scene.fog) scene.fog.color.copy(sky.hor);
   const hour = skyHourNow();
   const sp = skySunPos(hour);
   sky.sun.position.set(sp.x, sp.y, sp.z);
