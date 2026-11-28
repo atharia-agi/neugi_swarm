@@ -5,10 +5,12 @@
    tanpa build step, tanpa import map. Render-on-demand: canvas
    HANYA render saat ada perubahan state / transisi / interaksi;
    saat diam tidak ada frame baru (preserveDrawingBuffer: true).
-   SATU-SATUNYA request jaringan viewer ini: snapshot.json
-   (same origin, polling 60 detik). TIDAK ADA fetch ke layanan
-   lain, TIDAK ADA URL absolut ke layanan lain di mana pun (kode,
-   data, komentar). TANPA login, TANPA composer, TANPA posting,
+   Request jaringan viewer ini: snapshot.json (same origin,
+   polling 60 detik) + infra-status.json (R2 publik, polling
+   5 menit, layar monitor infra di lobi — read-only, tanpa
+   kredensial). TIDAK ADA fetch ke layanan lain, TIDAK ADA URL
+   absolut ke layanan lain di mana pun (kode, data, komentar).
+   TANPA login, TANPA composer, TANPA posting,
    TANPA klik-untuk-chat: klik avatar = kartu info saja di hero,
    dan kamera follow third-person di mode fullscreen. Semua teks
    dari snapshot dimasukkan ke DOM lewat textContent dan ke canvas
@@ -207,7 +209,14 @@ let prevState = null;
 let displayMode = 'hero';  /* 'hero' | 'fullscreen' — tampilan showcase */
 let snapLoaded = false;    /* snapshot.json sudah berhasil dimuat */
 let snapGeneratedMs = 0;   /* generated_at snapshot terakhir (ms) */
-let snapSource = 'R2';     /* sumber snapshot terakhir: 'R2' | 'lokal' */
+let snapSource = 'R2';
+let infraData = null;      /* infra-status.json terakhir (layar lobi) */
+let infraLoaded = false;   /* infra-status.json sudah berhasil dimuat */
+let infraGeneratedMs = 0;  /* updated_at infra terakhir (ms) */
+let infraFailed = false;   /* fetch terakhir gagal & belum ada data */
+let infraFlashUntil = 0;   /* performance.now() akhir kilau refresh */
+let infraScreen = null;    /* {texObj, lastDrawMs} — layar lobi */
+let infraPollTimer = null;     /* sumber snapshot terakhir: 'R2' | 'lokal' */
 let fsFallback = false;    /* fullscreen API tak tersedia -> overlay CSS */
 let fsSeq = 0;             /* naik tiap enter/exit/follow fullscreen (penjaga race Esc) */
 let fsExitSeq = -1;        /* fsSeq saat exit dimulai (-1 = tak ada exit) */
@@ -1992,6 +2001,7 @@ function buildScene() {
   buildWallPanels();
   buildWorkRoom();
   buildFrontOffice();
+  buildInfraScreen();
   buildGlassDoor();
   buildLounge();
   buildPantry();
@@ -2761,6 +2771,30 @@ function buildFrontOffice() {
   scene.add(place(box(0.08, 1.5, 0.08, 0x555555), -3.85, 0.75, 12.8));
   scene.add(place(box(0.08, 1.5, 0.08, 0x555555), -3.15, 0.75, 12.8));
   scene.add(place(panelPlane(0.8, 1.2, dirTex), -3.5, 1.15, 12.8));
+}
+
+/* Layar monitor infra di dinding barat Front Office (28 Nov 2026) --
+   Rangga: "Layar aja tp yg keren d lobby". Satu layar dinding di
+   lobi, ONLY VISUAL, tanpa akses apa pun. Pola layar status War
+   Room (panel gelap + bidang canvas) tapi isinya data infra live.
+   Posisi: bidang di x=-4,86 (0,01 di depan muka timur sekat x=-5),
+   menghadap timur (rotation.y = PI/2); panel belakang di x=-4,92.
+   Rentang z 9,4..12,6, y 0,95..2,45 — tidak menyentuh papan
+   direktori (-3,5, 12,8), tanaman (-4,5/1,5, 13), slot terdekat
+   (-4,1, 10), atau lane x=-4,1. BUKAN objek klik: tanpa
+   userData.action/agent/deskSlot, tidak masuk clickables. */
+function buildInfraScreen() {
+  const texObj = textTexture(INFRA_W, INFRA_H, (g, w, h) => {
+    drawInfraScreen(g, w, h, 0);
+  });
+  const back = box(0.1, 1.66, 3.36, C.panel);
+  back.position.set(-4.92, 1.7, 11);
+  scene.add(back);
+  const screen = panelPlane(3.2, 1.5, texObj);
+  screen.position.set(-4.86, 1.7, 11);
+  screen.rotation.y = Math.PI / 2;
+  scene.add(screen);
+  infraScreen = { texObj, lastDrawMs: 0 };
 }
 
 /* --- label nama ruangan di lantai (28 Nov 2026) ------------------ */
@@ -3707,6 +3741,8 @@ function startTraffic() {
     }
     /* Animasi inference superkomputer Lab AI (tanpa timer baru). */
     updateSupercomp(now);
+    /* Animasi layar infra lobi — denyut dot/garis + bar aktivitas. */
+    updateInfraScreen(now);
     requestRender();
   }, 50);
 }
@@ -5704,6 +5740,243 @@ async function refreshSnapshot() {
   setStatusText();
   return true;
 }
+
+/* --- Layar monitor infra di lobi (28 Nov 2026) -------------------- */
+/* Rangga: "Layar aja tp yg keren d lobby" + label seragam "OTO-VM"
+/  "LAB-VM" (huruf besar + hyphen) + efek inference supaya layar
+   hidup. Data dari infra-status.json publik di R2 (pipeline
+   infra_status.py, refresh 5 menit) — read-only, tanpa kredensial.
+   Bila JSON basi (>15 menit) atau fetch gagal, layar menampilkan
+   "DATA BASI" / "DATA TIDAK TERSEDIA" yang jelas — JANGAN pernah
+   hijau palsu. ATURAN JUJUR: efek inference (dot berdenyut saat UP,
+   garis volt berdenyut, bar aktivitas, kilau saat refresh) HANYA
+   menandakan layar hidup/refresh — JANGAN memalsukan metrik (tidak
+   ada angka token/detik, uptime, atau grafik yang bukan dari data
+   nyata infra-status.json). Nama VM diambil dari JSON (field name);
+   id teknis tidak pernah ditampilkan. */
+const INFRA_R2_URL = 'https://pub-20982401ea5a4ebdb76f3b502b7074d7.r2.dev/infra-status.json';
+const INFRA_POLL_MS = 5 * 60 * 1000;
+const INFRA_STALE_MS = 15 * 60 * 1000;
+const INFRA_TIMEOUT_MS = 15000;
+const INFRA_W = 1024, INFRA_H = 480;
+/* Label pendek monitor OTO-VM (9 monitor Kuma) — nama lengkap dari
+   JSON dipetakan ke label mungil supaya muat di kartu. */
+const INFRA_MON_SHORT = {
+  'neugi.com': 'neugi.com', 'Backroom': 'Backroom',
+  'Evolution API (WA)': 'Evo API',
+  'Evolution API instance (WA)': 'Evo inst',
+  'R2 snapshot.json': 'R2 snap', 'R2 research.json': 'R2 res',
+  'R2 guestbook.json': 'R2 guest', 'webiz.id': 'webiz.id',
+  'smar.neugi.com': 'smar.neugi',
+};
+function infraShort(name) {
+  return INFRA_MON_SHORT[name] || trunc(String(name), 10);
+}
+function infraHHMM(iso) {
+  /* Jam WIB dari ISO +07:00 — pakai zona Asia/Jakarta supaya benar
+     di browser pengunjung mana pun (bukan jam lokal pengunjung). */
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '--:--';
+    return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' });
+  } catch (e) { return '--:--'; }
+}
+function infraVm(data, name) {
+  const vms = (data && Array.isArray(data.vms)) ? data.vms : [];
+  return vms.find((v) => v && v.name === name) || null;
+}
+function infraWrap(g, text, maxW) {
+  const words = String(text || '').split(/\s+/).filter(Boolean);
+  const lines = [];
+  let cur = '';
+  for (const w of words) {
+    const next = cur ? cur + ' ' + w : w;
+    if (g.measureText(next).width <= maxW || !cur) cur = next;
+    else { lines.push(cur); cur = w; }
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+function drawInfraScreen(g, w, h, t) {
+  const DARK = '#161b22', VOLT = '#a3ff00', CREAM = '#f3eee2',
+    MUTED = '#9aa0a6', GREEN = '#34c759', RED = '#ff6b5e',
+    AMBER = '#ffb020', TRACK = '#2e2a26';
+  g.fillStyle = DARK; g.fillRect(0, 0, w, h);
+  /* Garis atas volt 3px — satu-satunya aksen kuat; berdenyut halus
+     (alpha 0,75..1,0) supaya layar terasa hidup. */
+  const voltPulse = 0.75 + 0.25 * Math.sin(t / 600);
+  g.globalAlpha = voltPulse;
+  g.fillStyle = VOLT; g.fillRect(0, 0, w, 3);
+  g.globalAlpha = 1;
+  const mono = (px, bold) => (bold ? 'bold ' : '') + px + 'px ui-monospace, monospace';
+  g.textBaseline = 'middle';
+  /* Header: judul kiri, indikator kanan. */
+  g.fillStyle = VOLT; g.font = mono(34, true); g.textAlign = 'left';
+  g.fillText('STATUS INFRA', 24, 40);
+  const stale = !infraData || (Date.now() - infraGeneratedMs > INFRA_STALE_MS);
+  g.textAlign = 'right';
+  if (!infraData) {
+    g.fillStyle = AMBER; g.font = mono(24, true);
+    g.fillText(infraFailed ? 'DATA TIDAK TERSEDIA' : 'MEMUAT…', w - 24, 40);
+  } else if (stale) {
+    g.fillStyle = AMBER; g.font = mono(24, true);
+    g.fillText('DATA BASI', w - 24, 40);
+  } else {
+    /* Dot LIVE berdenyut (sama ritme dengan garis volt). */
+    g.globalAlpha = voltPulse;
+    g.fillStyle = GREEN;
+    g.beginPath(); g.arc(w - 92, 40, 8, 0, Math.PI * 2); g.fill();
+    g.globalAlpha = 1;
+    g.fillStyle = GREEN; g.font = mono(24, true);
+    g.fillText('LIVE', w - 24, 40);
+  }
+  /* Pembatas halus di bawah header. */
+  g.fillStyle = TRACK; g.fillRect(24, 66, w - 48, 1);
+  g.textAlign = 'center';
+  if (!infraData) {
+    /* Belum ada data sama sekali: memuat atau gagal — tanpa status. */
+    if (infraFailed) {
+      g.fillStyle = AMBER; g.font = mono(32, true);
+      g.fillText('DATA TIDAK TERSEDIA', w / 2, 210);
+      g.fillStyle = MUTED; g.font = mono(22, false);
+      g.fillText('Menunggu pembaruan otomatis.', w / 2, 258);
+    } else {
+      g.fillStyle = CREAM; g.font = mono(32, true);
+      g.fillText('MEMUAT STATUS…', w / 2, 210);
+      g.fillStyle = MUTED; g.font = mono(22, false);
+      g.fillText('Mengambil data infra publik.', w / 2, 258);
+    }
+  } else if (stale) {
+    /* Data basi: JANGAN tampilkan status VM (bisa hijau palsu). */
+    g.fillStyle = CREAM; g.font = mono(32, true);
+    g.fillText('Data status belum diperbarui.', w / 2, 200);
+    g.fillStyle = MUTED; g.font = mono(24, false);
+    g.fillText('Terakhir: ' + infraHHMM(infraData.updated_at) + ' WIB', w / 2, 250);
+    g.fillText('Menunggu pembaruan otomatis.', w / 2, 288);
+  } else {
+    /* Dua kartu VM berdampingan (OTO-VM | LAB-VM). */
+    const cardW = 484, cardY = 78;
+    g.fillStyle = TRACK; g.fillRect(511, cardY + 8, 1, 332);
+    const cards = [
+      { x: 16, vm: infraVm(infraData, 'OTO-VM') },
+      { x: 524, vm: infraVm(infraData, 'LAB-VM') },
+    ];
+    for (const { x, vm } of cards) {
+      const up = !!(vm && vm.status === 'up');
+      /* Nama VM + lokasi. */
+      g.fillStyle = CREAM; g.font = mono(38, true); g.textAlign = 'left';
+      g.fillText(vm ? vm.name : '—', x, 108);
+      g.fillStyle = MUTED; g.font = mono(22, false); g.textAlign = 'right';
+      g.fillText(vm ? (vm.location || '') : '', x + cardW, 108);
+      /* Kata status BESAR (merah hemat, hanya untuk DOWN). */
+      g.textAlign = 'left';
+      g.fillStyle = up ? VOLT : RED; g.font = mono(54, true);
+      g.fillText(up ? 'ONLINE' : 'DOWN', x, 176);
+      const mons = (vm && Array.isArray(vm.monitors)) ? vm.monitors : [];
+      if (mons.length > 0) {
+        /* Baris dot monitor (2 baris: 5 + 4) — dot hijau berdenyut
+           halus saat UP (fase beda tiap dot, gelombang lembut),
+           merah solid saat DOWN. */
+        for (let i = 0; i < mons.length; i++) {
+          const m = mons[i];
+          const row = i < 5 ? 0 : 1;
+          const col = i < 5 ? i : i - 5;
+          const ix = x + col * 96;
+          const iy = row === 0 ? 232 : 272;
+          const mUp = m && m.status === 'up';
+          g.globalAlpha = mUp ? 0.55 + 0.45 * Math.sin(t / 600 + i * 0.7) : 1;
+          g.fillStyle = mUp ? GREEN : RED;
+          g.beginPath(); g.arc(ix + 6, iy, 6, 0, Math.PI * 2); g.fill();
+          g.globalAlpha = 1;
+          g.fillStyle = MUTED; g.font = mono(13, false); g.textAlign = 'left';
+          g.fillText(infraShort(m ? m.name : ''), ix + 16, iy);
+        }
+        /* Ringkasan monitor (data nyata dari JSON, bukan metrik). */
+        const downN = mons.filter((m) => !m || m.status !== 'up').length;
+        g.fillStyle = downN > 0 ? RED : MUTED; g.font = mono(20, false);
+        g.fillText(mons.length + ' MONITOR · ' + (downN > 0 ? downN + ' DOWN' : 'SEMUA ONLINE'), x, 322);
+      } else {
+        /* Tanpa monitor: tampilkan note (maks 2 baris) + penjelas. */
+        g.font = mono(20, false); g.fillStyle = MUTED; g.textAlign = 'left';
+        const lines = infraWrap(g, vm ? (vm.note || '') : 'Tidak ada data.', cardW).slice(0, 2);
+        lines.forEach((ln, li) => g.fillText(ln, x, 232 + li * 40));
+        g.fillStyle = MUTED; g.font = mono(20, false);
+        g.fillText('Belum ada monitor.', x, 322);
+      }
+      /* Pembatas + footer jam update (dari updated_at, WIB). */
+      g.fillStyle = TRACK; g.fillRect(x, 372, cardW, 1);
+      g.fillStyle = MUTED; g.font = mono(18, false); g.textAlign = 'left';
+      g.fillText('DIPERBARUI ' + infraHHMM(infraData.updated_at) + ' WIB', x, 400);
+    }
+  }
+  /* Bar aktivitas tipis di bawah — segmen volt menyapu kiri-kanan
+     (ping-pong 6 detik), penanda layar hidup, bukan grafik data. */
+  g.fillStyle = TRACK; g.fillRect(24, 452, w - 48, 4);
+  const span = w - 48 - 60;
+  const p = (t % 6000) / 6000;
+  const frac = p < 0.5 ? p * 2 : (1 - p) * 2;
+  g.fillStyle = VOLT; g.globalAlpha = 0.9;
+  g.fillRect(24 + frac * span, 452, 60, 4);
+  g.globalAlpha = 1;
+  /* Kilau refresh: layar berkedip halus sekali saat JSON baru masuk
+     (infraFlashUntil diset +700 ms saat refreshInfra berhasil). */
+  if (t < infraFlashUntil) {
+    g.globalAlpha = 0.10 * Math.max(0, (infraFlashUntil - t) / 700);
+    g.fillStyle = VOLT; g.fillRect(0, 0, w, h);
+    g.globalAlpha = 1;
+  }
+}
+async function fetchInfraFrom() {
+  const ctrl = new AbortController();
+  const to = setTimeout(() => ctrl.abort(), INFRA_TIMEOUT_MS);
+  try {
+    const r = await fetch(INFRA_R2_URL, { cache: 'no-store', signal: ctrl.signal });
+    if (!r.ok) return null;
+    const data = await r.json();
+    if (!data || typeof data !== 'object' || !Array.isArray(data.vms)) return null;
+    return data;
+  } catch (e) {
+    console.warn('showcase: gagal memuat infra-status:', e);
+    return null;
+  } finally { clearTimeout(to); }
+}
+function drawInfraScreenNow(t) {
+  if (!infraScreen) return;
+  drawInfraScreen(infraScreen.texObj.ctx, INFRA_W, INFRA_H, t);
+  infraScreen.texObj.tex.needsUpdate = true;
+}
+async function refreshInfra() {
+  if (document.hidden) return false;
+  const data = await fetchInfraFrom();
+  if (!data) {
+    infraFailed = !infraData;
+    drawInfraScreenNow(performance.now());
+    return false;
+  }
+  infraFailed = false;
+  infraData = data;
+  infraLoaded = true;
+  infraGeneratedMs = Date.parse(data.updated_at || '') || Date.now();
+  infraFlashUntil = performance.now() + 700;
+  drawInfraScreenNow(performance.now());
+  return true;
+}
+function updateInfraScreen(now) {
+  /* Dipanggil dari loop 50 ms (startTraffic) — gambar ulang maks
+     tiap 500 ms (denyut dot/garis + bar aktivitas + kilau refresh),
+     pola sama dengan updateSupercomp. Hormat REDUCED lewat loop. */
+  if (!infraScreen) return;
+  if (now - (infraScreen.lastDrawMs || 0) > 500) {
+    infraScreen.lastDrawMs = now;
+    drawInfraScreenNow(now);
+    requestRender();
+  }
+}
+function startInfraPolling() {
+  if (infraPollTimer) return;
+  infraPollTimer = setInterval(() => { if (!document.hidden) refreshInfra(); }, INFRA_POLL_MS);
+}
+
 /* Error state pemuatan snapshot (Zeto msg_0356): pesan jelas + tombol
    coba lagi. Tombol dibuat sekali, dipakai ulang; gaya inline supaya
    jalan juga di viewer ter-mount (tanpa CSS template). Polling 60 detik
@@ -6423,6 +6696,8 @@ async function init() {
   attachCanvas();
   await refreshSnapshot();
   startPolling();
+  refreshInfra();
+  startInfraPolling();
   startHeroRotate();
   startAmbient();
   startTraffic();
