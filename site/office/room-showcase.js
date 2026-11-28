@@ -3639,6 +3639,20 @@ function buildCity() {
   ground.rotation.x = -Math.PI / 2;
   ground.position.set(0, -0.01, 10);
   scene.add(ground);
+  /* TANAH BAWAH (HORIZON COLOR 28 Nov 2026): bidang tanah kedua di
+     y=-50, mozaik sama (UV sama jadi pola berlanjut), fog:false.
+     Menangkap sinar frustum overview yang lewat DI BAWAH tanah
+     (frustum portrait/zoom-out/elevasi rendah menjangkau di bawah
+     y=0, terburuk ~-46 m) supaya yang terlihat tetap tanah, bukan
+     pita biru langit dari belahan bawah dome. Tanpa ini, transisi
+     warna tanah-langit di horizon bawah patah: tanah mozaik
+     hijau/krem bertemu langit biru murni dalam satu garis keras. */
+  const groundLowMat = mosaicMat(440, 440);
+  groundLowMat.fog = false;
+  const groundLow = new THREE.Mesh(new THREE.PlaneGeometry(440, 440), groundLowMat);
+  groundLow.rotation.x = -Math.PI / 2;
+  groundLow.position.set(0, -50, 10);
+  scene.add(groundLow);
 
   /* Hamparan rumput seberang jalan (KOREKSI 21:03: depan gerbang
      HANYA jalan + rumput/semak, tanpa gedung). Bidang mozaik
@@ -3985,7 +3999,7 @@ function buildDynamicSky() {
       horizonColor: { value: new THREE.Color(0xd8ecf5) },
     },
     vertexShader: 'varying vec3 vPos; void main() { vPos = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-    fragmentShader: 'uniform vec3 topColor; uniform vec3 horizonColor; varying vec3 vPos; void main() { float t = clamp(normalize(vPos).y * 1.5 + 0.15, 0.0, 1.0); gl_FragColor = vec4(mix(horizonColor, topColor, t), 1.0); }',
+    fragmentShader: 'uniform vec3 topColor; uniform vec3 horizonColor; varying vec3 vPos; void main() { float t = clamp(normalize(vPos).y * 1.5, 0.0, 1.0); gl_FragColor = vec4(mix(horizonColor, topColor, t), 1.0); }',
   });
   const dome = new THREE.Mesh(new THREE.SphereGeometry(140, 24, 12), domeMat);
   dome.renderOrder = -1;
@@ -4035,14 +4049,18 @@ function buildDynamicSky() {
     clouds.push(sp);
   }
   sky = { dome, domeMat, sun, moon, stars, starsMat, clouds, top: new THREE.Color(0x6ea8dd), hor: new THREE.Color(0xd8ecf5), lastT: 0, settled: false };
-  /* Fog jauh (SEAMLESS HORIZON 28 Nov 2026): memudarkan tanah
-     jauh ke warna horizon supaya transisi tanah-langit halus.
-     near 120 = kantor/kota/bukit (jarak <80 dari kamera) tidak
-     kena fog; far 260 = tanah di kejauhan memudar penuh ke warna
-     horizon. Warna fog disinkron ke horizon langit di
-     skyApplyTarget (berubah ikut jam). Dome/matahari/bulan/
-     bintang/awan punya fog:false jadi tidak kena. */
-  scene.fog = new THREE.Fog(0xd8ecf5, 120, 260);
+  /* Fog jauh (SEAMLESS HORIZON 28 Nov 2026, RETUNE HORIZON
+     COLOR 28 Nov 2026): memudarkan tanah jauh ke warna horizon
+     supaya transisi tanah-langit halus. near 85 = kantor/kota/
+     bukit (jarak <80 dari kamera) tidak kena fog; far 150 =
+     tanah di kejauhan memudar penuh ke warna horizon — fog lama
+     (120, 260) TIDAK PERNAH kena tanah yang terlihat di overview
+     (tanah terjauh di frame ~90-180 m dari kamera, di bawah near
+     120), jadi transisi warna patah. Warna fog disinkron ke
+     horizon langit di skyApplyTarget (berubah ikut jam).
+     Dome/matahari/bulan/bintang/awan punya fog:false jadi
+     tidak kena. */
+  scene.fog = new THREE.Fog(0xd8ecf5, 85, 150);
   /* Snap langsung ke fase jam ini (tanpa lerp awal) — kalau
      REDUCED dan loop 50 ms tidak jalan, langit tetap benar. */
   skyApplyTarget(skyTargetAt(skyHourNow()), true);
